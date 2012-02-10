@@ -24,4 +24,6 @@ Release*
 Bin*
 DLLTest*
 temp*
+Objs*
+Debug*
 
