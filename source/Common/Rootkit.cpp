@@ -13,7 +13,7 @@
 #include "Trade.h"
 #include "ntdll.h"
 #include "BotEvents.h"
-#include "CmdLine.h"
+//#include "CmdLine.h"
 #include "BotCore.h"
 
 

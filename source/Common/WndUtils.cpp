@@ -224,6 +224,30 @@ bool ClickToWindow(HWND Wnd, int X, int Y)
 	return true;
 }
 
+bool HardClickToWindow( HWND wnd, int x, int y )
+{
+	bool ret = false;
+	DWORD PID;
+	DWORD TID = (DWORD)pGetWindowThreadProcessId( wnd, &PID );
+    DWORD curThreadID = (DWORD)pGetCurrentThreadId();
+    HANDLE proc = (HANDLE)pOpenProcess( PROCESS_QUERY_INFORMATION + SYNCHRONIZE, FALSE, PID );
+    if( proc )
+    {
+		pAttachThreadInput( curThreadID, TID, TRUE );
+
+        pPostMessageA( wnd, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(x,y) );
+        pWaitForInputIdle( proc, INFINITE );
+
+        pPostMessageA( wnd, WM_LBUTTONUP, 0, MAKELPARAM(x,y) );
+        pWaitForInputIdle( proc, INFINITE );
+
+        pAttachThreadInput( curThreadID, TID, FALSE );
+		ret = true;
+    }
+    pCloseHandle(proc);
+	return ret;
+}
+
 //---------------------------------------------------------------------------
 typedef struct TWndTextEnumData
 {
@@ -412,4 +436,12 @@ DWORD GetWndTextHash(HWND Wnd, bool CaseSensetive)
 		return hash;
 	}
 	return 0;
+}
+
+DWORD GetWndClassHash(HWND Wnd, bool CaseSensetive)
+{
+	char* classWnd = GetWndClassName(Wnd);
+	DWORD hash = STR::GetHash( classWnd, 0, CaseSensetive );
+	STR::Free(classWnd);
+	return hash;
 }

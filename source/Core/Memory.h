@@ -67,7 +67,10 @@ namespace HEAP
 #define CreateStruct(T) (T*)HEAP::Alloc(sizeof(T))
 
 // Выделяет память под переменную типа и возвращает указатель
-#define FreeStruct(S) HEAP::Free(S);
+#define FreeStruct(S) HEAP::Free(S)
+
+// Функция копирует структуру Source в структуру Destination
+#define CopyStruct(Source, Destination) m_memcpy(Destination, Source, sizeof(*Destination))
 
 //автоматическое выделение и освобождение памяти 
 template<int SZ>

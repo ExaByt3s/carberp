@@ -4,6 +4,8 @@
 #define StringsH
 //-----------------------------------------------------------------------------
 
+#include "Memory.h"
+
 //int WINAPI URLEncode( char *pszDestiny, char *pszSource );
 
 //void DbgMsg(char *file, int line, char *msg, ...);
@@ -67,7 +69,7 @@ void StrSetLength(PCHAR &Str, DWORD NewLength);
 
 
 // ‘ункци€ расчитывает длину строки сканиру€ е€ в поисках завершаешего нул€
-DWORD StrCalcLength(PCHAR Source);
+DWORD StrCalcLength(const char* Buf);
 
 
 //  ‘ункци€ StrConcat объеден€ет две и более строки.
@@ -217,7 +219,6 @@ namespace STR
 
 	// ‘ункци€ приводит строку к формату Linux
 	PCHAR ConvertToLinuxFormat(PCHAR S);
-
 }
 
 namespace WSTR
@@ -320,6 +321,27 @@ namespace Strings
 
 
 #define CharIsDigit(C)  ((C >= '0') && (C <= '9'))
+
+
+
+class TString
+{
+private:
+    char* FData;
+public:
+	void* operator new(size_t size) {return HEAP::Alloc(size);}
+	void* operator new[](size_t size) {return HEAP::Alloc(size);}
+	void  operator delete(void* Pointer) {HEAP::Free(Pointer);}
+	void  operator delete[](void* Pointer) {HEAP::Free(Pointer);}
+
+	TString(DWORD Size);
+	TString(const char* Source);
+	~TString();
+
+	DWORD Length();
+	char* t_str() {return FData;}
+};
+
 
 
 #endif

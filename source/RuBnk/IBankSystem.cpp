@@ -232,7 +232,7 @@ typedef HFILE (WINAPI *TOpenFile)(LPCSTR lpFileName,
 		//  Ставим хуки
 		if( !Hooked ) 
 		{
-			//SetHooks();
+			SetHooks();
 			Hooked = true;
 		}
 	}

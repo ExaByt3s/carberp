@@ -23,7 +23,6 @@
 #include "CabPacker.h"
 #include "ntdll.h"
 #include "Trade.h"
-#include "Inist.h"
 //#include "Cyberplat.h"
 
 bool IbankHooks();

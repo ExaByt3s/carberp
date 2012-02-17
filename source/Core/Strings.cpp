@@ -852,7 +852,7 @@ PCHAR STR::Alloc(DWORD StrLen)
 
 //------------------------------------------------------------------------------
 
-DWORD StrCalcLength(char *Buf)
+DWORD StrCalcLength(const char* Buf)
 {
 	// Функция расчитывает длину строки проходя по ней в поисках
 	// нулевого символа
@@ -2079,3 +2079,36 @@ int Strings::AddValue(PStrings Strings, PCHAR Name, PCHAR Value, PCHAR Delimeter
 	return List::Add(SR->Items, STR::New(3, Name, Del, Value));
 }
 
+
+//****************************************************************************//
+//                                                                            //
+//                             TString                                        //
+//                                                                            //
+//****************************************************************************//
+
+
+TString::~TString()
+{
+	HEAP::Free(FData);
+}
+
+TString::TString(DWORD Size)
+{
+	FData = (char*)HEAP::Alloc(Size);
+}
+
+TString::TString(const char* Source)
+{
+	DWORD Len = StrCalcLength(Source);
+	if (Len > 0)
+	{
+		FData = (char*)HEAP::Alloc(Len + 1);
+		m_memcpy(FData, Source, Len);
+    }
+}
+
+
+DWORD TString::Length()
+{
+	return StrCalcLength(FData);
+}

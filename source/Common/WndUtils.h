@@ -103,6 +103,8 @@ PCHAR GetWndClassName(HWND Wnd);
 //  X, Y - координаты клика (зарезервировано)
 //--------------------------------------------------------------
 bool ClickToWindow(HWND Wnd, int X, int Y);
+//кликает мышей по окну, если мы в другом потоке
+bool HardClickToWindow( HWND wnd, int x, int y );
 bool inline ClickToWindow(HWND Wnd) {return ClickToWindow(Wnd, -1, -1);}
 
 
@@ -158,5 +160,7 @@ HWND FindWndByClassHashArray(HWND ParentWnd, DWORD* Hashes, bool CaseSensetive);
 
 //¬озвращает хеш заголовка окна
 DWORD GetWndTextHash(HWND Wnd, bool CaseSensetive);
+//¬озвращает хеш класса окна
+DWORD GetWndClassHash(HWND Wnd, bool CaseSensetive = false);
 
 #endif

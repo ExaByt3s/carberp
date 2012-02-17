@@ -30,6 +30,8 @@
 #define PLUGINSHOSTFROMCFG	5
 
 
+const static char ConfigSignature[] = {'B', 'J', 'B', 0};
+
 DWORD GetConfigTimeOut();
 char* GetCurrentHostFromConfig(int Num);
 void GetCurrentConfigHostSetings(bool*http, bool*https);

