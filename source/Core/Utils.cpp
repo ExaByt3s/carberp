@@ -15,7 +15,7 @@
 #include "BotCore.h"
 
 
-#include "BotDebug.h"
+//#include "BotDebug.h"
 
 namespace UTILSDEBUGSTRINGS
 {

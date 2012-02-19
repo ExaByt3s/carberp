@@ -14,6 +14,13 @@
 #include "Inject.h"
 #include "BotHosts.h"
 
+
+/* TODO :
+В данный момент модуль coocksol.h подклбчен для очистки куков ИЕ и ФФ
+при обновлении конфига. Вынести эту функциональность, включая
+выполнение команды, из модуля задач */
+#include "coocksol.h"
+
 #include "Modules.h"
 
 #include "BotMonitorMsg.h"
@@ -647,15 +654,12 @@ bool ExecuteDownload(PTaskManager Manager, PCHAR Command, PCHAR Args)
 bool ExecuteUpdateConfig(PTaskManager, PCHAR Command, PCHAR Args)
 {
 	// Загрузить конфигурационный файл
-//	#ifdef FFExtInjectsH
-//		FFPLUGIN::Download();
-//	#endif
-//
-
 	if (Args == NULL)
 		return false;
 
 	#ifdef BotConfigH
+//		DeleteIECookies();
+//		DeleteFFCookies();
 		return Config::Download(Args);
 	#else
 		return false;

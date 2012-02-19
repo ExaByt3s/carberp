@@ -40,7 +40,7 @@
 
   
 #ifdef OUTPUT_LINES_IN_FILE
-	const char DebugLinesFileName[] = "c:\\BotDebugLines.log";
+	const char DebugLinesFileName[] = "c:\\BotDbgLines.log";
 #endif
 
 

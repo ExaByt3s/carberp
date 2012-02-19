@@ -321,10 +321,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\BSS.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Misc\bsssign.cpp"
 				>
 			</File>
@@ -421,10 +417,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\Inist.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Core\Inject.cpp"
 				>
 			</File>
@@ -478,10 +470,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\Plugins.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\Poker.cpp"
 				>
 			</File>
 			<File

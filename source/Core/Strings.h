@@ -5,6 +5,7 @@
 //-----------------------------------------------------------------------------
 
 #include "Memory.h"
+#include "GetApi.h"
 
 //int WINAPI URLEncode( char *pszDestiny, char *pszSource );
 
@@ -155,6 +156,8 @@ namespace STR
 	//  строку DstStr.
 	//  В случае успеха функция возвращает новую строку
 	PCHAR Replace(PCHAR Str, PCHAR SrcStr, PCHAR DstStr, DWORD StrLen = 0);
+
+
 
 	// Функция возвращает указатель на символ С
 	PCHAR Scan(PCHAR Str, char C);
@@ -324,19 +327,15 @@ namespace Strings
 
 
 
-class TString
+class string : public TBotClass
 {
 private:
     char* FData;
 public:
-	void* operator new(size_t size) {return HEAP::Alloc(size);}
-	void* operator new[](size_t size) {return HEAP::Alloc(size);}
-	void  operator delete(void* Pointer) {HEAP::Free(Pointer);}
-	void  operator delete[](void* Pointer) {HEAP::Free(Pointer);}
 
-	TString(DWORD Size);
-	TString(const char* Source);
-	~TString();
+	string(DWORD Size);
+	string(const char* Source);
+	~string();
 
 	DWORD Length();
 	char* t_str() {return FData;}
@@ -344,4 +343,5 @@ public:
 
 
 
+//----------------------------------------------------------------------------
 #endif

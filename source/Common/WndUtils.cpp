@@ -304,16 +304,15 @@ PCHAR GetAllWindowsText(HWND Wnd, bool AddClass, bool AddText)
 }
 //---------------------------------------------------------------------------
 
+// Функция устанавливает прозрачность окна
 void SetWindowTransparent(HWND Wnd, BYTE Transparent)
 {
-
-	// Функция устанавливает прозрачность окна
 	DWORD dwStyle = (DWORD)pGetWindowLongA(Wnd, GWL_EXSTYLE );
 		if( !(dwStyle & WS_EX_LAYERED) )
 			pSetWindowLongA(Wnd, GWL_EXSTYLE, dwStyle | WS_EX_LAYERED );
 	pSetLayeredWindowAttributes(Wnd, 0xFFFF, Transparent, LWA_ALPHA );
 }
-//-----------------------------------------------8----------------------------
+//----------------------------------------------------------------------------
 
 
 

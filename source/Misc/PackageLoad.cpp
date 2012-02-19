@@ -1,5 +1,5 @@
 #include"PackageLoad.h"
-//#include <shlobj.h>
+#include <shlobj.h>
 
 #define STEP	1024*100
 

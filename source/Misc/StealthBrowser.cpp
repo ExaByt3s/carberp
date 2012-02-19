@@ -1,5 +1,5 @@
 #include <windows.h>
-//#include <shlobj.h>
+#include <shlobj.h>
 
 #include "GetApi.h"
 #include "Loader.h"

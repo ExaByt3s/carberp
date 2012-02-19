@@ -1,4 +1,5 @@
 #include <Winsock2.h>
+#include <shlobj.h>
 #include "Ibank.h"
 //#ifdef RuBnkH
 #include "Strings.h"

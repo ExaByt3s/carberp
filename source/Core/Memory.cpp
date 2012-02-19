@@ -174,7 +174,7 @@ LPVOID HEAP::Alloc(DWORD Size)
 	if (Heap != NULL)
 	{
 		Buf = pHeapAlloc(Heap, 0, Size);
-      m_memset(Buf, 0, Size);
+        m_memset(Buf, 0, Size);
     }
 	return Buf;
 }

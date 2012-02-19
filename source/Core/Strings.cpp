@@ -2087,17 +2087,17 @@ int Strings::AddValue(PStrings Strings, PCHAR Name, PCHAR Value, PCHAR Delimeter
 //****************************************************************************//
 
 
-TString::~TString()
+string::~string()
 {
 	HEAP::Free(FData);
 }
 
-TString::TString(DWORD Size)
+string::string(DWORD Size)
 {
 	FData = (char*)HEAP::Alloc(Size);
 }
 
-TString::TString(const char* Source)
+string::string(const char* Source)
 {
 	DWORD Len = StrCalcLength(Source);
 	if (Len > 0)
@@ -2108,7 +2108,7 @@ TString::TString(const char* Source)
 }
 
 
-DWORD TString::Length()
+DWORD string::Length()
 {
 	return StrCalcLength(FData);
 }
