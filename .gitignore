@@ -26,4 +26,5 @@ DLLTest*
 temp*
 Objs*
 Debug*
+source/lib/winsta.def
 
