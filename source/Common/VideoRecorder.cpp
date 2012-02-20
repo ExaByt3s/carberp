@@ -426,7 +426,7 @@ namespace VideoRecorderSrv
 		VDRDBG("VideoRecorder", "Запущен поток записи видео с процесса %d URL %s", ClientPID, ClientURL);
 		Start(UID, ClientURL, ClientPID, IP1, Port, IP2, Port);
 
-		// ожидаем оуончания записи
+		// ожидаем окончания записи
 		while (!ClientTerminated)
 		{
 			pSleep(1000);

