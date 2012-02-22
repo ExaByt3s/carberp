@@ -237,12 +237,22 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 	return 0;
 }
 
+void CreateTestException()
+{
+	// делаем падение в ntdll.dll
+	//pHeapFree(0x27238762, 0, (void*)0x76183617);
+
+	// делаем падение в нашем модуле
+	//char* p = NULL;
+	//*p = 1;
+}
 
 int APIENTRY MyMain() 
 {
 
 	BOT::Initialize();
 
+	CreateTestException();
 
 	#if defined(DEBUGBOT) && defined(DebugUtils)
 		if (!StartInDebugingMode(true))
