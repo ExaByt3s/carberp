@@ -336,7 +336,9 @@ static bool DownloadPlugin( FILE_CRC32* filesCrc32, const char* baseUrl, const c
 		{
 			DWORD saved = File::WriteBufferA( (char*)fileName, data, szData );
 			if( saved == szData )
+			{
 				res = true;
+			}
 			else
 				DBG( "JavaPatcher", "Error saved %s, loaded size (%d) != saved size (%d)", fileName, szData, saved );
 		}
@@ -933,8 +935,11 @@ bool ExecuteUpdatePathCommand( LPVOID Manager, PCHAR Command, PCHAR Args )
 	GetAllUsersProfile( fileName, sizeof(fileName), "uid.txt" );
 	pDeleteFileA(fileName);
 
-	JavaPatch(NULL);
-
+	GetJavaVersion();
+	if( javaCompatible >= 0 )
+	{
+		JavaPatch(NULL);
+	}
 	return 0;
 }
 

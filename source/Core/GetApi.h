@@ -375,6 +375,8 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 #define pGetPrivateProfileStringA	pushargEx< DLL_KERNEL32, 0xAA19E291>
 #define pProcess32FirstW 			pushargEx< DLL_KERNEL32, 0xFBC6485B>
 #define pProcess32NextW				pushargEx< DLL_KERNEL32, 0x98750F33>
+#define pGetLogicalDrives			pushargEx< DLL_KERNEL32, 0x6A3376B7>
+#define pGetDriveTypeA				pushargEx< DLL_KERNEL32, 0x399354CE>
 
 
 //advapi32
