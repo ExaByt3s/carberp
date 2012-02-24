@@ -1176,7 +1176,7 @@ bool StrCopy(PCHAR Dest, PCHAR Source, bool UpdateLen)
 
 //------------------------------------------------------------------------------
 
-int StrCompare(PCHAR Str1, PCHAR Str2)
+int StrCompare(const char* Str1, const char* Str2)
 {
     // Сравнить две строки
 	if (Str1 == NULL || Str2 == NULL)
@@ -2080,35 +2080,275 @@ int Strings::AddValue(PStrings Strings, PCHAR Name, PCHAR Value, PCHAR Delimeter
 }
 
 
-//****************************************************************************//
-//                                                                            //
-//                             TString                                        //
-//                                                                            //
-//****************************************************************************//
 
+//*****************************************************************************
+//
+// 									 STRBUF
+//
+//*****************************************************************************
 
-string::~string()
+PStrRec inline STRBUF::GetRec(PCHAR Str)
 {
-	HEAP::Free(FData);
+	// Функция возвращает указатель на заголовок строки
+	return  (Str == NULL)? NULL: (PStrRec)(Str - sizeof(TStrRec));
 }
 
-string::string(DWORD Size)
-{
-	FData = (char*)HEAP::Alloc(Size);
-}
 
-string::string(const char* Source)
+void STRBUF::SetLength(PCHAR &Buf, DWORD Length, BYTE CharSize)
 {
-	DWORD Len = StrCalcLength(Source);
-	if (Len > 0)
+	// Функция устанавливает длину строки
+
+	if (Buf == NULL && Length == 0)
+    	return;
+
+
+	PCHAR OldBuf = Buf;
+    PStrRec OldRec = NULL;
+	// Проверяем текущий размер строки
+	if (Buf != NULL)
 	{
-		FData = (char*)HEAP::Alloc(Len + 1);
-		m_memcpy(FData, Source, Len);
+		if (Length == 0)
+		{
+			Release(OldBuf);
+			return;
+        }
+		OldRec = (PStrRec)(Buf)--;
+		if (OldRec->Length == Length) return;
+
+	}
+
+
+	// Выделяем память
+	DWORD Size = Length * CharSize;
+	Buf = (PCHAR)HEAP::Alloc(Size + sizeof(TStrRec) + CharSize);
+
+	PStrRec R = (PStrRec)Buf;
+	R->CharSize = CharSize;
+	R->Length   = Length;
+	R->RefCount = 1;
+
+    Buf += sizeof(TStrRec);
+
+	// Копируем старую строку
+	if (OldBuf != NULL)
+	{
+		DWORD CopySize =  Min(Size, OldRec->Length * CharSize);
+		m_memcpy(Buf, OldBuf, CopySize);
+    }
+
+	// Освобождаем старый буфер
+	Release(OldBuf);
+}
+
+
+DWORD inline STRBUF::GetLength(PCHAR Str)
+{
+	// Функция возвращает длину буфера строки
+    return  (Str == NULL)? 0: ((PStrRec)(Str - sizeof(TStrRec)))->Length;
+}
+
+
+PCHAR STRBUF::AddRef(PCHAR Buf)
+{
+	// Функция увеличивает количество ссылок счётчика строки
+	if (Buf != NULL)
+	{
+        PStrRec R = GetRec(Buf);
+		pInterlockedIncrement(&R->RefCount);
+    }
+	return Buf;
+}
+
+
+void STRBUF::Release(PCHAR &Buf)
+{
+	// Функция уменьшает количество ссылок строки. В случае обнуления
+	// счётчика удаляет строку
+	if (Buf == NULL)
+		return;
+
+	Buf -= sizeof(TStrRec);
+	PStrRec R = (PStrRec)Buf;
+
+	pInterlockedDecrement(&R->RefCount);
+	if (R->RefCount  <= 0)
+		HEAP::Free(R);
+
+	Buf = NULL;
+}
+
+
+
+void STRBUF::Assign(PCHAR &Destination, BYTE DestinationCharSize, const PCHAR Source)
+{
+
+	// Функция связывает две строки, при этом проводятся необходимые
+	// преобразования типов, если стрроки разных типов
+
+	if (Destination == Source)
+		return;
+
+	Release(Destination);
+
+	if (Source == NULL)
+		return;
+
+	// Проверяем одинаковые ли строки связываются
+	if (GetRec(Source)->CharSize == DestinationCharSize)
+	{
+		Destination = AddRef(Source);
+	}
+	else
+	{
+		// Типы строк не совпадают, преобразовываем строку
+
+		/* TODO : Сделать преобразование строк */
     }
 }
 
 
-DWORD string::Length()
+
+void STRBUF::StrFromPCharA(PCHAR &S, const char* Source, DWORD SourceLen)
 {
-	return StrCalcLength(FData);
+	// Создаёт анси строку из набора символов
+	Release(S);
+	if (SourceLen == 0)
+		SourceLen = StrCalcLength(Source);
+	if (SourceLen == 0) return;
+
+	SetLength(S, 1, SourceLen);
+	m_memcpy(S, Source, SourceLen);
+}
+
+
+bool STRBUF::EqualA(const char* Str1, const char* Str2)
+{
+	// Функция возвращает истину если строки идентичны
+	bool Empty1 = (Str1 == NULL) || (*Str1 == 0);
+	bool Empty2 = (Str2 == NULL) || (*Str2 == 0);
+	if (Empty1 && Empty2)
+		return true;
+
+	return StrCompare(Str1, Str2) == 0;
+}
+
+
+void STRBUF::Concat(PCHAR &Str, const char *StrToAdd)
+{
+	// Функция объеденяет строки
+	DWORD Len1 = StrCalcLength(Str);
+	DWORD Len2 = StrCalcLength(StrToAdd);
+	DWORD TotalLen = Len1 + Len2;
+	if (TotalLen == 0 || Len2 == 0) return;
+
+
+	// Проверяем возможность добавления строки в исходный буффер
+	PCHAR Tmp = NULL;
+	PStrRec R = GetRec(Str);
+	if (R != NULL && R->RefCount == 1 && TotalLen <= R->Length)
+	{
+		Tmp = Str + Len1;
+		m_memcpy(Tmp, StrToAdd, Len2);
+		return;
+	}
+
+	PCHAR NewStr = NULL;
+	SetLength(NewStr, TotalLen, 1);
+	Tmp = NewStr;
+	m_memcpy(Tmp, Str, Len1);
+	Tmp += Len1;
+	m_memcpy(Tmp, StrToAdd, Len2);
+	Release(Str);
+
+	Str = NewStr;
+}
+
+
+//****************************************************************************//
+//                                                                            //
+//                           CustomString                                     //
+//                                                                            //
+//****************************************************************************//
+
+PStrRec inline CustomString::GetRec()
+{
+	return  STRBUF::GetRec(FData);
+}
+
+bool CustomString::IsEmpty()
+{
+	if (FData == NULL) return true;
+	PStrRec R = STRBUF::GetRec(FData);
+    return (R->CharSize == 1)?  (*FData == 0) : (*((wchar_t*)FData) == NULL);
+}
+
+
+void CustomString::Clear()
+{
+	if (FData != NULL)
+	{
+		PStrRec R = GetRec();
+		m_memset(FData, 0, R->Length * R->CharSize);
+    }
+}
+
+//****************************************************************************//
+//                                                                            //
+//                             string                                         //
+//                                                                            //
+//****************************************************************************//
+
+string::string(const string &src)
+{
+	FData = STRBUF::AddRef(src.FData);
+}
+
+string::string(DWORD Size)
+{
+	FData = NULL;
+    STRBUF::SetLength(FData, Size, 1);
+}
+
+string::string(const char* Source)
+{
+	STRBUF::StrFromPCharA(FData, Source);
+}
+
+string& string::operator=(const string &source)
+{
+	STRBUF::Assign(FData, 1, source.FData);
+	return *this;
+}
+
+string& string::operator=(const char *source)
+{
+	STRBUF::StrFromPCharA(FData, source);
+	return *this;
+}
+
+string string::operator+(const string &source) const
+{
+	string Temp(*this);
+	STRBUF::Concat(Temp.FData, source.FData);
+	return Temp;
+}
+
+string string::operator+(const char* source) const
+{
+	string Temp(*this);
+	STRBUF::Concat(Temp.FData, source);
+	return Temp;
+}
+
+
+string& string::operator+=(const string &source)
+{
+	STRBUF::Concat(FData, source.FData);
+	return *this;
+}
+
+string& string::operator+=(const char* source)
+{
+	STRBUF::Concat(FData, source);
+	return *this;
 }

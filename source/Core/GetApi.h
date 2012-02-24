@@ -377,7 +377,8 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 #define pProcess32NextW				pushargEx< DLL_KERNEL32, 0x98750F33>
 #define pGetLogicalDrives			pushargEx< DLL_KERNEL32, 0x6A3376B7>
 #define pGetDriveTypeA				pushargEx< DLL_KERNEL32, 0x399354CE>
-
+#define pInterlockedIncrement		pushargEx< DLL_KERNEL32, 0xD03C6D18>
+#define pInterlockedDecrement		pushargEx< DLL_KERNEL32, 0xDD2A6D18>
 
 //advapi32
 #define pCreateProcessAsUserA		pushargEx< DLL_ADVAPI32, 0x985267C4>
@@ -740,6 +741,13 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 #define pSQLDisconnect				pushargEx< DLL_ODBC32, 0x8104CDA8>
 
 
+
+//****************************************************************
+//  Вспомогательные функции
+//****************************************************************
+
+#define Min(a,b) (((a) < (b)) ? (a) : (b))
+#define Max(a,b) (((a) > (b)) ? (a) : (b))
 
 
 //****************************************************************

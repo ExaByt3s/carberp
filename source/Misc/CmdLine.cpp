@@ -48,7 +48,8 @@ PCHAR WINAPI Hook_GetCommandLineA()
 
 	const char* agent = "Agent.jar";
 	const char* agentPassive = "AgentPassive.jar";
-	const char* forIns1 = " -javaagent:\"%s\\%s\"";
+//	const char* forIns1 = " -javaagent:\"%s\\%s\""; 
+	const char* forIns1 = " -Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=9999 -javaagent:\"%s\\%s\""; 
 	const char* forIns2 = ";\"%s\\Agent.jar\";\"%s\\lib\\javassist.jar\"";//;\"%s\\lib\\client2015.jar\"";
 	DBG("CmdLineA", "----: %s", CommandLineA);
 	if( m_strstr( CommandLineA, "javassist.jar" ) != 0 ) //если уже добавляли, то 2-й раз не нужно

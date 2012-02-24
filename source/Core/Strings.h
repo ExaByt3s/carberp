@@ -48,7 +48,8 @@ bool WildCmp(PCHAR Buffer, PCHAR Mask);
 bool CompareUrl( char *MaskUrl, char *Url );
 
 WCHAR * AnsiToUnicode( char *AnsiString, DWORD dwStrLen );
-void AlertError( LPTSTR lpszFunction ) ;
+
+//void AlertError( LPTSTR lpszFunction ) ;
 
 //убирает в начале и конце символы c, возвращает указатель на s, только внутри уже обработанная строка
 char* trimall( char* s, char c = ' ' );
@@ -87,7 +88,7 @@ void StrConcat(PCHAR &Str1, DWORD Count, PCHAR Str2...);
 bool StrCopy(PCHAR Dest, PCHAR Source, bool UpdateLen = false);
 
 // Сравнить две строки
-int StrCompare(PCHAR Str1, PCHAR Str2);
+int StrCompare(const char* Str1, const char* Str2);
 
 // Функции дл преобразования строк в числи и наоборот
 int StrToInt(PCHAR Str);
@@ -326,19 +327,95 @@ namespace Strings
 #define CharIsDigit(C)  ((C >= '0') && (C <= '9'))
 
 
+//*****************************************************************************
+//  STRBUF - методы для работы со строковым буфером
+//*****************************************************************************
 
-class string : public TBotClass
+typedef struct TStrRec
 {
-private:
-    char* FData;
-public:
+	BYTE   CharSize;
+	DWORD  Length;
+	LONG   RefCount;
+} *PStrRec;
 
+
+namespace STRBUF
+{
+	// Функция возвращает указатель на заголовок строки
+    PStrRec inline GetRec(PCHAR Str);
+
+	// Функция устанавливает размер строки
+	void SetLength(PCHAR &Buf, DWORD Length, BYTE CharSize);
+
+	// Функция возвращает длину буфера строки
+    DWORD inline GetLength(PCHAR Str);
+
+	// Функция увеличивает количество ссылок счётчика строки
+    PCHAR AddRef(PCHAR Buf);
+
+	// Функция уменьшает количество ссылок строки. В случае обнуления
+	// счётчика удаляет строку
+	void Release(PCHAR &Buf);
+
+	// Функция связывает две строки, при этом проводятся необходимые
+	// преобразования типов, если стрроки разных типов
+	void Assign(PCHAR &Destination, BYTE DestinationCharSize, const PCHAR Source);
+
+	// Создаёт анси строку из набора символов
+	void StrFromPCharA(PCHAR &S, const char* Source, DWORD SourceLen = 0);
+
+	// Функция возвращает истину если строки идентичны
+	bool EqualA(const char* Str1, const char* Str2);
+
+	// Функция объеденяет строки
+	void Concat(PCHAR &Str, const char *StrToAdd);
+}
+
+
+//*****************************************************************************
+//  CustomString - Базовый класс строки
+//*****************************************************************************
+
+class CustomString : public TBotClass
+{
+protected:
+	PCHAR FData;
+protected:
+	PStrRec inline GetRec();
+public:
+	~CustomString() {STRBUF::Release(FData);};
+
+	void Clear();    // Заполняет выделенную память нулями
+    bool IsEmpty();  // Возвращает истину если строка пустая
+
+	DWORD inline Length() { return STRBUF::GetLength(FData); };
+};
+
+//*****************************************************************************
+//  string - класс анси строки
+//*****************************************************************************
+class string : public CustomString
+{
+public:
+	string() {FData = NULL;};
+    string(const string &src);
 	string(DWORD Size);
 	string(const char* Source);
-	~string();
 
-	DWORD Length();
-	char* t_str() {return FData;}
+    inline char* c_str() {return FData;}
+
+	string& operator =(const string &source);
+	string& operator =(const char *source);
+	string operator +(const string &source) const;
+	string operator +(const char* source) const;
+	string& operator +=(const string &source);
+	string& operator +=(const char* source);
+	bool inline operator ==(const string &str) { return STRBUF::EqualA(FData, str.FData);};
+	bool inline operator ==(const char* str)   { return STRBUF::EqualA(FData, str);};
+	bool inline operator !=(const string &str) { return !STRBUF::EqualA(FData, str.FData);};
+	bool inline operator !=(const char* str)   { return !STRBUF::EqualA(FData, str);};
+
+
 };
 
 

