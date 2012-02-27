@@ -426,6 +426,7 @@ public:
 typedef TStrBuf<char> AnsiBuf, StrBufA, STRBUFA;
 typedef TStrBuf<wchar_t> UnicodeBuf, StrBufW, STRBUFW;
 
+
 typedef TCustomString<char>  string;
 typedef TCustomString<wchar_t>  wstring;
 
