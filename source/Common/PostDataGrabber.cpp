@@ -35,6 +35,7 @@ bool Init()
 	if( !receivers )
 		return false;
 	List::SetFreeItemMehod( receivers, DelItemReceiver );
+	return true;
 }
 
 void Release()

@@ -268,7 +268,7 @@
 			OutputDirectory="..\Bin\$(ConfigurationName)"
 			IntermediateDirectory="Objs\$(ConfigurationName)"
 			ConfigurationType="1"
-			CharacterSet="2"
+			CharacterSet="0"
 			WholeProgramOptimization="0"
 			>
 			<Tool
@@ -288,14 +288,14 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="0"
+				Optimization="1"
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="0"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;..\..\Include;Modules"
 				PreprocessorDefinitions="NDEBUG;DEBUGCONFIG"
-				StringPooling="false"
+				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"

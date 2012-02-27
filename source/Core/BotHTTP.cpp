@@ -24,7 +24,7 @@ PHTTPRequest HTTPCreateRequest(PCHAR URL)
 
 	if (URL != NULL)
 	{
-		PURL UR = CreateStruct(TURL);
+		PURLREC UR = CreateStruct(TURLREC);
 		if (ParseURL(URL, UR, false))
 		{
 			// Переносим параметры
@@ -306,7 +306,7 @@ PCHAR URLEncode(PCHAR URL, DWORD URLSize)
 #define IncStrEx(S) if(S != NULL){*S = 0; S++;}
 
 
-bool ParseURL(PCHAR URL, PURL Rec, bool FullPars)
+bool ParseURL(PCHAR URL, PURLREC Rec, bool FullPars)
 {
 	if (URL == NULL || Rec == NULL)
 		return false;
@@ -367,7 +367,7 @@ bool ParseURL(PCHAR URL, PURL Rec, bool FullPars)
 	return true;
 }
 
-void ClearURL(PURL URL)
+void ClearURL(PURLREC URL)
 {
 	if (URL == NULL)
 		return;

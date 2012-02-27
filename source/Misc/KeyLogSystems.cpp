@@ -15,7 +15,7 @@
 #include "AvangardWeb.cpp"
 #include "RafaDll.cpp"
 #include "Yandex.cpp"
-#include "cc.cpp"
+//#include "cc.cpp"
 
 //#include "BotDebug.h"
 

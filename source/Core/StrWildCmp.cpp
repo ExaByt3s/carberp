@@ -1,3 +1,8 @@
+
+#ifndef StringsH
+	Исключите файл из проекта
+#endif
+
 #include <windows.h>
 #include "Strings.h"
 

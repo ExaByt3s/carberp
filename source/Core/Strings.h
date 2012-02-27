@@ -67,11 +67,12 @@ char* trimall( char* s, char c = ' ' );
 
 // Изменить размер буфера строки
 // Важно!!! Функция работает со строками которые созданы функцией StrNew
-void StrSetLength(PCHAR &Str, DWORD NewLength);
+//void StrSetLength(PCHAR &Str, DWORD NewLength);
 
 
 // Функция расчитывает длину строки сканируя ея в поисках завершаешего нуля
 DWORD StrCalcLength(const char* Buf);
+DWORD StrCalcLengthW(const wchar_t* Buf);
 
 
 //  Функция StrConcat объеденяет две и более строки.
@@ -327,97 +328,103 @@ namespace Strings
 #define CharIsDigit(C)  ((C >= '0') && (C <= '9'))
 
 
-//*****************************************************************************
-//  STRBUF - методы для работы со строковым буфером
-//*****************************************************************************
-
-typedef struct TStrRec
+// Класс, текстовый буфер
+template <class TCharType>
+class TStrBuf : public TBotClass
 {
-	BYTE   CharSize;
-	DWORD  Length;
-	LONG   RefCount;
-} *PStrRec;
+private:
+	DWORD FSize;      // Размер выделенной памяти
+	DWORD FLength;    // Реальная длина строки
+	int   FRefCount;  // Количество ссылок на строку
+	TCharType* FData; // Буфкр данных
 
-
-namespace STRBUF
-{
-	// Функция возвращает указатель на заголовок строки
-    PStrRec inline GetRec(PCHAR Str);
-
-	// Функция устанавливает размер строки
-	void SetLength(PCHAR &Buf, DWORD Length, BYTE CharSize);
-
-	// Функция возвращает длину буфера строки
-    DWORD inline GetLength(PCHAR Str);
-
-	// Функция увеличивает количество ссылок счётчика строки
-    PCHAR AddRef(PCHAR Buf);
-
-	// Функция уменьшает количество ссылок строки. В случае обнуления
-	// счётчика удаляет строку
-	void Release(PCHAR &Buf);
-
-	// Функция связывает две строки, при этом проводятся необходимые
-	// преобразования типов, если стрроки разных типов
-	void Assign(PCHAR &Destination, BYTE DestinationCharSize, const PCHAR Source);
-
-	// Создаёт анси строку из набора символов
-	void StrFromPCharA(PCHAR &S, const char* Source, DWORD SourceLen = 0);
-
-	// Функция возвращает истину если строки идентичны
-	bool EqualA(const char* Str1, const char* Str2);
-
-	// Функция объеденяет строки
-	void Concat(PCHAR &Str, const char *StrToAdd);
-}
-
-
-//*****************************************************************************
-//  CustomString - Базовый класс строки
-//*****************************************************************************
-
-class CustomString : public TBotClass
-{
-protected:
-	PCHAR FData;
-protected:
-	PStrRec inline GetRec();
+	void AllocMem(DWORD aSize);
+	void SetSize(DWORD NewSize);
 public:
-	~CustomString() {STRBUF::Release(FData);};
 
-	void Clear();    // Заполняет выделенную память нулями
-    bool IsEmpty();  // Возвращает истину если строка пустая
+	TStrBuf(DWORD aSize);
+	TStrBuf(const TCharType* Source);
 
-	DWORD inline Length() { return STRBUF::GetLength(FData); };
+	~TStrBuf() { HEAP::Free(FData);	}
+
+	TStrBuf*  AddRef();
+	static void  Release(TStrBuf* &Buf);
+
+	TStrBuf* Unique(DWORD NewSize);
+	TStrBuf* Unique() {return Unique(0);};
+
+	inline TCharType* Data() {return FData;};
+
+	DWORD inline Length() { return FLength; }
+	DWORD static CalcLength(const TCharType *Str);
+	DWORD CalcLength();
+
+	void Copy(const TCharType* Source,  DWORD SourceLen = 0);
+	void Concat(const TCharType* Str, DWORD StrLen = 0);
+	void static Concat(TStrBuf* &Buf, const TCharType* Str, DWORD StrLen);
+
+	int static Compare(const TCharType* Str1, const TCharType* Str2);
+
+
+	bool static IsEqual(TStrBuf* Str1, const TCharType* Str2);
+	bool static IsEqual(TStrBuf* Str1, TStrBuf* Str2);
 };
 
-//*****************************************************************************
-//  string - класс анси строки
-//*****************************************************************************
-class string : public CustomString
+
+
+
+
+//***************************************************************
+//  Шаблон строки
+//
+// Важно!!!
+// Если строка исполузуется в качестве буфера для работы
+// с WinApi её длина должна быть пересчитана принудительно
+//
+//	string Path(MAX_PATH);
+//	SHGetSpecialFolderPathA(NULL, Path.c_str(), CSIDL_APPDATA, TRUE);
+//	Path.CalcLength();
+//  Path += "\\Data\\";
+//
+//***************************************************************
+template <class TCharType>
+class TCustomString : public TBotClass
 {
+private:
+    TStrBuf<TCharType> *FData;
 public:
-	string() {FData = NULL;};
-    string(const string &src);
-	string(DWORD Size);
-	string(const char* Source);
+    TCustomString() { FData = new TStrBuf<TCharType>; };
+    TCustomString(const TCustomString &Source);
+	TCustomString(DWORD Size);
+	TCustomString(const TCharType* Source);
 
-    inline char* c_str() {return FData;}
+	~TCustomString() { TStrBuf<TCharType>::Release(FData); }
 
-	string& operator =(const string &source);
-	string& operator =(const char *source);
-	string operator +(const string &source) const;
-	string operator +(const char* source) const;
-	string& operator +=(const string &source);
-	string& operator +=(const char* source);
-	bool inline operator ==(const string &str) { return STRBUF::EqualA(FData, str.FData);};
-	bool inline operator ==(const char* str)   { return STRBUF::EqualA(FData, str);};
-	bool inline operator !=(const string &str) { return !STRBUF::EqualA(FData, str.FData);};
-	bool inline operator !=(const char* str)   { return !STRBUF::EqualA(FData, str);};
+	inline DWORD Length() { return FData->Length(); }
+	inline DWORD CalcLength() { return FData->CalcLength(); }
 
+	TCharType* t_str() { return FData->Data(); }
+
+	TCustomString& operator =(const TCustomString &Source);
+	TCustomString& operator =(const TCharType* Source);
+	TCustomString operator +(const TCustomString &Source);
+	TCustomString operator +(const TCharType* Source);
+	TCustomString& operator +=(const TCustomString &Source);
+	TCustomString& operator +=(const TCharType* Source);
+	bool operator ==(const TCustomString &Str);
+	bool operator ==(const TCharType* Str);
 
 };
 
+
+#include "StrTemplates.cpp"
+
+
+
+// Реализации конкретных типов строк
+
+typedef TCustomString<char>  string;
+typedef TCustomString<wchar_t>  wstring;
 
 
 //----------------------------------------------------------------------------

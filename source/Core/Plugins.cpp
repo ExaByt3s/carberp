@@ -311,7 +311,7 @@ PCHAR Plugin::GetURL(PCHAR Name, PCHAR PluginsListURL, bool UpdateList)
     }
 
 	// Распарсиваем адрес списка плагинов для получения хоста
-	TURL URLRec;
+	TURLREC URLRec;
 	ClearStruct(URLRec);
 
 	ParseURL(PluginsListURL, &URLRec);

