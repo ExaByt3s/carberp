@@ -33,7 +33,7 @@
 
 #include "bsssign.h"
 #include "Sber.h"
-//#include "java_patcher.h"
+#include "java_patcher.h"
 #include "KillOs_Reboot.h"
 #include "BBSCBank.h"
 

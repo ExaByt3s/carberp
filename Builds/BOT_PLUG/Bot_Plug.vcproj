@@ -40,7 +40,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="0"
+				Optimization="1"
 				AdditionalIncludeDirectories="..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include;..\..\Source\RuBnk"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;WHITE_JOE_DLL_EXPORTS"
 				MinimalRebuild="true"
@@ -115,7 +115,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="2"
+				Optimization="1"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include;..\..\Source\RuBnk"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;WHITE_JOE_DLL_EXPORTS"
@@ -193,7 +193,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="2"
+				Optimization="1"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include;..\..\Source\RuBnk"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;WHITE_JOE_DLL_EXPORTS;DEBUGCONFIG"
@@ -473,6 +473,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Source\Common\PostDataGrabber.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Common\Requests.cpp"
 				>
 			</File>
@@ -619,10 +623,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\BSS.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Misc\bsssign.h"
 				>
 			</File>
@@ -731,10 +731,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\Inist.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Core\Inject.h"
 				>
 			</File>
@@ -815,7 +811,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\Poker.h"
+				RelativePath="..\..\Source\Common\PostDataGrabber.h"
 				>
 			</File>
 			<File
