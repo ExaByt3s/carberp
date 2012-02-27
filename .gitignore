@@ -27,4 +27,5 @@ temp*
 Objs*
 Debug*
 source/lib/winsta.def
+*.suo
 

