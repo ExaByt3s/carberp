@@ -160,7 +160,6 @@ namespace STR
 	PCHAR Replace(PCHAR Str, PCHAR SrcStr, PCHAR DstStr, DWORD StrLen = 0);
 
 
-
 	// Функция возвращает указатель на символ С
 	PCHAR Scan(PCHAR Str, char C);
 
@@ -326,7 +325,7 @@ namespace Strings
 
 
 #define CharIsDigit(C)  ((C >= '0') && (C <= '9'))
-
+#define LowerChar(C) if (C >= 'A' && C <= 'Z') {C = C + ('a'-'A');}
 
 // Класс, текстовый буфер
 template <class TCharType>
@@ -351,9 +350,9 @@ public:
 	static void  Release(TStrBuf* &Buf);
 
 	TStrBuf* Unique(DWORD NewSize);
-	TStrBuf* Unique() {return Unique(0);};
+	TStrBuf* Unique() { return Unique(0); }
 
-	inline TCharType* Data() {return FData;};
+	inline TCharType* t_str() const { return FData; };
 
 	DWORD inline Length() { return FLength; }
 	DWORD static CalcLength(const TCharType *Str);
@@ -363,8 +362,13 @@ public:
 	void Concat(const TCharType* Str, DWORD StrLen = 0);
 	void static Concat(TStrBuf* &Buf, const TCharType* Str, DWORD StrLen);
 
-	int static Compare(const TCharType* Str1, const TCharType* Str2);
+	// Функциии для расчёта хэша
+	DWORD static Hash(const TCharType* Str, DWORD Len = 0, bool LowerCase = false);
+	DWORD inline Hash(DWORD Len = 0, bool LowerCase = false);
 
+	// Функции сравнения строк
+	int static Compare(const TCharType* Str1, const TCharType* Str2);
+	int inline Compare(const TCharType* Str);
 
 	bool static IsEqual(TStrBuf* Str1, const TCharType* Str2);
 	bool static IsEqual(TStrBuf* Str1, TStrBuf* Str2);
@@ -393,17 +397,19 @@ class TCustomString : public TBotClass
 private:
     TStrBuf<TCharType> *FData;
 public:
-    TCustomString() { FData = new TStrBuf<TCharType>; };
-    TCustomString(const TCustomString &Source);
-	TCustomString(DWORD Size);
+    TCustomString();
+	TCustomString(const TCustomString &Source);
+    TCustomString(const TStrBuf<TCharType> &Source);
 	TCustomString(const TCharType* Source);
 
 	~TCustomString() { TStrBuf<TCharType>::Release(FData); }
 
-	inline DWORD Length() { return FData->Length(); }
-	inline DWORD CalcLength() { return FData->CalcLength(); }
+	inline DWORD Length()      { return FData->Length(); }
+	inline DWORD CalcLength()  { return FData->CalcLength(); }
 
-	TCharType* t_str() { return FData->Data(); }
+	inline TCharType* t_str() const { return FData->t_str(); }
+
+    DWORD inline Hash(DWORD Len = 0, bool LowerCase = false) {return FData->Hash(Len, LowerCase); }
 
 	TCustomString& operator =(const TCustomString &Source);
 	TCustomString& operator =(const TCharType* Source);

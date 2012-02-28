@@ -81,6 +81,18 @@ HWND AllocateWND(WNDPROC WndProc);
 PCHAR GetWndText(HWND Wnd);
 
 //--------------------------------------------------------------
+//  GetWndClassName - Функция возвращает имя класса окна
+//--------------------------------------------------------------
+PCHAR GetWndClassName(HWND Wnd);
+
+
+//Возвращает хеш заголовка окна
+DWORD GetWndTextHash(HWND Wnd, bool LowerChar = false);
+
+//Возвращает хеш класса окна
+DWORD GetWndClassHash(HWND Wnd, bool LowerChar = false);
+
+//--------------------------------------------------------------
 //  GetAllWindowsText - Функция собирает все тексты окон в
 //                      одну строку
 //
@@ -90,11 +102,6 @@ PCHAR GetWndText(HWND Wnd);
 //--------------------------------------------------------------
 PCHAR GetAllWindowsText(HWND Wnd, bool AddClass, bool AddText);
 
-
-//--------------------------------------------------------------
-//  GetWndClassName - Функция возвращает имя класса окна
-//--------------------------------------------------------------
-PCHAR GetWndClassName(HWND Wnd);
 
 
 //--------------------------------------------------------------
@@ -158,9 +165,5 @@ namespace WNDFILTER
 //до тех пор пока в массиве хешей не будет 0, возвращаем последнее найдненное окно 
 HWND FindWndByClassHashArray(HWND ParentWnd, DWORD* Hashes, bool CaseSensetive);
 
-//Возвращает хеш заголовка окна
-DWORD GetWndTextHash(HWND Wnd, bool CaseSensetive);
-//Возвращает хеш класса окна
-DWORD GetWndClassHash(HWND Wnd, bool CaseSensetive = false);
 
 #endif
