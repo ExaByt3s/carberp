@@ -953,7 +953,7 @@ DWORD WINAPI Run_Path(LPVOID lpData)
 				GetJavaVersion();
 				if( javaCompatible >= 0 )
 				{
-					StartThread( JavaPatch, NULL );
+					//StartThread( JavaPatch, NULL );
 					//pSleep(5000); - узнать нафига тут задержка
 				}
 				break;

