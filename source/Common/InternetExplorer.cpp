@@ -1172,7 +1172,6 @@ BOOL WINAPI HOOK_HttpQueryInfoA(HINTERNET hRequest, DWORD dwInfoLevel,
 	LPVOID lpBuffer, LPDWORD lpdwBufferLength, LPDWORD lpdwIndex)
 
 {
-
 	BOOL Result =  REAL_HttpQueryInfoA(hRequest, dwInfoLevel,
 		lpBuffer, lpdwBufferLength, lpdwIndex);
 
@@ -1185,7 +1184,7 @@ BOOL WINAPI HOOK_HttpQueryInfoA(HINTERNET hRequest, DWORD dwInfoLevel,
 
 		PCHAR Buf = (PCHAR)lpBuffer;
 
-		HTTPParser::SetHeaderValue(Buf, 0, 0, ParamCacheControl, "no-store, no-cache, must-revalidate", lpdwBufferLength);
+		HTTPParser::SetHeaderValue(Buf, 0, 0, ParamCacheControl, ValueNoCacheDocument, lpdwBufferLength);
 	}
 
     return Result;
