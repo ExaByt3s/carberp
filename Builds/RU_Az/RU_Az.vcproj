@@ -523,10 +523,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\Ibank.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\RuBnk\IBankSystem.h"
 				>
 			</File>
@@ -848,10 +844,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Hunter.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\RuBnk\Ibank.cpp"
 				>
 			</File>
 			<File

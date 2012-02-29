@@ -412,11 +412,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\CabPacker.h"
+				RelativePath="..\..\Source\RuBnk\CabPacker.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\CabPacker.h"
+				RelativePath="..\..\Source\Common\CabPacker.h"
 				>
 			</File>
 			<File
@@ -493,10 +493,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Hunter.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\RuBnk\Ibank.h"
 				>
 			</File>
 			<File
@@ -809,10 +805,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Hunter.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\RuBnk\Ibank.cpp"
 				>
 			</File>
 			<File

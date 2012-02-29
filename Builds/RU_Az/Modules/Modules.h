@@ -46,7 +46,6 @@
 
 
 #include "IBankSystem.h"
-#include "Ibank.h"
 #include "JavaConfig.h"
 #include "avangard.h"
 

