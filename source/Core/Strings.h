@@ -145,7 +145,7 @@ namespace STR
 	// Находит позицию строки SubStr  в строке Str
 	// Если значение StrLen то поиск будет вестись до
 	// нулевого символа
-	int Pos(PCHAR Str, PCHAR SubStr, DWORD StrLen = 0, bool CaseSensetive = true);
+	int Pos(const char* Str, const char* SubStr, DWORD StrLen = 0, bool CaseSensetive = true);
 
 	// Копирует с позиции Position строки Source Count символов в
 	// строку Destination
@@ -161,7 +161,7 @@ namespace STR
 
 
 	// Функция возвращает указатель на символ С
-	PCHAR Scan(PCHAR Str, char C);
+	PCHAR Scan(const char* Str, char C);
 
 	// Функция возвращает указатель на последний символ С
 	PCHAR ScanEnd(PCHAR Str, char C);
@@ -349,8 +349,8 @@ public:
 	TStrBuf*  AddRef();
 	static void  Release(TStrBuf* &Buf);
 
-	TStrBuf* Unique(DWORD NewSize);
-	TStrBuf* Unique() { return Unique(0); }
+	TStrBuf* Unique(int NewSize);
+	TStrBuf* Unique() { return Unique(-1); }
 
 	inline TCharType* t_str() const { return FData; };
 
@@ -358,7 +358,8 @@ public:
 	DWORD static CalcLength(const TCharType *Str);
 	DWORD CalcLength();
 
-	void Copy(const TCharType* Source,  DWORD SourceLen = 0);
+	void Copy(const TCharType* Source, DWORD Position,  DWORD Count);
+	void Copy(const TCharType* Source);
 	void Concat(const TCharType* Str, DWORD StrLen = 0);
 	void static Concat(TStrBuf* &Buf, const TCharType* Str, DWORD StrLen);
 
@@ -404,12 +405,15 @@ public:
 
 	~TCustomString() { TStrBuf<TCharType>::Release(FData); }
 
+	void Copy(const TCharType* Source, DWORD Position, DWORD Count);
+    void Copy(const TCustomString<TCharType> &Source, DWORD Position, DWORD Count);
+
 	inline DWORD Length()      { return FData->Length(); }
 	inline DWORD CalcLength()  { return FData->CalcLength(); }
 
-	inline TCharType* t_str() const { return FData->t_str(); }
-
     DWORD inline Hash(DWORD Len = 0, bool LowerCase = false) {return FData->Hash(Len, LowerCase); }
+
+	inline TCharType* t_str() const { return FData->t_str(); }
 
 	TCustomString& operator =(const TCustomString &Source);
 	TCustomString& operator =(const TCharType* Source);
