@@ -290,7 +290,7 @@ DWORD TStrBuf<TCharType>::Hash(DWORD Len, bool LowerCase)
 template <class TCharType>
 TCustomString<TCharType>::TCustomString()
 {
-    FData = new TStrBuf<TCharType>;
+    FData = new TStrBuf<TCharType>((DWORD)0);
 }
 
 template <class TCharType>
@@ -354,7 +354,7 @@ TCustomString<TCharType> TCustomString<TCharType>::operator+(const TCharType* So
 template <class TCharType>
 TCustomString<TCharType>& TCustomString<TCharType>::operator +=(const TCustomString<TCharType> &Source)
 {
-	TStrBuf<TCharType>::Concat(FData, Source.FData->Data(),  Source.FData->Length());
+	TStrBuf<TCharType>::Concat(FData, Source.FData->t_str(),  Source.FData->Length());
 	return *this;
 }
 
