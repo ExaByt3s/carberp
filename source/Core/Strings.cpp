@@ -1222,16 +1222,17 @@ int StrCompare(const char* Str1, const char* Str2)
 }
 
 //------------------------------------------------------------------------------
-PCHAR STR::Scan(PCHAR Str, char C)
+PCHAR STR::Scan(const char* Str, char C)
 {
 	// Функция возвращает указатель на символ С;
-	if (Str == NULL)
-		return NULL;
-	PCHAR Tmp = Str;
-	while (*Tmp != C && *Tmp != 0) Tmp++;
-	if (*Tmp == 0 && C != 0)
-		Tmp = NULL;
-	return Tmp;
+
+	if (Str != NULL)
+		while (*Str != 0)
+		{
+			if (*Str == C) return (PCHAR)Str;
+			Str++;
+		}
+	return NULL;
 }
 //------------------------------------------------------------------------------
 
@@ -1268,7 +1269,7 @@ inline bool IsStrEnd(PCHAR Str, DWORD Len, DWORD Pos)
 }
 
 
-int STR::Pos(PCHAR Str, PCHAR SubStr, DWORD StrLen, bool CaseSensetive)
+int STR::Pos(const char* Str,  const char*  SubStr, DWORD StrLen, bool CaseSensetive)
 {
 	// Функция ищет подстроку _SubStr в строке _Str
 	if( !Str || !SubStr )
@@ -1282,11 +1283,11 @@ int STR::Pos(PCHAR Str, PCHAR SubStr, DWORD StrLen, bool CaseSensetive)
 	DWORD Pos = 0;
 	DWORD Pos1 = 0;
 	// Проходим циклом до конца строки
-	PCHAR p = Str;
+	char* p = (char*)Str;
 
 	while (!IsStrEnd(p, StrLen, Pos))
 	{
-		PCHAR k = SubStr;
+		const char* k = SubStr;
 
 
 		char PC = *p;
@@ -1302,7 +1303,7 @@ int STR::Pos(PCHAR Str, PCHAR SubStr, DWORD StrLen, bool CaseSensetive)
 		if ( PC == KC )
 		{
 			char* p1 = p;
-			char* k1 = k;
+			const char* k1 = k;
 			Pos1 = Pos;
 			s = 0;
 			// Определяем количество совпадений
