@@ -435,11 +435,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\CabPacker.h"
+				RelativePath="..\..\Source\Common\CabPacker.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\CabPacker.h"
+				RelativePath="..\..\Source\RuBnk\CabPacker.h"
 				>
 			</File>
 			<File
@@ -684,6 +684,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\WndUtils.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\Yandex.h"
 				>
 			</File>
 			<File
@@ -1000,6 +1004,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\WndUtils.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\Yandex.cpp"
 				>
 			</File>
 			<File
