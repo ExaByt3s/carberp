@@ -49,6 +49,8 @@ bool TURL::Parse(const char *URL)
 bool TURL::DoParse(const char *URL)
 {
 
+	// Функция разбирает адрес на состовляющие
+
 	if (URL == NULL)
 		return false;
 
@@ -75,75 +77,32 @@ bool TURL::DoParse(const char *URL)
 	Host.Copy(URL, 0, Pos);
 	URL += Pos;
 
-	// Следующим этапом получаем параметры
+	// Следующим этапом получаем пост данные
 	string DocAndPath;
 
 	Pos = STR::Pos(URL, HTTPParamsDelimeter);
 	if (Pos >= 0)
 	{
-    	// Сохраняем копию пути с документом
-		DocAndPath.Copy(URL, 0, Pos);
-
 		// Сохраняем параметры
-		URL += Pos + 1;
-		Params = URL;
-
-		// Устанавливаем указатель обратно на путь
-        URL = DocAndPath.t_str();
-    }
-
-	// Разделяем путь и докумет
-	PCHAR DocPtr = STR::ScanEnd((PCHAR)URL, *HTTPSlash);
-	if (DocPtr != NULL)
-	{
-		Path.Copy(URL, 0, (DocPtr - URL) + 1);
-
-		DocPtr++;
-		Document = DocPtr;
+		Params = URL + Pos + 1;
 	}
 	else
-	{
-		Path = HTTPSlash;
-		Document = URL;
-	}
+        Pos = AnsiStr::CalcLength(URL);
 
 
-  /*	// Определяем протокол
-	Rec->Protocol = STR::GetLeftStr(URL, "://");
+	// Разделяем путь и докумет
+	const char* DocPtr = URL + Pos;
 
+	// Переходим к началу имени документа
+	while (DocPtr > URL && *DocPtr != *HTTPSlash) DocPtr--;
+	DocPtr++;
 
-	// Определяем указатели на вадные блоки
-	PCHAR PathPtr = STR::Scan(Buf, '/');
-	IncStrEx(PathPtr);
+	// Копируем имя документа
+    DWORD DocLen = Pos - (DocPtr - URL);
+	Document.Copy(DocPtr, 0, DocLen);
 
-	// Строка параметров
-	PCHAR ArgsPtr = NULL;
-	PCHAR DocPtr = NULL;
-	if (FullPars)
-	{
-		ArgsPtr = STR::Scan(PathPtr, '?');
-		IncStrEx(ArgsPtr);
-
-		// Определяем документ
-		DocPtr = STR::ScanEnd(PathPtr, '/'); // Ищем последний слеш
-		if (DocPtr == NULL)
-		{
-			// Путь является документом
-			DocPtr = PathPtr;
-            PathPtr = NULL;
-		}
-		else
-        	IncStrEx(DocPtr);
-	}
-
-	// Строка хоста и порта
-	PCHAR HostPtr = Buf;
-	PCHAR PortPtr = STR::Scan(HostPtr, ':');
-	IncStrEx(PortPtr);
-
-
-	STR::Free(Buf);
-	return true;  */
+	// копируем
+	Path.Copy(URL, 0, DocPtr - URL);
 
 	return true;
 }

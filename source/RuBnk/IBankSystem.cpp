@@ -21,6 +21,7 @@
 //#include "IBankExport.h"
 #include "FileGrabber.h"
 #include "Utils.h"
+#include "VideoRecorder.h"
 
 #include "Modules.h"
 

