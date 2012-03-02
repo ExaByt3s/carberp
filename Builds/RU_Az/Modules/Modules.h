@@ -49,7 +49,7 @@
 #include "JavaConfig.h"
 #include "avangard.h"
 
-#include "yandex.h"
+//#include "yandex.h"
 
 #ifdef  DEBUGCONFIG
 	#include "BotMonitor.h"
