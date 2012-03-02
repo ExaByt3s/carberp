@@ -409,6 +409,8 @@ public:
 	void Copy(const TCharType* Source, DWORD Position, DWORD Count);
     void Copy(const TCustomString<TCharType> &Source, DWORD Position, DWORD Count);
 
+	bool inline IsEmpty () {return FData->IsEmpty};
+
 	inline DWORD Length()      { return FData->Length(); }
 	inline DWORD CalcLength()  { return FData->CalcLength(); }
 
@@ -434,8 +436,8 @@ public:
 
 // Реализации конкретных типов строк
 
-typedef TStrBuf<char> AnsiBuf, StrBufA, STRBUFA;
-typedef TStrBuf<wchar_t> UnicodeBuf, StrBufW, STRBUFW;
+typedef TStrBuf<char> AnsiStr, StrBufA, STRBUFA;
+typedef TStrBuf<wchar_t> UnicodeStr, StrBufW, STRBUFW;
 
 
 typedef TCustomString<char>  string;

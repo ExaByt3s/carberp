@@ -1569,7 +1569,7 @@ DWORD STR::ToDWORD( const char* s )
 //------------------------------------------------------------------------------
 DWORD STR::GetHash(PCHAR Str, DWORD Len, bool LowerCase)
 {
-    return AnsiBuf::Hash(Str, Len, LowerCase);
+    return AnsiStr::Hash(Str, Len, LowerCase);
 }
 
 /*
@@ -1805,7 +1805,7 @@ PWCHAR WSTR::ScanEnd(PWCHAR Str, WCHAR C)
 
 DWORD WSTR::GetHash(const PWCHAR Str, DWORD Len, bool LowerCase)
 {
-    return UnicodeBuf::Hash(Str, Len, LowerCase);
+    return UnicodeStr::Hash(Str, Len, LowerCase);
 }
 /*
 {

