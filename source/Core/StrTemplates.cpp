@@ -80,7 +80,7 @@ void TStrBuf<TCharType>::Release(TStrBuf* &Buf)
 
 
 template <class TCharType>
-void  TStrBuf<TCharType>::SetSize(DWORD NewSize)
+void  TStrBuf<TCharType>::SetSize(DWORD NewSize, bool CopyData)
 {
 	// Функция устанавливает новый размер буфера
 	if (FSize == NewSize) return;
@@ -88,22 +88,26 @@ void  TStrBuf<TCharType>::SetSize(DWORD NewSize)
 	TCharType *Temp = FData;
 
 	FData = (TCharType *)HEAP::Alloc((NewSize + 1) * sizeof(TCharType));
+	FLength = 0;
 
 	FSize = NewSize;
 	if (Temp != NULL)
 	{
 		// Копируем старые данные
-		DWORD ToCopy = Min(FSize, FLength);
-		m_memcpy(FData, Temp, ToCopy * sizeof(TCharType));
+		if (CopyData)
+		{
+			DWORD ToCopy = Min(FSize, FLength);
+			m_memcpy(FData, Temp, ToCopy * sizeof(TCharType));
+            FLength = ToCopy;
+        }
 		HEAP::Free(Temp);
-		FLength = ToCopy;
-    }
+	}
 
 }
 
 
 template <class TCharType>
- TStrBuf<TCharType>* TStrBuf<TCharType>::Unique(int NewSize)
+ TStrBuf<TCharType>* TStrBuf<TCharType>::Unique(int NewSize, bool CopyData)
 {
 	// Функция уникализирует строку
 
@@ -112,7 +116,7 @@ template <class TCharType>
 	if (FRefCount == 1)
 	{
 		if (NewSize >= 0)
-			SetSize(NewSize);
+			SetSize(NewSize, CopyData);
 		return this;
     }
 
@@ -120,7 +124,8 @@ template <class TCharType>
 	DWORD Size = (NewSize >= 0)? NewSize : FSize;
 	DWORD Len  = Length();
 	TStrBuf<TCharType>* Res = new TStrBuf<TCharType>(Size);
-	Res->Copy(FData, 0, Len);
+	if (CopyData)
+		Res->Copy(FData, 0, Len);
 
 	FRefCount--;
 	return Res;
@@ -295,6 +300,14 @@ TCustomString<TCharType>::TCustomString()
 //----------------------------------------------------------------------------
 
 template <class TCharType>
+TCustomString<TCharType>::TCustomString(DWORD StrLen)
+{
+    FData = new TStrBuf<TCharType>(StrLen);
+}
+//----------------------------------------------------------------------------
+
+
+template <class TCharType>
 TCustomString<TCharType>::TCustomString(const TCustomString<TCharType> &Source)
 {
 	FData = Source.FData->AddRef();
@@ -337,9 +350,9 @@ void TCustomString<TCharType>::Copy(const TCustomString<TCharType> &Source, DWOR
 template <class TCharType>
 TCustomString<TCharType>& TCustomString<TCharType>::operator=(const TCharType* Source)
 {
-
-	TStrBuf<TCharType>::Release(FData);
-	FData = new TStrBuf<TCharType>(Source);
+	DWORD Len = TStrBuf<TCharType>::CalcLength(Source);
+	FData = FData->Unique(Len, false);
+	FData->Copy(Source, 0, Len);
 	return *this;
 }
 //----------------------------------------------------------------------------

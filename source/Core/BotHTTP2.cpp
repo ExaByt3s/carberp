@@ -4,6 +4,7 @@
 #pragma hdrstop
 
 #include "BotHTTP2.h"
+#include "BotHTTP.h"
 
 //---------------------------------------------------------------------------
 
@@ -19,21 +20,35 @@ TURL::TURL(const char * aURL)
 string TURL::URL()
 {
 	string R = Protocol;
+	R += HTTPProtocolDelimeter;
 	R += Host;
 	R += Path;
+	R += Document;
 
 	return R;
 }
 
+
 void TURL::Clear()
 {
-
+	Protocol = "";
+	Host = "";
+	Path = "";
+	Document = "";
+	Params = "";
+	Port = HTTPDefaultPort;
 }
-
 
 bool TURL::Parse(const char *URL)
 {
 	Clear();
+    return DoParse(URL);
+}
+
+
+bool TURL::DoParse(const char *URL)
+{
+
 	if (URL == NULL)
 		return false;
 
@@ -56,8 +71,42 @@ bool TURL::Parse(const char *URL)
 		return true;
 	}
 
+	// Сохраняем хост и переводуим указатель на начало пути
 	Host.Copy(URL, 0, Pos);
-	URL += Pos + 1;
+	URL += Pos;
+
+	// Следующим этапом получаем параметры
+	string DocAndPath;
+
+	Pos = STR::Pos(URL, HTTPParamsDelimeter);
+	if (Pos >= 0)
+	{
+    	// Сохраняем копию пути с документом
+		DocAndPath.Copy(URL, 0, Pos);
+
+		// Сохраняем параметры
+		URL += Pos + 1;
+		Params = URL;
+
+		// Устанавливаем указатель обратно на путь
+        URL = DocAndPath.t_str();
+    }
+
+	// Разделяем путь и докумет
+	PCHAR DocPtr = STR::ScanEnd((PCHAR)URL, *HTTPSlash);
+	if (DocPtr != NULL)
+	{
+		Path.Copy(URL, 0, (DocPtr - URL) + 1);
+
+		DocPtr++;
+		Document = DocPtr;
+	}
+	else
+	{
+		Path = HTTPSlash;
+		Document = URL;
+	}
+
 
   /*	// Определяем протокол
 	Rec->Protocol = STR::GetLeftStr(URL, "://");

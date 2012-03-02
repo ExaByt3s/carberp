@@ -338,7 +338,7 @@ private:
 	TCharType* FData; // Буфкр данных
 
 	void AllocMem(DWORD aSize);
-	void SetSize(DWORD NewSize);
+	void SetSize(DWORD NewSize, bool CopyData = true);
 public:
 
 	TStrBuf(DWORD aSize);
@@ -349,7 +349,7 @@ public:
 	TStrBuf*  AddRef();
 	static void  Release(TStrBuf* &Buf);
 
-	TStrBuf* Unique(int NewSize);
+	TStrBuf* Unique(int NewSize, bool CopyData = true);
 	TStrBuf* Unique() { return Unique(-1); }
 
 	inline TCharType* t_str() const { return FData; };
@@ -398,8 +398,9 @@ class TCustomString : public TBotClass
 private:
     TStrBuf<TCharType> *FData;
 public:
-    TCustomString();
-	TCustomString(const TCustomString &Source);
+	TCustomString();
+	TCustomString(DWORD StrLen);
+    TCustomString(const TCustomString &Source);
     TCustomString(const TStrBuf<TCharType> &Source);
 	TCustomString(const TCharType* Source);
 
