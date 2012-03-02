@@ -782,7 +782,7 @@ static PCHAR GetJavaPatcherURL()
 	PCHAR URL = NULL;
 	do
 	{
-		#ifdef JavaConfigH
+		#ifndef JavaConfigH
 			URL = GetJavaScriptURL(0);//JavaPatcherURLPath);
 		#else
 			URL = GetBotScriptURL(0, 0);//JavaPatcherURLPath); 

