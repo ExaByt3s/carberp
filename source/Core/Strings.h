@@ -145,7 +145,7 @@ namespace STR
 	// Находит позицию строки SubStr  в строке Str
 	// Если значение StrLen то поиск будет вестись до
 	// нулевого символа
-	int Pos(PCHAR Str, PCHAR SubStr, DWORD StrLen = 0, bool CaseSensetive = true);
+	int Pos(const char* Str, const char* SubStr, DWORD StrLen = 0, bool CaseSensetive = true);
 
 	// Копирует с позиции Position строки Source Count символов в
 	// строку Destination
@@ -160,9 +160,8 @@ namespace STR
 	PCHAR Replace(PCHAR Str, PCHAR SrcStr, PCHAR DstStr, DWORD StrLen = 0);
 
 
-
 	// Функция возвращает указатель на символ С
-	PCHAR Scan(PCHAR Str, char C);
+	PCHAR Scan(const char* Str, char C);
 
 	// Функция возвращает указатель на последний символ С
 	PCHAR ScanEnd(PCHAR Str, char C);
@@ -326,7 +325,7 @@ namespace Strings
 
 
 #define CharIsDigit(C)  ((C >= '0') && (C <= '9'))
-
+#define LowerChar(C) if (C >= 'A' && C <= 'Z') {C = C + ('a'-'A');}
 
 // Класс, текстовый буфер
 template <class TCharType>
@@ -339,7 +338,7 @@ private:
 	TCharType* FData; // Буфкр данных
 
 	void AllocMem(DWORD aSize);
-	void SetSize(DWORD NewSize);
+	void SetSize(DWORD NewSize, bool CopyData = true);
 public:
 
 	TStrBuf(DWORD aSize);
@@ -350,21 +349,27 @@ public:
 	TStrBuf*  AddRef();
 	static void  Release(TStrBuf* &Buf);
 
-	TStrBuf* Unique(DWORD NewSize);
-	TStrBuf* Unique() {return Unique(0);};
+	TStrBuf* Unique(int NewSize, bool CopyData = true);
+	TStrBuf* Unique() { return Unique(-1); }
 
-	inline TCharType* Data() {return FData;};
+	inline TCharType* t_str() const { return FData; };
 
 	DWORD inline Length() { return FLength; }
 	DWORD static CalcLength(const TCharType *Str);
 	DWORD CalcLength();
 
-	void Copy(const TCharType* Source,  DWORD SourceLen = 0);
+	void Copy(const TCharType* Source, DWORD Position,  DWORD Count);
+	void Copy(const TCharType* Source);
 	void Concat(const TCharType* Str, DWORD StrLen = 0);
 	void static Concat(TStrBuf* &Buf, const TCharType* Str, DWORD StrLen);
 
-	int static Compare(const TCharType* Str1, const TCharType* Str2);
+	// Функциии для расчёта хэша
+	DWORD static Hash(const TCharType* Str, DWORD Len = 0, bool LowerCase = false);
+	DWORD inline Hash(DWORD Len = 0, bool LowerCase = false);
 
+	// Функции сравнения строк
+	int static Compare(const TCharType* Str1, const TCharType* Str2);
+	int inline Compare(const TCharType* Str);
 
 	bool static IsEqual(TStrBuf* Str1, const TCharType* Str2);
 	bool static IsEqual(TStrBuf* Str1, TStrBuf* Str2);
@@ -393,17 +398,23 @@ class TCustomString : public TBotClass
 private:
     TStrBuf<TCharType> *FData;
 public:
-    TCustomString() { FData = new TStrBuf<TCharType>; };
+	TCustomString();
+	TCustomString(DWORD StrLen);
     TCustomString(const TCustomString &Source);
-	TCustomString(DWORD Size);
+    TCustomString(const TStrBuf<TCharType> &Source);
 	TCustomString(const TCharType* Source);
 
 	~TCustomString() { TStrBuf<TCharType>::Release(FData); }
 
-	inline DWORD Length() { return FData->Length(); }
-	inline DWORD CalcLength() { return FData->CalcLength(); }
+	void Copy(const TCharType* Source, DWORD Position, DWORD Count);
+    void Copy(const TCustomString<TCharType> &Source, DWORD Position, DWORD Count);
 
-	TCharType* t_str() { return FData->Data(); }
+	inline DWORD Length()      { return FData->Length(); }
+	inline DWORD CalcLength()  { return FData->CalcLength(); }
+
+    DWORD inline Hash(DWORD Len = 0, bool LowerCase = false) {return FData->Hash(Len, LowerCase); }
+
+	inline TCharType* t_str() const { return FData->t_str(); }
 
 	TCustomString& operator =(const TCustomString &Source);
 	TCustomString& operator =(const TCharType* Source);

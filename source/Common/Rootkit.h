@@ -9,7 +9,7 @@ void HookZwResumeThread();
 void HookZwOpenFile();
 void HookZwCreateFile();
 
-DWORD WINAPI RootkitThread( LPVOID lpData, LPVOID, LPVOID );
+DWORD WINAPI RootkitThread(LPVOID);
 
 
 void ProtectPage( LPVOID lpAddr, DWORD dwParams );

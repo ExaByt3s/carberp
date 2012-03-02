@@ -908,9 +908,35 @@ bool HTTPParser::SetHeaderValue(PCHAR Buf, DWORD BufSize, DWORD MaxBufSize, PCHA
 		return false;
 
 	// Определяем вхождение параметра
-	int Pos = STR::Pos(Buf, Header, BufSize);
+	int Pos = STR::Pos(Buf, Header, BufSize, false);
+
 	if (Pos < 0)
-		return false;
+	{
+		// Заголовок отсутствует, вставляем его
+		Pos = STR::Pos(Buf, LineBreak2, BufSize);
+		bool ContainHeaders = Pos >= 0;
+
+
+		PCHAR End = (ContainHeaders)? Buf + Pos : STR::End(Buf);
+
+        *End = 0;
+
+        PCHAR LB = (ContainHeaders)? LineBreak2 : NULL;
+		PCHAR Line = STR::New(5, LineBreak, Header, ": ", Value, LB);
+
+		bool  Result = false;
+		if ((End - Buf) + STR::Length(Line) <= MaxBufSize)
+		{
+			m_memcpy(End, Line, STR::Length(Line));
+			Result = true;
+        }
+
+		STR::Free(LB);
+
+		return Result;
+    }
+
+
 	PCHAR Tmp = Buf + Pos + StrCalcLength(Header);
 
 	while ((*Tmp != 0) && (*Tmp == ' ' || *Tmp == ':' )) Tmp++;

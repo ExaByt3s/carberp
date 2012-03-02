@@ -49,7 +49,6 @@
 #include "JavaConfig.h"
 #include "avangard.h"
 
-#define YandexModule
 
 
 #ifdef  DEBUGCONFIG

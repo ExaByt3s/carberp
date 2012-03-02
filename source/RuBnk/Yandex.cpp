@@ -1,7 +1,10 @@
 
+
 #include "PostDataGrabber.h"
 #include "BotDebug.h"
 #include "CabPacker.h"
+
+#define YandexModule //оповещение что модуль подключен
 
 namespace YANDEXSYSTEMS
 {
@@ -94,4 +97,3 @@ namespace YandexSearchJpg
 	}
 
 };
-

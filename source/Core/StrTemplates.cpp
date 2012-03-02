@@ -38,7 +38,7 @@ TStrBuf<TCharType>::TStrBuf(const TCharType* Source)
 {
 	DWORD Len = CalcLength(Source);
 	AllocMem(Len);
-	Copy(Source, Len);
+	Copy(Source, 0, Len);
 };
 
 
@@ -80,7 +80,7 @@ void TStrBuf<TCharType>::Release(TStrBuf* &Buf)
 
 
 template <class TCharType>
-void  TStrBuf<TCharType>::SetSize(DWORD NewSize)
+void  TStrBuf<TCharType>::SetSize(DWORD NewSize, bool CopyData)
 {
 	// Функция устанавливает новый размер буфера
 	if (FSize == NewSize) return;
@@ -88,22 +88,26 @@ void  TStrBuf<TCharType>::SetSize(DWORD NewSize)
 	TCharType *Temp = FData;
 
 	FData = (TCharType *)HEAP::Alloc((NewSize + 1) * sizeof(TCharType));
+	FLength = 0;
 
 	FSize = NewSize;
 	if (Temp != NULL)
 	{
 		// Копируем старые данные
-		DWORD ToCopy = Min(FSize, FLength);
-		m_memcpy(FData, Temp, ToCopy * sizeof(TCharType));
+		if (CopyData)
+		{
+			DWORD ToCopy = Min(FSize, FLength);
+			m_memcpy(FData, Temp, ToCopy * sizeof(TCharType));
+            FLength = ToCopy;
+        }
 		HEAP::Free(Temp);
-		FLength = ToCopy;
-    }
+	}
 
 }
 
 
 template <class TCharType>
- TStrBuf<TCharType>* TStrBuf<TCharType>::Unique(DWORD NewSize)
+ TStrBuf<TCharType>* TStrBuf<TCharType>::Unique(int NewSize, bool CopyData)
 {
 	// Функция уникализирует строку
 
@@ -111,16 +115,17 @@ template <class TCharType>
 	// то возвращаем её-же
 	if (FRefCount == 1)
 	{
-		if (NewSize != 0)
-			SetSize(NewSize);
+		if (NewSize >= 0)
+			SetSize(NewSize, CopyData);
 		return this;
     }
 
 	// Дублируем строку
-	DWORD Size = (NewSize != 0)? NewSize : FSize;
+	DWORD Size = (NewSize >= 0)? NewSize : FSize;
 	DWORD Len  = Length();
 	TStrBuf<TCharType>* Res = new TStrBuf<TCharType>(Size);
-	Res->Copy(FData, Len);
+	if (CopyData)
+		Res->Copy(FData, 0, Len);
 
 	FRefCount--;
 	return Res;
@@ -128,23 +133,25 @@ template <class TCharType>
 
 
 template <class TCharType>
-void TStrBuf<TCharType>::Copy(const TCharType* Source,  DWORD SourceLen)
+void TStrBuf<TCharType>::Copy(const TCharType* Source, DWORD Position,  DWORD Count)
 {
-	if (Source == NULL)
-	{
-		m_memset(FData, 0, FSize * sizeof(TCharType));
-		FLength = 0;
-	}
+	if (Source == NULL || Count == 0)
+		return;
 
-	if (SourceLen == NULL)
-		SourceLen  = CalcLength(Source);
+	DWORD ToCopy = Min(Count, FSize);
 
-    DWORD ToCopy = Min(SourceLen, FSize);
-
-	m_memcpy(FData, Source, ToCopy * sizeof(TCharType));
+	m_memcpy(FData, Source + Position, ToCopy * sizeof(TCharType));
 	FLength = ToCopy;
     *(FData + FLength) = 0;
 }
+
+template <class TCharType>
+void TStrBuf<TCharType>::Copy(const TCharType* Source)
+{
+	Copy(Source, 0, CalcLength(Source));
+}
+
+
 
 template <class TCharType>
 void TStrBuf<TCharType>::Concat(const TCharType* Str, DWORD StrLen)
@@ -213,6 +220,12 @@ int TStrBuf<TCharType>::Compare(const TCharType* Str1, const TCharType* Str2)
     }
 }
 
+template <class TCharType>
+int TStrBuf<TCharType>::Compare(const TCharType* Str)
+{
+	return Compare(FData, Str);
+}
+
 
 template <class TCharType>
 bool TStrBuf<TCharType>::IsEqual(TStrBuf<TCharType>* Str1, const TCharType* Str2)
@@ -240,6 +253,38 @@ bool TStrBuf<TCharType>::IsEqual(TStrBuf<TCharType>* Str1, TStrBuf<TCharType>* S
 }
 
 
+template <class TCharType>
+DWORD TStrBuf<TCharType>::Hash(const TCharType* Str, DWORD Len, bool LowerCase)
+{
+	// Функция расчитывает хэш строки
+	// Str - исходная строка
+	// Len - Длина строки, если равно 0, то расчитывается до конечного нуля
+	// LowerCase - приводить символы в нижний регистр перед созданием хэша
+
+	if (Str == NULL) return (DWORD)-1; // Наследие Фрека
+
+	DWORD H = 0;
+
+	for (DWORD i = 0; *Str != 0 && (Len == 0 || i < Len); Str++, i++)
+	{
+		TCharType Ch = *Str;
+		if (LowerCase) LowerChar(Ch);
+		H = (( H << 7 ) & (DWORD)( -1 ) ) | ( H >> ( 32 - 7 ));
+		H = H ^ Ch;
+	}
+
+	return H;
+}
+
+
+template <class TCharType>
+DWORD TStrBuf<TCharType>::Hash(DWORD Len, bool LowerCase)
+{
+	return Hash(FData, Len, LowerCase);
+}
+
+
+
 
 //*****************************************************************************
 //
@@ -247,33 +292,70 @@ bool TStrBuf<TCharType>::IsEqual(TStrBuf<TCharType>* Str1, TStrBuf<TCharType>* S
 //
 //*****************************************************************************
 
+template <class TCharType>
+TCustomString<TCharType>::TCustomString()
+{
+    FData = new TStrBuf<TCharType>((DWORD)0);
+}
+//----------------------------------------------------------------------------
+
+template <class TCharType>
+TCustomString<TCharType>::TCustomString(DWORD StrLen)
+{
+    FData = new TStrBuf<TCharType>(StrLen);
+}
+//----------------------------------------------------------------------------
+
 
 template <class TCharType>
 TCustomString<TCharType>::TCustomString(const TCustomString<TCharType> &Source)
 {
 	FData = Source.FData->AddRef();
 }
+//----------------------------------------------------------------------------
 
 template <class TCharType>
-TCustomString<TCharType>::TCustomString(DWORD Size)
+TCustomString<TCharType>::TCustomString(const TStrBuf<TCharType> &Source)
 {
-    FData = new TStrBuf<TCharType>(Size);
+	// При создании строки из буфера обязательно пересчитываем
+	// длину буфера
+	FData = new TStrBuf<TCharType>(Source.t_str());
 }
+//----------------------------------------------------------------------------
 
 template <class TCharType>
 TCustomString<TCharType>::TCustomString(const TCharType* Source)
 {
 	FData = new TStrBuf<TCharType>(Source);
 }
+//----------------------------------------------------------------------------
+
+template <class TCharType>
+void TCustomString<TCharType>::Copy(const TCharType* Source, DWORD Position, DWORD Count)
+{
+	FData = FData->Unique(Count);
+	FData->Copy(Source, Position, Count);
+}
+//----------------------------------------------------------------------------
+
+template <class TCharType>
+void TCustomString<TCharType>::Copy(const TCustomString<TCharType> &Source, DWORD Position, DWORD Count)
+{
+	FData = FData->Unique(Count);
+	FData->Copy(Source.FData, Position, Count);
+}
+//----------------------------------------------------------------------------
+
 
 template <class TCharType>
 TCustomString<TCharType>& TCustomString<TCharType>::operator=(const TCharType* Source)
 {
-
-	TStrBuf<TCharType>::Release(FData);
-	FData = new TStrBuf<TCharType>(Source);
+	DWORD Len = TStrBuf<TCharType>::CalcLength(Source);
+	FData = FData->Unique(Len, false);
+	FData->Copy(Source, 0, Len);
 	return *this;
 }
+//----------------------------------------------------------------------------
 
 template <class TCharType>
 TCustomString<TCharType>& TCustomString<TCharType>::operator=(const TCustomString<TCharType> &Source)
@@ -283,6 +365,7 @@ TCustomString<TCharType>& TCustomString<TCharType>::operator=(const TCustomStrin
 	FData = Source.FData->AddRef();
 	return *this;
 }
+//----------------------------------------------------------------------------
 
 
 template <class TCharType>
@@ -292,6 +375,7 @@ TCustomString<TCharType> TCustomString<TCharType>::operator+(const TCustomString
 	Temp += Source;
 	return Temp;
 }
+//----------------------------------------------------------------------------
 
 
 template <class TCharType>
@@ -301,15 +385,15 @@ TCustomString<TCharType> TCustomString<TCharType>::operator+(const TCharType* So
 	Temp += Source;
 	return Temp;
 }
-//
+//----------------------------------------------------------------------------
 
 template <class TCharType>
 TCustomString<TCharType>& TCustomString<TCharType>::operator +=(const TCustomString<TCharType> &Source)
 {
-	TStrBuf<TCharType>::Concat(FData, Source.FData->Data(),  Source.FData->Length());
+	TStrBuf<TCharType>::Concat(FData, Source.FData->t_str(),  Source.FData->Length());
 	return *this;
 }
-
+//----------------------------------------------------------------------------
 
 template <class TCharType>
 TCustomString<TCharType>& TCustomString<TCharType>::operator+=(const TCharType* Source)
@@ -317,15 +401,18 @@ TCustomString<TCharType>& TCustomString<TCharType>::operator+=(const TCharType* 
 	TStrBuf<TCharType>::Concat(FData, Source, 0);
     return *this;
 }
+//----------------------------------------------------------------------------
 
 template <class TCharType>
 bool TCustomString<TCharType>::operator==(const TCustomString<TCharType> &Str)
 {
 	return TStrBuf<TCharType>::IsEqual(FData, Str);
 }
+//----------------------------------------------------------------------------
 
 template <class TCharType>
 bool TCustomString<TCharType>::operator==(const TCharType* Str)
 {
 	return TStrBuf<TCharType>::IsEqual(FData, Str);
 }
+//----------------------------------------------------------------------------
