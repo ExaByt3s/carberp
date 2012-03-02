@@ -487,10 +487,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\Ibank.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Common\IECacheUtils.h"
 				>
 			</File>
@@ -784,10 +780,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Hunter.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\RuBnk\Ibank.cpp"
 				>
 			</File>
 			<File

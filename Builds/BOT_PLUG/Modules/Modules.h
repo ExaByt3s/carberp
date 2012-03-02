@@ -42,6 +42,5 @@
 #include "bootkit.h"
 
 #include "IBankSystem.h"
-#include "Ibank.h"
 
 #include "FgrFilters.h"

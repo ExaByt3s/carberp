@@ -318,6 +318,7 @@ namespace DLLS
 	const static char commdlg32_dll[] = {'c','o','m','d','l','g','3','2','.','d','l','l',0};
 	const static char psapi_dll[]	  = {'p','s','a','p','i','.','d','l','l',0};
 	const static char shlwapi_dll[]	  = {'s','h','l','w','a','p','i','.','d','l','l',0};
+	const static char version_dll[]  = {'v','e','r','s','i','o','n','.','d','l','l',0};
 }
 
 PCHAR GetDLLName(TDllId ID)
@@ -348,6 +349,7 @@ PCHAR GetDLLName(TDllId ID)
 		case DLL_WINSPOOL:   Return(winspool_drv);
 		case DLL_COMANDLG32: Return(commdlg32_dll);
 		case DLL_ODBC32:     Return(odbc32_dll);
+		case DLL_VERSION:	 Return(version_dll);
 	}
 	return NULL;
 }
@@ -384,6 +386,7 @@ LPVOID GetProcAddressEx(PCHAR Dll, DWORD dwModule, DWORD dwProcNameHash )
 	const static char commdlg32_dll[] = {'c','o','m','d','l','g','3','2','.','d','l','l',0};
 	char psapi_dll[]	= {'p','s','a','p','i','.','d','l','l',0};
 	char shlwapi_dll[]	= {'s','h','l','w','a','p','i','.','d','l','l',0};
+	char version_dll[]  = {'v','e','r','s','i','o','n','.','d','l','l',0};
 
 	//-----------------------------------------------------------------------
 	HMODULE Module = NULL;
@@ -479,6 +482,8 @@ LPVOID GetProcAddressEx(PCHAR Dll, DWORD dwModule, DWORD dwProcNameHash )
 
 			case DLL_ODBC32:
 				DllName = (PCHAR)odbc32_dll;break;
+			case DLL_VERSION:
+				DllName = version_dll; break;
 			default:
 				return 0;
 		}

