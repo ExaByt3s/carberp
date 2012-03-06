@@ -164,7 +164,7 @@ void TStrBuf<TCharType>::Concat(const TCharType* Str, DWORD StrLen)
 	if (Str == NULL || StrLen == 0) return;
 
 	DWORD Len = Length();
-	DWORD FreeSize = FSize - Len;
+	DWORD FreeSize = FSize - Len - 1;
 	DWORD ToCopy = Min(FreeSize, StrLen);
 
 	TCharType* Temp = FData + Len;

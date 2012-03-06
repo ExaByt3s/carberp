@@ -24,7 +24,6 @@
 #include "StealthBrowser.h" // Скрытый браузер
 
 #include "KeyLogSystems.h" 
-#include "Yandex.h"
 
 
 #include "Hunter.h" 
