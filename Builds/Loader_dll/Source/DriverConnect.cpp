@@ -1,6 +1,11 @@
 #include "GetApi.h"
 #include "windows.h"
 #include "DriverConnect.h"
+#include "ntdll.h"
+#include  "Strings.h"
+
+#define		INJECT_FORCE_LOAD			0x10000
+
 
 //
 // Структура передается в драйвер(смотреть DriverIOControl)
@@ -23,6 +28,7 @@ typedef struct __TNOTIFY_LOAD_MODULE{
 	ULONG Size;
 	ULONG AttachCount;		// number of attach attempts
 	ULONG Flags	;			// 
+	DWORD ThreadId;			//	
 }TNOTIFY_LOAD_MODULE,*PTNOTIFY_LOAD_MODULE;
 
 //
@@ -72,23 +78,23 @@ BOOL DriverIOTest(PUSER_INIT_NOTIFY puin,DWORD t_wait){
 
 
 //
-// Убирает модуль из списка длл для инжекта
-//	Module	-	то что вернула DriverAddInjectModule
+//  Убирает запрещает инжект в процесс
+//	ProcessName	-	имя процесса
 //	возвращает TRUE если все хорошо.
 //
-BOOL DriverRemoveInjectModule(PUSER_INIT_NOTIFY puin,PVOID Module)
+BOOL DriverRemoveInjectToProcess(PUSER_INIT_NOTIFY puin,PWCHAR ProcessName)
 {
 	TNOTIFY_REMOVE_MODULE nrm;
 	ULONG Stat;
 
-	nrm.injDesc = Module;
+	nrm.injDesc = ProcessName;
 
 // ожидаем 2 мин. ответа
 //
 	if(! DriverIOControl(puin,IO_CONTROL_DRIVER_REMOVE_MODULE,&nrm,sizeof(nrm),&Stat,sizeof(Stat),120*1000) )
 			return NULL;
 	
-	return Stat ;
+	return Stat;
 };
 
 
@@ -104,8 +110,6 @@ PVOID DriverAddInjectModule(PUSER_INIT_NOTIFY puin, PVOID Module,PCHAR TargetPro
 	TNOTIFY_LOAD_MODULE nlm;
 	PVOID Stat = NULL;
 
-	pOutputDebugStringW(L"[DriverAddInjectModule]		\n");
-
 
 	nlm.AttachCount = -1;
 	nlm.Flags		= Flags;
@@ -118,9 +122,77 @@ PVOID DriverAddInjectModule(PUSER_INIT_NOTIFY puin, PVOID Module,PCHAR TargetPro
 	if(! DriverIOControl(puin,IO_CONTROL_DRIVER_LOAD_MODULE,&nlm,sizeof(nlm),&Stat,sizeof(Stat),120*1000) )
 			return NULL;
 
+	
 	return Stat ;
 };
 
+//	регистрирует GlobalCallback
+//	ThreadId - поток в котором будет вызывать CallBack процедура	
+//	CallBack - CallBack процедура
+//	lParam	 -	дополнительный параметр, передается в CallBack
+BOOL DriverRegisterGlobalCallback (PUSER_INIT_NOTIFY puin ,DWORD ThreadId,TGlobalCallBack CallBack,LPVOID lParam)
+{
+	struct {
+		HANDLE				ProcessId;
+		HANDLE				ThreadId;
+		TGlobalCallBack		callback;
+		PVOID				lParam;
+	}gc;
+	ULONG Stat = 0;
+
+	gc.ProcessId =  (HANDLE)pGetCurrentProcessId();
+	gc.ThreadId = (HANDLE)ThreadId;
+	gc.callback = CallBack;
+	gc.lParam	= lParam;
+
+	// ожидаем 2 мин. ответа
+	//
+
+
+	if(! DriverIOControl(puin,IO_CONTROL_DRIVER_REGISTER_GLOBALCALLBACK,&gc,sizeof(gc),&Stat,sizeof(Stat),120*1000) )
+			return NULL;
+
+	return Stat ;
+};
+
+
+
+//
+//	Посылает данные в GlobalCallBack
+//	ThreadId		-	Поток какой получит эти данные,если 0 все зарегистрированные потоки
+//	Memory			-	Указатель на данные
+//	SizeMemory		-	Размер памяти
+BOOL DriverSendDataToGlobalCallBackEx(PUSER_INIT_NOTIFY puin,HANDLE ThreadId,PVOID Memory,ULONG SizeMemory)
+{
+	struct {
+		HANDLE		ThreadId;
+		PVOID		Buffer;
+		ULONG		Size;
+	}gc;
+	ULONG Stat = 0;
+
+	gc.ThreadId			= (HANDLE)ThreadId;
+	gc.Buffer			= Memory;
+	gc.Size		= SizeMemory;
+
+	// ожидаем 2 мин. ответа
+	//
+	if(! DriverIOControl(puin,IO_CONTROL_DRIVER_SEND_DATA_TO_GLOBALCALLBACK,&gc,sizeof(gc),&Stat,sizeof(Stat),120*1000) )
+			return NULL;
+
+	return Stat ;
+};
+
+
+
+//
+//	Посылает данные в GlobalCallBack
+//	Memory			-	Указатель на данные
+//	SizeMemory		-	Размер памяти
+BOOL DriverSendDataToGlobalCallBack(PUSER_INIT_NOTIFY puin,PVOID Memory,ULONG SizeMemory)
+{
+	return DriverSendDataToGlobalCallBackEx(puin,0,Memory,SizeMemory);
+};
 
 
 
@@ -138,7 +210,6 @@ PVOID DriverAddInjectModule(PUSER_INIT_NOTIFY puin, PVOID Module,PCHAR TargetPro
 BOOL DriverIOControl(PUSER_INIT_NOTIFY uin,DWORD code,PVOID in_data,DWORD in_size,PVOID out_data,DWORD out_size,DWORD t_wait){
 	HANDLE	 hEvent;
 	HANDLE   hCompleat;
-	PWCHAR	 EventName;
 	BOOL	 err = TRUE;
 	PTNOTIFY	pNotify;
 
@@ -178,4 +249,24 @@ BOOL DriverIOControl(PUSER_INIT_NOTIFY uin,DWORD code,PVOID in_data,DWORD in_siz
 	pCloseHandle(hCompleat);
 	
 	return err;
+};
+
+
+//
+//	Проверяет будет ли инжектится в указанный процесс, какая либо длл
+//	uProcessName	-	имя процесса
+//
+BOOL CheckIsInjectToProcess(PUSER_INIT_NOTIFY puin, PWCHAR uProcessName)
+{
+	ULONG Result = 0;
+	UNICODE_STRING uStr;
+	uStr.Length = uStr.MaximumLength = m_wcslen(uProcessName)*sizeof(WCHAR);
+	uStr.Buffer = uProcessName;
+
+	// ожидаем 2 мин. ответа
+	//
+	if(! DriverIOControl(puin,IO_CONTROL_DRIVER_CHEK_PROCESS,&uStr,sizeof(uStr),&Result,sizeof(Result),120*1000) )
+			return NULL;
+
+	return Result != 0;
 };
