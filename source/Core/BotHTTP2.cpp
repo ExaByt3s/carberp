@@ -59,7 +59,7 @@ bool TURL::DoParse(const char *URL)
 	{
 		// Разделитель найден
 		Protocol.Copy(URL, 0, Pos);
-		URL += Pos + StrBufA::CalcLength(HTTPProtocolDelimeter);
+		URL += Pos + STRA::Length(HTTPProtocolDelimeter);
     }
 
 	// Определяем позицию начала пути
@@ -87,7 +87,7 @@ bool TURL::DoParse(const char *URL)
 		Params = URL + Pos + 1;
 	}
 	else
-        Pos = AnsiStr::CalcLength(URL);
+        Pos = AnsiStr::Length(URL);
 
 
 	// Разделяем путь и докумет

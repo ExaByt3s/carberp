@@ -6,6 +6,8 @@
 #define IO_CONTROL_DRIVER_REMOVE_MODULE						2
 #define IO_CONTROL_DRIVER_REGISTER_GLOBALCALLBACK			3
 #define IO_CONTROL_DRIVER_SEND_DATA_TO_GLOBALCALLBACK		4
+#define IO_CONTROL_DRIVER_CHEK_PROCESS						5
+
 
 typedef struct __USER_INIT_NOTIFY{
 	PVOID pInfoNotifyArea;				//	указатель куда нуно писать данные драйверу
@@ -36,7 +38,7 @@ PVOID DriverAddInjectModule(PUSER_INIT_NOTIFY puin, PVOID Module,PCHAR TargetPro
 //	ProcessName	-	имя процесса
 //	возвращает TRUE если все хорошо.
 //
-BOOL DriverRemoveInjectToProcess(PUSER_INIT_NOTIFY puin,PCHAR ProcessName);
+BOOL DriverRemoveInjectToProcess(PUSER_INIT_NOTIFY puin,PWCHAR ProcessName);
 
 //
 //	регистрирует GlobalCallback
@@ -51,5 +53,12 @@ BOOL DriverRegisterGlobalCallback (PUSER_INIT_NOTIFY puin ,DWORD ThreadId,TGloba
 //	Memory			-	Указатель на данные
 //	SizeMemory		-	Размер памяти
 BOOL DriverSendDataToGlobalCallBack(PUSER_INIT_NOTIFY puin, PVOID Memory, ULONG SizeMemory);
+
+
+//
+//	Проверяет будет ли инжектится в указанный процесс, какая либо длл
+//	uProcessName	-	имя процесса
+//
+BOOL CheckIsInjectToProcess(PUSER_INIT_NOTIFY puin, PWCHAR uProcessName);
 
 #endif

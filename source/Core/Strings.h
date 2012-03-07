@@ -329,7 +329,150 @@ namespace Strings
 #define CharIsDigit(C)  ((C >= '0') && (C <= '9'))
 #define LowerChar(C) if (C >= 'A' && C <= 'Z') {C = C + ('a'-'A');}
 
+
+//*********************************************************************
+//  Шаблонный клас с набором методов для работы со строковыми массивами
+//*********************************************************************
+template <class TChar>
+class STRUTILS : TBotClass
+{
+public:
+	// Функция возвращает истину если строка пустая
+	bool static IsEmpty(const TChar* Str);
+
+	// Функция расчитывает длину строки
+	DWORD static Length(const TChar* Str);
+
+	// Функция возвращает истину если строки идентичны
+	bool static Equal(const TChar* Str1, const TChar* Str2);
+
+	// Функция сравнивает две строки
+	int static Compare(const TChar* Str1, const TChar* Str2);
+
+	// Функция расчитывает хэш строки
+	DWORD static Hash(const TChar* Str, DWORD Len, bool LowerCase);
+	DWORD static Hash(const TChar* Str);
+};
+
+
+typedef STRUTILS<char> STRA, AnsiStr;
+typedef STRUTILS<wchar_t> STRW, UnicodeStr;
+
+
+
+
+
+//*********************************************************************
+//  Методы для работы со специализированным буфером строк
+//  при создании строки выделяется дополнительный, служебный
+//  заголовок TStrRec. Заголовок находится по отрицательному
+//  смещению Str - sizeof(TStrRec)
+//*********************************************************************
+
+// Объявление этого имени включает блочное выравнивание памяти строк
+// Память будет выделяться кратно STRING_BLOCK_SIZE
+
+#define USE_BLOCKS_STRINGS
+
+// Размер блоков строки
+#define STRING_BLOCK_SIZE 32
+
+
+// Объявление шаблонной функции
+#define STRBUFAPI(Result_Type) template<class TChar> Result_Type
+
+namespace STRBUF
+{
+	// Заголовок строки
+	struct TStrRec
+	{
+		DWORD Size;      // Размер буфера (символов)
+		DWORD Length;    // Реальный размер данных
+		DWORD RefCount;  // Количество ссылок
+    };
+
+
+	// Функция создаёт строку размером Size символов
+	// Длина строки устанавливается нулевой
+	STRBUFAPI(TChar*) Alloc(DWORD Size);
+
+	// Функция уменьшает счётчик ссылок и, при необходимости, уничтожает строку
+	STRBUFAPI(void) Release(TChar* &Str);
+
+	// Функция увеличивает счётчик ссылок строки и возвращает указатель на неё
+	STRBUFAPI(TChar*) AddRef(TChar* Str);
+
+	// Функция возвращает переменную зоголовок строки
+	STRBUFAPI(TStrRec&) GetRec(TChar* Str);
+
+	// Функция возвращает длину строки
+	STRBUFAPI(DWORD) inline Length(TChar *Str);
+
+	// Функция создаёт строку размера ResultStrSize и копирует из неё StrLen символов
+	// размер и длина, при необходимости, будут подогнаны под необходимые размеры
+	STRBUFAPI(TChar*) CreateFromStr(const TChar* Str, DWORD StrLen, DWORD ResultStrSize);
+
+	// Функция добавляет к строке Dst строку Src
+	STRBUFAPI(void) Append(TChar* &Dst, const TChar* Src, DWORD SrcLen);
+
+	// Функция копирует количество символов Count с позиции Pos
+    STRBUFAPI(void) Copy(TChar* &Dst, const TChar* Src, DWORD Pos, DWORD Count);
+}
+
+
+//*********************************************************************
+//  Шаблонный клас строки
+//*********************************************************************
+template <class TChar>
+class TString
+{
+public:
+	TString() : Data(0) {};
+	TString(DWORD StrBufSize);
+	TString(const TString& src);
+	TString(const TChar* src);
+
+	~TString();
+
+
+	DWORD Length() const;
+	DWORD CalcLength();
+	bool IsEmpty() const;
+
+	TChar* t_str() const;
+
+	void Copy(const TChar* Source, DWORD Position, DWORD Count);
+	void Copy(const TString &Source, DWORD Position, DWORD Count);
+
+	DWORD Hash();
+	DWORD Hash(DWORD Len, bool LowerChar);
+
+	TString& operator =(const TString &Source);
+	TString& operator =(const TChar* Source);
+	TString& operator +=(const TString &Source);
+	TString& operator +=(const TChar* Source);
+	TString operator +(const TString &Source);
+	TString operator +(const TChar* Source);
+	bool operator ==(const TString &Str);
+	bool operator ==(const TChar* Str);
+
+private:
+    TChar* Data;
+};
+
+
+typedef TString<char> string;
+typedef TString<wchar_t> wstring;
+
+
+#include "StrImplementation.cpp"
+
+
+
+
+/*
 // Класс, текстовый буфер
+
 template <class TCharType>
 class TStrBuf : public TBotClass
 {
@@ -376,6 +519,8 @@ public:
 	bool static IsEqual(TStrBuf* Str1, const TCharType* Str2);
 	bool static IsEqual(TStrBuf* Str1, TStrBuf* Str2);
 };
+
+
 
 
 
@@ -445,6 +590,6 @@ typedef TStrBuf<wchar_t> UnicodeStr, StrBufW, STRBUFW;
 typedef TCustomString<char>  string;
 typedef TCustomString<wchar_t>  wstring;
 
-
+*/
 //----------------------------------------------------------------------------
 #endif
