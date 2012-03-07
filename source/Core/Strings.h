@@ -48,6 +48,8 @@ bool WildCmp(PCHAR Buffer, PCHAR Mask);
 bool CompareUrl( char *MaskUrl, char *Url );
 
 WCHAR * AnsiToUnicode( char *AnsiString, DWORD dwStrLen );
+wchar_t* UTF8ToUnicode( const char* utf8String );
+char*    UTF8ToAnsi( const char* utf8String );
 
 //void AlertError( LPTSTR lpszFunction ) ;
 
