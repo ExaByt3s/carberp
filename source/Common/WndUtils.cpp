@@ -209,7 +209,7 @@ DWORD GetWndTextHash(HWND Wnd, bool LowerChar)
 		DWORD Len = (DWORD)pSendMessageA(Wnd, WM_GETTEXTLENGTH, 0, 0);
 		if (Len != 0)
 		{
-			StrBufA S(Len);
+			string S(Len);
 			pSendMessageA(Wnd, WM_GETTEXT, Len, (LPARAM)S.t_str());
 			return S.Hash(0, LowerChar);
 		}
@@ -221,7 +221,7 @@ DWORD GetWndTextHash(HWND Wnd, bool LowerChar)
 DWORD GetWndClassHash(HWND Wnd, bool CaseSensetive)
 {
 	//Возвращает хеш имени класса окна
-	StrBufA S(MAX_PATH);
+	string S(MAX_PATH);
 	pGetClassNameA(Wnd, S.t_str(), MAX_PATH);
 	return S.Hash(0, CaseSensetive);
 }

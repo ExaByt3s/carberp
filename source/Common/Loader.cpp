@@ -1450,6 +1450,9 @@ namespace DataSender
 			{
 				// В случае успешной отправки файла добавляем его в список
 				// удаления
+				if (Sended)
+					LDBG("Loader", "Файл успешно отправлен");
+
 				Strings::Add(Files, FileName);
 			}
 		}

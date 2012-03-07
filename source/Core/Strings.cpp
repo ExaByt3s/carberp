@@ -1569,7 +1569,7 @@ DWORD STR::ToDWORD( const char* s )
 //------------------------------------------------------------------------------
 DWORD STR::GetHash(PCHAR Str, DWORD Len, bool LowerCase)
 {
-    return AnsiStr::Hash(Str, Len, LowerCase);
+    return STRA::Hash(Str, Len, LowerCase);
 }
 
 /*
