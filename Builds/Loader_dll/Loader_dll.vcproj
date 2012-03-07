@@ -307,7 +307,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\DriverConnect.cpp"
+				RelativePath=".\Source\DriverConnect.cpp"
 				>
 			</File>
 			<File
@@ -339,7 +339,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Core\Splice.cpp"
+				RelativePath=".\Source\Splice.cpp"
 				>
 			</File>
 			<File
