@@ -424,7 +424,7 @@ namespace STRBUF
 //  Шаблонный клас строки
 //*********************************************************************
 template <class TChar>
-class TString
+class TString : public TBotClass
 {
 public:
 	TString() : Data(0) {};

