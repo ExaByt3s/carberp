@@ -1895,5 +1895,5 @@ bool TURL::DoParse(const char *URL)
 string THTTP::Get(const string &URL)
 {
 	// Функция загружает страницу с указанного адреса
-
+	return NULLSTR;
 }

