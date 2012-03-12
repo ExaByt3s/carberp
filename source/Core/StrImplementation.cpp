@@ -150,12 +150,26 @@ STRBUFAPI(TChar*) STRBUF::AddRef(TChar* Str)
 {
 	// Функция увеличивает счётчик ссылок строки и возвращает указатель на неё
 	if (Str)
-	{
-        GetRec(Str).RefCount++;
-	}
+		GetRec(Str).RefCount++;
 	return Str;
 }
 //----------------------------------------------------------------------------
+
+STRBUFAPI(void) STRBUF::Unique(TChar* &Str)
+{
+	// Функция уникализирует строку
+	if (Str)
+	{
+		TStrRec &R = GetRec<TChar>(Str);
+		if (R.RefCount > 1)
+		{
+			R.RefCount--;
+            Str = CreateFromStr(Str, R.Length, 0);
+        }
+    }
+}
+//----------------------------------------------------------------------------
+
 
 STRBUFAPI(STRBUF::TStrRec&) STRBUF::GetRec(TChar* Str)
 {
@@ -189,7 +203,6 @@ STRBUFAPI(TChar*) STRBUF::CreateFromStr(const TChar* Str, DWORD StrLen, DWORD Re
 		// Копируем данные строки
 		m_memcpy(Result, Str, StrLen * sizeof(TChar));
 		GetRec(Result).Length = StrLen;
-
 	}
 	return Result;
 }
@@ -201,7 +214,6 @@ STRBUFAPI(void) STRBUF::Append(TChar* &Dst, const TChar* Src, DWORD SrcLen)
 	// Функция добавляет к строке Dst строку Src
 	if (STRUTILS<TChar>::IsEmpty(Src))
 		return;
-
 
 
 	if (SrcLen == 0)
@@ -270,6 +282,86 @@ STRBUFAPI(void) STRBUF::Copy(TChar* &Dst, const TChar* Src, DWORD Pos, DWORD Cou
 		}
 	}
 }
+//----------------------------------------------------------------------------
+
+STRBUFAPI(void) _Insert_RePack(TChar* Buf, const TChar* Src, DWORD SrcLen, const TChar* Dst, DWORD DstLen, DWORD Position)
+{
+	// Функция упаковывает строку в контексте работы Insert
+	m_memcpy(Buf, Src, Position * sizeof(TChar));
+	Buf += Position;
+	Src += Position;
+	m_memcpy(Buf, Dst, DstLen * sizeof(TChar));
+	Buf += DstLen;
+	m_memcpy(Buf, Src, (SrcLen - Position) * sizeof(TChar));
+}
+
+
+STRBUFAPI(void) _Insert_Expand(TChar *Dst, DWORD DstLen,  const TChar *Src, DWORD SrcLen, DWORD Position)
+{
+	// Функция раздвигает строку и вставляет текст
+	TChar *StartPtr = Dst + Position;
+	TChar *EndPtr   = Dst + DstLen;
+	TChar *ToCopy   = Dst + (DstLen + SrcLen);
+
+	// Раздвигаем строку
+	while (EndPtr >= StartPtr)
+	{
+		*ToCopy = *EndPtr;
+		ToCopy--;
+		EndPtr--;
+    }
+
+    m_memcpy(StartPtr, Src, SrcLen);
+
+	// Закрываем строку
+    *(Dst + DstLen + SrcLen) = 0;
+}
+
+
+STRBUFAPI(void) STRBUF::Insert(TChar* &Buf, const TChar* Str, DWORD Position, DWORD StrLen)
+{
+	// Функция вставляет строку Str в буфер
+	if (STRUTILS<TChar>::IsEmpty(Str))
+		return;
+
+
+	if (Buf == NULL)
+	{
+		// Буфер пустой, если позиция вставки равна нулю, то создаём строку
+		// на основе вставляемой строки
+		if (Position == 0)
+        	Buf = CreateFromStr(Str, 0, 0);
+        return;
+    }
+
+	// Вставляем строку
+	if (StrLen == 0)
+		StrLen = STRUTILS<TChar>::Length(Str);
+
+	TStrRec &R = GetRec<TChar>(Buf);
+
+	// Проверяем позицию
+	if (Position > R.Length)
+		return;
+
+	// Определяем размер буфера
+	DWORD TotalLen = R.Length + StrLen;
+	if (R.Size < TotalLen || R.RefCount > 1)
+	{
+		// Создаём новую строку
+		TChar *Tmp = Alloc<TChar>(TotalLen);
+		_Insert_RePack<TChar>(Tmp, Buf, R.Length, Str, StrLen, Position);
+		Release<TChar>(Buf);
+		Buf = Tmp;
+	}
+	else
+    	_Insert_Expand(Buf, R.Length, Str, StrLen, Position);
+
+	// Вставляем данные
+	GetRec(Buf).Length = TotalLen;
+}
+
+//----------------------------------------------------------------------------
 
 
 
@@ -280,7 +372,7 @@ STRBUFAPI(void) STRBUF::Copy(TChar* &Dst, const TChar* Src, DWORD Pos, DWORD Cou
 #define STRFUNC(Result_Type) template<class TChar> Result_Type TString<TChar>
 #define STRCONSTRUCTOR() template<class TChar> TString<TChar>
 
-STRCONSTRUCTOR()::TString(DWORD StrBufSize)
+STRCONSTRUCTOR()::TString(unsigned long StrBufSize)
 {
 	Data = STRBUF::Alloc<TChar>(StrBufSize);
 }
@@ -304,15 +396,13 @@ STRCONSTRUCTOR()::~TString()
 
 STRFUNC(DWORD)::Length() const
 {
-	return STRBUF::Length<TChar>(Data);
+	return  STRBUF::Length<TChar>(Data);
 }
 
 STRFUNC(DWORD)::CalcLength()
 {
 	if (Data)
-	{
-    	STRBUF::GetRec<TChar>(Data).Length = STRUTILS<TChar>::Length(Data);
-	}
+		STRBUF::GetRec<TChar>(Data).Length = STRUTILS<TChar>::Length(Data);
 	return Length();
 }
 
@@ -324,7 +414,15 @@ STRFUNC(bool)::IsEmpty() const
 
 STRFUNC(TChar*)::t_str() const
 {
-	return Data;
+	// Функция возвращает указатель на данные
+	// В случае отсутствия данных функция возвращает
+	// указатель на пустую строку
+	return (Data)? Data : (TChar*)L"";
+}
+
+STRFUNC(void)::Clear()
+{
+	STRBUF::Release<TChar>(Data);
 }
 
 
@@ -339,6 +437,18 @@ STRFUNC(void)::Copy(const TString &Source, DWORD Position, DWORD Count)
 	STRBUF::Copy<TChar>(Data, Source.Data, Position, Count);
 }
 
+STRFUNC(void)::Insert(const TChar* Str, DWORD Position)
+{
+    STRBUF::Insert<TChar>(Data, Str, Position, 0);
+}
+
+
+STRFUNC(void)::Insert(const TString &Str, DWORD Position)
+{
+	STRBUF::Insert<TChar>(Buf, Str.Data, Position, Str.Length());
+}
+
+
 STRFUNC(DWORD)::Hash()
 {
 	return STRUTILS<TChar>::Hash(Data);
@@ -347,6 +457,11 @@ STRFUNC(DWORD)::Hash()
 STRFUNC(DWORD)::Hash(DWORD Len, bool LowerChar)
 {
 	return STRUTILS<TChar>::Hash(Data, Len, LowerChar);
+}
+
+STRFUNC(void)::Unique()
+{
+    STRBUF::Unique<TChar>(Data);
 }
 
 
@@ -404,3 +519,38 @@ STRFUNC(bool)::operator ==(const TChar* Str)
 {
 	return STRUTILS<TChar>::Equal(Data, Str);
 }
+
+STRFUNC(bool)::operator !=(const TString &Str)
+{
+	return !STRUTILS<TChar>::Equal(Data, Str.Data);
+}
+
+STRFUNC(bool)::operator !=(const TChar* Str)
+{
+	return !STRUTILS<TChar>::Equal(Data, Str);
+}
+
+STRFUNC(TChar)::operator[](const DWORD Index) const
+{
+	if (Index < Length())
+		return Data[Index];
+	else
+    	return 0;
+}
+
+
+
+STRFUNC(TChar&)::operator[](const DWORD Index)
+{
+	// В нормальном варианте  в случае ошибочного индекса
+	// нужно сгенерировать исключение, но бот не использует
+	// исключения. Есть потенциальная опастность в случае
+	// если индекс выйдет за пределы строки
+	if (Index < Length())
+	{
+    	Unique();
+		return Data[Index];
+	}
+}
+
+
