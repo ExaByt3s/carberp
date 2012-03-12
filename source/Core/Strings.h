@@ -67,10 +67,6 @@ char* trimall( char* s, char c = ' ' );
 //  строка тем больше разница в быстродействии
 // ----------------------------------------------------------------------------
 
-// Изменить размер буфера строки
-// Важно!!! Функция работает со строками которые созданы функцией StrNew
-//void StrSetLength(PCHAR &Str, DWORD NewLength);
-
 
 // Функция расчитывает длину строки сканируя ея в поисках завершаешего нуля
 DWORD StrCalcLength(const char* Buf);
@@ -332,6 +328,8 @@ namespace Strings
 
 //*********************************************************************
 //  Шаблонный клас с набором методов для работы со строковыми массивами
+//  Для того что-бы не писать множество шаблонных функций для
+//  однотипной
 //*********************************************************************
 template <class TChar>
 class STRUTILS : TBotClass
@@ -357,8 +355,6 @@ public:
 
 typedef STRUTILS<char> STRA, AnsiStr;
 typedef STRUTILS<wchar_t> STRW, UnicodeStr;
-
-
 
 
 
@@ -402,11 +398,14 @@ namespace STRBUF
 	// Функция увеличивает счётчик ссылок строки и возвращает указатель на неё
 	STRBUFAPI(TChar*) AddRef(TChar* Str);
 
+	// Функция уникализирует строку
+	STRBUFAPI(void) Unique(TChar* &Str);
+
 	// Функция возвращает переменную зоголовок строки
 	STRBUFAPI(TStrRec&) GetRec(TChar* Str);
 
 	// Функция возвращает длину строки
-	STRBUFAPI(DWORD) inline Length(TChar *Str);
+	STRBUFAPI(DWORD) Length(TChar *Str);
 
 	// Функция создаёт строку размера ResultStrSize и копирует из неё StrLen символов
 	// размер и длина, при необходимости, будут подогнаны под необходимые размеры
@@ -416,7 +415,10 @@ namespace STRBUF
 	STRBUFAPI(void) Append(TChar* &Dst, const TChar* Src, DWORD SrcLen);
 
 	// Функция копирует количество символов Count с позиции Pos
-    STRBUFAPI(void) Copy(TChar* &Dst, const TChar* Src, DWORD Pos, DWORD Count);
+	STRBUFAPI(void) Copy(TChar* &Dst, const TChar* Src, DWORD Pos, DWORD Count);
+
+	// Функция вставляет строку Str в буфер
+	STRBUFAPI(void) Insert(TChar* &Buf, const TChar* Str, DWORD Position, DWORD StrLen);
 }
 
 
@@ -428,24 +430,29 @@ class TString : public TBotClass
 {
 public:
 	TString() : Data(0) {};
-	TString(DWORD StrBufSize);
+	TString(unsigned long StrBufSize);
 	TString(const TString& src);
 	TString(const TChar* src);
 
 	~TString();
 
-
 	DWORD Length() const;
 	DWORD CalcLength();
 	bool IsEmpty() const;
+	void Clear();
 
-	TChar* t_str() const;
+	void Insert(const TChar* Str, DWORD Position);
+	void Insert(const TString &Str, DWORD Position);
 
 	void Copy(const TChar* Source, DWORD Position, DWORD Count);
 	void Copy(const TString &Source, DWORD Position, DWORD Count);
 
 	DWORD Hash();
 	DWORD Hash(DWORD Len, bool LowerChar);
+
+	void Unique();
+
+	TChar* t_str() const;
 
 	TString& operator =(const TString &Source);
 	TString& operator =(const TChar* Source);
@@ -455,6 +462,10 @@ public:
 	TString operator +(const TChar* Source);
 	bool operator ==(const TString &Str);
 	bool operator ==(const TChar* Str);
+	bool operator !=(const TString &Str);
+	bool operator !=(const TChar* Str);
+	TChar operator [](const DWORD Index) const;
+   	TChar& operator [](const DWORD Index);
 
 private:
     TChar* Data;
@@ -468,128 +479,29 @@ typedef TString<wchar_t> wstring;
 #include "StrImplementation.cpp"
 
 
-
-
-/*
-// Класс, текстовый буфер
-
-template <class TCharType>
-class TStrBuf : public TBotClass
-{
-private:
-	DWORD FSize;      // Размер выделенной памяти
-	DWORD FLength;    // Реальная длина строки
-	int   FRefCount;  // Количество ссылок на строку
-	TCharType* FData; // Буфкр данных
-
-	void AllocMem(DWORD aSize);
-	void SetSize(DWORD NewSize, bool CopyData = true);
-public:
-
-	TStrBuf(DWORD aSize);
-	TStrBuf(const TCharType* Source);
-
-	~TStrBuf() { HEAP::Free(FData);	}
-
-	TStrBuf*  AddRef();
-	static void  Release(TStrBuf* &Buf);
-
-	TStrBuf* Unique(int NewSize, bool CopyData = true);
-	TStrBuf* Unique() { return Unique(-1); }
-
-	inline TCharType* t_str() const { return FData; };
-
-	DWORD inline Length() { return FLength; }
-	DWORD static CalcLength(const TCharType *Str);
-	DWORD CalcLength();
-
-	void Copy(const TCharType* Source, DWORD Position,  DWORD Count);
-	void Copy(const TCharType* Source);
-	void Concat(const TCharType* Str, DWORD StrLen = 0);
-	void static Concat(TStrBuf* &Buf, const TCharType* Str, DWORD StrLen);
-
-	// Функциии для расчёта хэша
-	DWORD static Hash(const TCharType* Str, DWORD Len = 0, bool LowerCase = false);
-	DWORD inline Hash(DWORD Len = 0, bool LowerCase = false);
-
-	// Функции сравнения строк
-	int static Compare(const TCharType* Str1, const TCharType* Str2);
-	int inline Compare(const TCharType* Str);
-
-	bool static IsEqual(TStrBuf* Str1, const TCharType* Str2);
-	bool static IsEqual(TStrBuf* Str1, TStrBuf* Str2);
-};
-
-
-
-
-
-
-
-//***************************************************************
-//  Шаблон строки
+//****************************************************
+//  Макрос объявлен для устранения неоднозначности
+//  компиляции:
 //
-// Важно!!!
-// Если строка исполузуется в качестве буфера для работы
-// с WinApi её длина должна быть пересчитана принудительно
+//  if (true)
+//		return NULL;
 //
-//	string Path(MAX_PATH);
-//	SHGetSpecialFolderPathA(NULL, Path.c_str(), CSIDL_APPDATA, TRUE);
-//	Path.CalcLength();
-//  Path += "\\Data\\";
+//  неоднозначность компиляции решается уточнением
+//  типа
 //
-//***************************************************************
-template <class TCharType>
-class TCustomString : public TBotClass
-{
-private:
-    TStrBuf<TCharType> *FData;
-public:
-	TCustomString();
-	TCustomString(DWORD StrLen);
-    TCustomString(const TCustomString &Source);
-    TCustomString(const TStrBuf<TCharType> &Source);
-	TCustomString(const TCharType* Source);
-
-	~TCustomString() { TStrBuf<TCharType>::Release(FData); }
-
-	void Copy(const TCharType* Source, DWORD Position, DWORD Count);
-    void Copy(const TCustomString<TCharType> &Source, DWORD Position, DWORD Count);
-
-	bool inline IsEmpty () {return FData->IsEmpty};
-
-	inline DWORD Length()      { return FData->Length(); }
-	inline DWORD CalcLength()  { return FData->CalcLength(); }
-
-    DWORD inline Hash(DWORD Len = 0, bool LowerCase = false) {return FData->Hash(Len, LowerCase); }
-
-	inline TCharType* t_str() const { return FData->t_str(); }
-
-	TCustomString& operator =(const TCustomString &Source);
-	TCustomString& operator =(const TCharType* Source);
-	TCustomString operator +(const TCustomString &Source);
-	TCustomString operator +(const TCharType* Source);
-	TCustomString& operator +=(const TCustomString &Source);
-	TCustomString& operator +=(const TCharType* Source);
-	bool operator ==(const TCustomString &Str);
-	bool operator ==(const TCharType* Str);
-
-};
+//  if (true)
+//		return (DWORD)NULL;
+//  либо
+//  if (true)
+//		return string();
+//
+//  Для сокращения записи определяем макрос
+//  возможо это не самое лучшее решение, но в
+//  данный момент другого не придумал
+//****************************************************
+#define NULLSTR (char*)NULL
+#define NULLWSTR (wchar_t*)NULL
 
 
-#include "StrTemplates.cpp"
-
-
-
-// Реализации конкретных типов строк
-
-typedef TStrBuf<char> AnsiStr, StrBufA, STRBUFA;
-typedef TStrBuf<wchar_t> UnicodeStr, StrBufW, STRBUFW;
-
-
-typedef TCustomString<char>  string;
-typedef TCustomString<wchar_t>  wstring;
-
-*/
 //----------------------------------------------------------------------------
 #endif

