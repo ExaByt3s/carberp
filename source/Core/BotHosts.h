@@ -167,6 +167,29 @@ namespace Hosts
 }
 
 
+//----------------------------------------------------
+//  THostChecker - Система поиска рабочего хоста
+//----------------------------------------------------
+class THostChecker : public TBotClass
+{
+private:
+	PList FHosts;
+	string FWorkHost;
+	DWORD CheckTime;
+	HANDLE FThread;
+
+
+public:
+	// На вход принимаютсся буфер хостов отделёнными
+	// нулевыми символами и оканчивающийся пустой строкой
+	// "host1\0host2\0\0"
+	THostChecker(const char *Hosts, bool HostsEncrypted);
+	~THostChecker();
+	void Check();
+    string GetWorkHost();
+};
+
+
 
 
 //---------------------------------------------------------------------------

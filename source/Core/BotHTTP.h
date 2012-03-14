@@ -2,7 +2,7 @@
 //  Модуль организации работы с HTTP протоколом
 //
 //  Версия 1.0
-//  Модифицирован: 12 января 2011
+//  Модифицирован: март 2012
 //---------------------------------------------------------------------------
 
 
@@ -451,14 +451,29 @@ private:
 
 
 //----------------------------------------------------------------
+///  THTTPReader - Класс получения данных из сокета
+//----------------------------------------------------------------
+class THTTPReader : public TBotClass
+{
+protected:
+	DWORD  FSize;
+public:
+	DWORD Size();
+	bool virtual Initialize(DWORD ContentLength);
+    DWORD virtual Write(LPBYTE Data, DWORD DataSize);
+};
+
+//----------------------------------------------------------------
 //   THTTP  - Класс для передачи-приёма данных по HTTP протоколу
 //----------------------------------------------------------------
 class THTTP : public TBotClass
 {
+protected:
+    bool Execute(THTTPReader Reader);
 public:
 	THTTP() {};
 	// Функция загружает страницу с указанного адреса
-	string Get(const string &URL);
+	bool Get(const string &aURL, string &Document);
 private:
 };
 

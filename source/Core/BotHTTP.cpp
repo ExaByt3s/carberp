@@ -399,6 +399,16 @@ void AddURLParam(PStrings S, PCHAR Name, PCHAR Value, DWORD ValueSize)
 
 #define HTONS(x) (((x) << 8) | ((x) >> 8))
 
+
+bool InitializeWSA()
+{
+	// Инициализируем библиотеку
+	WSADATA wsa;
+	ClearStruct(wsa);
+	DWORD Code = (DWORD)pWSAStartup(MAKEWORD( 2, 2 ), &wsa);
+	return Code == 0;
+}
+
 SOCKET ConnectToHost(PCHAR Host, int Port)
 {
 	// Подключаемся к хосту
@@ -590,11 +600,8 @@ bool HTTP::ExecuteMethod(PHTTPRequest Request, HTTP::PResponseData Response)
 
 	
 	// Инииализируем библиотеку
-	WSADATA wsa;
-	ClearStruct(wsa);
-	DWORD Code = (DWORD)pWSAStartup(MAKEWORD( 2, 2 ), &wsa);
-	if (Code != 0)
-		return false;
+	if (!InitializeWSA())
+    	return false;
 
 
 	SetDefaultPort(Request);
@@ -1759,6 +1766,7 @@ PCHAR HTTPUtils::DeleteHeaderValue(PCHAR Buf, int &Size, PCHAR Header)
 
 TURL::TURL(const char * aURL)
 {
+	Port = HTTPDefaultPort;
 	if (aURL)
     	DoParse(aURL);
 }
@@ -1834,6 +1842,8 @@ bool TURL::DoParse(const char *URL)
 	if (URL == NULL)
 		return false;
 
+	Port = HTTPDefaultPort;
+
 	int Pos = STR::Pos(URL, HTTPProtocolDelimeter);
 	if (Pos >= 0)
 	{
@@ -1884,7 +1894,28 @@ bool TURL::DoParse(const char *URL)
 	// копируем
 	Path.Copy(URL, 0, DocPtr - URL);
 
-	return true;
+	return !Host.IsEmpty();
+}
+
+
+// ***************************************************************************
+// 								THTTPReader
+// ***************************************************************************
+
+DWORD THTTPReader::Size()
+{
+	return FSize;
+}
+
+bool THTTPReader::Initialize(DWORD ContentLength)
+{
+	FSize = 0;
+	return false;
+}
+
+DWORD THTTPReader::Write(LPBYTE Data, DWORD DataSize)
+{
+	return 0;
 }
 
 
@@ -1892,8 +1923,27 @@ bool TURL::DoParse(const char *URL)
 // 								TURL
 // ***************************************************************************
 
-string THTTP::Get(const string &URL)
+bool THTTP::Execute(THTTPReader Reader)
+{
+	//  Отправляем данные и читаем ответ
+
+	// Инициализируем библиотеку
+	return false;
+}
+//----------------------------------------------------------------------------
+
+
+bool THTTP::Get(const string &aURL, string &Document)
 {
 	// Функция загружает страницу с указанного адреса
-	return NULLSTR;
+	Document.Clear();
+
+	TURL URL;
+
+	if (!URL.Parse(aURL.t_str()))
+		return false;
+
+	// Выполняем запрос
+	return false;
 }
+//----------------------------------------------------------------------------

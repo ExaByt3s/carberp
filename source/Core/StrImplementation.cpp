@@ -546,11 +546,9 @@ STRFUNC(TChar&)::operator[](const DWORD Index)
 	// нужно сгенерировать исключение, но бот не использует
 	// исключени€. ≈сть потенциальна€ опастность в случае
 	// если индекс выйдет за пределы строки
-	if (Index < Length())
-	{
-    	Unique();
-		return Data[Index];
-	}
+
+	Unique();
+	return Data[Index];
 }
 
 

