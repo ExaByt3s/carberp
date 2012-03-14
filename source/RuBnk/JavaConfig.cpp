@@ -6,6 +6,7 @@
 #include "JavaConfig.h"
 #include "Config.h"
 #include "BotHTTP.h"
+#include "HTTPConsts.h"
 
 //---------------------------------------------------------------------------
 

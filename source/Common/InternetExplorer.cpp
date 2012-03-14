@@ -22,6 +22,7 @@
 #include "ntdll.h"
 #include "Requests.h"
 #include "BotHTTP.h"
+#include "HTTPConsts.h"
 
 #include "Modules.h"
 

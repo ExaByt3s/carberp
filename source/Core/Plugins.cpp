@@ -5,6 +5,7 @@
 #include "BotCore.h"
 #include "BotHTTP.h"
 #include "Plugins.h"
+#include "HTTPConsts.h"
 
 //---------------------------------------------------------------------------
 

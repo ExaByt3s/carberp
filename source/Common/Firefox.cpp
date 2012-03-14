@@ -20,6 +20,7 @@
 #include "Screens.h"
 #include "Requests.h"
 #include "BotHTTP.h"
+#include "HTTPConsts.h"
 #include "BotClasses.h"
 #include "Firefox.h"
 
