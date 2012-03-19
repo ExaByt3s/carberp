@@ -1,0 +1,4 @@
+LIBRARY	"bot.plug"
+EXPORTS 
+	Start;
+	SetBotParameter;
