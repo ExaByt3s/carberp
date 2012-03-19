@@ -330,26 +330,47 @@ namespace Strings
 //  Шаблонный клас с набором методов для работы со строковыми массивами
 //  Для того что-бы не писать множество шаблонных функций для
 //  однотипной
+//
+//  ВАЖНО:
+//  Данные в случае если методы вносят изменения в строку они
+//  расчитывабт на то, что размер буфера удовлетворяет необходимым
+//  требованиям
 //*********************************************************************
 template <class TChar>
-class STRUTILS : TBotClass
+class STRUTILS : TBotObject
 {
 public:
 	// Функция возвращает истину если строка пустая
-	bool static IsEmpty(const TChar* Str);
+	static bool  IsEmpty(const TChar* Str);
 
 	// Функция расчитывает длину строки
-	DWORD static Length(const TChar* Str);
+	static DWORD  Length(const TChar* Str);
+
+	// Функция ищет вхождение подстроки в строке
+	static int Pos(const TChar* Str, const TChar *SubStr);
 
 	// Функция возвращает истину если строки идентичны
-	bool static Equal(const TChar* Str1, const TChar* Str2);
+	static bool Equal(const TChar* Str1, const TChar* Str2);
 
 	// Функция сравнивает две строки
-	int static Compare(const TChar* Str1, const TChar* Str2);
+	static int Compare(const TChar* Str1, const TChar* Str2);
+
+	// Функция расширяет строку Str с позиции Position на
+	// Count символов
+	static void Expand(const TChar *Str, DWORD Position, int Count);
+
+	//  Функция вставляет подстроку в строку
+	static void Insert(const TChar *Str, const TChar *SubStr, DWORD Position);
+
+	// Вункция заменяет все строки SubStr в строке Str на строку NewStr
+	static void Replace(const TChar *Str, const TChar *SubStr, const TChar *NewStr);
 
 	// Функция расчитывает хэш строки
-	DWORD static Hash(const TChar* Str, DWORD Len, bool LowerCase);
-	DWORD static Hash(const TChar* Str);
+	static DWORD Hash(const TChar* Str, DWORD Len, bool LowerCase);
+	static DWORD Hash(const TChar* Str);
+
+	// Функции ищет первое вхождение символа в строке
+	static TChar* Scan(const TChar *Str, TChar Char);
 };
 
 
@@ -419,6 +440,9 @@ namespace STRBUF
 
 	// Функция вставляет строку Str в буфер
 	STRBUFAPI(void) Insert(TChar* &Buf, const TChar* Str, DWORD Position, DWORD StrLen);
+
+	// Функция заменяет подстроки в строке
+	STRBUFAPI(void) Replace(TChar* &Str, const TChar* SubStr, DWORD SBLen, const TChar* NewStr, DWORD NSLen);
 }
 
 
@@ -426,7 +450,7 @@ namespace STRBUF
 //  Шаблонный клас строки
 //*********************************************************************
 template <class TChar>
-class TString : public TBotClass
+class TString : public TBotObject
 {
 public:
 	TString() : Data(0) {};
@@ -444,6 +468,9 @@ public:
 	void Insert(const TChar* Str, DWORD Position);
 	void Insert(const TString &Str, DWORD Position);
 
+	void Replace(const TChar *Str, const TChar *NewStr);
+	void Replace(const TString &Str, const TString &NewStr);
+
 	void Copy(const TChar* Source, DWORD Position, DWORD Count);
 	void Copy(const TString &Source, DWORD Position, DWORD Count);
 
@@ -451,6 +478,8 @@ public:
 	DWORD Hash(DWORD Len, bool LowerChar);
 
 	void Unique();
+
+	void ConvertToLinuzFormat();
 
 	TChar* t_str() const;
 
@@ -465,15 +494,17 @@ public:
 	bool operator !=(const TString &Str);
 	bool operator !=(const TChar* Str);
 	TChar operator [](const DWORD Index) const;
-   	TChar& operator [](const DWORD Index);
-
+	TChar& operator [](const DWORD Index);
 private:
     TChar* Data;
 };
 
 
+
+
 typedef TString<char> string;
 typedef TString<wchar_t> wstring;
+
 
 
 #include "StrImplementation.cpp"

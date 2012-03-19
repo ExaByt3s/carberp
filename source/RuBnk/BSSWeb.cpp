@@ -3,6 +3,7 @@
 #include "GetApi.h"
 #include "Strings.h"
 #include "Memory.h"
+#include "Utils.h"
 #include "KeyLogSystems.h"
 #include "FileGrabber.h"
 #include "BotHTTP.h"

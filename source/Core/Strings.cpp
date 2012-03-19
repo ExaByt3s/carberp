@@ -382,7 +382,6 @@ char * WINAPI m_strstr( const char * _Str, const char * _SubStr )
 
 		}
 	}
-
 	return NULL;
 }
 
@@ -1264,14 +1263,7 @@ int StrCompare(const char* Str1, const char* Str2)
 PCHAR STR::Scan(const char* Str, char C)
 {
 	// Функция возвращает указатель на символ С;
-
-	if (Str != NULL)
-		while (*Str != 0)
-		{
-			if (*Str == C) return (PCHAR)Str;
-			Str++;
-		}
-	return NULL;
+	return AnsiStr::Scan(Str, C);
 }
 //------------------------------------------------------------------------------
 
