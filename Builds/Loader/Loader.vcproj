@@ -511,6 +511,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Misc\coocksol.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\Crypt.cpp"
 				>
 			</File>

