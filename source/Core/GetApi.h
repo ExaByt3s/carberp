@@ -538,6 +538,8 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 #define pSetCursorPos				pushargEx< DLL_USER32, 0xBDB58517>
 #define pAttachThreadInput			pushargEx< DLL_USER32, 0xE16B4137>
 #define pUpdateWindow				pushargEx< DLL_USER32, 0xFC3A1D7B>
+#define pDestroyMenu				pushargEx< DLL_USER32, 0x6A50AD38>
+#define pmouse_event				pushargEx< DLL_USER32, 0xAB3EFAFD>
 
 //winsock
 #define pWSACleanup 				pushargEx< DLL_WINSOCK, 0x8FB8B5BD>
