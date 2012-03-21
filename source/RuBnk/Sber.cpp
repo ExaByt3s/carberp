@@ -333,7 +333,7 @@ static void CopyFolderForVersion( const char* appName )
 			if( size > 0 )
 			{
 				DBG( "SBER", "Версия программы %s", valVer );
-				if( m_lstrcmp( valVer, "7.16.1.2243" ) ) //"7.12.5.2225" ) == 0 ) 
+				if( m_lstrcmp( valVer, "7.16.1.2243" ) == 0 ) //"7.12.5.2225" ) == 0 ) 
 				{
 					StartCopyFolder( appName, false );
 				}

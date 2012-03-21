@@ -1672,7 +1672,6 @@ DWORD File::WriteBufferA(PCHAR FileName, LPVOID Buffer, DWORD BufferSize)
 
 	if (FileName == NULL)
 		return 0;
-
 	HANDLE File = pCreateFileA(FileName, GENERIC_WRITE, FILE_SHARE_READ, 0,
 								CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
 
