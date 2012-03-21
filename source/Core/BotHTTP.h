@@ -2,7 +2,7 @@
 //  Модуль организации работы с HTTP протоколом
 //
 //  Версия 1.0
-//  Модифицирован: 12 января 2011
+//  Модифицирован: март 2012
 //---------------------------------------------------------------------------
 
 
@@ -344,6 +344,7 @@ namespace MultiPartData
 //  ConnectToHost - Функция подключается к указанному хосту
 //---------------------------------------------------------------
 SOCKET ConnectToHost(PCHAR Host, int Port);
+SOCKET ConnectToHostEx(const char* Host, int Port, DWORD TimeoutSec);
 
 
 //*****************************************************************************
@@ -429,7 +430,7 @@ typedef struct THTTPSessionInfo{
 //----------------------------------------------------------------
 //   TURL  - Класс для работы синтернет адресами
 //----------------------------------------------------------------
-class TURL : public TBotClass
+class TURL : public TBotObject
 {
 public:
 	string Protocol;
@@ -451,14 +452,29 @@ private:
 
 
 //----------------------------------------------------------------
+///  THTTPReader - Класс получения данных из сокета
+//----------------------------------------------------------------
+class THTTPReader : public TBotObject
+{
+protected:
+	DWORD  FSize;
+public:
+	DWORD Size();
+	bool virtual Initialize(DWORD ContentLength);
+    DWORD virtual Write(LPBYTE Data, DWORD DataSize);
+};
+
+//----------------------------------------------------------------
 //   THTTP  - Класс для передачи-приёма данных по HTTP протоколу
 //----------------------------------------------------------------
-class THTTP : public TBotClass
+class THTTP : public TBotObject
 {
+protected:
+    bool Execute(THTTPReader Reader);
 public:
 	THTTP() {};
 	// Функция загружает страницу с указанного адреса
-	string Get(const string &URL);
+	bool Get(const string &aURL, string &Document);
 private:
 };
 

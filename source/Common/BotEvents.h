@@ -20,7 +20,7 @@ typedef struct TEventData
 
 
 //reserved
-typedef void (*TBotEvent)(PEventData);
+//typedef void (*TBotEvent)(PEventData);
 
 
 // Первый запуск бота в проводнике

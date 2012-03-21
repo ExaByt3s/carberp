@@ -34,6 +34,30 @@ CHARAPI(DWORD)::Length(const TChar* Str)
 //-----------------------------------------------------------------------------
 
 
+// Функция ищет вхождение подстроки в строке
+CHARAPI(int)::Pos(const TChar* Str, const TChar *SubStr)
+{
+	if (IsEmpty(Str) || IsEmpty(SubStr))
+		return -1;
+
+    const TChar* Temp = Str;
+	while (*Temp)
+	{
+		if (*Temp == *SubStr)
+		{
+			// Совпадение первого символа, проверяем полное совпадение
+			const TChar* S1 = Temp;
+			const TChar* S2 = SubStr;
+			while (*S1 && *S2 && *S1 == *S2) {S1++; S2++;}
+			if (*S2 == 0) return Temp - Str;
+		}
+		Temp++;
+    }
+    return -1;
+}
+//-----------------------------------------------------------------------------
+
+
 CHARAPI(bool)::Equal(const TChar* Str1, const TChar* Str2)
 {
 	// Функция возвращает истину если строки идентичны
@@ -72,6 +96,168 @@ CHARAPI(int)::Compare(const TChar* Str1, const TChar* Str2)
 }
 //-----------------------------------------------------------------------------
 
+template<class TChar>
+void _Str_MoveChars(const TChar *Str, DWORD StrLen, DWORD Position, int Count)
+{
+	// Функция сдвигает символы в нжном направлении
+	const TChar *StartPtr = Str + Position;
+	const TChar *EndPtr   = Str + StrLen;
+
+	if (Count > 0)
+	{
+    	// Сдвигаем в право
+		TChar *ToCopy   = (TChar*)(Str + (StrLen + Count));
+		while (EndPtr >= StartPtr)
+		{
+			*ToCopy = *EndPtr;
+			ToCopy--;
+			EndPtr--;
+		}
+	}
+	else
+	{
+    	// Сдвигаем влево
+		TChar *ToCopy   = (TChar*)(Str + (Position + Count));
+		if (ToCopy < Str) ToCopy = (TChar*)Str;
+		while (StartPtr <= EndPtr)
+		{
+			*ToCopy = *StartPtr;
+			ToCopy++;
+			StartPtr++;
+		}
+    }
+}
+//-----------------------------------------------------------------------------
+
+template<class TChar>
+void _Str_Insert(const TChar *Str, DWORD StrLen, DWORD Position, const TChar *SubStr, DWORD SubStrLen)
+{
+	_Str_MoveChars<TChar>(Str, StrLen, Position, SubStrLen);
+	m_memcpy((void*)(Str + Position), (void*)SubStr, SubStrLen * sizeof(TChar));
+}
+//-----------------------------------------------------------------------------
+
+template<class TChar>
+struct TStrReplaceData
+{
+	DWORD  StartPosition;
+	TChar* Str;
+	DWORD  StrLen;
+	TChar* SubStr;
+	DWORD  SubStrLen;
+	TChar* NewStr;
+	DWORD  NewStrLen;
+	DWORD  Count;
+	PDWORD Positions;
+};
+
+// Функция инициализирует данные для замена подстрок
+template<class TChar>
+bool _Str_Replace_Initialize(TStrReplaceData<TChar> *Data)
+{
+
+	// Определяем поозицию подстроки
+	int P = STRUTILS<TChar>::Pos(Data->Str + Data->StartPosition, Data->SubStr);
+	if (P  < 0) return false;
+
+	Data->Count++;
+	Data->StartPosition += P + Data->SubStrLen;
+	DWORD Index = Data->Count - 1;
+	// Продолжаем поиск
+	_Str_Replace_Initialize<TChar>(Data);
+
+	// Заисываем позицию в массив
+	if (Data->Positions == NULL)
+		Data->Positions = (PDWORD)HEAP::Alloc(Data->Count * sizeof(DWORD));
+
+	Data->Positions[Index] = P;
+
+	return Data->Count > 0;
+}
+
+template<class TChar>
+void _Str_Replace(TStrReplaceData<TChar> *Data)
+{
+	// Вункция выполняет подмену строк исходя из полученных данных
+	// функцией иниуиализации замен
+	int Delta = Data->NewStrLen - Data->SubStrLen;
+
+	TChar *Str = Data->Str;
+	DWORD StrLen = Data->StrLen;
+
+	for (DWORD i = 0; i < Data->Count; i++)
+	{
+    	// Определяем позицию блока
+		int P = Data->Positions[i];
+		Str += P;
+		StrLen -= P;
+
+		// Смещаем строку
+		_Str_MoveChars(Str, StrLen, Data->SubStrLen, Delta);
+
+		// Копируем строку
+		m_memcpy(Str, Data->NewStr, Data->NewStrLen * sizeof(TChar));
+
+		Str += Data->NewStrLen;
+		StrLen -= (Data->NewStrLen - Delta);
+	}
+}
+
+//-----------------------------------------------------------------------------
+CHARAPI(void)::Expand(const TChar *Str, DWORD Position, int Count)
+{
+	// Функция расширяет строку Str с позиции Position на
+	// Count символов
+	if (IsEmpty(Str) || Count == 0)
+		return;
+
+	DWORD StrLen = Length(Str);
+    _Str_MoveChars<TChar>(Str, StrLen, Position, Count);
+}
+//-----------------------------------------------------------------------------
+
+//  Функция вставляет подстроку в строку
+CHARAPI(void)::Insert(const TChar *Str, const TChar *SubStr, DWORD Position)
+{
+	if (IsEmpty(Str) || IsEmpty(SubStr))
+		return;
+	DWORD StrLen    = Length(Str);
+	DWORD SubStrLen = Length(SubStr);
+
+	if (Position <= StrLen)
+        _Str_Insert(Str, StrLen, Position, SubStr, SubStrLen);
+}
+//-----------------------------------------------------------------------------
+
+// Вункция заменяет все строки SubStr в строке Str на строку NewStr
+CHARAPI(void)::Replace(const TChar *Str, const TChar *SubStr, const TChar *NewStr)
+{
+	if (IsEmpty(Str) || IsEmpty(SubStr))
+		return;
+
+	// Определяем позиции
+	TStrReplaceData<TChar> Data;
+	ClearStruct(Data);
+
+	Data.Str       = (TChar*)Str;
+	Data.StrLen    = Length(Str);
+	Data.SubStr    = (TChar*)SubStr;
+	Data.SubStrLen = Length(SubStr);
+	Data.NewStr    = (TChar*)NewStr;
+	Data.NewStrLen = Length(NewStr);
+
+	_Str_Replace_Initialize(&Data);
+	if (Data.Count == 0) return;
+
+	// Заменяем строки
+    _Str_Replace<TChar>(&Data);
+
+	//Закрываем данные
+    HEAP::Free(Data.Positions);
+
+}
+//-----------------------------------------------------------------------------
+
 // Функция расчитывает хэш строки
 CHARAPI(DWORD)::Hash(const TChar* Str, DWORD Len, bool LowerCase)
 {
@@ -101,6 +287,19 @@ CHARAPI(DWORD)::Hash(const TChar* Str)
     return Hash(Str, 0, false);
 }
 //-----------------------------------------------------------------------------
+
+// Функции ищет первое вхождение символа в строке
+CHARAPI(TChar*)::Scan(const TChar *Str, TChar Char)
+{
+	if (Str != NULL)
+		while (*Str != 0)
+		{
+			if (*Str == Char) return (TChar*)Str;
+			Str++;
+		}
+	return NULL;
+}
+
 
 
 
@@ -284,40 +483,6 @@ STRBUFAPI(void) STRBUF::Copy(TChar* &Dst, const TChar* Src, DWORD Pos, DWORD Cou
 }
 //----------------------------------------------------------------------------
 
-STRBUFAPI(void) _Insert_RePack(TChar* Buf, const TChar* Src, DWORD SrcLen, const TChar* Dst, DWORD DstLen, DWORD Position)
-{
-	// Функция упаковывает строку в контексте работы Insert
-	m_memcpy(Buf, Src, Position * sizeof(TChar));
-	Buf += Position;
-	Src += Position;
-	m_memcpy(Buf, Dst, DstLen * sizeof(TChar));
-	Buf += DstLen;
-	m_memcpy(Buf, Src, (SrcLen - Position) * sizeof(TChar));
-}
-
-
-STRBUFAPI(void) _Insert_Expand(TChar *Dst, DWORD DstLen,  const TChar *Src, DWORD SrcLen, DWORD Position)
-{
-	// Функция раздвигает строку и вставляет текст
-	TChar *StartPtr = Dst + Position;
-	TChar *EndPtr   = Dst + DstLen;
-	TChar *ToCopy   = Dst + (DstLen + SrcLen);
-
-	// Раздвигаем строку
-	while (EndPtr >= StartPtr)
-	{
-		*ToCopy = *EndPtr;
-		ToCopy--;
-		EndPtr--;
-    }
-
-    m_memcpy(StartPtr, Src, SrcLen);
-
-	// Закрываем строку
-    *(Dst + DstLen + SrcLen) = 0;
-}
-
-
 STRBUFAPI(void) STRBUF::Insert(TChar* &Buf, const TChar* Str, DWORD Position, DWORD StrLen)
 {
 	// Функция вставляет строку Str в буфер
@@ -345,22 +510,69 @@ STRBUFAPI(void) STRBUF::Insert(TChar* &Buf, const TChar* Str, DWORD Position, DW
 		return;
 
 	// Определяем размер буфера
-	DWORD TotalLen = R.Length + StrLen;
+	DWORD Len = R.Length;
+	DWORD TotalLen = Len + StrLen;
 	if (R.Size < TotalLen || R.RefCount > 1)
 	{
 		// Создаём новую строку
-		TChar *Tmp = Alloc<TChar>(TotalLen);
-		_Insert_RePack<TChar>(Tmp, Buf, R.Length, Str, StrLen, Position);
-		Release<TChar>(Buf);
-		Buf = Tmp;
+		TChar *Tmp = Buf;
+        Buf = CreateFromStr<TChar>(Tmp, Len, TotalLen);
+		Release<TChar>(Tmp);
 	}
-	else
-    	_Insert_Expand(Buf, R.Length, Str, StrLen, Position);
+
+   	_Str_Insert(Buf, Len, Position, Str, StrLen);
 
 	// Вставляем данные
 	GetRec(Buf).Length = TotalLen;
 }
 
+//----------------------------------------------------------------------------
+
+
+// Функция заменяет подстроки в строке
+STRBUFAPI(void) STRBUF::Replace(TChar* &Str, const TChar* SubStr, DWORD SBLen, const TChar* NewStr, DWORD NSLen)
+{
+	if (Str == NULL || STRUTILS<TChar>::IsEmpty(SubStr))
+		return;
+
+	TStrRec &R = GetRec<TChar>(Str);
+
+
+	TStrReplaceData<TChar> D;
+	ClearStruct(D);
+
+	D.Str       = Str;
+	D.StrLen    = R.Length;
+	D.SubStr    = (TChar*)SubStr;
+    D.SubStrLen = (SBLen)? SBLen : STRUTILS<TChar>::Length(SubStr);
+	D.NewStr    = (TChar*)NewStr;
+	D.NewStrLen = (NSLen)? NSLen : STRUTILS<TChar>::Length(NewStr);
+
+	// Инициализируем данные
+	if (!_Str_Replace_Initialize<TChar>(&D)) return;
+
+	// Расчитываем новую длину строки
+	int Delta = D.NewStrLen - D.SubStrLen;
+    DWORD TotalLen = R.Length + (D.Count * Delta);
+
+
+	// Заменяем строки
+	if (R.RefCount > 1 || R.Size < TotalLen)
+	{
+		TChar *Tmp = Str;
+		Str = CreateFromStr(Tmp, R.Length, TotalLen);
+		Release<TChar>(Tmp);
+		D.Str = Str;
+    }
+
+
+    _Str_Replace<TChar>(&D);
+
+    GetRec<TChar>(Str).Length = TotalLen;
+
+	//Закрываем данные
+    HEAP::Free(D.Positions);
+}
 //----------------------------------------------------------------------------
 
 
@@ -449,6 +661,17 @@ STRFUNC(void)::Insert(const TString &Str, DWORD Position)
 }
 
 
+STRFUNC(void)::Replace(const TChar* Str, const TChar* NewStr)
+{
+	STRBUF::Replace<TChar>(Data, Str, 0, NewStr, 0);
+}
+
+STRFUNC(void)::Replace(const TString &Str, const TString &NewStr)
+{
+	STRBUF::Replace<TChar>(Data, Str, Str.Length(), NewStr, NewStr.Length());
+}
+
+
 STRFUNC(DWORD)::Hash()
 {
 	return STRUTILS<TChar>::Hash(Data);
@@ -463,6 +686,43 @@ STRFUNC(void)::Unique()
 {
     STRBUF::Unique<TChar>(Data);
 }
+
+
+STRFUNC(void)::ConvertToLinuzFormat()
+{
+	// Функция преобразовывает строку к формату Linux
+	if (Data)
+	{
+		// Проверяем вхождение символа
+		TChar *Start = STRUTILS<TChar>::Scan(Data, '\r');
+		if (Start)
+		{
+			// Сохраняем позицию и уникализируем строку
+			DWORD Pos = Start - Data;
+			Unique();
+
+			// Заменяем все элементы
+			TChar *Str   = Data + Pos;
+			TChar *ToCopy = Str;
+			while (*Str != 0)
+			{
+				if (*Str != '\r')
+				{
+					*ToCopy = *Str;
+					ToCopy++;
+				}
+                Str++;
+			}
+
+			*ToCopy = 0;
+			STRBUF::GetRec<TChar>(Data).Length = ToCopy - Data;
+		}
+
+	}
+
+
+}
+
 
 
 STRFUNC(TString<TChar>&)::operator=(const TString &Source)
@@ -546,11 +806,9 @@ STRFUNC(TChar&)::operator[](const DWORD Index)
 	// нужно сгенерировать исключение, но бот не использует
 	// исключения. Есть потенциальная опастность в случае
 	// если индекс выйдет за пределы строки
-	if (Index < Length())
-	{
-    	Unique();
-		return Data[Index];
-	}
+
+	Unique();
+	return Data[Index];
 }
 
 

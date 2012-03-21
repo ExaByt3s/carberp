@@ -746,3 +746,87 @@ bool DataFile::CryptBlocks(PMemBlockList Blocks, LPVOID Key, TCryptMethod Method
 }
 
 
+//*****************************************************************************
+//                        TEventContainer
+//*****************************************************************************
+
+
+struct TEventItem
+{
+	int ID;
+	TBotEvent Event;
+};
+
+
+void FreeEventItem(LPVOID Item)
+{
+	FreeStruct(Item);
+}
+
+
+TEventContainer::~TEventContainer()
+{
+	if (FEvents)
+        List::Free(FEvents);
+}
+
+int TEventContainer::AttachEvent(int EventId, TBotEvent Event)
+{
+	// Подключаем событие
+	if (Event == NULL)
+		return -1;
+
+	if (FEvents == NULL)
+	{
+		FEvents = List::Create();
+		List::SetFreeItemMehod(FEvents, FreeEventItem);
+	}
+
+    int Index = -1;
+
+	TEventItem* Item = CreateStruct(TEventItem);
+	if (Item)
+	{
+		Item->ID = EventId;
+		Item->Event = Event;
+		Index = List::Add(FEvents, Item);
+	}
+	return Index;
+}
+
+void TEventContainer::DetachEvent(int Index)
+{
+	// Отключаем событие
+	if (FEvents && Index >= 0 && Index < List::Count(FEvents))
+	{
+		TEventItem* Item = (TEventItem*)List::GetItem(FEvents, Index);
+		if (Item)
+		{
+			List::SetItem(FEvents, Index, NULL);
+			FreeEventItem(Item);
+        }
+    }
+}
+
+void TEventContainer::CallEvent(int EventId, DWORD WParam, DWORD LParam)
+{
+	// Вызываем событие
+	if (FEvents)
+	{
+    	int Count = List::Count(FEvents);
+		for (int i = 0; i < Count; i++)
+		{
+			TEventItem *Item = (TEventItem*)List::GetItem(FEvents, i);
+			if (Item && (Item->ID == 0 || Item->ID == EventId))
+			{
+            	Item->Event(this, EventId, WParam, LParam);
+            }
+		}
+    }
+}
+
+
+void TEventContainer::CallEvent(int EventId)
+{
+	CallEvent(EventId, 0, 0);
+}

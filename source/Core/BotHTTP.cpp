@@ -399,9 +399,23 @@ void AddURLParam(PStrings S, PCHAR Name, PCHAR Value, DWORD ValueSize)
 
 #define HTONS(x) (((x) << 8) | ((x) >> 8))
 
+
+bool InitializeWSA()
+{
+	// Инициализируем библиотеку
+	WSADATA wsa;
+	ClearStruct(wsa);
+	DWORD Code = (DWORD)pWSAStartup(MAKEWORD( 2, 2 ), &wsa);
+	return Code == 0;
+}
+
 SOCKET ConnectToHost(PCHAR Host, int Port)
 {
 	// Подключаемся к хосту
+
+	// Инициализируем библиотеку
+	if (!InitializeWSA())
+		return INVALID_SOCKET;
 
 	// Получаем  адрес по имени хоста
 	LPHOSTENT lpHost = (LPHOSTENT)pgethostbyname((const char*)Host);
@@ -429,6 +443,95 @@ SOCKET ConnectToHost(PCHAR Host, int Port)
 	}
 	return Socket;
 }
+
+
+SOCKET ConnectToHostEx(const char* Host, int Port, DWORD TimeoutSec)
+{
+	// Подключаемся к хосту
+
+	SOCKET Socket = INVALID_SOCKET;
+
+	// Инициализируем библиотеку
+	if (!InitializeWSA())
+		return Socket;
+
+
+	do
+	{
+		// Получаем  адрес по имени хоста
+		LPHOSTENT lpHost = (LPHOSTENT)pgethostbyname(Host);
+
+		// Не нашли имя
+		if ( lpHost == NULL ) break;
+
+		Socket = (SOCKET)psocket( AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+		// Сокет не создался
+		if( Socket == INVALID_SOCKET ) break;
+
+		// Включаем неблокирующий режим
+		u_long nonblocking_enabled = 1;
+		int ioct_result = (int)pioctlsocket(Socket, FIONBIO, &nonblocking_enabled);
+
+		// Не получилось включит неблокирующий режим
+		if (ioct_result != NO_ERROR) break;
+
+		struct sockaddr_in SockAddr;
+
+		SockAddr.sin_family		 = AF_INET;
+		SockAddr.sin_addr.s_addr = **(unsigned long**)lpHost->h_addr_list;
+		SockAddr.sin_port		 = HTONS((unsigned short)Port );
+
+		// подключаемся к сокету
+
+		int   connect_result = (int)pconnect( Socket, (const struct sockaddr*)&SockAddr, sizeof( SockAddr ) );
+		DWORD last_error = (DWORD)pWSAGetLastError();
+
+		// Ф-ция обязана завершатся ошибкой в неблокирующем режиме
+		if (connect_result != SOCKET_ERROR) break;
+
+		// Ошибка не связана с неблокирующим режимом
+		if (last_error !=  WSAEWOULDBLOCK) break;
+
+		fd_set writefds;
+		fd_set readfds;
+		fd_set excptfds;
+
+		TIMEVAL tv;
+
+		tv.tv_sec  = TimeoutSec;
+		tv.tv_usec = 0;
+
+		FD_ZERO(&writefds);
+		FD_ZERO(&readfds);
+		FD_ZERO(&excptfds);
+
+		FD_SET(Socket, &writefds);
+		FD_SET(Socket, &readfds);
+		FD_SET(Socket, &excptfds);
+
+		int select_result = (int)pselect(0, &readfds, &writefds, &excptfds, &tv);
+
+		// Ошибка при вызове select
+		if (select_result == SOCKET_ERROR) break;
+
+		// Ошибка при соединении.
+//		if (FD_ISSET(Socket, &excptfds) != 0) break;
+		if (pWSAFDIsSet(Socket, &excptfds) != 0) break;
+
+		// Ошибок не было, но и подключится не успел.
+//		if (FD_ISSET(Socket, &writefds) == 0) break;
+		if (pWSAFDIsSet(Socket, &writefds) == 0) break;
+
+		// Тут получается что успел подключится.
+		return Socket;
+	}
+	while (0);
+
+	if (Socket != INVALID_SOCKET) pclosesocket( Socket );
+	return SOCKET_ERROR;
+}
+
 //----------------------------------------------------------------------------
 
 bool ReceiveData(SOCKET Sock, PCHAR &Header, PCHAR *Buf, DWORD &Len)
@@ -589,14 +692,6 @@ bool HTTP::ExecuteMethod(PHTTPRequest Request, HTTP::PResponseData Response)
 	}
 
 	
-	// Инииализируем библиотеку
-	WSADATA wsa;
-	ClearStruct(wsa);
-	DWORD Code = (DWORD)pWSAStartup(MAKEWORD( 2, 2 ), &wsa);
-	if (Code != 0)
-		return false;
-
-
 	SetDefaultPort(Request);
 
 	// Подключаемся к хосту
@@ -1759,6 +1854,7 @@ PCHAR HTTPUtils::DeleteHeaderValue(PCHAR Buf, int &Size, PCHAR Header)
 
 TURL::TURL(const char * aURL)
 {
+	Port = HTTPDefaultPort;
 	if (aURL)
     	DoParse(aURL);
 }
@@ -1834,6 +1930,8 @@ bool TURL::DoParse(const char *URL)
 	if (URL == NULL)
 		return false;
 
+	Port = HTTPDefaultPort;
+
 	int Pos = STR::Pos(URL, HTTPProtocolDelimeter);
 	if (Pos >= 0)
 	{
@@ -1884,7 +1982,28 @@ bool TURL::DoParse(const char *URL)
 	// копируем
 	Path.Copy(URL, 0, DocPtr - URL);
 
-	return true;
+	return !Host.IsEmpty();
+}
+
+
+// ***************************************************************************
+// 								THTTPReader
+// ***************************************************************************
+
+DWORD THTTPReader::Size()
+{
+	return FSize;
+}
+
+bool THTTPReader::Initialize(DWORD ContentLength)
+{
+	FSize = 0;
+	return false;
+}
+
+DWORD THTTPReader::Write(LPBYTE Data, DWORD DataSize)
+{
+	return 0;
 }
 
 
@@ -1892,8 +2011,27 @@ bool TURL::DoParse(const char *URL)
 // 								TURL
 // ***************************************************************************
 
-string THTTP::Get(const string &URL)
+bool THTTP::Execute(THTTPReader Reader)
+{
+	//  Отправляем данные и читаем ответ
+
+	// Инициализируем библиотеку
+	return false;
+}
+//----------------------------------------------------------------------------
+
+
+bool THTTP::Get(const string &aURL, string &Document)
 {
 	// Функция загружает страницу с указанного адреса
-	return NULLSTR;
+	Document.Clear();
+
+	TURL URL(NULL);
+
+	if (!URL.Parse(aURL.t_str()))
+		return false;
+
+	// Выполняем запрос
+	return false;
 }
+//----------------------------------------------------------------------------
