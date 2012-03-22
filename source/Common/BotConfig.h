@@ -117,6 +117,7 @@ public:
 	inline THTMLInject* operator[](int Index) const { return Items(Index);};
 	THTMLInject* AddInject();
 	void ResetInjectsStatus();
+	void Clear();
 };
 
 
@@ -147,7 +148,8 @@ public:
 	THTMLInjectData* AddData();
 	inline int Count() {return List::Count(FInjects);}
 	inline THTMLInjectData* Items(int Index) const {return (THTMLInjectData*)List::GetItem(FInjects, Index);}
-    inline THTMLInjectData* operator[](int Index) const { return Items(Index); };
+	inline THTMLInjectData* operator[](int Index) const { return Items(Index); };
+	void Clear();
 };
 
 
@@ -310,7 +312,7 @@ namespace HTMLInjects
 	//  ClearInjectList - Функция очищает список содержащий
 	//		 			  элементы типа THTMLInject
 	//*********************************************************
-	void ClearInjectList(PList List);
+//	void ClearInjectList(PList List);
 
 	//*********************************************************
 	//  Методы уничтожения данных HTML инжекта

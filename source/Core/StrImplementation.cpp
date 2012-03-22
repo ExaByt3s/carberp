@@ -301,6 +301,15 @@ CHARAPI(TChar*)::Scan(const TChar *Str, TChar Char)
 }
 
 
+// Функция вщзвращает указатель на конец строки
+CHARAPI(TChar*)::End(const TChar *Str)
+{
+	if (Str)
+		while (*Str) Str++;
+	return (TChar*)Str;
+}
+
+
 
 
 //*****************************************************************************

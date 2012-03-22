@@ -371,6 +371,9 @@ public:
 
 	// Функции ищет первое вхождение символа в строке
 	static TChar* Scan(const TChar *Str, TChar Char);
+
+	// Функция вщзвращает указатель на конец строки
+    static TChar* End(const TChar *Str);
 };
 
 
@@ -532,6 +535,41 @@ typedef TString<wchar_t> wstring;
 //****************************************************
 #define NULLSTR (char*)NULL
 #define NULLWSTR (wchar_t*)NULL
+
+
+
+
+//****************************************************
+//  Класс перебора массива строк следующих  друг за
+//  другом, разделённые нулевым символом и заканчиваю-
+//  щиеся пустой строкой
+//  строка_1 \0 строка_2 \0 строка_3 \0\0
+//****************************************************
+class TStrEnum : public TBotObject
+{
+private:
+	PCHAR  FBuf;
+	bool   FEncrypted;
+	PCHAR  FCurrent;
+	string FLine;
+	void Initialize(const char *Buffer, bool Encrypted, DWORD EmptyBufHash);
+public:
+	//---------------------------------------------------
+	//  Параметры конструктора:
+	//  Buffer - Указатель на исходный буфер
+	//  Encrypted - Указание того, что строки защифрованы
+	//  EmptyBufHash - Хэш "пустой" строки. Если указать
+	//				   не нулевое значение и хэш строки
+	//		           будет совпадать с указанным, то
+	//                 класс будет считать, что строка
+	//				   пустая
+	//---------------------------------------------------
+	TStrEnum(const char *Buffer, bool Encrypted, DWORD EmptyBufHash);
+	TStrEnum(const char *Buffer);
+	bool Next();
+	inline string& Line() { return FLine; }
+	bool IsEmpty();
+};
 
 
 //----------------------------------------------------------------------------
