@@ -16,7 +16,7 @@
 
 // ---------------------------------------------------------------------------
 
-// #include "BotDebug.h"
+#include "BotDebug.h"
 
 namespace CONFIGDEBUGSTRINGS
 {
@@ -306,7 +306,6 @@ bool DoLoadConfigFromFileEx(PBotConfig Config, PWCHAR FileName)
 bool Config::LoadConfigFromFile(PBotConfig Config, PWCHAR FileName)
 {
 	// Загружаем файл конфига
-
 	if (BotConfig == NULL || WSTR::IsEmpty(FileName))
 		return false;
 	pEnterCriticalSection(&Config->Lock);
@@ -476,7 +475,8 @@ void Config::Free(PBotConfig Cfg)
 //	if (List != NULL)
 //		List::Add(List, Inject);
 //	return Inject;
-//}
+//}
+
 // ----------------------------------------------------------------------------
 
 //void HTMLInjects::ResetStatus(PList Injects)
@@ -493,7 +493,8 @@ void Config::Free(PBotConfig Cfg)
 //			Data->State = idsUnknown;
 //		}
 //	}
-//}
+//}
+
 // ----------------------------------------------------------------------------
 
 //PHTMLInjectData HTMLInjects::AddInjectData
@@ -519,7 +520,8 @@ void Config::Free(PBotConfig Cfg)
 //	Data->Owner = HTMLInject;
 //
 //	return Data;
-//}
+//}
+
 // ----------------------------------------------------------------------------
 
 void HTMLInjects::ClearInjectList(PList List) {
@@ -741,7 +743,6 @@ PBotConfig Config::Initialize(PWCHAR FileName, bool IsNewApplication,
 	if (IsNewApplication) {
 		BotConfig = NULL;
 	}
-
 	if (BotConfig == NULL)
 	{
 		BotConfig = Create();
@@ -806,12 +807,9 @@ void Config::Clear(PBotConfig Config)
 	if (Config != NULL)
 	{
 		pEnterCriticalSection(&Config->Lock);
-
 		List::Clear(Config->HTMLInjects);
-
 		WSTR::Free(Config->LastConfigFile);
 		Config->LastConfigFile = NULL;
-
 		pLeaveCriticalSection(&Config->Lock);
     }
 }

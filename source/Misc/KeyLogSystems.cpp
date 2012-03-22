@@ -13,9 +13,9 @@
 #include "BSSWeb.cpp"
 #include "FakturaWeb.cpp"
 #include "AvangardWeb.cpp"
-#include "RafaDll.cpp"
+//#include "RafaDll.cpp"
 
-#include "cc.cpp"
+//#include "cc.cpp"
 
 //#include "BotDebug.h"
 
