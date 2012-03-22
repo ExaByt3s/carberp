@@ -116,14 +116,14 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="0"
+				Optimization="1"
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="0"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;..\..\Include;Modules"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOTRELEASE"
-				StringPooling="false"
+				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -435,11 +435,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\CabPacker.h"
+				RelativePath="..\..\Source\RuBnk\CabPacker.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\CabPacker.h"
+				RelativePath="..\..\Source\Common\CabPacker.h"
 				>
 			</File>
 			<File

