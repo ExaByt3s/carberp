@@ -36,13 +36,21 @@
 
 // Максимальные размеры массивов с данными
 #define MAX_HOSTS_BUF_SIZE 500 /* Максимальный размер буфера хранения ссылок */
-#define MAX_PASSWORD_SIZE  100 /* Размер буфера хранения основного пароля */
-#define MAX_HOST_SIZE      100 /* Размер буфера для хранения хоста */
+#define MAX_PASSWORD_SIZE  32  /* Размер буфера хранения основного пароля */
 #define MAX_PREFIX_SIZE    20  /* Размер буфера для префикса бота */
 #define MAX_DELAY_SIZE     8   /* Буфер для хранения задержки */
 
 
 #define DEFAULT_DELAY  10 /* Задержка по умолчанию */
+
+
+// Имена параметров
+
+#define BOTPARAM_PREFIX       "BOT_UID"
+#define BOTPARAM_MAINHOSTS    "ALL_HOSTS_BUFFER\0\0"
+#define BOTPARAM_DELAY        "DELAY_"
+#define BOTPARAM_MAINPASSWORD "MAIN_PASSWORD"
+
 
 //--------------------------------------------------------
 //  Им сигнального файла режима Банк

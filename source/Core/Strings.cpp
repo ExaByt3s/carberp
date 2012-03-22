@@ -1284,10 +1284,7 @@ PCHAR STR::ScanEnd(PCHAR Str, char C)
 
 PCHAR STR::End(PCHAR Str)
 {
-	// Функция возвращает указатель на заверщающий ноль строки
-	if (Str != NULL)
-		for (; *Str != 0; Str++);
-	return Str;
+	return AnsiStr::End(Str);
 }
 //------------------------------------------------------------------------------
 
@@ -2131,3 +2128,63 @@ int Strings::AddValue(PStrings Strings, PCHAR Name, PCHAR Value, PCHAR Delimeter
 	return List::Add(SR->Items, STR::New(3, Name, Del, Value));
 }
 
+
+
+//****************************************************************************
+//                              TStrEnum
+//****************************************************************************
+
+TStrEnum::TStrEnum(const char *Buffer, bool Encrypted, DWORD EmptyBufHash)
+{
+	Initialize(Buffer, Encrypted, EmptyBufHash);
+}
+
+
+TStrEnum::TStrEnum(const char *Buffer)
+{
+	Initialize(Buffer, false, 0);
+}
+
+
+void TStrEnum::Initialize(const char *Buffer, bool Encrypted, DWORD EmptyBufHash)
+{
+	FBuf = (PCHAR)Buffer;
+
+	if (EmptyBufHash &&  AnsiStr::Hash(Buffer) == EmptyBufHash)
+		FBuf = NULL;
+
+	FEncrypted = Encrypted;
+	FCurrent = NULL;
+}
+
+
+bool TStrEnum::Next()
+{
+	// Функция выбирает следующую строку
+	if (FBuf)
+	{
+        // Выбираем следующую строку
+		if (FCurrent)
+		{
+			FCurrent = AnsiStr::End(FCurrent);
+			FCurrent++;
+		}
+		else
+			FCurrent = FBuf;
+
+		FLine = FCurrent;
+
+        // Расшифровываем строку
+		if (!FLine.IsEmpty() && FEncrypted)
+        	Decrypt(FLine.t_str(), FLine.t_str());
+	}
+
+	return FCurrent && *FCurrent;
+}
+
+
+bool TStrEnum::IsEmpty()
+{
+	return FBuf == NULL;
+}
+	
