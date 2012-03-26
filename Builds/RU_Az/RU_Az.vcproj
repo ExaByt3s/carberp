@@ -443,6 +443,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\cc.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\CertGrab.h"
 				>
 			</File>
@@ -776,6 +780,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\CabPacker.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\cc.cpp"
 				>
 			</File>
 			<File

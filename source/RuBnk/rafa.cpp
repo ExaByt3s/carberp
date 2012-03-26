@@ -5,6 +5,8 @@
 #include "Splice.h"
 #include "rafa.h"
 
+static char RAFA_HOSTS[RAFAHOSTS_PARAM_SIZE] = RAFAHOSTS_PARAM_NAME;
+
 #include "RafaDll.cpp"
 
 namespace Rafa {

