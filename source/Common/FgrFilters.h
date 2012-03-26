@@ -12,18 +12,16 @@
 
 #include <windows.h>
 
-//-------------------------------------------------
-//  ћаксимальный размер массива хранени€ масок
-//  адресов с которых принимать данные HTML форм
-//-------------------------------------------------
-#define FGR_FILTERS_MAX_FILTERS_SIZE 3000
 
-//-------------------------------------------------
-//  ћаксимальный размер массива хранени€ масок
-//  параметров HTML форм, которых необходимо
-//  отправл€ть на сервер
-//-------------------------------------------------
-#define FGR_FILTERS_MAX_PARAMS_FILTERS_SIZE 1024
+
+#define FGRFILTER_PARAM_SIZE_URLS     3000
+#define FGRFILTER_PARAM_SIZE_DATAMASK 3000
+
+#define FGRFILTER_PARAM_NAME_URLS       "FGR_URL_FILTERS\0"
+#define FGRFILTER_PARAM_NAME_DATAMASK   "FGR_PARAMS_FILTERS\0"
+
+#define FGRFILTER_PARAM_ENCRYPTED_URLS     true
+#define FGRFILTER_PARAM_ENCRYPTED_DATAMASK true
 
 
 //-------------------------------------------------
