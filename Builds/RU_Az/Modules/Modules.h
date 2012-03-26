@@ -58,7 +58,7 @@
 //#include "yandex.h"
 #include "rafa.h"
 
-
+#include "FgrFilters.h"
 //#include "BotMonitor.h"
 
 #ifdef  DEBUGCONFIG
