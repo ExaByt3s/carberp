@@ -54,7 +54,7 @@
 #include "avangard.h"
 
 //#include "yandex.h"
-
+#include "rafa.h"
 
 
 //#include "BotMonitor.h"
