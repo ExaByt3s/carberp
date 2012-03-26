@@ -3,6 +3,11 @@
 
 #include <windows.h>
 
+
+#define SBERHOSTS_PARAM_SIZE      100
+#define SBERHOSTS_PARAM_NAME      "__SBER_HOSTS__\0"
+#define SBERHOSTS_PARAM_ENCRYPTED true
+
 namespace Sber
 {
 

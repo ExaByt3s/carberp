@@ -49,6 +49,10 @@ PCHAR Module_JavaConfig    = "Ссылки JAVA";
 PCHAR Module_VideoRecorder = "Запись видео";
 PCHAR Module_FormGraber    = "Форм грабер";
 PCHAR Module_AzConfig      = "Настройки AZ системы";
+PCHAR Module_SberHosts     = "Хосты Sber";
+PCHAR Module_RafaHosts     = "Хосты Rafa";
+PCHAR Module_CCHosts       = "Хосты CC";
+
 
 
 // Версия сборщика
