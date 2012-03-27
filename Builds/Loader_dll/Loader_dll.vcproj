@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="Loader_dll"
 	ProjectGUID="{73638EAF-FFC4-4A1B-8C26-424069D8AE17}"
 	RootNamespace="Loader_dll"
@@ -122,7 +122,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LOADER_DLL_EXPORTS"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LOADER_DLL_EXPORTS;DBGRPT_ENABLED"
 				StringPooling="false"
 				MinimalRebuild="true"
 				ExceptionHandling="0"
@@ -177,7 +177,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release DEBUGCONFIG|Win32"
-			OutputDirectory="..\Bin\BootkitTest"
+			OutputDirectory="$(SolutionDir)Bin\$(ConfigurationName)"
 			IntermediateDirectory="Obj\$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="2"
@@ -203,7 +203,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LOADER_DLL_EXPORTS;DEBUGCONFIG"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LOADER_DLL_EXPORTS;DEBUGCONFIG;DBGRPT_ENABLED"
 				StringPooling="false"
 				MinimalRebuild="true"
 				ExceptionHandling="0"
@@ -303,6 +303,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\DbgRpt.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\DllLoader.cpp"
 				>
 			</File>
@@ -394,6 +398,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\Crypt.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DbgRpt.h"
 				>
 			</File>
 			<File
