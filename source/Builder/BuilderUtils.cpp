@@ -192,11 +192,14 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 
 
 	TFileStream* S = new TFileStream(FileName, fmOpenRead);
+	try {
+		FFile->LoadFromStream(S);
+		FFile->Position = 0;
+	} __finally {
+		delete S;
+	}
 
-	FFile->LoadFromStream(S);
-    FFile->Position = 0;
 
-	delete S;
 
 	FSourceFileName = FileName;
 	UpdateResultFileName(false);
@@ -249,12 +252,15 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
         Message(Status_WriteParams);
 
 		// Записываем параметры
-		for (int i = 0; i < FParams->Count; i++)
+		DWORD Count   = FParams->Count;
+		PCHAR Buf     = (PCHAR)Mem->Memory;
+		DWORD BufSize = Mem->Size;
+		for (int i = 0; i < Count; i++)
 		{
 			TBotParam* Param = (TBotParam*)FParams->Items[i];
 			if (!Param->Active) continue;
 
-			WriteParametr((PCHAR)Mem->Memory, Mem->Size, Param);
+			WriteParametr(Buf, BufSize, Param);
 		}
 
 
@@ -904,7 +910,7 @@ void __fastcall TBotParam::LoadFromStrings(TStrings *Strings)
 bool __fastcall TBotParam::Write(PCHAR Buf, DWORD BufSize)
 {
 	// Функция записывает своё значение в буфер
-    return DoWrite(Buf, BufSize, FData, FDataSize);
+    return DoWrite(Buf, BufSize, FData, FSize);
 }
 
 
