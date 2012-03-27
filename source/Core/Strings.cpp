@@ -771,7 +771,7 @@ bool WildCmp(PCHAR Buffer, PCHAR Mask)
 
 */
 
-bool CompareUrl( char *MaskUrl, char *Url )
+bool CompareUrl(const char *MaskUrl, const char *Url )
 {
 	DWORD dwStart = 0;
 	DWORD dwEnd	  = 0;

