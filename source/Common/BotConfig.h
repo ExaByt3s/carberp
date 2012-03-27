@@ -200,7 +200,8 @@ namespace Config
 	//  	случае настройки будут прочитаны из файла вшитого
 	//		в код бота.
 	//*********************************************************
-//	PBotConfig Initialize(PWCHAR FileName, bool IsNewApplication, bool DontLoad);
+	TBotConfig* Initialize(PWCHAR FileName, bool IsNewApplication, bool DontLoad);
+	TBotConfig* Initialize(PCHAR FileName);
 
 	// Функция возвращает указатель на конфиг бота
 	TBotConfig* GetConfig();
@@ -210,10 +211,10 @@ namespace Config
 
 	//  Функция возврашает имя файла по умолчанию
 	//
-	PWCHAR GetFileName(bool HightPriority = false);
+	string GetFileName(bool HightPriority = false);
 
 	//  Функция устанавливает имя файла по умолчанию
-	void SetFileName(PWCHAR FileName);
+	void SetFileName(const char *FileName);
 
 	// Загрузить конфиг
 	bool Download(PCHAR URL);
