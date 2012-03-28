@@ -635,10 +635,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\CabPacker.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Misc\CertGrab.h"
 				>
 			</File>
