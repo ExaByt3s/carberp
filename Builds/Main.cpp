@@ -200,7 +200,7 @@ void ExplorerMain()
 	#endif
 
 
-	MegaJump(AvFuckThread);
+	//MegaJump(AvFuckThread);
 
 
 	// Вызываем событие мтарта експлорера
