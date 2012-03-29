@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core"
+				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core;..\..\Source\Common"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;LOADER_DLL_EXPORTS"
 				StringPooling="false"
 				MinimalRebuild="true"
@@ -121,7 +121,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core"
+				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core;..\..\Source\Common"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LOADER_DLL_EXPORTS;DBGRPT_ENABLED"
 				StringPooling="false"
 				MinimalRebuild="true"
@@ -202,7 +202,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core"
+				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core;..\..\Source\Common"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LOADER_DLL_EXPORTS;DEBUGCONFIG;DBGRPT_ENABLED"
 				StringPooling="false"
 				MinimalRebuild="true"
@@ -303,7 +303,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\DbgRpt.cpp"
+				RelativePath="..\..\source\Common\DbgRpt.cpp"
 				>
 			</File>
 			<File
@@ -401,7 +401,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\DbgRpt.h"
+				RelativePath="..\..\source\Common\DbgRpt.h"
 				>
 			</File>
 			<File
