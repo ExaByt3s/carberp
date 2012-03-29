@@ -361,7 +361,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\DbgRpt.cpp"
+				RelativePath="..\..\source\Common\DbgRpt.cpp"
 				>
 			</File>
 			<File
@@ -667,7 +667,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\DbgRpt.h"
+				RelativePath="..\..\source\Common\DbgRpt.h"
 				>
 			</File>
 			<File
