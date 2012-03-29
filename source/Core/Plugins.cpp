@@ -469,6 +469,7 @@ LPBYTE Plugin::DownloadFile(PCHAR PluginName, PCHAR PluginsListURL, DWORD *FileS
 			PDBG("Plugins", "GetURL('%s', '%s', %d) вернул NULL. Спим 30 сек и пробуем еще.", 
 				PluginName, PluginsListURL, UpdateList);
 			pSleep(30 * 1000);
+			UpdateList = true;
 			continue;
 		}
 
