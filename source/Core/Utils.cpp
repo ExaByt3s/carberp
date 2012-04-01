@@ -1135,8 +1135,6 @@ bool SearchFiles(PCHAR Path, PCHAR Mask, bool Recursive, DWORD FileAttributes,
 	if (SearchMask == NULL)
 		return true;
 
-	Debug::MessageEx("", 0, "", NULL, "Path:[%s] Mask:[%s]", Path, SearchMask);
-
 	//  »щем первую директорию
 	WIN32_FIND_DATAA Find;
 	ClearStruct(Find);

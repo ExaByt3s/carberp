@@ -609,6 +609,12 @@ STRCONSTRUCTOR()::TString(const TChar* Src)
 	Data = STRBUF::CreateFromStr<TChar>(Src, 0, 0);
 }
 
+
+STRCONSTRUCTOR()::TString(const TChar* src, DWORD copylen)
+{
+	Data = STRBUF::CreateFromStr<TChar>(src, copylen, 0);
+}
+
 STRCONSTRUCTOR()::~TString()
 {
 	STRBUF::Release<TChar>(Data);
