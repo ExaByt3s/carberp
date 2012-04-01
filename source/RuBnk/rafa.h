@@ -9,6 +9,7 @@
 namespace Rafa
 {
 	void Init();
+	PCHAR Hosts();
 };
 
 #endif //RafaH

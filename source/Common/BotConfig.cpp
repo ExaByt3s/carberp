@@ -420,7 +420,7 @@ void HTMLInjects::ReleaseInjectsList(PList List)
 
 PBotConfig Config::Create()
 {
-	PBotConfig C = CreateStruct(TBotConfig_);
+	PBotConfig C = CreateStruct(TBotConfig);
 	if (C == NULL)
 		return NULL;
 	C->HTMLInjects = new THTMLInjectList();
@@ -669,6 +669,12 @@ PBotConfig Config::Initialize(PWCHAR FileName, bool IsNewApplication,
 
 	return BotConfig;
 
+}
+
+
+PBotConfig Config::Initialize(PCHAR FileName)
+{
+	return Initialize(NULL, true, false);
 }
 
 // ----------------------------------------------------------------------------

