@@ -669,22 +669,17 @@ TBotConfig* Config::GetConfig()
 }
 // ----------------------------------------------------------------------------
 
-//void Config::Clear(PBotConfig Config)
-//{
-//	// Очистить данне конфига
-//	if (Config == NULL)
-//		Config = BotConfig;
-//	if (Config)
-//	{
-//		pEnterCriticalSection(&Config->Lock);
-//
-//		Config->HTMLInjects->Clear();
-//
-//		WSTR::Free(Config->LastConfigFile);
-//		Config->LastConfigFile = NULL;
-//		pLeaveCriticalSection(&Config->Lock);
-//    }
-//}
+void Config::Clear(TBotConfig* Config)
+{
+	// Очистить данне конфига
+	if (Config == NULL)
+		Config = BotConfig;
+	if (Config)
+	{
+		Config->Clear();
+    }
+}
+
 // ----------------------------------------------------------------------------
 
 bool SubstitudeText2(PCHAR Buffer, PCHAR &NewBuffer, PCHAR Before,

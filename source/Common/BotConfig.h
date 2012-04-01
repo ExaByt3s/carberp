@@ -191,6 +191,8 @@ namespace Config
 	TBotConfig* GetConfig();
 
 
+    void Clear(TBotConfig* Config);
+
 	//  Функция возврашает имя файла конфига
 	string GetFileName(bool HightPriority = false);
 
