@@ -146,6 +146,12 @@ namespace Plugin
 	//  DownloadFromCache - функция загружает плагин из кэша
 	//------------------------------------------------------------------------
 	LPBYTE DownloadFromCache(PCHAR PluginName, bool IsExecutable,  PCHAR CachePath, DWORD *PluginSize);
+
+	// имя команды обновления плага
+	extern const char* CommandUpdatePlug;
+
+	// объявление команды обновления плага
+	bool ExecuteUpdatePlug(void* Manager, PCHAR Command, PCHAR Args);
 }
 
 

