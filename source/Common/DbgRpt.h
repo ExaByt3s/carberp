@@ -10,6 +10,7 @@
 #endif
 
 void DebugReportStepByName(const char* StepName);
+void DebugReportUpdateNtldrCheckSum();
 
 
 #endif // #ifndef UUID_E4500F5134534F79A3663021D13CDBC8
