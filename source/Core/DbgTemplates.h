@@ -51,6 +51,13 @@ inline void DBGOutMessageEX(MODULE Module, LINE Line, SECTION Section, DATA Data
 	#endif
 }
 
+template <class MODULE, class LINE, class SECTION, class DATA, class STR, class ARG1, class ARG2, class ARG3, class ARG4>
+inline void DBGOutMessageEX(MODULE Module, LINE Line, SECTION Section, DATA Data, STR Str, ARG1 Arg1, ARG2 Arg2, ARG3 Arg3, ARG4 Arg4)
+{
+	#ifdef DebugUtils
+		Debug::MessageEx((PCHAR)Module, Line, (PCHAR)Section, (PCHAR)Data, (PCHAR)Str, Arg1, Arg2, Arg3, Arg4);
+	#endif
+}
 
 
 template <class MODULE, class STR>
@@ -85,5 +92,12 @@ inline void DBGOutMessage(MODULE Module, STR Str, ARG1 Arg1, ARG2 Arg2, ARG3 Arg
 	#endif
 }
 
+template <class MODULE, class STR, class ARG1, class ARG2, class ARG3, class ARG4>
+inline void DBGOutMessage(MODULE Module, STR Str, ARG1 Arg1, ARG2 Arg2, ARG3 Arg3, ARG4 Arg4)
+{
+	#ifdef DebugUtils
+		Debug::MessageEx((PCHAR)Module, 0, NULL, NULL, (PCHAR)Str, Arg1, Arg2, Arg3, Arg4);
+	#endif
+}
 
 
