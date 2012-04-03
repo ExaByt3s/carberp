@@ -2150,7 +2150,7 @@ void TStrEnum::Initialize(const char *Buffer, bool Encrypted, DWORD EmptyBufHash
 {
 	FBuf = (PCHAR)Buffer;
 
-	if (EmptyBufHash &&  AnsiStr::Hash(Buffer) == EmptyBufHash)
+	if (AnsiStr::IsEmpty(FBuf) || (EmptyBufHash &&  AnsiStr::Hash(FBuf) == EmptyBufHash))
 		FBuf = NULL;
 
 	FEncrypted = Encrypted;
@@ -2185,6 +2185,6 @@ bool TStrEnum::Next()
 
 bool TStrEnum::IsEmpty()
 {
-	return FBuf == NULL;
+	return AnsiStr::IsEmpty(FBuf);
 }
 	

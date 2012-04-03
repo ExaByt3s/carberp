@@ -43,6 +43,8 @@
 #include "BBSCBank.h"
 
 
+#include "BSS.h"
+
 #include "VideoRecorder.h" 
 #include "bootkit.h"
 

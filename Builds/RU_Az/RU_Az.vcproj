@@ -432,6 +432,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\BSS.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\bsssign.h"
 				>
 			</File>
@@ -441,6 +445,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\RuBnk\CabPacker.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\cc.h"
 				>
 			</File>
 			<File
@@ -616,6 +624,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\rafa.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Common\Requests.h"
 				>
 			</File>
@@ -768,11 +780,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\BSS.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\bsssign.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\CabPacker.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\cc.cpp"
 				>
 			</File>
 			<File
@@ -925,6 +945,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\PostDataGrabber.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\rafa.cpp"
 				>
 			</File>
 			<File

