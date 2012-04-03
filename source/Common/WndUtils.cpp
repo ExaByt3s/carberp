@@ -260,7 +260,8 @@ bool HardClickToWindow( HWND wnd, int x, int y )
     if( proc )
     {
 		pAttachThreadInput( curThreadID, TID, TRUE );
-		pSetCapture(wnd);
+		//pSetCapture(wnd);
+		pBlockInput(TRUE);
 
         pPostMessageA( wnd, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(x,y) );
         pWaitForInputIdle( proc, INFINITE );
@@ -268,7 +269,8 @@ bool HardClickToWindow( HWND wnd, int x, int y )
         pPostMessageA( wnd, WM_LBUTTONUP, 0, MAKELPARAM(x,y) );
         pWaitForInputIdle( proc, INFINITE );
 
-		pReleaseCapture();
+		pBlockInput(FALSE);
+		//pReleaseCapture();
         pAttachThreadInput( curThreadID, TID, FALSE );
 		ret = true;
     }

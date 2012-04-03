@@ -542,6 +542,7 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 #define pmouse_event				pushargEx< DLL_USER32, 0xAB3EFAFD>
 #define pSetCapture					pushargEx< DLL_USER32, 0xEB747643>
 #define pReleaseCapture				pushargEx< DLL_USER32, 0x6B0BEF18>
+#define pBlockInput					pushargEx< DLL_USER32, 0xF103B589>
 
 //winsock
 #define pWSACleanup 				pushargEx< DLL_WINSOCK, 0x8FB8B5BD>
