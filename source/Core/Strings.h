@@ -465,17 +465,19 @@ public:
 
 	DWORD Length() const;
 	DWORD CalcLength();
-	bool IsEmpty() const;
-	void Clear();
-
-	void Insert(const TChar* Str, DWORD Position);
-	void Insert(const TString &Str, DWORD Position);
-
-	void Replace(const TChar *Str, const TChar *NewStr);
-	void Replace(const TString &Str, const TString &NewStr);
+	void  SetLength(DWORD NewLength);
+	bool  IsEmpty() const;
+	void  Clear();
 
 	void Copy(const TChar* Source, DWORD Position, DWORD Count);
 	void Copy(const TString &Source, DWORD Position, DWORD Count);
+	void Insert(const TChar* Str, DWORD Position);
+	void Insert(const TString &Str, DWORD Position);
+	void Replace(const TChar *Str, const TChar *NewStr);
+	void Replace(const TString &Str, const TString &NewStr);
+
+	int Pos(const TChar* SubStr) const;
+	int Pos(const TString &SubStr) const;
 
 	DWORD Hash();
 	DWORD Hash(DWORD Len, bool LowerChar);

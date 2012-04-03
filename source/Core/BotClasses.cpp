@@ -830,3 +830,254 @@ void TEventContainer::CallEvent(int EventId)
 {
 	CallEvent(EventId, 0, 0);
 }
+
+//*****************************************************************************
+//                        TLock
+//*****************************************************************************
+TLock::TLock(PRTL_CRITICAL_SECTION Section)
+{
+	FSection = Section;
+	if (FSection)
+		pEnterCriticalSection(FSection);
+}
+
+
+TLock::~TLock()
+{
+	if (FSection)
+		pLeaveCriticalSection(FSection);
+}
+
+TLock TLock::operator=(const TLock &Locker)
+{
+	return TLock(Locker.FSection);
+}
+
+TLock TLock::operator=(PRTL_CRITICAL_SECTION Section)
+{
+	return TLock(Section);
+}
+
+
+
+//*****************************************************************************
+//                        TMemReader
+//*****************************************************************************
+TMemReader::TMemReader(LPVOID Mem, DWORD MemSize)
+{
+	FMemory   = (LPBYTE)Mem;
+	FSize     = MemSize;
+	FPosition = 0;
+}
+
+
+DWORD TMemReader::Read(LPVOID Buf, DWORD Size)
+{
+	// Читаем порцию данных
+	DWORD Readed = Min(Size, FSize - FPosition);
+
+	m_memcpy(Buf, FMemory + FPosition, Readed);
+	FPosition += Readed;
+	return Readed;
+}
+
+int   TMemReader::ReadInt()
+{
+	int R = 0;
+	Read(&R, sizeof(R));
+	return R;
+}
+
+BYTE  TMemReader::ReadByte()
+{
+	BYTE R = 0;
+	Read(&R, sizeof(R));
+	return R;
+}
+
+string  TMemReader::ReadString(DWORD Size)
+{
+	string R(Size);
+    Read(R.t_str(), Size);
+	return R;
+}
+
+string  TMemReader::ReadSizedString()
+{
+	// Читает строку формата [DWORD: Размер][Строка]
+	DWORD Size = 0;
+	Read(&Size, sizeof(Size));
+	string S(Size);
+	if (Size)
+		Read(S.t_str(), Size);
+	return S;
+}
+
+
+
+//*****************************************************************************
+//                        TBotCollection
+//*****************************************************************************
+
+TBotCollection::TBotCollection()
+{
+	FItems = List::Create();
+	FLock = NULL;
+}
+
+TBotCollection::~TBotCollection()
+{
+	Clear();
+	List::Free(FItems);
+
+	if (FLock)
+	{
+		pDeleteCriticalSection(FLock);
+		FreeStruct(FLock);
+	}
+}
+
+
+// По умолчанию коллекция создаётся потоко НЕ защищённой
+// Для включения потокозащищённости необходимо вызвать данную функцию
+// Соответственно функция должна вызываться до начала работы в потоках
+void TBotCollection::SetThreadSafe()
+{
+	if (!FLock)
+	{
+		FLock = CreateStruct(RTL_CRITICAL_SECTION);
+		pInitializeCriticalSection(FLock);
+    }
+}
+
+// Вход в критическую секцию
+void TBotCollection::Lock()
+{
+	if (FLock)
+        pEnterCriticalSection(FLock);
+}
+
+// Выход из критической секции
+void TBotCollection::Unlock()
+{
+	if (FLock)
+        pLeaveCriticalSection(FLock);
+}
+
+// Функция входит в критическую секцию и возвращает объект блокировки
+TLock TBotCollection::GetLocker()
+{
+	return FLock;
+}
+
+
+// Вставляем элемент в коллекцию
+void TBotCollection::InsertItem(TBotCollectionItem* Item)
+{
+	if (Item && Item->FOwner != this)
+	{
+		// Извлекаем элемент из другой коллекции
+		if (Item->FOwner) Item->FOwner->RemoveItem(Item);
+
+		// Блокируем метод
+		TLock Lock(FLock);
+		//--------------------------------
+
+		List::Add(FItems, Item);
+		Item->FOwner = this;
+    }
+}
+
+//Извлекаем элемент из коллекции
+void TBotCollection::RemoveItem(TBotCollectionItem* Item)
+{
+	if (Item && Item->FOwner == this)
+	{
+		// Блокируем метод
+		TLock Lock(FLock);
+		//--------------------------------
+
+		List::Remove(FItems, Item);
+		Item->FOwner = NULL;
+    }
+}
+
+
+// Функция очищает список элементов
+void TBotCollection::Clear()
+{
+	// Блокируем метод
+	TLock Lock(FLock);
+    //--------------------------------
+
+	DWORD Count = List::Count(FItems);
+	for (DWORD i = 0; i < Count; i++)
+	{
+	   TBotCollectionItem* Item = (TBotCollectionItem*)List::GetItem(FItems, i);
+	   Item->FOwner = NULL;
+       delete Item;
+	}
+
+	List::Clear(FItems);
+}
+
+
+// Функция возвращает кольчество элементов списка
+int TBotCollection::Count()
+{
+	// Блокируем метод
+	TLock Lock(FLock);
+	//--------------------------------
+
+	return List::Count(FItems);
+}
+
+// Функция возвращает запрашиваемый элемент
+TBotCollectionItem* TBotCollection::Items(int Index)
+{
+	// Блокируем метод
+	TLock Lock(FLock);
+	//--------------------------------
+
+    return (TBotCollectionItem*)List::GetItem(FItems, Index);
+}
+
+
+//*****************************************************************************
+//                        TBotCollectionItem
+//*****************************************************************************
+
+TBotCollectionItem::TBotCollectionItem(TBotCollection* aOwner)
+{
+   if (aOwner) aOwner->InsertItem(this);
+}
+
+TBotCollectionItem::~TBotCollectionItem()
+{
+	if (FOwner) FOwner->RemoveItem(this);
+}
+
+
+void TBotCollectionItem::Lock()
+{
+	if (FOwner) FOwner->Lock();
+}
+
+void TBotCollectionItem::Unlock()
+{
+	if (FOwner) FOwner->Unlock();
+}
+
+TBotCollection* TBotCollectionItem::Owner()
+{
+	return FOwner;
+}
+
+void TBotCollectionItem::SetOwner(TBotCollection* aOwner)
+{
+	if (aOwner)
+		aOwner->InsertItem(this);
+	else
+	if (FOwner)
+    	FOwner->RemoveItem(this);
+}

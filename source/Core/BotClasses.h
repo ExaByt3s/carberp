@@ -226,18 +226,88 @@ private:
 	PRTL_CRITICAL_SECTION FSection;
 public:
 
-	TLock(PRTL_CRITICAL_SECTION Section)
-	{
-		FSection = Section;
-		if (FSection) pEnterCriticalSection(FSection);
-	}
+	TLock(PRTL_CRITICAL_SECTION Section);
+	~TLock();
 
-
-	~TLock()
-	{
-    	if (FSection) pLeaveCriticalSection(FSection);
-    }
+	TLock operator=(const TLock &Locker);
+	TLock operator=(PRTL_CRITICAL_SECTION Section);
 };
+
+
+
+//**********************************************************
+// TMemReader - Класс чтения/записи данных из
+//                    выделенного блока памяти
+//**********************************************************
+class TMemReader : public TBotObject
+{
+private:
+	LPBYTE FMemory;
+	DWORD  FSize;
+	DWORD  FPosition;
+public:
+	TMemReader(LPVOID Mem, DWORD MemSize);
+
+	DWORD   Read(LPVOID Buf, DWORD Size);
+	int     ReadInt();
+	BYTE    ReadByte();
+	string  ReadString(DWORD Size);
+	string  ReadSizedString();  // Читает строку формата [DWORD: Размер][Строка]
+
+};
+
+
+
+//**********************************************************
+//  TBotCollection - Коллекия элементов
+//**********************************************************
+class TBotCollectionItem;
+
+class TBotCollection : public TBotObject
+{
+private:
+	PList FItems;
+    PRTL_CRITICAL_SECTION FLock;
+	void InsertItem(TBotCollectionItem* Item);
+	void RemoveItem(TBotCollectionItem* Item);
+
+	friend class TBotCollectionItem;
+protected:
+	void Lock();
+	void Unlock();
+public:
+	TBotCollection();
+	~TBotCollection();
+
+
+	void  Clear();
+	void  SetThreadSafe();
+	int   Count();
+	TLock GetLocker();
+    TBotCollectionItem* Items(int Index);
+};
+
+
+//**********************************************************
+//  TBotCollectionItem - Элемент коллекции
+//**********************************************************
+class TBotCollectionItem : public TBotObject
+{
+private:
+	TBotCollection* FOwner;
+
+	friend class TBotCollection;
+protected:
+	void Lock();
+	void Unlock();
+public:
+	TBotCollectionItem(TBotCollection* aOwner);
+	~TBotCollectionItem();
+
+	TBotCollection* Owner();
+	void            SetOwner(TBotCollection* aOwner);
+};
+
 
 //---------------------------------------------------------------------------
 #endif
