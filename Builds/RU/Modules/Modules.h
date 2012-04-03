@@ -35,6 +35,7 @@
 
 #include "FgrFilters.h"
 
+#include "BSS.h"
 
 #include "KeyLogSystems.h"
 #include "IBankSystem.h"

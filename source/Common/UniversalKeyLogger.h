@@ -48,7 +48,7 @@
 	// которое обрабатывает базовык функции бота.
 	// приложение написано на Builder c++ 2010 и
 	// называется AgentFullTest.exe
-	#define PROCESS_HASH_IE 0x5E1DF91B /* agentfulltest.exe */
+	#define PROCESS_HASH_IE 0x7486E952 /* agentfulltestxe.exe */
 #else
 	#define PROCESS_HASH_IE     0x250DFA8F /* iexplore.exe */
 #endif

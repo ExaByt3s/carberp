@@ -183,6 +183,26 @@ PCHAR GetWndText(HWND Wnd)
     return Str;
 }
 
+
+string GetWndText2(HWND Wnd)
+{
+	string Text;
+	if (Wnd)
+	{
+		DWORD Len = (DWORD)pSendMessageA(Wnd, WM_GETTEXTLENGTH, 0, 0);
+
+		if (Len)
+		{
+			Text.SetLength(Len);
+			// При получении текста, для конечного нуля,
+			// длину указываем на один символ больше
+			pSendMessageA(Wnd, WM_GETTEXT, Len + 1, (LPARAM)Text.t_str());
+        }
+    }
+
+	return Text;
+}
+
 //---------------------------------------------------------------------------
 
 PCHAR GetWndClassName(HWND Wnd)
@@ -199,22 +219,22 @@ PCHAR GetWndClassName(HWND Wnd)
 
 	return S;
 }
+
+
+string GetWndClassName2(HWND Wnd)
+{
+	string S(MAX_PATH);
+	int Len = (int)pGetClassNameA(Wnd, S.t_str(), MAX_PATH);
+	S.SetLength(Len);
+	return S;
+}
+
 //---------------------------------------------------------------------------
 
 DWORD GetWndTextHash(HWND Wnd, bool LowerChar)
 {
 	//Возвращает хеш заголовка окна
-	if (Wnd != NULL)
-	{
-		DWORD Len = (DWORD)pSendMessageA(Wnd, WM_GETTEXTLENGTH, 0, 0);
-		if (Len != 0)
-		{
-			string S(Len);
-			pSendMessageA(Wnd, WM_GETTEXT, Len, (LPARAM)S.t_str());
-			return S.Hash(0, LowerChar);
-		}
-	}
-	return 0;
+	return GetWndText2(Wnd).Hash();
 }
 
 
@@ -265,7 +285,6 @@ bool HardClickToWindow( HWND wnd, int x, int y )
 
         pPostMessageA( wnd, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(x,y) );
         pWaitForInputIdle( proc, INFINITE );
-
         pPostMessageA( wnd, WM_LBUTTONUP, 0, MAKELPARAM(x,y) );
         pWaitForInputIdle( proc, INFINITE );
 

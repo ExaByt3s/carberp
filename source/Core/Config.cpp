@@ -73,12 +73,18 @@ namespace CONFIGDEBUGSTRINGS
 #else
 
 	//  Хосты должны быть с двумя нулями в конце
-	char BOT_HOSTS_ARRAY[MAX_HOSTS_BUF_SIZE]	  = "rus.gipa.in\0";
+
+//	char BOT_HOSTS_ARRAY[MAX_HOSTS_BUF_SIZE]	  = "rus.gipa.in\0";
+//	PCHAR DebugPassword   = "bRS8yYQ0APq9xfzC";
+//	char DebugBotPrefix[] = "aaaaaaaaa";
+//	PCHAR DebugDelay      = "1";
+
+
+	char BOT_HOSTS_ARRAY[MAX_HOSTS_BUF_SIZE] = "rus.zika.in\0";
 
 	PCHAR DebugPassword   = "bRS8yYQ0APq9xfzC";
-	char DebugBotPrefix[] = "aaaaaaaaa";
+	char DebugBotPrefix[] = "BotTeat";
 	PCHAR DebugDelay      = "1";
-
 
 #endif
 

@@ -432,6 +432,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\BSS.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\bsssign.h"
 				>
 			</File>
@@ -773,6 +777,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\BotUtils.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\BSS.cpp"
 				>
 			</File>
 			<File
