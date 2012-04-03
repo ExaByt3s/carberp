@@ -8,6 +8,7 @@
 #include "HTTPConsts.h"
 #include "Task.h"
 #include "md5.h"
+#include "KillOs_Reboot.h"
 
 //---------------------------------------------------------------------------
 
