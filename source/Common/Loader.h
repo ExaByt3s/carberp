@@ -134,7 +134,7 @@ typedef struct
 } BSSINIST, *PBSSINIST;
 
 //#ifdef RuBnkH
-DWORD WINAPI SendBSSInist( LPVOID lpData);
+//DWORD WINAPI SendBSSInist( LPVOID lpData);
 char *RecvAndParse( SOCKET Socket, LPDWORD dwRecved );
 
 

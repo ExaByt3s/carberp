@@ -83,7 +83,7 @@ namespace CONFIGDEBUGSTRINGS
 	char BOT_HOSTS_ARRAY[MAX_HOSTS_BUF_SIZE] = "rus.zika.in\0";
 
 	PCHAR DebugPassword   = "bRS8yYQ0APq9xfzC";
-	char DebugBotPrefix[] = "BotTeat";
+	char DebugBotPrefix[] = "Bwwdxqiiatwvbvsss";
 	PCHAR DebugDelay      = "1";
 
 #endif
