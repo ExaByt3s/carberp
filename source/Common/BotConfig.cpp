@@ -328,7 +328,8 @@ bool DoLoadConfigFromFileEx(TBotConfig* Config, PWCHAR FileName)
 //
 //	return Result;
 //
-//}
+//}
+
 
 // ----------------------------------------------------------------------------
 //void CheckConfigUpdates(PBotConfig Config)
@@ -362,7 +363,8 @@ bool DoLoadConfigFromFileEx(TBotConfig* Config, PWCHAR FileName)
 //		WSTR::Free(FN);
 //	}
 //#endif
-//}
+//}
+
 
 // ----------------------------------------------------------------------------
 
@@ -400,7 +402,8 @@ void HTMLInjects::ReleaseInjectsList(PList List)
 //	C->HTMLInjects = new THTMLInjectList();
 //	pInitializeCriticalSection(&C->Lock);
 //	return C;
-//}
+//}
+
 // ----------------------------------------------------------------------------
 
 //void Config::Free(PBotConfig Cfg)
@@ -412,7 +415,8 @@ void HTMLInjects::ReleaseInjectsList(PList List)
 //	List::Free(Cfg);
 ////	pDeleteCriticalSection(&Cfg->Lock);
 //	FreeStruct(Cfg);
-//}
+//}
+
 
 // ----------------------------------------------------------------------------
 
@@ -618,7 +622,8 @@ bool Config::Download(PCHAR URL)
 //
 //	return BotConfig;
 //
-//}
+//}
+
 
 // ----------------------------------------------------------------------------
 TBotConfig* Config::Initialize(PCHAR FileName)
