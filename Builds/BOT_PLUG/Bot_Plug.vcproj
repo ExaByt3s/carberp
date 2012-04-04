@@ -321,6 +321,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\BSS.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\bsssign.cpp"
 				>
 			</File>
@@ -627,11 +631,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\BSS.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\bsssign.h"
 				>
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\CabPacker.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Source\RuBnk\CabPacker.h"
 				>
 			</File>
 			<File

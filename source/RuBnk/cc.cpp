@@ -6,7 +6,9 @@
 #include "Config.h"
 #include "BotHTTP.h"
 #include "cc.h"
-#include "BotDebug.h"
+
+
+//#include "BotDebug.h"
 
 namespace DBGCC
 {

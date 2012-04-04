@@ -58,6 +58,7 @@
 //#include "yandex.h"
 #include "rafa.h"
 #include "cc.h"
+#include "BSS.h"
 
 #include "FgrFilters.h"
 //#include "BotMonitor.h"

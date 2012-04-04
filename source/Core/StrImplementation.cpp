@@ -1,6 +1,6 @@
 
 #ifndef StringsH
-	Исключите файл из проекта
+	#error Исключите файл из проекта
 #endif
 
 
@@ -330,8 +330,8 @@ STRBUFAPI(TChar*) STRBUF::Alloc(DWORD Size)
 	TStrRec* Buf = (TStrRec*)HEAP::Alloc(BufSize);
 	if (Buf == NULL) return NULL;
 
-	Buf->Size = Size;
-	Buf->Length = 0;
+	Buf->Size     = Size;
+	Buf->Length   = Size;
 	Buf->RefCount = 1;
 
 	Buf++;
@@ -595,6 +595,11 @@ STRBUFAPI(void) STRBUF::Replace(TChar* &Str, const TChar* SubStr, DWORD SBLen, c
 
 STRCONSTRUCTOR()::TString(unsigned long StrBufSize)
 {
+	// По умолчанию считается, что длина строки будет равняться
+	// размеру буфера. Если буфер будет использоваться при получении
+	// данных, длина которых, заранее не известна то после их получения
+	// необходимо поправить значчение длины строки вызовом функции
+	// CalcLength
 	Data = STRBUF::Alloc<TChar>(StrBufSize);
 }
 
@@ -607,6 +612,12 @@ STRCONSTRUCTOR()::TString(const TString& src)
 STRCONSTRUCTOR()::TString(const TChar* Src)
 {
 	Data = STRBUF::CreateFromStr<TChar>(Src, 0, 0);
+}
+
+
+STRCONSTRUCTOR()::TString(const TChar* src, DWORD copylen)
+{
+	Data = STRBUF::CreateFromStr<TChar>(src, copylen, 0);
 }
 
 STRCONSTRUCTOR()::~TString()
@@ -733,6 +744,43 @@ STRFUNC(void)::ConvertToLinuzFormat()
 }
 
 
+STRFUNC(void)::SetLength(DWORD NewLength)
+{
+	// Функция устанавливает длину строки
+	if (NewLength == 0)
+		STRBUF::Release<TCHAR>(Data);
+	else
+	{
+		if (Data)
+		{
+			STRBUF::TStrRec &Rec = STRBUF::GetRec<TCHAR>(Data);
+
+			if (Rec.RefCount > 1 || Rec.Size < NewLength)
+			{
+				TCHAR* Tmp = Data;
+				Data = STRBUF::CreateFromStr<TCHAR>(Tmp, Rec.Length, NewLength);
+				STRBUF::Release<TCHAR>(Tmp);
+			}
+			STRBUF::GetRec<TCHAR>(Data).Length = NewLength;
+			*(Data + NewLength) = 0;
+		}
+		else
+			Data = STRBUF::Alloc<TCHAR>(NewLength);
+    }
+}
+
+
+STRFUNC(int)::Pos(const TChar* SubStr) const
+{
+	return STRUTILS<TCHAR>::Pos(Data, SubStr);
+}
+
+STRFUNC(int)::Pos(const TString &SubStr) const
+{
+	return STRUTILS<TCHAR>::Pos(Data, SubStr.Data);
+}
+
+
 
 STRFUNC(TString<TChar>&)::operator=(const TString &Source)
 {
@@ -819,5 +867,4 @@ STRFUNC(TChar&)::operator[](const DWORD Index)
 	Unique();
 	return Data[Index];
 }
-
 

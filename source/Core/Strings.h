@@ -45,7 +45,7 @@ const wchar_t * WINAPI m_wcsstr( const wchar_t * _Str, const wchar_t * _SubStr )
 bool WildCmp(const char *Buffer, const char *Mask, LPDWORD Start, LPDWORD End, LPDWORD Len );
 bool WildCmp(PCHAR Buffer, PCHAR Mask);
 
-bool CompareUrl( char *MaskUrl, char *Url );
+bool CompareUrl(const char *MaskUrl, const char *Url );
 
 WCHAR * AnsiToUnicode( char *AnsiString, DWORD dwStrLen );
 wchar_t* UTF8ToUnicode( const char* utf8String );
@@ -460,22 +460,25 @@ public:
 	TString(unsigned long StrBufSize);
 	TString(const TString& src);
 	TString(const TChar* src);
+	TString(const TChar* src, DWORD copylen);
 
 	~TString();
 
 	DWORD Length() const;
 	DWORD CalcLength();
-	bool IsEmpty() const;
-	void Clear();
-
-	void Insert(const TChar* Str, DWORD Position);
-	void Insert(const TString &Str, DWORD Position);
-
-	void Replace(const TChar *Str, const TChar *NewStr);
-	void Replace(const TString &Str, const TString &NewStr);
+	void  SetLength(DWORD NewLength);
+	bool  IsEmpty() const;
+	void  Clear();
 
 	void Copy(const TChar* Source, DWORD Position, DWORD Count);
 	void Copy(const TString &Source, DWORD Position, DWORD Count);
+	void Insert(const TChar* Str, DWORD Position);
+	void Insert(const TString &Str, DWORD Position);
+	void Replace(const TChar *Str, const TChar *NewStr);
+	void Replace(const TString &Str, const TString &NewStr);
+
+	int Pos(const TChar* SubStr) const;
+	int Pos(const TString &SubStr) const;
 
 	DWORD Hash();
 	DWORD Hash(DWORD Len, bool LowerChar);

@@ -35,6 +35,7 @@ namespace Rafa {
 		Cancel = C;
 	}
 
+
 	void CopyRafaKeyFiles(LPVOID Sender)
 	{
 		DBGRAFA( "Rafa", "Активирована" );
@@ -65,4 +66,3 @@ namespace Rafa {
 		}
 	}
 }
-

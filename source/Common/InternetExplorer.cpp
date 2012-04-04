@@ -1406,7 +1406,7 @@ bool HookInternetExplorer() {
 
 #ifdef HTMLInjectsH
 	IEDBG("Инициализируем HTML инжекты");
-	Config::Initialize(NULL, true, false); 
+	Config::Initialize();
 #endif
 
 	if (!HookInternetExplorerApi())

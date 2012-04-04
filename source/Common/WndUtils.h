@@ -78,12 +78,14 @@ HWND AllocateWND(WNDPROC WndProc);
 //--------------------------------------------------------------
 //  GetWNDText - Функция возвращает текст окна
 //--------------------------------------------------------------
-PCHAR GetWndText(HWND Wnd);
+PCHAR  GetWndText(HWND Wnd);
+string GetWndText2(HWND Wnd);
 
 //--------------------------------------------------------------
 //  GetWndClassName - Функция возвращает имя класса окна
 //--------------------------------------------------------------
 PCHAR GetWndClassName(HWND Wnd);
+string GetWndClassName2(HWND Wnd);
 
 
 //Возвращает хеш заголовка окна
