@@ -23,7 +23,17 @@
 #include "BackConnect.h" // Модуль обратной связи
 #include "StealthBrowser.h" // Скрытый браузер
 
+
 #include "KeyLogSystems.h" 
+
+#include "bsssign.h"
+#include "BssSendFile.h"
+
+//#include "yandex.h"
+#include "rafa.h"
+
+#include "cc.h"
+#include "BSS.h"
 
 
 #include "Hunter.h" 
@@ -33,11 +43,8 @@
 #include "RuBnk.h" 
 #include "CyberPlatDLL.h"
 
-#include "bsssign.h"
-#include "BssSendFile.h"
 
-
-#include "Sber.h"
+//#include "Sber.h"
 
 #include "java_patcher.h"
 #include "JavaConfig.h"
@@ -55,16 +62,12 @@
 #include "IBankSystem.h"
 #include "avangard.h"
 
-//#include "yandex.h"
-#include "rafa.h"
-#include "cc.h"
-#include "BSS.h"
-
 #include "FgrFilters.h"
+
+
 //#include "BotMonitor.h"
 
 #ifdef  DEBUGCONFIG
 	#include "BotMonitor.h"
 #endif
-
 
