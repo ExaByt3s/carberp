@@ -215,7 +215,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)\bot.plug"
+				OutputFile="$(OutDir)\DBG_bot.plug"
 				LinkIncremental="1"
 				ModuleDefinitionFile="Bot_Plug.def"
 				GenerateDebugInformation="false"
