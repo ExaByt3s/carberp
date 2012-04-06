@@ -13,6 +13,7 @@
 #include "ntdll.h"
 #include "Utils.h"
 #include "Modules.h"
+#include "JavaConfig.h"
 
 #include "Richedit.h"
 
