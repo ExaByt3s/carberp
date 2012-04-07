@@ -1191,6 +1191,7 @@ BOOL WINAPI HOOK_HttpQueryInfoA(HINTERNET hRequest, DWORD dwInfoLevel,
         	*(Buf + Cur) = 0;
 
 		HTTPParser::SetHeaderValue(Buf, Cur, Max, ParamCacheControl, ValueNoCacheDocument, lpdwBufferLength);
+		*lpdwBufferLength = AnsiStr::Length(Buf);
 	}
 
     return Result;

