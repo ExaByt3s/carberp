@@ -16,7 +16,7 @@
 
 //---------------------------------------------------------------------------
 
-#include "BotDebug.h"
+//#include "BotDebug.h"
 
 namespace KEYLOGDEBUGSTRINGS
 {

@@ -6,6 +6,7 @@
 
 #include <windows.h>
 #include "Crypt.h"
+#include "Strings.h"
 
 
 
@@ -195,15 +196,14 @@ class TEventContainer : public TBotObject
 {
 private:
 	PList FEvents;
-protected:
-	void CallEvent(int EventId, DWORD WParam, DWORD LParam);
-	void CallEvent(int EventId);
 public:
-    TEventContainer() : FEvents(0) {};
+    TEventContainer() { FEvents = NULL; }
 	~TEventContainer();
 
 	int AttachEvent(int EventId, TBotEvent Event);
 	void DetachEvent(int Index);
+	void CallEvent(int EventId, DWORD WParam, DWORD LParam);
+	void CallEvent(int EventId);
 };
 
 
@@ -308,6 +308,36 @@ public:
 	void            SetOwner(TBotCollection* aOwner);
 };
 
+
+
+//**********************************************************
+//  TValues - Набор именованных значений
+//**********************************************************
+
+class TValue : public TBotCollectionItem
+{
+public:
+	TValue(TBotCollection* aOwner) : TBotCollectionItem(aOwner) {};
+	string Name;
+	string Value;
+};
+
+
+class TValues : public TBotCollection
+{
+protected:
+	  TValue* GetItemByName(const char* Name);
+public:
+	TValues();
+
+	void AddValue(const string &Name, const string &Value);
+	void SetValue(int Index, const string &Value);
+	void SetValue(const char* Name, const string &Value);
+
+	string GetValue(int Index);
+	string GetValue(const char *Name);
+
+};
 
 //---------------------------------------------------------------------------
 #endif

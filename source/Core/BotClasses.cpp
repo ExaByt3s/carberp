@@ -781,6 +781,16 @@ int TEventContainer::AttachEvent(int EventId, TBotEvent Event)
 		FEvents = List::Create();
 		List::SetFreeItemMehod(FEvents, FreeEventItem);
 	}
+	else
+	{
+		// Проверяем  наличие такого события в списке
+		for (int i = 0; i < List::Count(FEvents); i++)
+		{
+			TEventItem* Item = (TEventItem*)List::GetItem(FEvents, i);
+			if (Item->ID == EventId && Item->Event == Event)
+				return i;
+		}
+    }
 
     int Index = -1;
 
@@ -1049,7 +1059,8 @@ TBotCollectionItem* TBotCollection::Items(int Index)
 
 TBotCollectionItem::TBotCollectionItem(TBotCollection* aOwner)
 {
-   if (aOwner) aOwner->InsertItem(this);
+	FOwner = NULL;
+	if (aOwner) aOwner->InsertItem(this);
 }
 
 TBotCollectionItem::~TBotCollectionItem()
@@ -1081,4 +1092,70 @@ void TBotCollectionItem::SetOwner(TBotCollection* aOwner)
 	else
 	if (FOwner)
     	FOwner->RemoveItem(this);
+}
+
+
+
+//*****************************************************************************
+//                            TValues
+//*****************************************************************************
+
+
+TValues::TValues()
+	: TBotCollection()
+{
+}
+
+// Функция возвращает элемент по его имени
+TValue* TValues::GetItemByName(const char* Name)
+{
+	DWORD Cnt = Count();
+	for (int i = 0; i < Cnt; i++)
+	{
+		TValue* V = (TValue*)Items(i);
+		if (V->Name == Name)
+			return V;
+	}
+	return NULL;
+}
+
+void TValues::AddValue(const string &Name, const string &Value)
+{
+	TValue* V = new TValue(NULL);
+	V->Name  = Name;
+	V->Value = Value;
+	V->SetOwner(this);
+}
+
+void TValues::SetValue(int Index, const string &Value)
+{
+	((TValue*)Items(Index))->Value = Value;
+}
+
+// Устанавливаем значение
+void TValues::SetValue(const char* Name, const string &Value)
+{
+	TValue* V = GetItemByName(Name);
+	if (V)
+		V->Value = Value;
+	else
+        AddValue(Name, Value);
+}
+
+
+// Получам значение по индексу
+string TValues::GetValue(int Index)
+{
+    return ((TValue*)Items(Index))->Value;
+}
+
+
+// Получам значение по имени
+string TValues::GetValue(const char *Name)
+{
+	TValue* V = GetItemByName(Name);
+	if (V)
+		return V->Value;
+	else
+        return string(NULLSTR);
 }

@@ -51,6 +51,8 @@ private:
 protected:
 	bool GetInjectsForURL(THTTPMethod Method, const char *URL, PList List);
 public:
+	TValues* Variables;
+
 	THTMLInjectList();
 	~THTMLInjectList();
 
