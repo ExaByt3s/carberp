@@ -1121,7 +1121,7 @@ void THTMLInjectList::ReleaseInjects(PList Injects)
 	//----------------------------
 
 	int Cnt = List::Count(Injects);
-	for (DWORD i = 0; i < Cnt; i++)
+	for (int i = 0; i < Cnt; i++)
 	{
 		((THTMLInject*)List::GetItem(Injects, i))->Release();;
 	}
@@ -1255,7 +1255,7 @@ THTMLInjectData* THTMLInject::AddData()
 // содержится имя переменной
 int THTMLInject::ContainVariable(const char* VarName)
 {
-	DWORD Count = FItems->Count();
+	int Count = FItems->Count();
 	for (int i = 0; i < Count; i++)
 	{
 		THTMLInjectData* D = Items(i);
@@ -1402,7 +1402,7 @@ bool TBJBConfigReader::Read(TBotConfig* Config)
 	// ------------- Загружаем данные инжектов -------------//
 	THTMLInject *Inject;
 	THTMLInjectData *Data;
-	DWORD ID;
+	DWORD ID = 0;
 
 	for (DWORD i = 0; i < Count; i++)
 	{

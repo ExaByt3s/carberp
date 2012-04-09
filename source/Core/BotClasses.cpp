@@ -784,7 +784,7 @@ int TEventContainer::AttachEvent(int EventId, TBotEvent Event)
 	else
 	{
 		// Проверяем  наличие такого события в списке
-		for (int i = 0; i < List::Count(FEvents); i++)
+		for (DWORD i = 0; i < List::Count(FEvents); i++)
 		{
 			TEventItem* Item = (TEventItem*)List::GetItem(FEvents, i);
 			if (Item->ID == EventId && Item->Event == Event)
@@ -1109,7 +1109,7 @@ TValues::TValues()
 // Функция возвращает элемент по его имени
 TValue* TValues::GetItemByName(const char* Name)
 {
-	DWORD Cnt = Count();
+	int Cnt = Count();
 	for (int i = 0; i < Cnt; i++)
 	{
 		TValue* V = (TValue*)Items(i);
