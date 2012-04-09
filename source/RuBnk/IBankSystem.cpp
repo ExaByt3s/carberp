@@ -226,7 +226,7 @@ namespace IBank
 		#endif
 
 
-		return = Real_Connect(s, name, namelen);
+		return Real_Connect(s, name, namelen);
 	}
 	//-----------------------------------------------------------------------
 

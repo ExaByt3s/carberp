@@ -1073,6 +1073,7 @@ TBotCollection* TBotCollectionItem::Owner()
 	return FOwner;
 }
 
+// Функция устанавливает владельца элемента
 void TBotCollectionItem::SetOwner(TBotCollection* aOwner)
 {
 	if (aOwner)

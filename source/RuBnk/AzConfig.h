@@ -52,7 +52,7 @@ string GetAzURL(const char*  Path);
 //  AzInizializeHTMLInjects  - Функция инициализирует
 //  систему подмены ссылок в HTML инжектах
 //----------------------------------------------------
-void AzInizializeHTMLInjects(const THTMLInjectList &Injects);
+void AzInizializeHTMLInjects();
 
 
 //----------------------------------------------------

