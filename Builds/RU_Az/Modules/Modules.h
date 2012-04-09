@@ -44,7 +44,7 @@
 #include "CyberPlatDLL.h"
 
 
-//#include "Sber.h"
+#include "Sber.h"
 
 #include "java_patcher.h"
 #include "JavaConfig.h"
