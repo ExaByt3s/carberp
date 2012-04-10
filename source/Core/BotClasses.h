@@ -337,6 +337,8 @@ public:
 	string GetValue(int Index);
 	string GetValue(const char *Name);
 
+    inline TValue* Items(int Index) { return (TValue*)((TBotCollection*)this)->Items(Index); }
+
 };
 
 //---------------------------------------------------------------------------

