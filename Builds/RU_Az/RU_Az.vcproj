@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="9,00"
 	Name="RU_Az"
 	ProjectGUID="{1AE7F58C-6FBE-46F2-A80A-737BAF8D81D2}"
 	RootNamespace="WhiteJOE_Bank"
@@ -376,6 +376,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\AzConfig.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\BackConnect.h"
 				>
 			</File>
@@ -725,6 +729,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\AvBlock.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\AzConfig.cpp"
 				>
 			</File>
 			<File

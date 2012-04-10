@@ -20,6 +20,7 @@
 #include "BotEvents.h"
 #include "Task.h"
 #include "md5.h"
+#include "BotDef.h"
 
 #include "Modules.h"
 
@@ -246,6 +247,8 @@ int APIENTRY MyMain()
 {
 
 	BOT::Initialize();
+
+	MDBG("Main", "Запускается бот. Версия бота %s", BOT_VERSION);
 
 
 	#if defined(DEBUGBOT) && defined(DebugUtils)

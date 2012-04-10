@@ -49,7 +49,7 @@
 #include "java_patcher.h"
 #include "JavaConfig.h"
 
-#include "AzConfig.h"
+//#include "AzConfig.h"
 
 #include "KillOs_Reboot.h"
 #include "BBSCBank.h"
