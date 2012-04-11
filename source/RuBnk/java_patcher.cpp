@@ -39,7 +39,7 @@ static int javaCompatible = 0; //совместимость явы для разных алгоритмов установ
 static char javaHome[MAX_PATH]; //папка явы
 static char javaMSI[MAX_PATH]; //папка с параметрами автообновления
 
-char versionPatch[] = "1.4"; //версия патча
+char versionPatch[] = "1.5"; //версия патча
 
 //Определяет версию явы, возвращает true если ява есть, иначе false. Заодно в переменную javaHome ложит путь к яве
 static bool GetJavaVersion()
