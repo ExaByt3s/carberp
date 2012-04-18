@@ -246,6 +246,9 @@ BOOL DIAMONDAPI FN_FCIGETNEXTCABINET(
 
 HCAB CreateCab( const char *szCabName )
 {
+	if (STRA::IsEmpty(szCabName))
+		return NULL;
+
 	PCABDATA pC = (PCABDATA)MemAlloc( sizeof( CABDATA ) );
 	plstrcpyA( pC->cab.szCab, szCabName );
 	pC->cab.cb = 0x7FFFFFFF;

