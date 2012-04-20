@@ -3,6 +3,8 @@
 
 #include "windows.h"
 
+#include "Javaclient2015Saver.h"
+
 const char* GetJREPath();
 const char UpdatePath[] = "UpdatePatch\0";
 const char DeletePath[] = "deletepatch\0";

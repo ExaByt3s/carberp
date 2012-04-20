@@ -798,7 +798,7 @@ PRInt32 PR_WriteHook(PRFileDesc *fd, const void* buf, PRInt32 amount )
 					SubstituteHeader((PCHAR)buf, amount);
 
 					FFDBG(Request, (PCHAR)buf, "   >>>>>> Inject URL=%s", Request->URL);
-				}
+				} 
             #endif
 		}
 	}

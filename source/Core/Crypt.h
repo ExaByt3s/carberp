@@ -186,5 +186,20 @@ namespace UIDCrypt
 }
 
 
+
+//*********************************************************************
+//  Ѕазовый класс дл€ шифровани€ использу€ CryptoApi
+//*********************************************************************
+class TWinCrypt : public TBotObject
+{
+protected:
+    HCRYPTPROV FProvider;
+public:
+	TWinCrypt();
+	~TWinCrypt();
+	HCRYPTPROV inline Provider()  { return FProvider; }
+};
+
+
 //-----------------------------------------------------------------------------
 #endif
