@@ -347,6 +347,7 @@ HANDLE WINAPI Hook_CreateFileA( LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD 
 HANDLE WINAPI Hook_CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile )
 {
 	HANDLE File = Real_CreateFileW(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile );
+
 	if( (stateGrabber & (IGNOREHOOK | INHOOK)) == 0 && (dwFlagsAndAttributes & FILE_FLAG_OVERLAPPED) == 0 && lpFileName && lpFileName[0] != '/' && lpFileName[0] != '\\' ) //игнорируем открытие разных портов
 	{
 		//stateGrabber |= INHOOK;
@@ -359,7 +360,8 @@ HANDLE WINAPI Hook_CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD
 		e.unicode = true;
 		e.access = dwDesiredAccess;
 		e.file = File;
-		SendEvent(e); //посылаем событие
+
+	   	SendEvent(e); //посылаем событие
 		//stateGrabber &= ~INHOOK;
 	}
 	return File;

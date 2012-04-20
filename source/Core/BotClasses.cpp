@@ -907,7 +907,8 @@ BYTE  TMemReader::ReadByte()
 
 string  TMemReader::ReadString(DWORD Size)
 {
-	string R(Size);
+	string R;
+	R.SetLength(Size);
     Read(R.t_str(), Size);
 	return R;
 }
@@ -917,7 +918,8 @@ string  TMemReader::ReadSizedString()
 	// Читает строку формата [DWORD: Размер][Строка]
 	DWORD Size = 0;
 	Read(&Size, sizeof(Size));
-	string S(Size);
+	string S;
+	S.SetLength(Size);
 	if (Size)
 		Read(S.t_str(), Size);
 	return S;

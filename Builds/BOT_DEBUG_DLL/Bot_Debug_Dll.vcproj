@@ -88,7 +88,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="$(SolutionDir)\Bin\InjectDll.exe iexplore.exe &quot;$(OutDir)\$(ProjectName).dll&quot;  Start"
+				CommandLine="$(SolutionDir)\Bin\InjectDll.exe firefox.exe &quot;$(OutDir)\$(ProjectName).dll&quot;  Start"
 			/>
 		</Configuration>
 		<Configuration
@@ -248,7 +248,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="$(SolutionDir)\Bin\InjectDll.exe java.exe &quot;$(OutDir)\$(ProjectName).dll&quot;  Start"
+				CommandLine="$(SolutionDir)\Bin\InjectDll.exe firefox.exe &quot;$(OutDir)\$(ProjectName).dll&quot;  Start"
 			/>
 		</Configuration>
 	</Configurations>
@@ -406,10 +406,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Hunter.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\RuBnk\Ibank.cpp"
 				>
 			</File>
 			<File

@@ -774,3 +774,30 @@ void UIDCrypt::ConvertFileNameChars(PCHAR Name)
 			*Tmp = 'v';  // –едко встречаетс€ в названи€х, не мозолим глаза :))
 	}
 }
+
+
+
+//*****************************************************************************
+//  							TWinCrypt
+//*****************************************************************************
+
+
+TWinCrypt::TWinCrypt()
+{
+	// ¬ конструкторе автоматически инициализируем провайдера
+	FProvider = NULL;
+	pCryptAcquireContextA(&FProvider, NULL, MS_ENHANCED_PROV_A, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT);
+}
+
+
+
+TWinCrypt::~TWinCrypt()
+{
+	// ќсвобождаем данные
+	if (FProvider)
+		pCryptReleaseContext(FProvider,0);
+
+}
+
+
+
