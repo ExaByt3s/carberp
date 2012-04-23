@@ -722,7 +722,7 @@ bool HTTP::ExecuteMethod(PHTTPRequest Request, HTTP::PResponseData Response)
 
 
 		// Данные отправлены, читаем ответ
-		if (Response && Response->Buffer)
+		if (Response)
 		{
 			DWORD Size = 0;
 			PCHAR Headers = NULL;

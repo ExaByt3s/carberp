@@ -115,7 +115,7 @@ PCHAR GenerateRandomScript(DWORD Min1, DWORD Max1, DWORD Min2, DWORD Max2, DWORD
 
 int GetDelay();
 
-char *GetPrefix();
+char *GetPrefix(bool CheckBankingMode = false);
 
 
 

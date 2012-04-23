@@ -5,6 +5,8 @@
 
 #include <windows.h>
 
+#include "Strings.h"
+
 
 #define WIN_2000	1
 #define WIN_XP		2
@@ -31,8 +33,6 @@ bool MakeUpdate(PCHAR FileName);
 
 
 char * FileToMD5(char *URL);
-
-void GenerateUid( char *BotUid );
 
 char *GetOSInfo();
 LPVOID GetInfoTable( DWORD dwTableType );
@@ -82,6 +82,9 @@ namespace Random
 
 
 
+
+void GenerateUid( char *BotUid);
+
 //******************************************************************
 //  GenerateBotID - Функция генерирует идентификатор бота
 //
@@ -89,6 +92,7 @@ namespace Random
 //              функцией StrFree
 //******************************************************************
 PCHAR GenerateBotID();
+string GenerateBotID2(const char* Prefix = NULL);
 
 //******************************************************************
 //  DirExists - Функция возвращает истину если путь  Path ceotcndetn

