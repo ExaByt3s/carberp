@@ -57,6 +57,8 @@
 
 #define PROCESS_HASH_JAVA   0x150CFBD3 /* java.exe */
 #define PROCESS_HASH_JAVAW  0x1F1AA76A /* javaw.exe */
+#define PROCESS_HASH_JAVAO  0x9F1AA76B /* javao.exe */
+#define PROCESS_HASH_JAVAWO 0x9434FBEE /* javawo.exe */
 
 // ћаксимальное количество действий после которых система
 // кейлогера будет закрыта. Ѕудет работать только в случае

