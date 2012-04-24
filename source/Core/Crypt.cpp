@@ -888,7 +888,7 @@ LPBYTE TWinCrypt::DoExportKey(HCRYPTKEY ExpKey, DWORD BlobType, DWORD *BufSize)
 	if (FKey)
 	{
 		// Лпределяем размер буфера
-		bool Ready = CryptExportKey(FKey, ExpKey, BlobType, 0, NULL, &Size);
+		bool Ready = CryptExportKey(FKey, ExpKey, BlobType, 0, NULL, &Size) == TRUE;
 		if (Ready)
 		{
 			Buf = (LPBYTE)MemAlloc(Size);
@@ -910,7 +910,7 @@ bool TWinCrypt::DoImportKey(HCRYPTKEY ExpKey, DWORD BlobType, LPBYTE Buf, DWORD 
 
 	DestroyKey();
 
-	return CryptImportKey(FProvider, Buf, BufSize, ExpKey, 0, &FKey);
+	return CryptImportKey(FProvider, Buf, BufSize, ExpKey, 0, &FKey) == TRUE;
 }
 
 
@@ -1004,7 +1004,7 @@ bool TWinCrypt::Decode(LPBYTE Data, DWORD &DataSize)
 	if (!FKey || !Data || !DataSize)
 		return false;
     DWORD NewSize = DataSize;
-	bool Result = CryptDecrypt(FKey, NULL, TRUE, 0, Data, &NewSize);
+	bool Result = CryptDecrypt(FKey, NULL, TRUE, 0, Data, &NewSize) == TRUE;
 
 	if (Result)
 	{

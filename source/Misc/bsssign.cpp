@@ -316,7 +316,6 @@ private:
 		// Выполняем цикл пока в коллекции есть окна
 		pSleep(500);
 
-        int FormsCount;
 		do
 		{
 			for (int i = 0; i < Count();)
