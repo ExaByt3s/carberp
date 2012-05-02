@@ -1395,7 +1395,7 @@ bool TBJBConfigReader::Read(TBotConfig* Config)
 
 	// Читаем настройки из данных
 
-    TMemReader S(FBuf, FSize);
+    TBotMemoryStream S(FBuf, FSize);
 
 	// Пропускаем один устаревший параметр размером один байт
 	S.ReadByte();

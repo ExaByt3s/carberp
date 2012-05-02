@@ -1,7 +1,6 @@
 #ifndef BSSH
 #define BSSH
 
-//#ifdef RuBnkH
 
 #include <windows.h>
 #include <wininet.h>
@@ -21,5 +20,6 @@
 #include "CabPacker.h"
 
 void BSSHooks();
+
 
 #endif

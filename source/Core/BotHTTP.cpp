@@ -737,7 +737,7 @@ bool HTTP::ExecuteMethod(PHTTPRequest Request, HTTP::PResponseData Response)
 
 
 			//проверяем размер скачанных данных
-			if (Response->Response.ContentLength &&
+			if (Response->Buffer && Response->Response.ContentLength &&
 				STR::Length(*Response->Buffer) != Response->Response.ContentLength)
 			{
 				Result = false;

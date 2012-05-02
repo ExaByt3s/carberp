@@ -117,6 +117,18 @@ namespace MEMBLOCK
 }
 
 
+//------------------------------------------------------
+//  Базовый заголовок файла
+//------------------------------------------------------
+#pragma pack(push, 1)
+struct TFileHeader
+{
+	DWORD Signature;  // Сигнатура файла
+	DWORD Version;    // Версия файла
+};
+#pragma pack(pop)
+
+
 //---------------------------------------------------------------------------
 //  DataFile - методы для работы с файлами данными
 //---------------------------------------------------------------------------
@@ -135,7 +147,7 @@ typedef struct TDataFileHead
 
 enum TFileCryptMode {fcNone, fcBlock, fcFile};
 
-typedef struct TDataFile
+typedef struct TDataFileRec
 {
 	HANDLE Handle;              // Идентификатор файла
 	TDataFileHead Head;         // Заголовок файла
@@ -235,27 +247,96 @@ public:
 
 
 
+
+//----------------------------------------------------
+//  Режимы смещения ьекущей позиции в потоке
+//  SEEK_ORIGIN...
+//----------------------------------------------------
+#define SO_BEGIN     FILE_BEGIN
+#define SO_CURRENT   FILE_CURRENT
+#define SO_END       FILE_END
+
 //**********************************************************
-// TMemReader - Класс чтения/записи данных из
+//  TBotStream - Базовый класс чтения\записи
+//**********************************************************
+class TBotStream : public TBotObject
+{
+public:
+	DWORD virtual Size();
+	void  virtual SetSize(DWORD NewSize);
+
+	DWORD virtual Seek(int Count, DWORD SeekMethod);
+	DWORD Position();
+	void  SetPosition(DWORD NewPosition);
+
+	DWORD virtual Write(const void* Buf, DWORD Count);
+	DWORD virtual Read(void* Buf, DWORD Count);
+
+	DWORD WriteString(const char* Str);
+	DWORD WriteString(const string &Str);
+	DWORD WriteSizedString(const char* Str);
+	DWORD WriteSizedString(const string &Str);
+
+	LPVOID ReadToBuf(DWORD *Size);
+	string ReadToString();
+	int    ReadInt();
+	BYTE   ReadByte();
+	string ReadString(DWORD Size);
+	string ReadSizedString();  // Читает строку формата [DWORD: Размер][Строка]
+};
+
+
+//**********************************************************
+// TBotMemoryStream - Класс чтения/записи данных из
 //                    выделенного блока памяти
 //**********************************************************
-class TMemReader : public TBotObject
+class TBotMemoryStream : public TBotStream
 {
 private:
 	LPBYTE FMemory;
 	DWORD  FSize;
 	DWORD  FPosition;
 public:
-	TMemReader(LPVOID Mem, DWORD MemSize);
+	TBotMemoryStream(LPVOID Mem, DWORD MemSize);
 
-	DWORD   Read(LPVOID Buf, DWORD Size);
-	int     ReadInt();
-	BYTE    ReadByte();
-	string  ReadString(DWORD Size);
-	string  ReadSizedString();  // Читает строку формата [DWORD: Размер][Строка]
+	DWORD Read(void* Buf, DWORD Count);
+	DWORD Write(const void* Buf, DWORD Count);
 
+	DWORD Size();
+
+	DWORD Seek(int Count, DWORD SeekMethod);
 };
 
+
+
+
+
+//**********************************************************
+//  Режимы открытия файлов.
+//**********************************************************
+static const BYTE fcmRead      = 0;
+static const BYTE fcmWrite     = 1 ;
+static const BYTE fcmReadWrite = 2;
+static const WORD fcmCreate    = 0xFF00;
+
+
+//**********************************************************
+//  TBotFileStream - класс чтения\записи данных файла
+//**********************************************************
+class TBotFileStream : public TBotStream
+{
+private:
+	HANDLE FHandle;
+public:
+	TBotFileStream(const char* FileName, WORD Mode);
+	~TBotFileStream();
+	void Close();
+	DWORD Size();
+	DWORD Seek(int Count, DWORD MoveMode);
+	DWORD Write(const void* Buf, DWORD Count);
+	DWORD Read(void* Buf, DWORD Count);
+	HANDLE inline Handle() { return FHandle; }
+};
 
 
 //**********************************************************
@@ -340,6 +421,79 @@ public:
     inline TValue* Items(int Index) { return (TValue*)((TBotCollection*)this)->Items(Index); }
 
 };
+
+
+
+//------------------------------------------------------
+//  Ззаголовок данных
+//------------------------------------------------------
+
+#pragma pack(push, 1)
+struct TDataHeader
+{
+	DWORD Type;      // Тип данных
+	DWORD Flags;     // Флаги данных
+	DWORD FlagsEx;   // Дополнительные флаги
+	BYTE  Encrypted; // Данные зашифрованы
+    BYTE  Signed;    // Признак того, что данные подписаны цифровой подписью
+};
+#pragma pack(pop)
+
+
+#define  DATA_FILE_SIGNATURE 0x3878C167 /* BOT_DATA_FILE */
+#define  DATA_FILE_VERSION   0x00010000 /* 1.0 */
+
+
+//************************************************************
+//
+//************************************************************
+//class TDataBlock : public TBotObject
+//{
+//public:
+//    TDataBlock();
+//};
+
+
+//************************************************************
+//  TDataFile - Файл хранения данных в файле в  блочном
+//              формате
+//  Структура файла:
+//  [Заголовок файла: TFileHead][Заголовок данных: TDataHead]
+//  [Заголовок блока][Данные блока]...{другие блоки}
+//************************************************************
+class TDataFile : public TBotObject
+{
+private:
+	TBotStream *FStream;
+	bool FStreamAssigned;
+	bool WriteHeaders();
+protected:
+	bool Write(const void* Buf, DWORD BufSize, bool Encrypt = true, bool Hash = true);
+	bool Read(void* Buf, DWORD BufSize, bool Decrypt = true, bool Hash = true);
+	DWORD GetVarID();
+public:
+	DWORD  Signature; // Сигнатура файла
+	DWORD  Version;   // Версия файла
+	DWORD  Type;      // Тип данных
+	DWORD  Flags;     // Флаги (Зарегистрировано для доп. нужд)
+	DWORD  FlagsEx;   // Флаги (Зарегистрировано для доп. нужд)
+	string Name;      // Имя набора данных
+
+	TDataFile();
+	~TDataFile();
+
+	bool Create(const char* FileName);
+	bool Create(TBotStream *Stream);
+
+	bool Open(const char* FileName);
+	bool Open(const TBotStream *Stream);
+
+    bool AddBlock(DWORD Type, const char *Name, DWORD NameLen, LPVOID Data, DWORD DataSize);
+
+    void Close();
+};
+
+
 
 //---------------------------------------------------------------------------
 #endif
