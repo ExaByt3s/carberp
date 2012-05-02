@@ -1478,6 +1478,7 @@ bool TDataFile::Create(TBotStream *Stream)
 bool TDataFile::Open(const char* FileName)
 {
 	Close();
+	return false;
 }
 
 //-------------------------------------------------------
@@ -1523,7 +1524,7 @@ bool TDataFile::WriteHeaders()
 //-------------------------------------------------------
 bool TDataFile::Write(const void* Buf, DWORD BufSize, bool Encrypt, bool Hash)
 {
-
+	return false;
 }
 
 //-------------------------------------------------------
@@ -1531,8 +1532,7 @@ bool TDataFile::Write(const void* Buf, DWORD BufSize, bool Encrypt, bool Hash)
 //-------------------------------------------------------
 bool TDataFile::Read(void* Buf, DWORD BufSize, bool Decrypt, bool Hash)
 {
-
-}
+	return false;}
 
 
 //-------------------------------------------------------
