@@ -29,7 +29,7 @@
 #include "bsssign.h"
 #include "BssSendFile.h"
 
-//#include "yandex.h"
+#include "yandex.h"
 #include "rafa.h"
 
 //#include "cc.h"
