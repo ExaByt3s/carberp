@@ -42,7 +42,7 @@ namespace MAINDBGTEMPLATES
 
 
 #pragma comment(linker, "/ENTRY:MyMain" )
-
+//#pragma comment(linker, "/ENTRY:ExplorerMain" )
 
 
 
@@ -255,7 +255,7 @@ int APIENTRY MyMain()
 		PIMAGE_NT_HEADERS pHeaders = (PIMAGE_NT_HEADERS)( (PCHAR)pDos + pDos->e_lfanew);
 
 		pVirtualProtect( ImageBase, pHeaders->OptionalHeader.SizeOfHeaders, PAGE_READWRITE, &Old );
-		m_memcpy( ImageBase, pDos,pHeaders->OptionalHeader.SizeOfHeaders );
+		m_memcpy( ImageBase, pDos, pHeaders->OptionalHeader.SizeOfHeaders );
 		pVirtualProtect( ImageBase, pHeaders->OptionalHeader.SizeOfHeaders, Old, &Old );
 	}	
 

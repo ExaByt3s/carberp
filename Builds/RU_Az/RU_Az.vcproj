@@ -147,9 +147,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="true"
 				AdditionalDependencies="..\..\source\lib\ntdll.lib shlwapi.lib Ws2_32.lib urlmon.lib Crypt32.lib ..\..\source\lib\winsta.lib Wininet.lib gdiplus.lib Iphlpapi.lib"
 				LinkIncremental="1"
 				GenerateManifest="false"
+				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="false"
 				GenerateMapFile="false"
 				SubSystem="2"
@@ -330,6 +332,7 @@
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				RandomizedBaseAddress="2"
 				TargetMachine="1"
 			/>
 			<Tool
