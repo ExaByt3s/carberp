@@ -48,7 +48,7 @@ char* CalcNtldrMd5(char* Buffer, DWORD BufferSize)
 {
 	CHAR path[MAX_PATH];
 
-	GetWindowsDirectoryA(path, MAX_PATH);
+	pGetWindowsDirectoryA(path, MAX_PATH);
 	path[3] = '\0';
 
 	m_lstrcat(path, "ntldr");
