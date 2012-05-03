@@ -1404,10 +1404,10 @@ string TValues::GetValue(const char *Name)
 struct TDataBlockHeader
 {
 	DWORD Type;        // Тип данных
-	DWORD VarID;       // Идентификатор переменной
-	BYTE  IsFile;      // Признак того, что данные являются файлом
-    DWORD FileNameLen; // Рамер имени файла
+	DWORD NameID;      // Идентификатор имени
+	DWORD Reserved;    // Зарезервировано
 	DWORD Size;        // Размер данных
+	BYTE  IsFile;      // Признак того, что данные являются файлом
 };
 #pragma pack(pop)
 
@@ -1418,6 +1418,9 @@ TDataFile::TDataFile()
 	FStreamAssigned = false;
 	Signature = DATA_FILE_SIGNATURE;
 	Version   = DATA_FILE_VERSION;
+	Type      = 0;
+	Flags     = 0;
+	FlagsEx   = 0;
 }
 
 
@@ -1431,6 +1434,11 @@ TDataFile::~TDataFile()
 //-------------------------------------------------------
 void TDataFile::Close()
 {
+	Name.Clear();
+	Type    = 0;
+	Flags   = 0;
+	FlagsEx = 0;
+
 	if (FStream)
 	{
 		if (!FStreamAssigned)
@@ -1452,8 +1460,7 @@ bool TDataFile::Create(const char* FileName)
 		TBotFileStream *S = new TBotFileStream(FileName, fcmReadWrite | fcmCreate);
 		R = Create(S);
 		FStreamAssigned = false;
-		if (!R)
-            delete S;
+		if (!R) delete S;
 	}
 	return R;
 }
@@ -1466,9 +1473,12 @@ bool TDataFile::Create(TBotStream *Stream)
 	Close();
 	FStream = Stream;
 	FStreamAssigned = FStream != NULL;
-	bool R = WriteHeaders();
-	if (!R)
-		Close();
+	bool R = false;
+	if (FStream)
+    {
+		R = WriteHeaders();
+		if (!R) Close();
+    }
 	return R;
 }
 
@@ -1478,15 +1488,34 @@ bool TDataFile::Create(TBotStream *Stream)
 bool TDataFile::Open(const char* FileName)
 {
 	Close();
-	return false;
+	if (STRA::IsEmpty(FileName))
+		return false;
+
+	TBotFileStream *S = new TBotFileStream(FileName, fcmRead);
+	bool R = Open(S);
+    FStreamAssigned = false;
+	if (!R) delete S;
+	return R;
 }
 
 //-------------------------------------------------------
 //  Функция открывает набор данных потока данных
 //-------------------------------------------------------
-bool TDataFile::Open(const TBotStream *Stream)
+bool TDataFile::Open(TBotStream *Stream)
 {
 	Close();
+	// Читаем заголовок файла
+	FStream = Stream;
+	FStreamAssigned = FStream != NULL;
+
+	bool R = false;
+	if (FStream)
+	{
+		R = ReadHeaders();
+		if (!R) Close();
+    }
+
+	return R;
 }
 
 //-------------------------------------------------------
@@ -1494,45 +1523,104 @@ bool TDataFile::Open(const TBotStream *Stream)
 //-------------------------------------------------------
 bool TDataFile::WriteHeaders()
 {
-	bool R = false;
+	// Записываем сигнатуру и версию
+	TFileHeader H;
+	H.Signature = Signature;
+	H.Version   = Version;
+	bool R = Write(&H, sizeof(H), false, false);
 
-	if (FStream)
+	// Записываем заголовок данных
+	TDataHeader DH;
+	ClearStruct(DH);
+	DH.Type    = Type;
+	DH.Flags   = Flags;
+	DH.FlagsEx = FlagsEx;
+	DH.NameLen = Name.Length();
+	R = R && Write(&DH, sizeof(DH), false, false);
+
+	// Записываем имя набора
+	if (R && DH.NameLen)
+		R = Write(Name.t_str(), Name.Length(), true, false);
+
+	return R;
+}
+
+//-------------------------------------------------------
+//  ReadHeaders - Функция читает заголовок файла
+//-------------------------------------------------------
+bool TDataFile::ReadHeaders()
+{
+	TFileHeader H;
+	bool R = Read(&H, sizeof(H), false, false);
+
+	/* TODO : Пересмотреть проверку версии */
+	if (!R || H.Signature != Signature || H.Version != Version)
+		return false;
+
+
+	// Читаем заголовок данных
+	TDataHeader DH;
+	R = Read(&DH, sizeof(DH), false, false);
+
+	if (R)
 	{
-		// Записываем сигнатуру и версию
-		TFileHeader H;
-		H.Signature = Signature;
-		H.Version   = Version;
-		R = FStream->Write(&H, sizeof(H)) == sizeof(H);
+        Type    = DH.Type;
+		Flags   = DH.Flags;
+		FlagsEx = DH.FlagsEx;
 
-		// Записываем заголовок данных
-		TDataHeader DH;
-		ClearStruct(DH);
-		DH.Type    = Type;
-		DH.Flags   = Flags;
-		DH.FlagsEx = FlagsEx;
-		R = R && (FStream->Write(&DH, sizeof(DH)) == sizeof(DH));
-    }
-
+		if (DH.NameLen)
+		{
+			Name.SetLength(DH.NameLen);
+			R = Read(Name.t_str(), DH.NameLen, true, false);
+		}
+	}
 	return R;
 }
 
 
 //-------------------------------------------------------
 //  Функция записывает данные в поток.
-//  IsData - признак того, что записываются рабочие
-//  данные и их необходимо шифровать и хэшировать
+//  Encrypt - Указание шифровать или нет записываемые
+//			  данные
+//  Hash - Указание хэшировать данные. Необходимо для
+//		   цифровой подписи
 //-------------------------------------------------------
 bool TDataFile::Write(const void* Buf, DWORD BufSize, bool Encrypt, bool Hash)
 {
-	return false;
+	bool R = false;
+	if (FStream && Buf && BufSize)
+	{
+		// Шифруем данные. Зарезервировано
+
+		// Хэшируем данные. Зарезервировано
+
+		// Записываем данные
+		R = FStream->Write(Buf, BufSize) == BufSize;
+    }
+	return R;
 }
 
 //-------------------------------------------------------
-//
+//  Функция читает данные из потока
+//  Decrypt - Указание расшифровать или нет записываемые
+//			  данные
+//  Hash - Указание хэшировать данные. Необходимо для
+//		   цифровой подписи
 //-------------------------------------------------------
 bool TDataFile::Read(void* Buf, DWORD BufSize, bool Decrypt, bool Hash)
 {
-	return false;}
+	bool R = false;
+	if (FStream && Buf && BufSize)
+	{
+		// Читаем данные
+		R = FStream->Read(Buf, BufSize) == BufSize;
+
+		// Расшифровываем данные. Зарезервировано
+
+		// Хэшируем данные. Зарезервировано
+	}
+	return R;
+}
 
 
 //-------------------------------------------------------

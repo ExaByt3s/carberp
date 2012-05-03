@@ -160,7 +160,6 @@ typedef struct TDataFileRec
 } *PDataFile;
 
 
-#define DATA_FILE_VERSION 12
 
 // Максрос возвращает DWORD из данных указателя
 #define SIGNATURE(Pointer) (*(DWORD*)Pointer)
@@ -435,14 +434,21 @@ struct TDataHeader
 	DWORD Flags;     // Флаги данных
 	DWORD FlagsEx;   // Дополнительные флаги
 	BYTE  Encrypted; // Данные зашифрованы
-    BYTE  Signed;    // Признак того, что данные подписаны цифровой подписью
+	BYTE  Signed;    // Признак того, что данные подписаны цифровой подписью
+    DWORD NameLen;   // Длина имени системы
 };
 #pragma pack(pop)
+
 
 
 #define  DATA_FILE_SIGNATURE 0x3878C167 /* BOT_DATA_FILE */
 #define  DATA_FILE_VERSION   0x00010000 /* 1.0 */
 
+
+// Базовые типы данных
+#define BLOCK_TYPE_VARIABLE 0x01000000 /* Имя переменной */
+#define BLOCK_TYPE_TEXT     0x02000000 /* Текстовый блок */
+#define BLOCK_TYPE_FILE     0x03000000 /* Файд */
 
 //************************************************************
 //
@@ -467,6 +473,7 @@ private:
 	TBotStream *FStream;
 	bool FStreamAssigned;
 	bool WriteHeaders();
+	bool ReadHeaders();
 protected:
 	bool Write(const void* Buf, DWORD BufSize, bool Encrypt = true, bool Hash = true);
 	bool Read(void* Buf, DWORD BufSize, bool Decrypt = true, bool Hash = true);
@@ -486,7 +493,7 @@ public:
 	bool Create(TBotStream *Stream);
 
 	bool Open(const char* FileName);
-	bool Open(const TBotStream *Stream);
+	bool Open(TBotStream *Stream);
 
     bool AddBlock(DWORD Type, const char *Name, DWORD NameLen, LPVOID Data, DWORD DataSize);
 
