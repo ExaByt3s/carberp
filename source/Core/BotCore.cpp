@@ -102,7 +102,7 @@ PCHAR BOTDoGetWorkPath(bool InSysPath, PCHAR SubDir, PCHAR FileName)
 	}
 
 
-    PCHAR WorkPath = BotGetWorkFolder(); // резервируем на будущее
+	PCHAR WorkPath = BotGetWorkFolder(); // резервируем на будущее
 
 	// Добавляем основной путь
 	StrConcat(Path, "\\");

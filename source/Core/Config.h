@@ -53,9 +53,11 @@
 
 
 #ifndef DEBUGCONFIG
-	#define BOTPARAM_ENCRYPTED_HOSTS true
+	#define BOTPARAM_ENCRYPTED_HOSTS  true
+	#define BOTPARAM_ENCRYPTED_PREFIX true
 #else
-	#define BOTPARAM_ENCRYPTED_HOSTS false
+	#define BOTPARAM_ENCRYPTED_HOSTS  false
+	#define BOTPARAM_ENCRYPTED_PREFIX false
 #endif
 
 //--------------------------------------------------------
@@ -113,11 +115,11 @@ PCHAR GenerateRandomScript(DWORD Min1, DWORD Max1, DWORD Min2, DWORD Max2, DWORD
 
 int GetDelay();
 
-char *GetPrefix();
+char *GetPrefix(bool CheckBankingMode = false);
 
 
 
-void SetBankingMode();
+void SetBankingMode(bool IsBanking = true);
 
 
 //------------------------------------------------------------------------

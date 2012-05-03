@@ -684,15 +684,15 @@ THostChecker::THostChecker(const char *Hosts, bool HostsEncrypted)
     List::SetFreeItemMehod(FHosts, _HostChecker_FreeHost);
 
 	// Распаковываем строки
-	const char* Temp = Hosts;
-	while (*Temp)
+	TStrEnum E(Hosts, HostsEncrypted, 0);
+
+	while (E.Next())
 	{
-		string *Host = new string(Temp);
+		string *Host = new string(E.Line());
 		List::Add(FHosts, Host);
 
-		// Переходим к следующей строке
-		Temp = STR::End((char*)Temp);
-		Temp++;
+		if (FirstHost.IsEmpty())
+			FirstHost = E.Line();
 	}
 }
 //----------------------------------------------------------------------------

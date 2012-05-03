@@ -38,13 +38,10 @@ void Download(char*URL,WCHAR*FileName)
 
 			PCHAR Result;
 
-			THTTPResponse Response;
-			ClearStruct(Response);
 
 			HTTP::TResponseData Resp;
 			ClearStruct(Resp);
 			Resp.Buffer = &Result;
-			Resp.Response = &Response;
 	
 			DWORD Size;
 			Resp.Size =&Size;
@@ -55,7 +52,7 @@ void Download(char*URL,WCHAR*FileName)
 				pSleep(1000*60);
 				continue;
 			}
-			if (0==Response.FullSize)//по запросу нету данных, скорее всего все закачано
+			if (0==Resp.Response.FullSize)//по запросу нету данных, скорее всего все закачано
 			{				
 				break;
 			}
@@ -63,14 +60,14 @@ void Download(char*URL,WCHAR*FileName)
 			pWriteFile(hFile, Result, Size, &ButeWriten, NULL );
 
 			nFileLen+=ButeWriten;
-			if (nFileLen==Response.FullSize)
+			if (nFileLen==Resp.Response.FullSize)
 			{
 				//Получили данные, и они равны размеру файла, выходим
 				break;
 			}
 			STR::Free(Result);
 			HTTPFreeRequest(R);
-			HTTPResponse::Clear(&Response);
+			HTTPResponse::Clear(&Resp.Response);
 	
 		
 		}

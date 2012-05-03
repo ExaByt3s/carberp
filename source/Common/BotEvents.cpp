@@ -137,6 +137,11 @@ void BrowserStarted(PEventData Data)
 	#ifdef HTMLSendH
 		InitHTMLSendHandlers();
 	#endif;
+
+	#ifdef AzConfigH
+		AzInizializeHTMLInjects();
+	#endif
+
 }
 //---------------------------------------------------------------------------
 

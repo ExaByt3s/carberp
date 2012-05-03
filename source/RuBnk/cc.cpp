@@ -1,3 +1,10 @@
+
+ #include "Modules.h"
+
+ #ifdef CCH
+//===================================================================
+
+
 #include "GetApi.h"
 #include "KeyLogSystems.h"
 #include "Memory.h"
@@ -274,3 +281,7 @@ bool Init(DWORD hashApp)
 
 }
 
+
+
+//===================================================================
+ #endif  /* CCH */

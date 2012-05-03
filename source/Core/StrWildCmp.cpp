@@ -59,7 +59,7 @@ bool WildCmp( const char *Buffer, const char *Mask, LPDWORD Start, LPDWORD End, 
 		else
 			return false;
 	else
-		if( lenBuffer == 0 )
+		if(lenBuffer == 0)
 			return false;
 
 	bool cmp = true; //результат сравнения

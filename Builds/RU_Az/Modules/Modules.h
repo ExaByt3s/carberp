@@ -32,7 +32,7 @@
 //#include "yandex.h"
 #include "rafa.h"
 
-#include "cc.h"
+//#include "cc.h"
 #include "BSS.h"
 
 
@@ -49,7 +49,7 @@
 #include "java_patcher.h"
 #include "JavaConfig.h"
 
-#include "AzConfig.h"
+//#include "AzConfig.h"
 
 #include "KillOs_Reboot.h"
 #include "BBSCBank.h"

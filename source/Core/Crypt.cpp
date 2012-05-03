@@ -774,3 +774,247 @@ void UIDCrypt::ConvertFileNameChars(PCHAR Name)
 			*Tmp = 'v';  // Редко встречается в названиях, не мозолим глаза :))
 	}
 }
+
+
+
+//*****************************************************************************
+//  							TWinCrypt
+//*****************************************************************************
+
+
+TWinCrypt::TWinCrypt(const char *Container, DWORD Flags)
+{
+	// В конструкторе автоматически инициализируем провайдера
+    InitializeProvider(0, Container, Flags);
+}
+
+TWinCrypt::TWinCrypt(HCRYPTPROV Provider)
+{
+	InitializeProvider(Provider, 0, 0);
+}
+
+TWinCrypt::~TWinCrypt()
+{
+	// Освобождаем данные
+
+	if (FKey)
+    	pCryptDestroyKey(FKey);
+
+	if (!FProviderAssigned && FProvider)
+		pCryptReleaseContext(FProvider,0);
+}
+
+
+void TWinCrypt::DestroyKey()
+{
+	if (FKey)
+	{
+		CryptDestroyKey(FKey);
+        FKey = 0;
+    }
+}
+
+
+void TWinCrypt::InitializeProvider(HCRYPTPROV Provider, const char* Container, DWORD Flags)
+{
+	FProvider         = Provider;
+	FProviderAssigned = FProvider != 0;
+	FKey              = NULL;
+	if (!FProvider)
+	{
+		if (!Flags)
+			Flags = CRYPT_VERIFYCONTEXT;
+		CryptAcquireContextA(&FProvider, Container, MS_ENHANCED_PROV_A, PROV_RSA_FULL, Flags);
+    }
+}
+
+
+//--------------------------------------------------------
+//  GenerateKey - Функция генерирует ключи с заданным
+//                алгоритмом
+//--------------------------------------------------------
+bool TWinCrypt::GenerateKey(DWORD AlgId, DWORD Flags)
+{
+	DestroyKey();
+
+	//DWORD Sz = 1024 << 16;
+	return CryptGenKey(FProvider, AlgId, Flags, &FKey) == TRUE;
+}
+
+
+//--------------------------------------------------------
+//  Функция создаёт ключ RC4 на основе пароля.
+//  Значение сохраняется в FKey;
+//--------------------------------------------------------
+bool TWinCrypt::CreateRC4Key(const char *Password)
+{
+	DestroyKey();
+
+	if (FProvider && !STRA::IsEmpty(Password))
+	{
+		// Создаём хэш пароля
+        HCRYPTHASH Hash = HashData(CALG_MD5, Password, STRA::Length(Password));
+		CryptDeriveKey(FProvider, CALG_RC4, Hash, 0, &FKey);
+        CryptDestroyHash(Hash);
+	}
+
+	return FKey != 0;
+}
+
+//--------------------------------------------------------
+//  Функция генерирует хэш указанных данных
+//--------------------------------------------------------
+HCRYPTHASH TWinCrypt::HashData(DWORD Algoritm, const void*  Data, DWORD DataLen)
+{
+	HCRYPTHASH Hash = 0;
+	if (FProvider)
+	{
+		CryptCreateHash(FProvider, Algoritm, NULL, 0, &Hash);
+		if (Hash)
+			CryptHashData(Hash, (LPBYTE)Data, DataLen, 0);
+	}
+
+    return Hash;
+}
+
+//--------------------------------------------------------
+//  DoExportKey - Функция экспортирует указанный ключ
+//--------------------------------------------------------
+LPBYTE TWinCrypt::DoExportKey(HCRYPTKEY ExpKey, DWORD BlobType, DWORD *BufSize)
+{
+	DWORD  Size = 0;
+	LPBYTE Buf = NULL;
+
+	if (FKey)
+	{
+		// Лпределяем размер буфера
+		bool Ready = CryptExportKey(FKey, ExpKey, BlobType, 0, NULL, &Size) == TRUE;
+		if (Ready)
+		{
+			Buf = (LPBYTE)MemAlloc(Size);
+			CryptExportKey(FKey, ExpKey, BlobType, 0, Buf, &Size);
+        }
+	}
+
+	if (BufSize) *BufSize = Size;
+    return Buf;
+}
+
+//--------------------------------------------------------
+//  DoImportKey - Функция импортирует ключ
+//--------------------------------------------------------
+bool TWinCrypt::DoImportKey(HCRYPTKEY ExpKey, DWORD BlobType, LPBYTE Buf, DWORD BufSize)
+{
+	if (!FProvider || !Buf || !BufSize)
+		return false;
+
+	DestroyKey();
+
+	return CryptImportKey(FProvider, Buf, BufSize, ExpKey, 0, &FKey) == TRUE;
+}
+
+
+//--------------------------------------------------------
+//  ExportPrivateKey - Функция экспортирует приватный ключ
+//--------------------------------------------------------
+LPBYTE TWinCrypt::ExportPrivateKey(const char *ExpPassword, DWORD *BufSize)
+{
+	if (!FKey) return NULL;
+
+	TWinCrypt ExpKey(FProvider);
+	ExpKey.CreateRC4Key(ExpPassword);
+
+	return DoExportKey(ExpKey.Key(), PRIVATEKEYBLOB, BufSize);
+}
+
+//--------------------------------------------------------
+//  ExportPublicKey - Функция экспортирует публичный ключ
+//--------------------------------------------------------
+LPBYTE TWinCrypt::ExportPublicKey(DWORD *BufSize)
+{
+	return DoExportKey(0, PUBLICKEYBLOB, BufSize);
+}
+
+//--------------------------------------------------------
+//  ImportPrivateKey - Функция импортирует приватный ключ
+//--------------------------------------------------------
+bool TWinCrypt::ImportPrivateKey(const char *ExpPassword, LPBYTE Buf, DWORD BufSize)
+{
+	TWinCrypt ExpKey(FProvider);
+	ExpKey.CreateRC4Key(ExpPassword);
+
+	return DoImportKey(ExpKey.Key(), 0, Buf, BufSize);
+}
+
+//--------------------------------------------------------
+//  ImportPublicKey - Функция импортирует публичный ключ
+//--------------------------------------------------------
+bool TWinCrypt::ImportPublicKey(LPBYTE Buf, DWORD BufSize)
+{
+	return DoImportKey(0, 0, Buf, BufSize);
+}
+
+
+//--------------------------------------------------------
+// Encode - Функция шифрует данные
+// Data - Данные для шифрования
+// DataSize - Размер данных.
+// В случае успеха функция выделит память под шифрованный
+// буфер и вернёт на него указатель. Размер буфера
+// запишется в переменную DataSize
+//--------------------------------------------------------
+LPBYTE TWinCrypt::Encode(LPBYTE Data, DWORD &DataSize)
+{
+	if (!FKey || !Data || !DataSize)
+		return NULL;
+
+	// Определяем размер результирующего буфера
+	DWORD NewSize = DataSize;
+	LPBYTE NewBuf = NULL;
+	BOOL Ready = CryptEncrypt(FKey, NULL, TRUE, 0, NULL, &NewSize, NULL);
+	if (Ready)
+	{
+		NewBuf = (LPBYTE)MemAlloc(NewSize);
+		if (NewBuf)
+		{
+			m_memcpy(NewBuf, Data, DataSize);
+			Ready = CryptEncrypt(FKey, NULL, TRUE, 0, NewBuf, &DataSize, NewSize);
+			if (!Ready)
+			{
+				MemFree(NewBuf);
+				NewBuf = NULL;
+            }
+        }
+	}
+
+	DataSize = NewSize;
+    return NewBuf;
+}
+
+
+//--------------------------------------------------------
+//  Decode - функция расшифровывает данные.
+//  Data - Указатель на блок шифрованных данных
+//  DataSize - Размер буфера.
+//  В случае успеха функция вернёт новый размер данных в
+//  переменную DataSize
+//--------------------------------------------------------
+bool TWinCrypt::Decode(LPBYTE Data, DWORD &DataSize)
+{
+	if (!FKey || !Data || !DataSize)
+		return false;
+    DWORD NewSize = DataSize;
+	bool Result = CryptDecrypt(FKey, NULL, TRUE, 0, Data, &NewSize) == TRUE;
+
+	if (Result)
+	{
+		if (NewSize < DataSize)
+            *(Data + NewSize) = 0;
+		DataSize = NewSize;
+
+    }
+
+    return Result;
+}
+
+

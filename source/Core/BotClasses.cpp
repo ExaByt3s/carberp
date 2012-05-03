@@ -781,6 +781,16 @@ int TEventContainer::AttachEvent(int EventId, TBotEvent Event)
 		FEvents = List::Create();
 		List::SetFreeItemMehod(FEvents, FreeEventItem);
 	}
+	else
+	{
+		// Проверяем  наличие такого события в списке
+		for (DWORD i = 0; i < List::Count(FEvents); i++)
+		{
+			TEventItem* Item = (TEventItem*)List::GetItem(FEvents, i);
+			if (Item->ID == EventId && Item->Event == Event)
+				return i;
+		}
+    }
 
     int Index = -1;
 
@@ -897,7 +907,8 @@ BYTE  TMemReader::ReadByte()
 
 string  TMemReader::ReadString(DWORD Size)
 {
-	string R(Size);
+	string R;
+	R.SetLength(Size);
     Read(R.t_str(), Size);
 	return R;
 }
@@ -907,7 +918,8 @@ string  TMemReader::ReadSizedString()
 	// Читает строку формата [DWORD: Размер][Строка]
 	DWORD Size = 0;
 	Read(&Size, sizeof(Size));
-	string S(Size);
+	string S;
+	S.SetLength(Size);
 	if (Size)
 		Read(S.t_str(), Size);
 	return S;
@@ -1049,7 +1061,8 @@ TBotCollectionItem* TBotCollection::Items(int Index)
 
 TBotCollectionItem::TBotCollectionItem(TBotCollection* aOwner)
 {
-   if (aOwner) aOwner->InsertItem(this);
+	FOwner = NULL;
+	if (aOwner) aOwner->InsertItem(this);
 }
 
 TBotCollectionItem::~TBotCollectionItem()
@@ -1073,6 +1086,7 @@ TBotCollection* TBotCollectionItem::Owner()
 	return FOwner;
 }
 
+// Функция устанавливает владельца элемента
 void TBotCollectionItem::SetOwner(TBotCollection* aOwner)
 {
 	if (aOwner)
@@ -1080,4 +1094,70 @@ void TBotCollectionItem::SetOwner(TBotCollection* aOwner)
 	else
 	if (FOwner)
     	FOwner->RemoveItem(this);
+}
+
+
+
+//*****************************************************************************
+//                            TValues
+//*****************************************************************************
+
+
+TValues::TValues()
+	: TBotCollection()
+{
+}
+
+// Функция возвращает элемент по его имени
+TValue* TValues::GetItemByName(const char* Name)
+{
+	int Cnt = Count();
+	for (int i = 0; i < Cnt; i++)
+	{
+		TValue* V = (TValue*)Items(i);
+		if (V->Name == Name)
+			return V;
+	}
+	return NULL;
+}
+
+void TValues::AddValue(const string &Name, const string &Value)
+{
+	TValue* V = new TValue(NULL);
+	V->Name  = Name;
+	V->Value = Value;
+	V->SetOwner(this);
+}
+
+void TValues::SetValue(int Index, const string &Value)
+{
+	((TValue*)Items(Index))->Value = Value;
+}
+
+// Устанавливаем значение
+void TValues::SetValue(const char* Name, const string &Value)
+{
+	TValue* V = GetItemByName(Name);
+	if (V)
+		V->Value = Value;
+	else
+        AddValue(Name, Value);
+}
+
+
+// Получам значение по индексу
+string TValues::GetValue(int Index)
+{
+    return ((TValue*)Items(Index))->Value;
+}
+
+
+// Получам значение по имени
+string TValues::GetValue(const char *Name)
+{
+	TValue* V = GetItemByName(Name);
+	if (V)
+		return V->Value;
+	else
+        return string(NULLSTR);
 }

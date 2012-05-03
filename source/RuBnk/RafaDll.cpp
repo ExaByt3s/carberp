@@ -10,11 +10,11 @@
 #include "Inject.h"
 #include "ntdll.h"
 #include "commctrl.h"
-#include "BotDebug.h"
 #include "BotHTTP.h"
 #include "Config.h"
 #include "rafa.h"
 
+#include "BotDebug.h"
 
 
 namespace DBGRAFADLL

@@ -42,6 +42,7 @@ PHTTPRequest HTTPCreateRequest(PCHAR URL)
 
 	if (R->Port == 0)
 		R->Port = PortHTTP;
+
 	return R;
 }
 //---------------------------------------------------------------------------
@@ -230,7 +231,6 @@ PCHAR GetMethodStr(THTTPMethod Kind)
 			return STR::New(HTTPMethodHEAD);
 	 default:
 	 	return NULL;
-		 ;
 	 }
 }
 
@@ -707,6 +707,7 @@ bool HTTP::ExecuteMethod(PHTTPRequest Request, HTTP::PResponseData Response)
 		return false;
 	}
 
+	bool Result = true;
 	DWORD BufSize = STR::Length(SendBuf);
 
 	if (SendData(Sock, SendBuf, BufSize) != SOCKET_ERROR)
@@ -718,21 +719,31 @@ bool HTTP::ExecuteMethod(PHTTPRequest Request, HTTP::PResponseData Response)
 			HTTPSendPostData(Request, Sock);
 		}
 
+
+
 		// Данные отправлены, читаем ответ
-		if (Response != NULL && (Response->Buffer != NULL || Response->Response!= NULL))
+		if (Response)
 		{
 			DWORD Size = 0;
 			PCHAR Headers = NULL;
-			if (Response->Response != NULL)
-				HTTPResponse::Clear(Response->Response);
+
+			HTTPResponse::Clear(&Response->Response);
 
 			ReceiveData(Sock, Headers, Response->Buffer, Size);
 
-			if (Response->Response != NULL)
+			// Разбираем текст ответа
+			HTTPResponse::Parse(Headers, &Response->Response);
+
+
+
+			//проверяем размер скачанных данных
+			if (Response->Response.ContentLength &&
+				STR::Length(*Response->Buffer) != Response->Response.ContentLength)
 			{
-				// Разбираем текст ответа
-				HTTPResponse::Parse(Headers, Response->Response);
-            }
+				Result = false;
+				STR::Free2(*Response->Buffer);
+			}
+
 
 			if (Response->Headers != NULL)
 				*Response->Headers = Headers;
@@ -747,7 +758,7 @@ bool HTTP::ExecuteMethod(PHTTPRequest Request, HTTP::PResponseData Response)
 	// Закрываем хост
 	pclosesocket(Sock);
 
-	return true;
+	return Result;
 
 }
 
@@ -762,9 +773,13 @@ bool HTTP::Get(PCHAR URL, PCHAR *Buf, PHTTPResponse Response)
 	TResponseData ResponseData;
 	ClearStruct(ResponseData);
 	ResponseData.Buffer = Buf;
-	ResponseData.Response = Response;
 
 	bool Res = HTTP::ExecuteMethod(R, &ResponseData);
+
+	if (Response)
+		*Response = ResponseData.Response;
+	else
+		HTTPResponse::Clear(&ResponseData.Response);
 
 	HTTPFreeRequest(R);
 	return Res;
@@ -783,12 +798,18 @@ bool HTTP::Post(PCHAR URL, PStrings Fields, PCHAR *Buf, PHTTPResponse Response)
 	TResponseData ResponseData;
 	ClearStruct(ResponseData);
 	ResponseData.Buffer = Buf;
-	ResponseData.Response = Response;
 
-    bool Res = HTTP::ExecuteMethod(R, &ResponseData);
+	bool Res = HTTP::ExecuteMethod(R, &ResponseData);
+
+	if (Response)
+		*Response = ResponseData.Response;
+	else
+		HTTPResponse::Clear(&ResponseData.Response);
+
 	HTTPFreeRequest(R);
 	return Res;
 }
+
 
 bool HTTP::Post(PCHAR URL, PMultiPartData Fields, PCHAR *Buf, PHTTPResponse Response)
 {
@@ -804,9 +825,14 @@ bool HTTP::Post(PCHAR URL, PMultiPartData Fields, PCHAR *Buf, PHTTPResponse Resp
 	TResponseData ResponseData;
 	ClearStruct(ResponseData);
 	ResponseData.Buffer = Buf;
-	ResponseData.Response = Response;
 
-    bool Res = HTTP::ExecuteMethod(R, &ResponseData);
+	bool Res = HTTP::ExecuteMethod(R, &ResponseData);
+
+	if (Response)
+		*Response = ResponseData.Response;
+	else
+		HTTPResponse::Clear(&ResponseData.Response);
+
 	HTTPFreeRequest(R);
 	return Res;
 }
@@ -1597,8 +1623,6 @@ void AddResponseValue(PHTTPResponse Response, PCHAR Name, PCHAR Value)
 		case 3: Response->Connection = STR::New(Value); break;
 		case 4: ParseContentRange(Response, Value); break;
 		case 5: Response->Location = STR::New(Value); break;
-    default:
-        ;
 	}
 }
 

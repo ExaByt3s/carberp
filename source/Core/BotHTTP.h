@@ -78,7 +78,8 @@ const PCHAR FormDataMultiPart = "multipart/form-data; boundary=";
 
 
 // Стандартные порты
-const WORD PortHTTP = 80;
+const WORD PortHTTP  = 80;
+const WORD PortHTTPS = 443;
 
 // Базовые значения параметров
 const PCHAR DefaultPath = "/";
@@ -358,7 +359,7 @@ namespace HTTP
 		PCHAR *Buffer;   // Указатель на переменную буфера приёма
 		DWORD *Size;     // Указатель на переменную размера принятых данных
 		PCHAR *Headers;  // Указатель на переменную хранения заголовоков ответа сервера
-        PHTTPResponse Response; // Структура ответа
+        THTTPResponse Response; // Структура ответа
 	}*PResponseData;
 
 	//********************************************************
@@ -432,6 +433,8 @@ typedef struct THTTPSessionInfo{
 //----------------------------------------------------------------
 class TURL : public TBotObject
 {
+private:
+    bool DoParse(const char *URL);
 public:
 	string Protocol;
 	string Host;
@@ -446,8 +449,6 @@ public:
 	bool Parse(const char *URL);
 	string URL(); // Функция собирает полный адрес
 
-private:
-    bool DoParse(const char *URL);
 };
 
 
