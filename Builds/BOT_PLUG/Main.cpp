@@ -15,7 +15,6 @@
 #include "BotEvents.h"
 #include "Loader.h"
 #include "Config.h"
-#include "AvBlock.h"
 
 
 #include "Crypt.h"
