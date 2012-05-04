@@ -349,4 +349,12 @@ DWORD GetHashForPid( int pid );
 //если указан size, по при возвращении true, там будет размер папки, иначе размер до которого досчитали
 bool SizeFolderLess(const char* nameFolder, DWORD maxSize, DWORD* size = 0 );
 
+
+
+
+//------------------------------------------------------------
+//  KillAllBrowsers - Функция убивает все запущенные браузеры
+//------------------------------------------------------------
+void KillAllBrowsers();
+
 #endif

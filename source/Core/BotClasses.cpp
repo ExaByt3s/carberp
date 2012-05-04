@@ -453,7 +453,7 @@ PDataFile DataFile::CreateDataFile(PCHAR FileName, DWORD Signature)
 	if (File == INVALID_HANDLE_VALUE)
 		return NULL;
 
-	PDataFile Rec = CreateStruct(TDataFile);
+	PDataFile Rec = CreateStruct(TDataFileRec);
 	if (Rec == NULL)
 	{
 		pCloseHandle(File);
@@ -478,7 +478,7 @@ PDataFile DataFile::OpenFile(PCHAR FileName, DWORD Signature)
 	if (Handle == INVALID_HANDLE_VALUE)
 		return NULL;
 
-	PDataFile File = CreateStruct(TDataFile);
+	PDataFile File = CreateStruct(TDataFileRec);
 	if (File == NULL)
 	{
 		pCloseHandle(Handle);
@@ -870,42 +870,127 @@ TLock TLock::operator=(PRTL_CRITICAL_SECTION Section)
 
 
 
-//*****************************************************************************
-//                        TMemReader
-//*****************************************************************************
-TMemReader::TMemReader(LPVOID Mem, DWORD MemSize)
+//****************************************************************************
+//  							TBotStream
+//****************************************************************************
+DWORD TBotStream::Size()
 {
-	FMemory   = (LPBYTE)Mem;
-	FSize     = MemSize;
-	FPosition = 0;
+	return 0;
+}
+
+void TBotStream::SetSize(DWORD NewSize)
+{
+
+}
+
+DWORD TBotStream::Seek(int Count, DWORD SeekMethod)
+{
+	return 0;
+}
+
+DWORD TBotStream::Position()
+{
+	return Seek(0, SO_CURRENT);
+}
+
+void  TBotStream::SetPosition(DWORD NewPosition)
+{
+	Seek(0, SO_BEGIN);
+}
+
+DWORD TBotStream::Write(const void* Buf, DWORD Count)
+{
+	return 0;
+}
+
+DWORD TBotStream::Read(void* Buf, DWORD Count)
+{
+	return 0;
 }
 
 
-DWORD TMemReader::Read(LPVOID Buf, DWORD Size)
+DWORD TBotStream::WriteString(const char* Str)
 {
-	// Читаем порцию данных
-	DWORD Readed = Min(Size, FSize - FPosition);
-
-	m_memcpy(Buf, FMemory + FPosition, Readed);
-	FPosition += Readed;
-	return Readed;
+    return Write((LPVOID)Str, STRA::Length(Str));
 }
 
-int   TMemReader::ReadInt()
+DWORD TBotStream::WriteString(const string &Str)
+{
+	return Write(Str.t_str(), Str.Length());
+}
+
+//-----------------------------------------------------------
+//  WriteSizedString - Функция записывает строку с заголовком
+//                     размера
+//  Формат [DWORD: Размер][Данные строки]
+//-----------------------------------------------------------
+DWORD TBotStream::WriteSizedString(const char* Str)
+{
+	DWORD Size = STRA::Length(Str);
+	DWORD W =  Write(&Size, sizeof(Size));
+		  W += Write(Str, Size);
+	return W;
+}
+
+DWORD TBotStream::WriteSizedString(const string &Str)
+{
+	DWORD Size = Str.Length();
+	DWORD W =  Write(&Size, sizeof(Size));
+		  W += Write(Str.t_str(), Size);
+	return W;
+}
+
+
+//-----------------------------------------------------------
+//  ReadToBuf - Функция загружает данные в буфер
+//-------------------+----------------------------------------
+LPVOID TBotStream::ReadToBuf(DWORD *aSize)
+{
+	DWORD Count = Size() - Position();
+
+	LPVOID Buf = MemAlloc(Count);
+	if (Buf)
+		Count = Read(Buf, Count);
+
+	if (aSize) *aSize = Count;
+	return Buf;
+}
+
+//-----------------------------------------------------------
+//  ReadToString - Функция загружает данные в строку
+//-----------------------------------------------------------
+string TBotStream::ReadToString()
+{
+	string Result;
+
+	DWORD Count = Size() - Position();
+
+	if (Count)
+	{
+        Result.SetLength(Count);
+		Count = Read(Result.t_str(), Count);
+		Result.SetLength(Count);
+    }
+
+	return Result;
+}
+
+
+int TBotStream::ReadInt()
 {
 	int R = 0;
 	Read(&R, sizeof(R));
 	return R;
 }
 
-BYTE  TMemReader::ReadByte()
+BYTE TBotStream::ReadByte()
 {
 	BYTE R = 0;
 	Read(&R, sizeof(R));
 	return R;
 }
 
-string  TMemReader::ReadString(DWORD Size)
+string TBotStream::ReadString(DWORD Size)
 {
 	string R;
 	R.SetLength(Size);
@@ -913,7 +998,7 @@ string  TMemReader::ReadString(DWORD Size)
 	return R;
 }
 
-string  TMemReader::ReadSizedString()
+string TBotStream::ReadSizedString()
 {
 	// Читает строку формата [DWORD: Размер][Строка]
 	DWORD Size = 0;
@@ -921,9 +1006,157 @@ string  TMemReader::ReadSizedString()
 	string S;
 	S.SetLength(Size);
 	if (Size)
-		Read(S.t_str(), Size);
+	{
+		Size = Read(S.t_str(), Size);
+		S.SetLength(Size);
+    }
 	return S;
 }
+
+
+//*****************************************************************************
+//                        TBotMemoryStream
+//*****************************************************************************
+TBotMemoryStream::TBotMemoryStream(LPVOID Mem, DWORD MemSize)
+{
+	FMemory   = (LPBYTE)Mem;
+	FSize     = MemSize;
+	FPosition = 0;
+}
+
+
+DWORD TBotMemoryStream::Read(void* Buf, DWORD Count)
+{
+	// Читаем порцию данных
+	DWORD Readed = 0;
+
+	if (FMemory)
+	{
+        Readed = Min(Count, FSize - FPosition);
+		m_memcpy(Buf, FMemory + FPosition, Readed);
+		FPosition += Readed;
+    }
+	return Readed;
+}
+
+DWORD TBotMemoryStream::Write(const void* Buf, DWORD Count)
+{
+	DWORD Writen = 0;
+	if (FMemory)
+	{
+		Writen = Min(Count, FSize - FPosition);
+        m_memcpy(FMemory + FPosition, Buf, Writen);
+        FPosition += Writen;
+	}
+
+	return Writen;
+}
+
+
+DWORD TBotMemoryStream::Size()
+{
+    return FSize;
+}
+
+DWORD TBotMemoryStream::Seek(int Count, DWORD SeekMethod)
+{
+	if (FMemory)
+	{
+		switch (SeekMethod) {
+			case SO_BEGIN:   FPosition =  Min(Count, FSize); break;
+			case SO_CURRENT: FPosition += Min(Count, FSize - FPosition); break;
+			case SO_END:     FPosition -= (Count <= FPosition) ? Count : FPosition; break;
+		}
+    }
+	return FPosition;
+}
+
+
+
+
+
+//****************************************************************************
+//  									TBotFileStream
+//****************************************************************************
+TBotFileStream::TBotFileStream(const char* FileName, WORD Mode)
+{
+	DWORD Access   = GENERIC_READ;
+	DWORD Creation = OPEN_EXISTING;
+
+
+	bool Create = (Mode & fcmCreate) != 0;
+
+	// Определяем режим записи\чтения
+
+	WORD AM = Mode & 0x0003;
+	if (AM == 0 && Create)
+	{
+        Access   = GENERIC_WRITE;
+    	Creation = CREATE_ALWAYS;
+	}
+	else
+	{
+		if (Create)
+			Creation = OPEN_ALWAYS;
+
+		switch (AM)
+		{
+			case fcmWrite: Access   = GENERIC_WRITE; break;
+			case fcmReadWrite: Access |= GENERIC_WRITE; break;
+		}
+    }
+
+
+	FHandle = (HANDLE)pCreateFileA(FileName, Access, 0, NULL, Creation, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (FHandle == INVALID_HANDLE_VALUE)
+		FHandle = NULL;
+}
+
+
+TBotFileStream::~TBotFileStream()
+{
+	Close();
+}
+
+
+void TBotFileStream::Close()
+{
+	if (FHandle)
+	{
+		pCloseHandle(FHandle);
+		FHandle = NULL;
+    }
+}
+
+DWORD TBotFileStream::Write(const void* Buf, DWORD Count)
+{
+	DWORD Size = 0;
+	if (FHandle)
+		pWriteFile(FHandle, Buf, Count, &Size, NULL);
+	return Size;
+}
+
+DWORD TBotFileStream::Read(void* Buf, DWORD Count)
+{
+	DWORD Size = 0;
+	if (FHandle)
+		pReadFile(FHandle, Buf, Count, &Size, NULL);
+	return Size;
+}
+
+
+DWORD TBotFileStream::Seek(int Count, DWORD MoveMethod)
+{
+	return (FHandle) ? (LONG)pSetFilePointer(FHandle, Count, NULL, MoveMethod) : 0;
+}
+
+
+DWORD TBotFileStream::Size()
+{
+    return (FHandle) ? (DWORD)pGetFileSize(FHandle, NULL) : 0;
+}
+
+
 
 
 
@@ -1141,7 +1374,7 @@ void TValues::SetValue(const char* Name, const string &Value)
 	if (V)
 		V->Value = Value;
 	else
-        AddValue(Name, Value);
+		AddValue(Name, Value);
 }
 
 
@@ -1160,4 +1393,250 @@ string TValues::GetValue(const char *Name)
 		return V->Value;
 	else
         return string(NULLSTR);
+}
+
+
+//*****************************************************************************
+//                          		TDataFile
+//*****************************************************************************
+
+#pragma pack(push, 1)
+struct TDataBlockHeader
+{
+	DWORD Type;        // Тип данных
+	DWORD NameID;      // Идентификатор имени
+	DWORD Reserved;    // Зарезервировано
+	DWORD Size;        // Размер данных
+	BYTE  IsFile;      // Признак того, что данные являются файлом
+};
+#pragma pack(pop)
+
+
+TDataFile::TDataFile()
+{
+	FStream = NULL;
+	FStreamAssigned = false;
+	Signature = DATA_FILE_SIGNATURE;
+	Version   = DATA_FILE_VERSION;
+	Type      = 0;
+	Flags     = 0;
+	FlagsEx   = 0;
+}
+
+
+TDataFile::~TDataFile()
+{
+	Close();
+}
+
+//-------------------------------------------------------
+//  Close - функция закрывает данные
+//-------------------------------------------------------
+void TDataFile::Close()
+{
+	Name.Clear();
+	Type    = 0;
+	Flags   = 0;
+	FlagsEx = 0;
+
+	if (FStream)
+	{
+		if (!FStreamAssigned)
+			delete FStream;
+		FStream = NULL;
+		FStreamAssigned = false;
+    }
+}
+
+//-------------------------------------------------------
+//  Функция создаёт набор данных в файле
+//-------------------------------------------------------
+bool TDataFile::Create(const char* FileName)
+{
+	bool R = false;
+	Close();
+	if (!STRA::IsEmpty(FileName))
+	{
+		TBotFileStream *S = new TBotFileStream(FileName, fcmReadWrite | fcmCreate);
+		R = Create(S);
+		FStreamAssigned = false;
+		if (!R) delete S;
+	}
+	return R;
+}
+
+//-------------------------------------------------------
+//  Функция создаёт набор данных в потоке данных
+//-------------------------------------------------------
+bool TDataFile::Create(TBotStream *Stream)
+{
+	Close();
+	FStream = Stream;
+	FStreamAssigned = FStream != NULL;
+	bool R = false;
+	if (FStream)
+    {
+		R = WriteHeaders();
+		if (!R) Close();
+    }
+	return R;
+}
+
+//-------------------------------------------------------
+// Функция открывает набор данных из файла
+//-------------------------------------------------------
+bool TDataFile::Open(const char* FileName)
+{
+	Close();
+	if (STRA::IsEmpty(FileName))
+		return false;
+
+	TBotFileStream *S = new TBotFileStream(FileName, fcmRead);
+	bool R = Open(S);
+    FStreamAssigned = false;
+	if (!R) delete S;
+	return R;
+}
+
+//-------------------------------------------------------
+//  Функция открывает набор данных потока данных
+//-------------------------------------------------------
+bool TDataFile::Open(TBotStream *Stream)
+{
+	Close();
+	// Читаем заголовок файла
+	FStream = Stream;
+	FStreamAssigned = FStream != NULL;
+
+	bool R = false;
+	if (FStream)
+	{
+		R = ReadHeaders();
+		if (!R) Close();
+    }
+
+	return R;
+}
+
+//-------------------------------------------------------
+//  Функция записывает заголовок данных
+//-------------------------------------------------------
+bool TDataFile::WriteHeaders()
+{
+	// Записываем сигнатуру и версию
+	TFileHeader H;
+	H.Signature = Signature;
+	H.Version   = Version;
+	bool R = Write(&H, sizeof(H), false, false);
+
+	// Записываем заголовок данных
+	TDataHeader DH;
+	ClearStruct(DH);
+	DH.Type    = Type;
+	DH.Flags   = Flags;
+	DH.FlagsEx = FlagsEx;
+	DH.NameLen = Name.Length();
+	R = R && Write(&DH, sizeof(DH), false, false);
+
+	// Записываем имя набора
+	if (R && DH.NameLen)
+		R = Write(Name.t_str(), Name.Length(), true, false);
+
+	return R;
+}
+
+//-------------------------------------------------------
+//  ReadHeaders - Функция читает заголовок файла
+//-------------------------------------------------------
+bool TDataFile::ReadHeaders()
+{
+	TFileHeader H;
+	bool R = Read(&H, sizeof(H), false, false);
+
+	/* TODO : Пересмотреть проверку версии */
+	if (!R || H.Signature != Signature || H.Version != Version)
+		return false;
+
+
+	// Читаем заголовок данных
+	TDataHeader DH;
+	R = Read(&DH, sizeof(DH), false, false);
+
+	if (R)
+	{
+        Type    = DH.Type;
+		Flags   = DH.Flags;
+		FlagsEx = DH.FlagsEx;
+
+		if (DH.NameLen)
+		{
+			Name.SetLength(DH.NameLen);
+			R = Read(Name.t_str(), DH.NameLen, true, false);
+		}
+	}
+	return R;
+}
+
+
+//-------------------------------------------------------
+//  Функция записывает данные в поток.
+//  Encrypt - Указание шифровать или нет записываемые
+//			  данные
+//  Hash - Указание хэшировать данные. Необходимо для
+//		   цифровой подписи
+//-------------------------------------------------------
+bool TDataFile::Write(const void* Buf, DWORD BufSize, bool Encrypt, bool Hash)
+{
+	bool R = false;
+	if (FStream && Buf && BufSize)
+	{
+		// Шифруем данные. Зарезервировано
+
+		// Хэшируем данные. Зарезервировано
+
+		// Записываем данные
+		R = FStream->Write(Buf, BufSize) == BufSize;
+    }
+	return R;
+}
+
+//-------------------------------------------------------
+//  Функция читает данные из потока
+//  Decrypt - Указание расшифровать или нет записываемые
+//			  данные
+//  Hash - Указание хэшировать данные. Необходимо для
+//		   цифровой подписи
+//-------------------------------------------------------
+bool TDataFile::Read(void* Buf, DWORD BufSize, bool Decrypt, bool Hash)
+{
+	bool R = false;
+	if (FStream && Buf && BufSize)
+	{
+		// Читаем данные
+		R = FStream->Read(Buf, BufSize) == BufSize;
+
+		// Расшифровываем данные. Зарезервировано
+
+		// Хэшируем данные. Зарезервировано
+	}
+	return R;
+}
+
+
+//-------------------------------------------------------
+//  Функция записывает блок данных
+//  Type       - Тип данных
+//  VarName    - Имя блока данных
+//  VarNameLen - Длина имени
+//  Data       - Указатель на буфер с данными
+//  DataSize   - Размер данных
+//-------------------------------------------------------
+bool TDataFile::AddBlock(DWORD Type, const char *VarName, DWORD VarNameLen, LPVOID Data, DWORD DataSize)
+{
+	if (!Data || !DataSize) return false;
+
+//	TDataBlockHeader H;
+//	ClearStruct(H);
+//	H.Type = Type;
+//	H.Size = DataSize;
 }

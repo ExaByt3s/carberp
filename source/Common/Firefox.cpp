@@ -325,6 +325,7 @@ namespace FFUtils
 
 
 		// Собираем новый ответ
+		HeadSize = STRA::Length(Head);
 		DWORD NewSize = HeadSize + Request->ContentLength;
 		PCHAR NewBuf = (PCHAR)MemAlloc(NewSize + 1);
 
