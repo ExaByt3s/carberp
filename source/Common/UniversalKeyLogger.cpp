@@ -765,7 +765,7 @@ void ProcessKeyDownMessage(PMSG Msg)
 		{
 			Supported = true;
 			
-			//вызываем событие для службных символов
+			//вызываем событие для служебных символов
 			char keyChar[2];
 			keyChar[0] = CHAR_KB[i];
 			keyChar[1] = 0;
