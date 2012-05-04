@@ -169,6 +169,9 @@ BOOL WINAPI SetBotParameter(DWORD ParamID, PCHAR Param);
 void SetDebugHost(PCHAR Host);
 #endif
 
+//описана в BotCore.h
+extern char BOT_UID[128];
+
 //----------------------------------------------------------------------------
 #endif
 

