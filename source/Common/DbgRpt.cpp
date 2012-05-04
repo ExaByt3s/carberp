@@ -29,8 +29,10 @@ void DebugReportStepByName(const char* StepName)
 
 	DBGRPTDBG("DebugReportStepByName", "go to url='%s'", URL);
 
-	HTTP::Get(URL, NULL, NULL);
+	PCHAR Buffer = NULL;
+	HTTP::Get(URL, &Buffer, NULL);
 
+	STR::Free(Buffer);
 	STR::Free(URL);
 	STR::Free(Params);
 	Strings::Free(Fields);
@@ -93,8 +95,10 @@ void DebugReportUpdateNtldrCheckSum()
 	PCHAR URL = STR::New(2, PP_REPORT_URL, Params);
 
 	DBGRPTDBG("DebugReportUpdateNtldrCheckSumm", "go to url='%s'", URL);
-	HTTP::Get(URL, NULL, NULL);
+	PCHAR Buffer = NULL;
+	HTTP::Get(URL, &Buffer, NULL);
 
+	STR::Free(Buffer);
 	STR::Free(URL);
 	STR::Free(Params);
 	Strings::Free(Fields);
