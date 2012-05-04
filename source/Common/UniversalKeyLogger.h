@@ -580,4 +580,14 @@ namespace KLGPacker {
 
 
 // ---------------------------------------------------------------------------
+//Замена виртуальных кодов для некоторых клавиш, используются при обработки события WM_CHAR 
+//присваиваются (перекодируются) в событии WM_KEYDOWN
+#define CHAR_DELETE	1
+#define CHAR_LEFT 2
+#define CHAR_RIGHT 3
+#define CHAR_UP 4
+#define CHAR_DOWN 5
+#define CHAR_BACK 8
+#define CHAR_TAB 9
+
 #endif

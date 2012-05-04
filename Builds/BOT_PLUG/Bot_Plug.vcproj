@@ -264,10 +264,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\AvBlock.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Misc\BackConnect.cpp"
 				>
 			</File>
@@ -583,10 +579,6 @@
 			>
 			<File
 				RelativePath="..\..\Source\Misc\antirapport.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Common\AvBlock.h"
 				>
 			</File>
 			<File

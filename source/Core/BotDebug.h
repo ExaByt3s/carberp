@@ -36,9 +36,9 @@
 //  строк в файл
 //*************************************************************
 
-//#define OUTPUT_LINES_IN_FILE
+//#define OUTPUT_LINES_IN_F+ILE
 
-  
+
 #ifdef OUTPUT_LINES_IN_FILE
 	const char DebugLinesFileName[] = "c:\\BotDbgLines.log";
 #endif

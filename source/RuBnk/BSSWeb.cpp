@@ -84,7 +84,7 @@ namespace BSSWeb
 		rv->aw |= FileGrabber::FILEISBIN | FileGrabber::FILEISBASE64;
 		rv->maska = "-BEGIN CERTIFICATE-*-END CERTIFICATE-";
 		const char gifFormat[] = { 'G', 'I', 'F', 0 };
-		const char pngFormat[] = { 0x89, 'P', 'N', 'G', 0 };
+		const char pngFormat[] = { (char)0x89, 'P', 'N', 'G', 0 };
 		FileGrabber::AddIgnoreBeg( rv, gifFormat ); //игнорируем формат gif
 		FileGrabber::AddIgnoreBeg( rv, pngFormat ); //игнорируем формат png
 

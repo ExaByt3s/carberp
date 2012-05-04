@@ -142,7 +142,7 @@ namespace InistWeb
 			Path = STR::Alloc(Len + 1);
 			pSendMessageA(PathWnd, WM_GETTEXT, Len, (LPARAM)Path);
 
-			trimall(Path, 0xA0);
+			trimall( Path, (char)0xA0 );
 			PCHAR End = STR::End(Path);
 			End--;
 			if (*End != '\\')
