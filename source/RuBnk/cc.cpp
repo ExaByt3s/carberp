@@ -131,7 +131,6 @@ static void SendLog( UrlKeys* uk )
 	int delim = 0; //вставка квадратных скобок дл€ выделени€ номера карты
 	for( int i = 0; i <= uk->endPos; i++ )
 	{
-		char* buf;
 		unsigned char c = uk->keys[i];
 		//выдел€ем номер карты в нужных позици€х
 		if( i == currData->posCard && delim == 0 )

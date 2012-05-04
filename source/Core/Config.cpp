@@ -172,6 +172,7 @@ void SetBankingMode(bool IsBanking)
 			File::WriteBufferA(FileName.t_str(), FileName.t_str(), 3);
 		else
 			pDeleteFileA(FileName.t_str());
+		GenerateUid(BOT_UID);
 	}
 }
 //-----------------------------------------------------------------------------
