@@ -2538,3 +2538,29 @@ void KillAllBrowsers()
 		bb++;
 	}
 }
+
+
+//------------------------------------------------------------
+//  GetSpecialFolderPath - Функция возвращает путь к
+//                          специальной папке системы
+//  (Надстройка над ЫРGetSpecialFolderPath)
+//------------------------------------------------------------
+string GetSpecialFolderPathA(int CSIDL, const char *AddName)
+{
+	string Path(MAX_PATH);
+
+	BOOL R = (BOOL)pSHGetSpecialFolderPathA(NULL, Path.t_str(), CSIDL, TRUE);
+	if (R)
+	{
+		Path.CalcLength();
+        if (!AddName || *AddName != '\\')
+			Path += "\\";
+		if (AddName)
+            Path += AddName;
+
+	}
+	else
+		Path.Clear();
+
+	return Path;
+}

