@@ -423,21 +423,6 @@ public:
 
 
 
-//------------------------------------------------------
-//  Ззаголовок данных
-//------------------------------------------------------
-
-#pragma pack(push, 1)
-struct TDataHeader
-{
-	DWORD Type;      // Тип данных
-	DWORD Flags;     // Флаги данных
-	DWORD FlagsEx;   // Дополнительные флаги
-	BYTE  Encrypted; // Данные зашифрованы
-	BYTE  Signed;    // Признак того, что данные подписаны цифровой подписью
-    DWORD NameLen;   // Длина имени системы
-};
-#pragma pack(pop)
 
 
 
@@ -446,18 +431,19 @@ struct TDataHeader
 
 
 // Базовые типы данных
-#define BLOCK_TYPE_VARIABLE 0x01000000 /* Имя переменной */
-#define BLOCK_TYPE_TEXT     0x02000000 /* Текстовый блок */
-#define BLOCK_TYPE_FILE     0x03000000 /* Файд */
+#define BLOCK_TYPE_VARIABLE 0xFF01 /* Имя переменной */
+#define BLOCK_TYPE_TEXT     0xFF02 /* Текстовый блок */
+#define BLOCK_TYPE_FILE     0xFF03 /* Файл           */
+#define BLOCK_TYPE_DELETED  0xFFFF /* Удалённый блок */
 
 //************************************************************
 //
 //************************************************************
-//class TDataBlock : public TBotObject
-//{
-//public:
-//    TDataBlock();
-//};
+class TDataBlock : public TValue
+{
+public:
+    TDataBlock();
+};
 
 
 //************************************************************
@@ -495,7 +481,7 @@ public:
 	bool Open(const char* FileName);
 	bool Open(TBotStream *Stream);
 
-    bool AddBlock(DWORD Type, const char *Name, DWORD NameLen, LPVOID Data, DWORD DataSize);
+	bool Add(WORD Type, const char *Name, LPVOID Data, DWORD DataSize);
 
     void Close();
 };

