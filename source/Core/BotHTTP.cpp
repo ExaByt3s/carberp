@@ -607,7 +607,7 @@ bool ReceiveData(SOCKET Sock, PCHAR &Header, PCHAR *Buf, DWORD &Len)
 	do
 	{
 		Size = (int)precv(Sock, (char*)Data, DataSize, 0);
-		if (Size == 0)
+		if (Size <= 0)
 			break;
 
 		MEMBLOCK::AddBlock(RecBuf, Data, Size);

