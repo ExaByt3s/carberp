@@ -1400,16 +1400,39 @@ string TValues::GetValue(const char *Name)
 //                          		TDataFile
 //*****************************************************************************
 
+
+//----------------------------------
+//  Ззаголовок данных
+//----------------------------------
+#pragma pack(push, 1)
+struct TDataHeader
+{
+	DWORD Type;      // Тип данных
+	DWORD Flags;     // Флаги данных
+	DWORD FlagsEx;   // Дополнительные флаги
+	BYTE  Encrypted; // Данные зашифрованы
+	BYTE  Signed;    // Признак того, что данные подписаны цифровой подписью
+	DWORD NameLen;   // Длина имени системы
+};
+#pragma pack(pop)
+
+
+//----------------------------------
+//  Ззаголовок блока данных
+//----------------------------------
 #pragma pack(push, 1)
 struct TDataBlockHeader
 {
-	DWORD Type;        // Тип данных
-	DWORD NameID;      // Идентификатор имени
-	DWORD Reserved;    // Зарезервировано
-	DWORD Size;        // Размер данных
-	BYTE  IsFile;      // Признак того, что данные являются файлом
+	WORD  Type;      // Тип данных
+	DWORD ID;        // Идентификатор (В зависимости от типа имеет различное назначение)
+	DWORD Size;      // Размер данных
+	DWORD Reserved;  // Зарезервировано
+
 };
 #pragma pack(pop)
+
+
+
 
 
 TDataFile::TDataFile()
@@ -1631,12 +1654,19 @@ bool TDataFile::Read(void* Buf, DWORD BufSize, bool Decrypt, bool Hash)
 //  Data       - Указатель на буфер с данными
 //  DataSize   - Размер данных
 //-------------------------------------------------------
-bool TDataFile::AddBlock(DWORD Type, const char *VarName, DWORD VarNameLen, LPVOID Data, DWORD DataSize)
+bool TDataFile::Add(WORD Type, const char *Name, LPVOID Data, DWORD DataSize)
 {
 	if (!Data || !DataSize) return false;
 
-//	TDataBlockHeader H;
-//	ClearStruct(H);
-//	H.Type = Type;
-//	H.Size = DataSize;
+	TDataBlockHeader H;
+	ClearStruct(H);
+
+	H.Type = Type;
+	H.Size = DataSize;
+
+	// Записываем заголовок
+	bool R = Write(&H, sizeof(H), false, false);
+
+	// Записываем данные
+	R = R && Write(Data, DataSize, true, true);
 }

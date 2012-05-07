@@ -112,11 +112,12 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands);
 //*****************************************************************
 //  DownloadCommand - функция загружает команду
 //
-//  URL - Адрес загрузки команды
+//  aURL - Адрес загрузки команды
 //
 //  HTMLCode - Загруженный код HTML
 //*****************************************************************
-bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode);
+bool DownloadCommand(PCHAR aURL, PCHAR *HTMLCode);
+//bool DownloadCommand(PCHAR *HTMLCode);
 
 //*****************************************************************
 //	DownloadAndExecuteCommand - Загрузить и выполнить команду
@@ -131,6 +132,7 @@ bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode);
 //
 //*****************************************************************
 bool DownloadAndExecuteCommand(PTaskManager Manager, PCHAR URL);
+//bool DownloadAndExecuteCommand(PTaskManager Manager);
 
 //*****************************************************************
 //  TaskManagerSleep  - приостановить поток выполнения команд.

