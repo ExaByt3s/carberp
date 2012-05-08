@@ -342,7 +342,7 @@ PCHAR GetActiveHost()
 		// Первым этапом пытаемся получить хост из файла
 		if (Hosts::GetActiveHostFormFile(NULL, Result))
 		{
-			CFGDBG("Cofig", "Полусили хост из файла");
+			CFGDBG("Cofig", "Получили хост из файла");
 			return Result;
 		}
 	#endif
@@ -361,7 +361,7 @@ string GetActiveHost2()
 		// Первым этапом пытаемся получить хост из файла
 		if (Hosts::GetActiveHostFormFile(NULL, Host))
 		{
-			CFGDBG("Cofig", "Полусили хост из файла");
+			CFGDBG("Cofig", "Получили хост из файла");
 			string Result(Host);
 			STR::Free(Host);
 			return Result;
