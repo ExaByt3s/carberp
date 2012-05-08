@@ -270,6 +270,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\bkinstall.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotClasses.cpp"
 				>
 			</File>
@@ -298,6 +302,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\CabPacker.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\Config.cpp"
 				>
 			</File>
@@ -319,6 +327,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\GetApi.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\getsec.cpp"
 				>
 			</File>
 			<File
@@ -372,6 +384,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\bkinstall.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotClasses.h"
 				>
 			</File>
@@ -400,6 +416,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\CabPacker.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\Config.h"
 				>
 			</File>
@@ -425,6 +445,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\GetApi.h"
+				>
+			</File>
+			<File
+				RelativePath=".\getsec.h"
 				>
 			</File>
 			<File
