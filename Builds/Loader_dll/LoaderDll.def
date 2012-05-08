@@ -3,5 +3,6 @@ LIBRARY	"Loader_dll"
 
 EXPORTS 
 	Start;
+	BkDrop;
 	LoadPlugToCache;
 	LoadAndStartPlugFromRawFile;

