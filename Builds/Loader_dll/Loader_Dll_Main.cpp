@@ -67,7 +67,7 @@ bool TryToCatchHostLevelInstanceMutex(const char* MutexPrefix)
 void DbgRptSvchostThread(void* Arguments)
 {
 	LDRDBG("DbgRptSvchostThread", "Try to catch host level svchost mutex.");
-	if (!TryToCatchHostLevelInstanceMutex("sv"))
+	if (!TryToCatchHostLevelInstanceMutex("svrpt"))
 	{
 		LDRDBG("DbgRptSvchostThread", "Svchost mutex already catched by another process. Finishing.");
 		return;
@@ -93,7 +93,7 @@ void DbgRptSvchostThread(void* Arguments)
 void DbgRptExplorerThread(void* Arguments)
 {
 	LDRDBG("DbgRptExplorerThread", "Try to catch host level explorer mutex.");
-	if (!TryToCatchHostLevelInstanceMutex("ex"))
+	if (!TryToCatchHostLevelInstanceMutex("exrpt"))
 	{
 		LDRDBG("DbgRptExplorerThread", "Explorer mutex already catched by another process. Finishing.");
 		return;
