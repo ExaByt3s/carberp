@@ -515,10 +515,11 @@ void ResetBootkitLoaderFlag()
 	IsLoadedByOriginalBootkitLoader = FALSE;
 }
 
-extern"C" __declspec(dllexport) VOID NTAPI  Start(
-							PVOID  NormalContext /*системный указатель*/,
-							PUSER_INIT_NOTIFY  SystemArgument1 /*аргумент который нужно сохранить чтоб использовать общение с драйвером*/,
-							PVOID SystemArgument2/* ничего не передаеться*/)
+VOID WINAPI Start(
+	PVOID  NormalContext /*системный указатель*/,
+	PUSER_INIT_NOTIFY  SystemArgument1 /*аргумент который нужно сохранить чтоб использовать общение с драйвером*/,
+	PVOID SystemArgument2/* ничего не передаеться*/
+	)
 {
 	ResetBootkitLoaderFlag();
 	
