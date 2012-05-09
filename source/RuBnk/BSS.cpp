@@ -389,6 +389,8 @@ BOOL WINAPI HOOK_BSSInternetWriteFile( HINTERNET hFile, LPCVOID lpBuffer, DWORD 
 DWORD BSSPID = 0;
 
 
+
+
 void BSSHooks()
 {
 

