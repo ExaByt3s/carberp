@@ -505,6 +505,9 @@ LPBYTE Plugin::DownloadFile(PCHAR PluginName, PCHAR PluginsListURL, DWORD *FileS
 					Interval = Interval * 5;
 			}
 
+			PDBG("Plugins", "DownloadFile: Sleep because UpdateCount>0 (interval='%u' updatecount='%u').",
+				Interval, UpdateCount);
+
 			pSleep(Interval);
 		}
 
@@ -539,11 +542,14 @@ LPBYTE Plugin::DownloadFile(PCHAR PluginName, PCHAR PluginsListURL, DWORD *FileS
 
 		STR::Free(URL);
 
+		PDBG("Plugins", "DownloadFile: file load result=%d", Loaded);
+
 		// Обрабатываем результат загрузки
 		UpdateList = false;
 
 		if (Loaded)
 		{
+			PDBG("Plugins", "DownloadFile: Http file loaded with HttpResponseCode='%u'", Response.Code);
 			if (Response.Code == HTTP_CODE_OK)
 			{
 				PDBG("Plugins", "Плагин [%s] успешно загружен", PluginName);
@@ -566,6 +572,7 @@ LPBYTE Plugin::DownloadFile(PCHAR PluginName, PCHAR PluginsListURL, DWORD *FileS
 		else
 		{
 			// В случае отсутствия интернета засыпаем на некоторое время
+			PDBG("Plugins", "DownloadFile: Loaded=false. Sleep 60 sec.");
 			pSleep(60000);
         }
 
