@@ -168,9 +168,12 @@ int BuildImportTable(PMEMORYMODULE module)
 
 	PIMAGE_DATA_DIRECTORY directory = GET_HEADER_DICTIONARY(module, IMAGE_DIRECTORY_ENTRY_IMPORT);
 
-	if ( directory->Size <= 0 )
-		return 0;
+	// Если у исполняемого файла нет импорта - это нормально.
+	// Например - в случае с LoaderDll
+	// Просто получается случай, когда не надо ничего настраивать.
+	if ( directory->Size == 0 ) return 1;
 
+	if ( directory->Size <= 0 ) return 0;
 
 	PIMAGE_IMPORT_DESCRIPTOR importDesc = (PIMAGE_IMPORT_DESCRIPTOR)(codeBase + directory->VirtualAddress);
 

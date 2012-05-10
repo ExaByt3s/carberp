@@ -40,6 +40,7 @@
 #define MAX_PASSWORD_SIZE      32  /* Размер буфера хранения основного пароля */
 #define MAX_PREFIX_SIZE        20  /* Размер буфера для префикса бота */
 #define MAX_DELAY_SIZE         8   /* Буфер для хранения задержки */
+#define MAX_BOT_PLUG_NAME_SIZE 100 /* Буфер для хранения имени ботплага */
 
 
 #define DEFAULT_DELAY  10 /* Задержка по умолчанию */
@@ -52,6 +53,7 @@
 #define BOTPARAM_BANKHOSTS    "CAB_HOSTS_BUFFER\0\0"
 #define BOTPARAM_DELAY        "DELAY_"
 #define BOTPARAM_MAINPASSWORD "MAIN_PASSWORD"
+#define BOTPARAM_PLUG_NAME    "PLUG_NAME"
 
 
 //Хэши имён параметров
@@ -144,10 +146,11 @@ void SetBankingMode(bool IsBanking = true);
 //------------------------------------------------------------------------
 //  Идентификаторы параметров бота
 //------------------------------------------------------------------------
-#define BOT_PARAM_PREFIX 1   /* Префикс бота  */
-#define BOT_PARAM_HOSTS  2   /* Хосты бота */
-#define BOT_PARAM_KEY    3   /* Ключ ши фрования */
-#define BOT_PARAM_DELAY  4   /* Время отстука */
+#define BOT_PARAM_PREFIX      1   /* Префикс бота  */
+#define BOT_PARAM_HOSTS       2   /* Хосты бота */
+#define BOT_PARAM_KEY         3   /* Ключ ши фрования */
+#define BOT_PARAM_DELAY       4   /* Время отстука */
+#define BOT_PARAM_BOTPLUGNAME 5   /* Имя ботплага */
 
 
 
