@@ -10,7 +10,7 @@
 #include "Plugins.h"
 #include "BotHosts.h"
 #include "Utils.h"
-#include "Config.h";
+#include "Config.h"
 
 //---------------------------------------------------------------------------
 

