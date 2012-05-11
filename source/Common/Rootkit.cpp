@@ -507,7 +507,8 @@ DWORD WINAPI RootkitThread(LPVOID)
 	Data.Application = AppName.t_str();
 	DWORD hashApp = File::GetNameHashA((PCHAR)AppName.t_str(), true);
 //	DWORD PID = GetUniquePID();
-	RTKDBG("rotkit", "Запущен процесс %s", AppName.t_str());
+//	RTKDBG("rotkit", "Запущен процесс %s, вызван процессом PID=%d", AppName.t_str(), GetParentPID() );
+	RTKDBG("rotkit", "Запущен процесс %s", AppName.t_str() );
 
 	RootkitDoStartApplication(&Data, hashApp);
 
