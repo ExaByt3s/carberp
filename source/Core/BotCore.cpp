@@ -158,14 +158,13 @@ PCHAR BOT::GetWorkPath(PCHAR SubDir, PCHAR FileName)
 {
 	//  Функция возвращает рабочий путь бота
     return BOTDoGetWorkPath(false, SubDir, FileName);
-
 }
 //----------------------------------------------------------------------------
 
 PCHAR BOT::GetWorkPathInSysDrive(PCHAR SubDir, PCHAR FileName)
 {
 	//  Аналог функции GetWorkPath.
-	//  Главное от личие от нёэ в том, что пусть
+	//  Главное от личие от неё в том, что пусть
 	//   создаётся в корне системного диска
     return BOTDoGetWorkPath(true, SubDir, FileName);
 }

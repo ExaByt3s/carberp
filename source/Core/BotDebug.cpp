@@ -143,7 +143,7 @@ void Debug::MessageEx(PCHAR Module, DWORD Line, PCHAR Section, PCHAR ExtData, PC
 	PCHAR NL = (Line != 0)? NomberLine : StrFmt;
 	PCHAR SL = (!STR::IsEmpty(Section))? SectionLine : StrFmt;
 
-	PCHAR SourceLine = STR::New(4, StrFmt, NL, SL, MsgLine);
+	PCHAR SourceLine = STR::New(5, StrFmt, NL, SL, MsgLine, "\r\n");
 	// "%s(%d) [ %s ] : %s"
 
 	// Собираем строку

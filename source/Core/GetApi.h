@@ -412,7 +412,8 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 #define pGetCurrentHwProfileA		pushargEx< DLL_ADVAPI32, 0xF684C7A9>
 #define pGetTokenInformation		pushargEx< DLL_ADVAPI32, 0xD4ECC759>
 #define pInitializeSecurityDescriptor	pushargEx< DLL_ADVAPI32, 0xB8538A52>
-#define pSetSecurityDescriptorOwner pushargEx< DLL_ADVAPI32, 0xDADD5994>
+#define pSetSecurityDescriptorOwner	pushargEx< DLL_ADVAPI32, 0xDADD5994>
+#define pSetSecurityDescriptorDacl	pushargEx< DLL_ADVAPI32,0xCCD03C3A>
 #define pSetFileSecurityW			pushargEx< DLL_ADVAPI32, 0x5A9B2FDD>
 #define pRegCreateKeyW				pushargEx< DLL_ADVAPI32, 0xAE9E4290>
 #define pRegCreateKeyA				pushargEx< DLL_ADVAPI32, 0xAE9E4286>
