@@ -264,6 +264,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\AzConfig.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\BackConnect.cpp"
 				>
 			</File>
@@ -329,6 +333,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\CabPacker.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\cc.cpp"
 				>
 			</File>
 			<File
@@ -484,6 +492,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\rafa.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Common\Requests.cpp"
 				>
 			</File>
@@ -582,6 +594,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\Avangard.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\AzConfig.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\BackConnect.h"
 				>
 			</File>
@@ -634,11 +654,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\BssSendFile.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\bsssign.h"
 				>
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\CabPacker.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\cc.h"
 				>
 			</File>
 			<File
@@ -723,6 +751,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Hunter.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\IBankExport.h"
 				>
 			</File>
 			<File
@@ -823,6 +855,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\PostDataGrabber.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\rafa.h"
 				>
 			</File>
 			<File
