@@ -436,13 +436,27 @@ public:
 #define BLOCK_TYPE_FILE     0xFF03 /* Файл           */
 #define BLOCK_TYPE_DELETED  0xFFFF /* Удалённый блок */
 
+
+
 //************************************************************
 //
 //************************************************************
 class TDataBlock : public TValue
 {
+protected:
+	// методы чтения/записи данных
+	bool WriteBuf(LPVOID Buf, DWORD BufSize, bool Crypt, bool Hash);
+	bool ReadBuf(LPVOID Buf, DWORD BufSize, bool Crypt, bool Hash);
+
+	// Методы чтения/записи частей блока
+	bool virtual WriteHeader();
+	bool virtual WriteData();
+	bool virtual ReadHeader();
+	bool virtual ReadData();
 public:
-    TDataBlock();
+	TDataBlock();
+	~TDataBlock();
+    bool SaveToStream(TBotStream *Stream);
 };
 
 
