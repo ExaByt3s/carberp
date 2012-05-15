@@ -386,6 +386,8 @@ BOOL WINAPI HOOK_BSSInternetWriteFile( HINTERNET hFile, LPCVOID lpBuffer, DWORD 
 	return REAL_BSSInternetWriteFile( hFile, lpBuffer, dwNumberOfBytesToWrite, lpdwNumberOfBytesWritten );
 }
 
+
+
 DWORD BSSPID = 0;
 
 
@@ -396,8 +398,8 @@ void BSSHooks()
 
 	if (IsNewProcess(BSSPID))
 	{
-
-    	InitScreenLib();
+		BSSHooksInitialized = false;
+		BSSLog = NULL;
 
 		HashListBBS = List::Create();
 		if ( HookApi( 8, 0x205BD56A, &HOOK_BSSInternetWriteFile ) )

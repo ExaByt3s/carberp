@@ -14,6 +14,7 @@
 #include "Inject.h"
 #include "BotHosts.h"
 #include "Plugins.h"
+#include "DllLoader.h"
 
 
 /* TODO :

