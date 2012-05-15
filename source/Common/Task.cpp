@@ -15,6 +15,8 @@
 #include "BotHosts.h"
 #include "Plugins.h"
 #include "DllLoader.h"
+#include <shlobj.h>
+#include <shlwapi.h>
 
 
 /* TODO :
