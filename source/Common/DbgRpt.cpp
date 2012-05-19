@@ -14,6 +14,12 @@ namespace DBGRPTDEBGTEMPLATES
 
 #define DBGRPTDBG DBGRPTDEBGTEMPLATES::DBGOutMessage<>
 
+#ifdef DBGRPT_ENABLED
+	PP_COMPILER_MESSAGE("Statistic debug reporting enabled.('DBGRPT_ENABLED' defined)");
+#else
+	PP_COMPILER_MESSAGE("Statistic debug reporting disabled.('DBGRPT_ENABLED' NOT defined.)");
+#endif
+
 void DebugReportStepByName(const char* StepName)
 {
 	CHAR BotUid[200];
