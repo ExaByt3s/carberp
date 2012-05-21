@@ -30,7 +30,7 @@
 #define PP_TOSTRING2(x) #x
 #define PP_TOSTRING(x) PP_TOSTRING2(x)
 
-#define PP_COMPILER_MESSAGE(msg)  __pragma(message("COMPILE-TIME MESSAGE: [" msg "]:(" __FILE__ ":" PP_TOSTRING(__LINE__) ":'"__FUNCTION__"')"))
+#define PP_COMPILER_MESSAGE(msg)  /*__pragma(message("COMPILE-TIME MESSAGE: [" msg "]:(" __FILE__ ":" PP_TOSTRING(__LINE__) ":'"__FUNCTION__"')")) */
 
 #include <Windows.h>
 
