@@ -26,11 +26,18 @@
 	#define DebugUtils
 #endif
 
-// Макросы для показа сообщений в окне компиляции.
-#define PP_TOSTRING2(x) #x
-#define PP_TOSTRING(x) PP_TOSTRING2(x)
 
-#define PP_COMPILER_MESSAGE(msg)  __pragma(message("COMPILE-TIME MESSAGE: [" msg "]:(" __FILE__ ":" PP_TOSTRING(__LINE__) ":'"__FUNCTION__"')"))
+// Макросы для показа сообщений в окне компиляции.
+// Внимание: работает только для компилятора от Microsoft
+#ifdef _MSC_VER
+# define PP_TOSTRING2(x) #x
+# define PP_TOSTRING(x) PP_TOSTRING2(x)
+# define PP_COMPILER_MESSAGE(msg)  __pragma(message("COMPILE-TIME MESSAGE: [" msg "]:(" __FILE__ ":" PP_TOSTRING(__LINE__) ":'"__FUNCTION__"')"))
+#else
+# define PP_COMPILER_MESSAGE(msg)
+#endif
+
+
 
 #include <Windows.h>
 

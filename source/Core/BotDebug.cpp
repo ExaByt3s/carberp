@@ -109,6 +109,7 @@ bool StartInDebugingMode(bool ShMSG)
 	PP_COMPILER_MESSAGE("Debug output disabled.('DebugUtils' NOT defined.)");
 #endif
 
+
 void Debug::MessageEx(PCHAR Module, DWORD Line, PCHAR Section, PCHAR ExtData, PCHAR Str, ...)
 {
 	// Вызвать отладочное сообщение
