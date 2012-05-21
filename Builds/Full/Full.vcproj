@@ -361,10 +361,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\AvBlock.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Misc\BackConnect.h"
 				>
 			</File>
@@ -409,11 +405,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\CabPacker.h"
+				RelativePath="..\..\Source\RuBnk\CabPacker.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\CabPacker.h"
+				RelativePath="..\..\Source\Common\CabPacker.h"
 				>
 			</File>
 			<File
@@ -669,10 +665,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\AvBlock.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Misc\BackConnect.cpp"
 				>
 			</File>
@@ -810,6 +802,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\RuBnk\java_patcher.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\JavaConfig.cpp"
 				>
 			</File>
 			<File

