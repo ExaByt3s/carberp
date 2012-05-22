@@ -405,6 +405,26 @@ string GetActiveHost(bool CheckBankingMode)
 //-----------------------------------------------------------------------------
 
 
+//-------------------------------------------------------------------
+//  IsMainHost - функция возвращает истину если
+//  указанный хост принадлежит массиву основных хостов бота
+//-------------------------------------------------------------------
+bool IsMainHost(const char* Host)
+{
+
+	/* TODO : Сделать проверку  в файле и проверку в режиме BANKING */
+
+	TStrEnum E(BOT_MAINHOSTS_ARRAY, BOTPARAM_ENCRYPTED_MAINHOSTS, 0);
+	while (E.Next())
+	{
+		if (E.Line() == Host)
+			return true;
+    }
+	return false;
+}
+//-----------------------------------------------------------------------------
+
+
 PCHAR GetActiveHostFromBuf(PCHAR Hosts, DWORD EmptyArrayHash)
 {
 	//  Функция возвращает хост из буфера
