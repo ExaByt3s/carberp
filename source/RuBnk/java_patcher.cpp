@@ -17,7 +17,7 @@
 #include "Richedit.h"
 
 
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 namespace java_patcher
 {
@@ -223,6 +223,7 @@ static void SendLogToAdmin( int num )
 
 static bool RunCmd( const char* exe, const char* cmd )
 {
+	//return true;
 	SHELLEXECUTEINFOA in;
 	m_memset( &in, 0, sizeof(SHELLEXECUTEINFOA) );
 
