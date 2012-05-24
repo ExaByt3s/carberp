@@ -972,7 +972,8 @@ bool InjectHTMLCode(PRequest Request, THTMLInject *Inject)
 
 // ----------------------------------------------------------------------------
 
-bool HTMLInjects::Execute(PRequest Request, PHTTPSessionInfo Session) {
+bool HTMLInjects::Execute(PRequest Request, PHTTPSessionInfo Session)
+{
 	// Обработать HTML инжекты.
 	//
 	// функция возвращает истину если в буффер
