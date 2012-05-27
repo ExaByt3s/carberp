@@ -485,7 +485,8 @@ private:
 	bool FStreamAssigned;
 	bool WriteHeaders();
 	bool ReadHeaders();
-	bool WriteBlock(TDataBlock &Block);
+	bool WriteBlock(const TDataBlock &Block);
+    bool ReadBlock(const TDataBlock &Block);
 protected:
 	bool Write(const void* Buf, DWORD BufSize, bool Encrypt = true, bool Hash = true);
 	bool Read(void* Buf, DWORD BufSize, bool Decrypt = true, bool Hash = true);

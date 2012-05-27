@@ -15,7 +15,7 @@
 
 
 
-class TSocket;
+class TBotSocket;
 
 
 //--------------------------------------------------------
@@ -24,25 +24,26 @@ class TSocket;
 //  По умолчанию используется Windows сокеты и создаётся
 //  класс TWinSocket
 //--------------------------------------------------------
-TSocket* CreateSocket();
+//TBotSocket* CreateSocket();
 
 
 
 
 
 //***************************************************************
-//  TSocket - Базовый класс для работы с TCP сокетом
+//  TBotSocket - Базовый класс для работы с TCP сокетом
 //***************************************************************
-class TSocket : public TBotObject
+class TBotSocket : public TBotObject
 {
 protected:
 	bool virtual DoConnect(const char *HostName, WORD Port, DWORD Timeout) { return false; }
+	void virtual DoClose() {};
 public:
-    ~TSocket();
+    virtual ~TBotSocket();
 
 	bool Connect(const char *HostName, WORD Port);
 	bool Connect(const char *HostName, WORD Port, DWORD Timeout);
-	void virtual Close() {};
+	void Close() { DoClose(); };
 	int  virtual Write(const void* Buf, DWORD BufSize)  { return 0; }
     int  virtual Read(void* Buf, DWORD BufSize)         { return 0; }
 };
@@ -54,13 +55,15 @@ public:
 //  TWinSocket - Класс для работы с TCP сокетом
 //				 используя WinSocket
 //***************************************************************
-class TWinSocket : public TSocket
+class TWinSocket : public TBotSocket
 {
 protected:
 	bool DoConnect(const char *HostName, WORD Port, DWORD Timeout);
+	void DoClose();
 public:
 	TWinSocket();
-	void Close();
+	~TWinSocket() {};
+	//void virtual Close();
 	int Write(const void* Buf, DWORD BufSize);
     int Read(void* Buf, DWORD BufSize);
 };

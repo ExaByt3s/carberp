@@ -8,10 +8,10 @@
 
 
 //****************************************************************************
-//  								TSocket
+//  								TBotSocket
 //****************************************************************************
 
-TSocket::~TSocket()
+TBotSocket::~TBotSocket()
 {
 	// В деструкторе автоматически закрываем соединения
     Close();
@@ -24,7 +24,7 @@ TSocket::~TSocket()
 //  HostName - Имя сервера
 //  Port     - Порт к которому будем подключаться
 //------------------------------------------------------
-bool TSocket::Connect(const char *HostName, WORD Port)
+bool TBotSocket::Connect(const char *HostName, WORD Port)
 {
 	return DoConnect(HostName, Port, 0);
 }
@@ -37,7 +37,7 @@ bool TSocket::Connect(const char *HostName, WORD Port)
 //  Timeout  - Интервал времени в течении которого будет
 //             производиться попытка подключения
 //------------------------------------------------------
-bool TSocket::Connect(const char *HostName, WORD Port, DWORD Timeout)
+bool TBotSocket::Connect(const char *HostName, WORD Port, DWORD Timeout)
 {
 	return DoConnect(HostName, Port, Timeout);
 }
@@ -59,9 +59,10 @@ bool TWinSocket::DoConnect(const char *HostName, WORD Port, DWORD Timeout)
 }
 
 
-void TWinSocket::Close()
+void TWinSocket::DoClose()
 {
-
+	int I = 10;
+    I = 10;
 }
 
 int TWinSocket::Write(const void* Buf, DWORD BufSize)
