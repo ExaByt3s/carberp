@@ -74,10 +74,10 @@ DWORD  BSSClickToButtons(HWND Form, bool MultiClick, DWORD BtnCaptionHash)
 		}
 
 		// Кликаем по кнопке
-		if (HardClickToWindow(Button, 5, 5))
+		if (HardClickToWindow(Button, Random::Generate(6, 30), Random::Generate(6, 15)))
 		{
 			Count++;
-			pSleep(1000);
+			pSleep(Random::Generate(1000, 1500));
 			if (!MultiClick) break;
         }
 	}

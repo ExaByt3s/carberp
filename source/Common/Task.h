@@ -160,5 +160,8 @@ bool ExecuteCommand(LPVOID Manager, PCHAR Command, PCHAR Args, bool Deferred = f
 bool ExecuteCommand(LPVOID Manager, PCHAR HTML, bool Deferred = false);
 
 
+
+bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args);
+
 //---------------------------------------------------------------------------
 #endif

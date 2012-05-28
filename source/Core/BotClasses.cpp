@@ -1680,10 +1680,10 @@ bool TDataFile::WriteBlock(const TDataBlock &Block)
 {
 	// Формируем заголовок и записываем его
 
-
+	return false;
 }
 
 bool TDataFile::ReadBlock(const TDataBlock &Block)
 {
-
+	return false;
 }

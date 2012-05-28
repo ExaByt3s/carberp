@@ -30,7 +30,7 @@ void Download(char*URL,WCHAR*FileName)
 
 		while (true)
 		{
-			PHTTPRequest R = HTTPCreateRequest(URL);
+			PHTTPRequestRec R = HTTPCreateRequest(URL);
 
 			R->UseRange = true;
 			R->StartRange = (DWORD)nFileLen;

