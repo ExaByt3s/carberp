@@ -17,10 +17,10 @@
 
 //---------------------------------------------------------------------------
 
-PHTTPRequest HTTPCreateRequest(PCHAR URL)
+PHTTPRequestRec HTTPCreateRequest(PCHAR URL)
 {
 	// Создать структуру запроса
-	PHTTPRequest R = CreateStruct(THTTPRequest);
+	PHTTPRequestRec R = CreateStruct(THTTPRequestRec);
 	R->Method = hmGET;
 
 	if (URL != NULL)
@@ -47,7 +47,7 @@ PHTTPRequest HTTPCreateRequest(PCHAR URL)
 }
 //---------------------------------------------------------------------------
 
-void HTTPFreeRequest(PHTTPRequest Request)
+void HTTPFreeRequest(PHTTPRequestRec Request)
 {
 	// Создать структуру запроса
 	if (Request == NULL)
@@ -57,7 +57,7 @@ void HTTPFreeRequest(PHTTPRequest Request)
 }
 //---------------------------------------------------------------------------
 
-void HTTPClearRequest(PHTTPRequest Request)
+void HTTPClearRequest(PHTTPRequestRec Request)
 {
 	// Функция очищает структуру HTTP запроса
 	if (Request == NULL)
@@ -84,7 +84,7 @@ void HTTPClearRequest(PHTTPRequest Request)
 	ClearStruct(*Request);
 }
 //----------------------------------------------------------------------------
-void SetDefaultPort(PHTTPRequest R)
+void SetDefaultPort(PHTTPRequestRec R)
 {
 	// Устанавливаем порт по умолчанию, если в запросе не установлен
 	if (R->Port == 0)
@@ -98,7 +98,7 @@ void SetParam(PCHAR &Attr, PCHAR Value)
 		Attr = STR::New(Value);
 }
 
-void HTTPInitializeRequest(PHTTPRequest Request)
+void HTTPInitializeRequest(PHTTPRequestRec Request)
 {
 	// Функция заполняет не указанные поля структуры запроса стандартными данными
 	if (Request == NULL)
@@ -142,7 +142,7 @@ void HTTPInitializeRequest(PHTTPRequest Request)
 	}
 }
 
-void HTTPSetRequestURL(PHTTPRequest Request, PCHAR URL)
+void HTTPSetRequestURL(PHTTPRequestRec Request, PCHAR URL)
 {
 	// Заполнить  структуру запроса данными из адреса
 
@@ -157,7 +157,7 @@ void AddParam(PStrings S, PCHAR Name, PCHAR Value, bool Valid = true)
 		Strings::AddValue(S, Name, Value, ValueDelimeter);
 }
 
-PCHAR HTTPRequest::Build(PHTTPRequest Request)
+PCHAR HTTPRequest::Build(PHTTPRequestRec Request)
 {
 	// Вункция собирает строку запроса
 	if (Request == NULL || STR::IsEmpty(Request->Host))
@@ -644,7 +644,7 @@ int SendData(SOCKET Socket, LPVOID Buf, DWORD Size)
 }
 //-------------------------------------------------------------------------
 
-void HTTPSendPostData(PHTTPRequest Request, SOCKET Socket)
+void HTTPSendPostData(PHTTPRequestRec Request, SOCKET Socket)
 {
 	// Отправить пост данные в сокет
 	if (Request->PostData == NULL)
@@ -677,7 +677,7 @@ void HTTPSendPostData(PHTTPRequest Request, SOCKET Socket)
 	MemFree(Buffer);
 }
 
-bool HTTP::ExecuteMethod(PHTTPRequest Request, HTTP::PResponseData Response)
+bool HTTP::ExecuteMethod(PHTTPRequestRec Request, HTTP::PResponseData Response)
 {
 	// Функция выполняет HTTP метод указанный в настройках запроса
 	if (Request == NULL || Request->Host == NULL)
@@ -768,7 +768,7 @@ bool HTTP::Get(PCHAR URL, PCHAR *Buf, PHTTPResponse Response)
 	if (URL == NULL)
 		return false;
 
-	PHTTPRequest R = HTTPCreateRequest(URL);
+	PHTTPRequestRec R = HTTPCreateRequest(URL);
 
 	TResponseData ResponseData;
 	ClearStruct(ResponseData);
@@ -791,7 +791,7 @@ bool HTTP::Post(PCHAR URL, PStrings Fields, PCHAR *Buf, PHTTPResponse Response)
 	if (URL == NULL || Fields == NULL)
 		return false;
 
-	PHTTPRequest R = HTTPCreateRequest(URL);
+	PHTTPRequestRec R = HTTPCreateRequest(URL);
 	R->Method = hmPOST;
 	R->PostData = Strings::GetText(Fields, URLValueDelimeter);
 
@@ -817,7 +817,7 @@ bool HTTP::Post(PCHAR URL, PMultiPartData Fields, PCHAR *Buf, PHTTPResponse Resp
 	if (URL == NULL || Fields == NULL)
 		return false;
 
-	PHTTPRequest R = HTTPCreateRequest(URL);
+	PHTTPRequestRec R = HTTPCreateRequest(URL);
 	R->Method = hmPOST;
 	R->PostData = Fields;
 	R->PostDataType = pdtMultipartFormData;
@@ -2010,32 +2010,28 @@ bool TURL::DoParse(const char *URL)
 }
 
 
+
+
 // ***************************************************************************
-// 								THTTPReader
+// 								THTTP
 // ***************************************************************************
 
-DWORD THTTPReader::Size()
+THTTP::THTTP()
 {
-	return FSize;
+    Initialize();
 }
+//----------------------------------------------------------------------------
 
-bool THTTPReader::Initialize(DWORD ContentLength)
+
+void THTTP::Initialize()
 {
-	FSize = 0;
-	return false;
+	// Инициализируем  внутренние данные
+	FSocket = NULL;
+    Port = HTTPDefaultPort;
 }
+//----------------------------------------------------------------------------
 
-DWORD THTTPReader::Write(LPBYTE Data, DWORD DataSize)
-{
-	return 0;
-}
-
-
-// ***************************************************************************
-// 								TURL
-// ***************************************************************************
-
-bool THTTP::Execute(THTTPReader Reader)
+bool THTTP::Execute(TBotStream *Stream)
 {
 	//  Отправляем данные и читаем ответ
 

