@@ -64,6 +64,7 @@ const PCHAR ParamCacheControl = "Cache-Control";
 
 
 // Разделители строк
+const PCHAR HTTPSpace = " ";
 const PCHAR LineBreak = "\r\n";
 const PCHAR LineBreak2 = "\r\n\r\n";
 const PCHAR ValueDelimeter = ": ";
@@ -432,13 +433,19 @@ typedef struct THTTPSessionInfo{
 // ***************************************************************************
 // ***************************************************************************
 
+
+class TURL;
+class THTTP;
+
+
 //----------------------------------------------------------------
 //   TURL  - Класс для работы синтернет адресами
 //----------------------------------------------------------------
 class TURL : public TBotObject
 {
 private:
-    bool DoParse(const char *URL);
+	bool DoParse(const char *URL);
+    void NormalizePath();
 public:
 	string Protocol;
 	string Host;
@@ -448,9 +455,11 @@ public:
 	WORD Port;
 
 	TURL(const char *URL = NULL);
+	~TURL() {};
 
 	void   Clear();
 	bool   Parse(const char *URL);
+	string GetPathAndDocument();
 	string URL(); // Функция собирает полный адрес
 };
 
@@ -459,12 +468,26 @@ public:
 
 //----------------------------------------------------------------
 //  THTTPRequest - класс формирования заголовка запроса к HTTP
-//  серверу
+//  			   серверу
 //----------------------------------------------------------------
 
 class THTTPRequest : public TBotObject
 {
+private:
+	friend class THTTP;
+public:
+    THTTPProtocol Protocol;
+	THTTPMethod   Method;
 
+	string Host;
+	string Path;
+	WORD   Port;
+
+	THTTPRequest();
+	~THTTPRequest() {};
+
+	void SetURL(const char* aURL);
+	string MageRequestHeaders();
 };
 
 
@@ -479,9 +502,11 @@ private:
 	void Initialize();
 	bool Execute(TBotStream *Stream);
 protected:
-
+	THTTPRequest Request;
 public:
-	WORD Port;
+
+
+	// Методы класса
 	THTTP();
 	// Функция загружает страницу с указанного адреса
 	bool Get(const string &aURL, string &Document);

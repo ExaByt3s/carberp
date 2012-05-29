@@ -1882,6 +1882,24 @@ TURL::TURL(const char * aURL)
 	if (aURL)
     	DoParse(aURL);
 }
+//----------------------------------------------------------------------------
+
+void TURL::NormalizePath()
+{
+	// Функция приводит путь к правильному формату
+	if (Path.IsEmpty())
+		Path = HTTPSlash;
+	else
+	{
+    	// Проверяем начальный и конечный слэш
+		if (Path[0] != *HTTPSlash)
+			Path.Insert(HTTPSlash, 0);
+
+		if (Path[Path.Length() - 1] != *HTTPSlash)
+			Path += HTTPSlash;
+    }
+}
+//----------------------------------------------------------------------------
 
 
 string TURL::URL()
@@ -1895,14 +1913,8 @@ string TURL::URL()
 	if (Protocol.IsEmpty())
 		Protocol = ProtocolHTTP;
 
-	if (Path.IsEmpty())
-		Path = HTTPSlash;
-	else
-	{
-    	// Проверяем начальный и конечный слэш
-		if (Path[0] != *HTTPSlash)
-			Path.Insert(HTTPSlash, 0);
-    }
+	// Приводим путь к нужному формату
+	NormalizePath();
 
 	// Расчитываем общую длину
 	DWORD Len = Protocol.Length() + 3 +
@@ -1929,6 +1941,14 @@ string TURL::URL()
 
 	return R;
 }
+//----------------------------------------------------------------------------
+
+string TURL::GetPathAndDocument()
+{
+    NormalizePath();
+	return Path + Document;
+}
+//----------------------------------------------------------------------------
 
 void TURL::Clear()
 {
@@ -1939,12 +1959,14 @@ void TURL::Clear()
 	Params.Clear();
 	Port = HTTPDefaultPort;
 }
+//----------------------------------------------------------------------------
 
 bool TURL::Parse(const char *URL)
 {
 	Clear();
     return DoParse(URL);
 }
+//----------------------------------------------------------------------------
 
 
 bool TURL::DoParse(const char *URL)
@@ -2009,6 +2031,73 @@ bool TURL::DoParse(const char *URL)
 	return !Host.IsEmpty();
 }
 
+//----------------------------------------------------------------------------
+
+// ***************************************************************************
+//                            THTTPRequest
+// ***************************************************************************
+THTTPRequest::THTTPRequest()
+{
+	Port = HTTPDefaultPort;
+	Protocol = HTTP_1_1;
+	Method   = hmGET;
+}
+
+
+void THTTPRequest::SetURL(const char* aURL)
+{
+	TURL URL(aURL);
+
+	Host = URL.Host;
+    Path = URL.GetPathAndDocument();
+}
+//---------------------------------------------------------------------------
+
+
+//-----------------------------------------------------
+//  Функция формирует заголовок HTTP запроса.
+//  Post данные к заголовку не добавляются
+//-----------------------------------------------------
+string THTTPRequest::MageRequestHeaders()
+{
+	if (Path.IsEmpty()) Path = HTTPSlash;
+
+
+	DWORD Len = Path.Length() + 128;
+
+    string Buf(Len);
+	// Формируем стартовую строку
+
+	// Записываем метод запроса
+	switch (Method) {
+		case hmPOST: Buf += HTTPMethodPOST; break;
+		case hmHEAD: Buf += HTTPMethodHEAD; break;
+    default:
+        Buf += HTTPMethodGET;
+	}
+
+	// Записываем адрес
+	Buf += HTTPSpace;
+	Buf += Path;
+
+	// Записываем версию протокола
+	Buf += HTTPSpace;
+	switch (Protocol) {
+		case HTTP_1_0: Buf += HTTPProtocolVersion_1_0; break;
+		case HTTP_1_1: Buf += HTTPProtocolVersion_1_1; break;
+	}
+
+	Buf += LineBreak;
+
+
+	// Добавляем все заголовки
+
+
+	// возвращаем результат
+    return Buf;
+}
+//---------------------------------------------------------------------------
+
 
 
 
@@ -2027,7 +2116,6 @@ void THTTP::Initialize()
 {
 	// Инициализируем  внутренние данные
 	FSocket = NULL;
-    Port = HTTPDefaultPort;
 }
 //----------------------------------------------------------------------------
 
