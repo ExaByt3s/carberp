@@ -728,6 +728,7 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 #define pStrToInt64ExA				pushargEx< DLL_SHLWAPI, 0xC3C5B48>
 #define pPathAppendA				pushargEx< DLL_SHLWAPI, 0xF86AA1F6>
 #define pPathAppendW				pushargEx< DLL_SHLWAPI, 0xF86AA1E0>
+#define pPathIsDirectoryEmptyA		pushargEx< DLL_SHLWAPI, 0xCA98893B>
 
 
 //Iphlpapi.dll
