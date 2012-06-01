@@ -571,7 +571,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	if( GetWorkFolder(Path) == 0 )
 		return false;
 
-	const char* miscFiles[] = { "Agent.jar", "AgentPassive.jar", "jni.dll", "client2015.jar", 0 };
+	const char* miscFiles[] = { "Agent.jar", "AgentPassive.jar", "jni.dll", "client2015.jar", 0 };//"AgentKP.jar", 0 };
 	const char** ss = miscFiles;
 	while( *ss ) 
 	{
