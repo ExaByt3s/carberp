@@ -435,7 +435,7 @@ namespace IBank
 
 		// Отправляем запрос
 
-		THTTPResponse Response;
+		THTTPResponseRec Response;
     	ClearStruct(Response);
 
         PCHAR Buf = NULL;

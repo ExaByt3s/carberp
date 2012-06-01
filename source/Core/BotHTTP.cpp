@@ -116,7 +116,7 @@ void HTTPInitializeRequest(PHTTPRequestRec Request)
 	SetDefaultPort(Request);
 	SetParam(Request->Accept, DefaultAccept);
 	SetParam(Request->AcceptLanguage, DefaultAcceptLanguage);
-	SetParam(Request->Connection, DefaultConnection);
+	SetParam(Request->Connection, HTTPConnectionClose);
 	if (Request->Method == hmPOST)
 	{
 		// Устанавливаем тип контента
@@ -733,8 +733,7 @@ bool HTTP::ExecuteMethod(PHTTPRequestRec Request, HTTP::PResponseData Response)
 
 			// Разбираем текст ответа
 			HTTPResponse::Parse(Headers, &Response->Response);
-
-
+			 
 
 			//проверяем размер скачанных данных
 			if (Response->Buffer && Response->Response.ContentLength &&
@@ -762,7 +761,7 @@ bool HTTP::ExecuteMethod(PHTTPRequestRec Request, HTTP::PResponseData Response)
 
 }
 
-bool HTTP::Get(PCHAR URL, PCHAR *Buf, PHTTPResponse Response)
+bool HTTP::Get(PCHAR URL, PCHAR *Buf, PHTTPResponseRec Response)
 {
 	// Функция считаевает файл по адресу URL в буФер Buf
 	if (URL == NULL)
@@ -785,7 +784,7 @@ bool HTTP::Get(PCHAR URL, PCHAR *Buf, PHTTPResponse Response)
 	return Res;
 }
 
-bool HTTP::Post(PCHAR URL, PStrings Fields, PCHAR *Buf, PHTTPResponse Response)
+bool HTTP::Post(PCHAR URL, PStrings Fields, PCHAR *Buf, PHTTPResponseRec Response)
 {
 	// Отправить пост запрос на сервер
 	if (URL == NULL || Fields == NULL)
@@ -811,7 +810,7 @@ bool HTTP::Post(PCHAR URL, PStrings Fields, PCHAR *Buf, PHTTPResponse Response)
 }
 
 
-bool HTTP::Post(PCHAR URL, PMultiPartData Fields, PCHAR *Buf, PHTTPResponse Response)
+bool HTTP::Post(PCHAR URL, PMultiPartData Fields, PCHAR *Buf, PHTTPResponseRec Response)
 {
 	// Отправить пост запрос на сервер
 	if (URL == NULL || Fields == NULL)
@@ -1557,10 +1556,10 @@ LPBYTE MultiPartData::BuildToBuf(PMultiPartData Data, DWORD &ResultSize)
 }
 
 //---------------------------------------------------------------------------
-PHTTPResponse HTTPResponse::Create()
+PHTTPResponseRec HTTPResponse::Create()
 {
 	// Создать структуру отыета
-	PHTTPResponse R =CreateStruct(THTTPResponse);
+	PHTTPResponseRec R =CreateStruct(THTTPResponseRec);
 
     R->Headers = Strings::Create();
 
@@ -1568,7 +1567,7 @@ PHTTPResponse HTTPResponse::Create()
 }
 //---------------------------------------------------------------------------
 
-void HTTPResponse::Clear(PHTTPResponse Response)
+void HTTPResponse::Clear(PHTTPResponseRec Response)
 {
 	// Функция очищает структуру HTTP ответа
 	STR::Free2(Response->Protocol);
@@ -1584,7 +1583,7 @@ void HTTPResponse::Clear(PHTTPResponse Response)
 }
 //---------------------------------------------------------------------------
 
-void ParseContentRange(PHTTPResponse Response, PCHAR Value)
+void ParseContentRange(PHTTPResponseRec Response, PCHAR Value)
 {
 	//bytes 100-300/69652396
 	if (!StrSame(Value, "bytes", false, 5))
@@ -1608,7 +1607,7 @@ void ParseContentRange(PHTTPResponse Response, PCHAR Value)
     Response->FullSize = StrToInt(Start);
 }
 
-void AddResponseValue(PHTTPResponse Response, PCHAR Name, PCHAR Value)
+void AddResponseValue(PHTTPResponseRec Response, PCHAR Name, PCHAR Value)
 {
 	Strings::AddValue(Response->Headers, Name, Value);
 
@@ -1626,7 +1625,7 @@ void AddResponseValue(PHTTPResponse Response, PCHAR Name, PCHAR Value)
 	}
 }
 
-bool HTTPResponse::Parse(PCHAR Buf, PHTTPResponse Response)
+bool HTTPResponse::Parse(PCHAR Buf, PHTTPResponseRec Response)
 {
 	// Парсим ответ HTTP сервера
 	if (Buf == NULL || Response == NULL)
@@ -1644,7 +1643,7 @@ bool HTTPResponse::Parse(PCHAR Buf, PHTTPResponse Response)
 	PCHAR Tmp;
 	PCHAR Name;
 	PCHAR Value;
-    PCHAR Ptr;
+	PCHAR Ptr;
 	if (Count > 0)
 	{
 		// Разбираем строку ответа
@@ -1663,7 +1662,7 @@ bool HTTPResponse::Parse(PCHAR Buf, PHTTPResponse Response)
 				Value = Ptr;
                 AddResponseValue(Response, Name, Value);
 			}
-        }
+		}
     }
 
 	Strings::Free(S);
@@ -1671,7 +1670,7 @@ bool HTTPResponse::Parse(PCHAR Buf, PHTTPResponse Response)
 }
 //---------------------------------------------------------------------------
 
-void HTTPResponse::Free(PHTTPResponse Response)
+void HTTPResponse::Free(PHTTPResponseRec Response)
 {
 	// Создать структуру отыета
 	if (Response == NULL)
@@ -2039,8 +2038,11 @@ bool TURL::DoParse(const char *URL)
 THTTPRequest::THTTPRequest()
 {
 	Port = HTTPDefaultPort;
-	Protocol = HTTP_1_1;
-	Method   = hmGET;
+	Protocol   = HTTP_1_0;
+	Method     = hmGET;
+	Accept     = DefaultAccept;
+	CloseConnection = true;
+	ContentLength = 0;
 }
 
 
@@ -2091,15 +2093,161 @@ string THTTPRequest::MageRequestHeaders()
 
 
 	// Добавляем все заголовки
-
+    Buf += MakeHeaders();
 
 	// возвращаем результат
     return Buf;
 }
 //---------------------------------------------------------------------------
 
+void THTTPRequest::AddHeader(string &Buf, const char *Name, const char *Value, bool CheckValue)
+{
+	if (!STRA::IsEmpty(Name) && (!CheckValue || !STRA::IsEmpty(Value)))
+	{
+		Buf += Name;
+		Buf += ValueDelimeter;
+		Buf += Value;
+        Buf += LineBreak;
+    }
+}
+
+void THTTPRequest::AddHeader(string &Buf, const char *Name, const string &Value, bool CheckValue)
+{
+    AddHeader(Buf, Name, Value.t_str(), CheckValue);
+}
+
+//---------------------------------------------------------------------------
 
 
+string THTTPRequest::MakeHeaders()
+{
+	string Buf(2048);
+
+	AddHeader(Buf, ParamAccept, Accept);
+	AddHeader(Buf, ParamUserAgent, GetUserAgent());
+	AddHeader(Buf, ParamReferer, Referer);
+	AddHeader(Buf, ParamHost, Host);
+
+	// Добавляем значение закрытия соединения
+	PCHAR Value = (CloseConnection) ? HTTPConnectionClose :
+								      HTTPConnectionKeepAlive;
+    AddHeader(Buf, ParamConnection, Value);
+
+
+	//Определяем тип кодирования возвращаемых данных
+	AddHeader(Buf, ParamAcceptEncoding, AcceptEncoding, false);
+
+	// Записываем информацию о пост данных
+	if (Method == hmPOST)
+	{
+		AddHeader(Buf, ParamContentType, ContentType);
+    	AddHeader(Buf, ParamContentLength, LongToStr(ContentLength));
+    }
+
+	// Добавляес пустую строку в конец
+    Buf += LineBreak;
+
+	return Buf;
+}
+//---------------------------------------------------------------------------
+
+
+string THTTPRequest::GetUserAgent()
+{
+	// Функция, при необходимости, формирет имя агента используемого в
+	// системе по умолчанию
+	if (UserAgent.IsEmpty())
+	{
+		DWORD BufSize = 1024;
+		TMemory Buf(BufSize);
+
+		pObtainUserAgentString(0, Buf.Buf(), &BufSize);
+        UserAgent = Buf.AsStr();
+	}
+
+	return UserAgent;
+}
+//---------------------------------------------------------------------------
+
+
+
+// ***************************************************************************
+// 								THTTPResponse
+// ***************************************************************************
+
+THTTPResponse::THTTPResponse()
+{
+
+}
+
+THTTPResponse::~THTTPResponse()
+{
+
+}
+
+
+//---------------------------------------------------
+//	AddData - Функция добавляет порцию полученных
+//  от сервера данных.
+//  Buf - Указатель на буфер с данными. После
+//        обработки будет указывать на данные
+//        после заголовка
+//  BufSize - Размер прочитанных данных. После
+//            обработки бутет содержать размер
+//            Оставшихся в буфере данных
+//
+//  Результат: Функция вернёт истину если заголовок
+//             прочитан полностью
+//---------------------------------------------------
+bool THTTPResponse::AddData(PCHAR &Buf, int &BufSize)
+{
+	if (FHTTPData.IsEmpty())
+		Clear();
+
+	int Pos = STRA::Pos(Buf, LineBreak2);
+
+	DWORD Len = (Pos >= 0) ? Pos + STRA::Length(LineBreak2) : BufSize;
+
+	// Копируем значение
+	string Tmp(Buf, Len);
+
+	if (FHTTPData.IsEmpty())
+		FHTTPData = Tmp;
+	else
+		FHTTPData += Tmp;
+
+	// Меняем значение буфера
+	Buf     += Len;
+	BufSize -= Len;
+
+	bool Result = Pos >= 0;
+
+	// В случае если заголовок передан полностью разпарсиваем его
+	if (Result)
+		Parse();
+
+	return  Result;
+}
+//----------------------------------------------------------------------------
+
+
+void THTTPResponse::Clear()
+{
+
+}
+//----------------------------------------------------------------------------
+
+
+void THTTPResponse::Parse()
+{
+	// Функция распарсивает полученный заголовок
+
+
+
+	// Очищаем буфер
+	FHTTPData.Clear();
+}
+//----------------------------------------------------------------------------
 
 // ***************************************************************************
 // 								THTTP
@@ -2111,35 +2259,121 @@ THTTP::THTTP()
 }
 //----------------------------------------------------------------------------
 
+THTTP::~THTTP()
+{
+	if (FSocket && FSocketCreated)
+		delete FSocket;
+}
+//----------------------------------------------------------------------------
+
 
 void THTTP::Initialize()
 {
 	// Инициализируем  внутренние данные
 	FSocket = NULL;
+	FSocketCreated = false;
 }
 //----------------------------------------------------------------------------
 
-bool THTTP::Execute(TBotStream *Stream)
+bool THTTP::Execute(const char *URL, TBotStream *PostData, TBotStream *ResponseStream)
 {
 	//  Отправляем данные и читаем ответ
 
+	if (STRA::IsEmpty(URL)) return false;
+
+	Request.SetURL(URL);
+	if (Request.Host.IsEmpty())
+		return false;
+
+	//Создаём сокет
+	if (!FSocket)
+	{
+		FSocket = CreateSocket();
+		FSocketCreated = FSocket != NULL;
+		if (!FSocket) return false;
+	}
+
+	// Подключаемся к серверу
+	bool Result = FSocket->Connect(Request.Host.t_str(), Request.Port);
+
+	// Отправляем данные
+	if (Result)
+	{
+		// Отправляем заголовок
+		string Headers = Request.MageRequestHeaders();
+		if (!Headers.IsEmpty())
+		{
+			Result = FSocket->Write(Headers.t_str(), Headers.Length()) == Headers.Length();
+		}
+
+		// Читаем данные
+		if (Result)
+            Result = ReceiveData(ResponseStream);
+	}
+
+	//При необходимости закрываем сокет
+	if (Request.CloseConnection || !ResponseStream)
+		FSocket->Close();
+
 	// Инициализируем библиотеку
-	return false;
+	return Result;
 }
 //----------------------------------------------------------------------------
 
 
+bool THTTP::ReceiveData(TBotStream *ResponseStream)
+{
+	// Функция читает данве из сокета
+	bool Result = true;
+
+	const static DWORD BufSize = 2047;
+
+	TMemory Buf(BufSize + 1);
+
+	int Readed;
+	bool HeaderReaded = false;
+	// Чттаем заголовок ответа
+	do
+	{
+		Readed = FSocket->Read(Buf.Buf(), BufSize);
+		if (Readed > 0)
+		{
+			PCHAR Str = Buf;
+
+
+			// Проверяем на необходимость чтения заголовка
+			if (!HeaderReaded)
+			{
+				// Для надёжности обработки закрываем строку нулём
+				*(Str + Readed) = 0;
+                HeaderReaded = Response.AddData(Str, Readed);
+			}
+
+			if (Readed > 0)
+			{
+				ResponseStream->Write(Str, Readed);
+            }
+        }
+	}
+	while(Readed > 0);
+
+
+	return Result;
+}
+
+//----------------------------------------------------------------------------
 bool THTTP::Get(const string &aURL, string &Document)
 {
 	// Функция загружает страницу с указанного адреса
 	Document.Clear();
 
-	TURL URL(NULL);
+    TBotMemoryStream S;
 
-	if (!URL.Parse(aURL.t_str()))
-		return false;
+    bool Result = Execute(aURL.t_str(), NULL, &S);
 
-	// Выполняем запрос
-	return false;
+	S.SetPosition(0);
+	Document = S.ReadToString();
+
+	return Result;
 }
 //----------------------------------------------------------------------------
