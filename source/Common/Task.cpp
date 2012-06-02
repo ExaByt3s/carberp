@@ -17,6 +17,7 @@
 #include "Plugins.h"
 #include "DllLoader.h"
 #include "CabPacker.h"
+#include "BotDef.h"
 #include <shlobj.h>
 #include <shlwapi.h>
 
@@ -377,7 +378,9 @@ bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
 	TASKDBG("Task", "Загружаем команду: \r\n\r\n URL - [%s]\r\n BotUID - [%s]", URL, BotID.t_str());
 
 	PStrings Fields = Strings::Create();
+
 	AddURLParam(Fields, "id", BotID.t_str());
+	AddURLParam(Fields, "Ver", (PCHAR)BOT_VERSION);
 
 	THTTPResponseRec Response;
 	ClearStruct(Response);

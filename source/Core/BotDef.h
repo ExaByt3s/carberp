@@ -23,7 +23,7 @@ const static char BOT_VERSION[] = "1.0.2";
 #define BOT_EVENT_HTMLINJECTS_CLEAR    101    /* Очищен список HTML инжектов */
 #define BOT_EVENT_HTMLINJECTS_LOADED   102    /* Загружен список HTML инжектов */
 #define BOT_EVENT_HTMLINJECT_ACTIVATED 103    /* HTML инжект использован в документах */
-#define BOT_EVENT_HTMLINJECT_EXECUTE   104   /* Выполнение HTML инжекта */
+#define BOT_EVENT_HTMLINJECT_EXECUTE   104    /* Выполнение HTML инжекта */
 
 //-----------------------------------------------------------------------------
 #endif

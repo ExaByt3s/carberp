@@ -1060,7 +1060,7 @@ LPBYTE TBotMemoryStream::Realloc(DWORD &NewCapacity)
     }
 
 	/* TODO : Продумать оптимизацию выделения памяти */
-	const static BlockSize = 4096;
+	const static WORD BlockSize = 4096;
 
     LPBYTE Buf = FMemory;
 
