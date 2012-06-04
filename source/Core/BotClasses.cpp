@@ -1022,6 +1022,78 @@ TBotMemoryStream::TBotMemoryStream(LPVOID Mem, DWORD MemSize)
 	FMemory   = (LPBYTE)Mem;
 	FSize     = MemSize;
 	FPosition = 0;
+	// Устанавливаем признак того, что поток связан с внешним буфером
+	// В этом случае класс не будет перевыделять память
+	FAssigned = true;
+}
+
+TBotMemoryStream::TBotMemoryStream()
+{
+	FMemory   = NULL;
+	FSize     = 0;
+	FPosition = 0;
+	FCapacity = 0;
+    FAssigned = false;
+}
+
+TBotMemoryStream::~TBotMemoryStream()
+{
+	if (FMemory && !FAssigned)
+        MemFree(FMemory);
+}
+
+void TBotMemoryStream::SetPointer(LPBYTE Ptr, DWORD Size)
+{
+	FMemory = Ptr;
+    FSize   = Size;
+}
+
+LPBYTE TBotMemoryStream::Realloc(DWORD &NewCapacity)
+{
+	// Выделяем память.
+	// Память выделяем блоками
+
+	if (FAssigned || NewCapacity == FSize)
+	{
+        NewCapacity = FCapacity;
+		return FMemory;
+    }
+
+	/* TODO : Продумать оптимизацию выделения памяти */
+	const static WORD BlockSize = 4096;
+
+    LPBYTE Buf = FMemory;
+
+	NewCapacity = ((NewCapacity / BlockSize) + 1) * BlockSize;
+	if (FCapacity != NewCapacity)
+	{
+		if (!Buf)
+			Buf = (LPBYTE)MemAlloc(NewCapacity);
+		else
+			Buf = (LPBYTE)MemRealloc(Buf, NewCapacity);
+	}
+
+	return Buf;
+}
+
+
+void TBotMemoryStream::SetCapacity(DWORD NewCapacity)
+{
+	FMemory = Realloc(NewCapacity);
+	FCapacity = NewCapacity;
+}
+
+
+void TBotMemoryStream::SetSize(DWORD NewSize)
+{
+	if (!FAssigned)
+	{
+		DWORD Old = FSize;
+		SetCapacity(NewSize);
+		FSize = NewSize;
+		if (FSize < Old)
+            Seek(0, SO_BEGIN);
+    }
 }
 
 
@@ -1041,13 +1113,34 @@ DWORD TBotMemoryStream::Read(void* Buf, DWORD Count)
 
 DWORD TBotMemoryStream::Write(const void* Buf, DWORD Count)
 {
+	if (!Buf || !Count) return 0;
+
+
 	DWORD Writen = 0;
-	if (FMemory)
+
+    // Определяем размер записываемых данных
+	if (FAssigned)
 	{
-		Writen = Min(Count, FSize - FPosition);
+		Writen = (FMemory) ? Min(Count, FSize - FPosition) : 0;
+	}
+	else
+	{
+		DWORD MaxSize = FSize + Count;
+		if (MaxSize > FSize)
+		{
+			if (MaxSize > FCapacity)
+				SetCapacity(MaxSize);
+            FSize = MaxSize;
+		}
+		Writen = (FMemory) ? Count : 0;
+    }
+
+	// Записываем данные
+	if (Writen)
+	{
         m_memcpy(FMemory + FPosition, Buf, Writen);
         FPosition += Writen;
-	}
+    }
 
 	return Writen;
 }

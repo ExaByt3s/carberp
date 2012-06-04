@@ -78,16 +78,19 @@
 
 #define BOTPARAM_HASH_BANKHOSTS  0x998F4828 /* CAB_HOSTS_BUFFER */
 #define BOTPARAM_HASH_MAINHOSTS  0xE98F4C1C /* ALL_HOSTS_BUFFER */
+#define BOTPARAM_HASH_PASSWORD   0x618ADDBE /* MAIN_PASSWORD */
 
 // Настройки шифрования параметров
 #ifndef DEBUGCONFIG
 	#define BOTPARAM_ENCRYPTED_MAINHOSTS true
 	#define BOTPARAM_ENCRYPTED_BANKHOSTS true
 	#define BOTPARAM_ENCRYPTED_PREFIX    true
+	#define BOTPARAM_ENCRYPTED_PASSWORD  true
 #else
 	#define BOTPARAM_ENCRYPTED_MAINHOSTS false
 	#define BOTPARAM_ENCRYPTED_BANKHOSTS false
 	#define BOTPARAM_ENCRYPTED_PREFIX    false
+	#define BOTPARAM_ENCRYPTED_PASSWORD  false
 #endif
 
 //--------------------------------------------------------

@@ -104,6 +104,36 @@ class MemPtr
 		}
 };
 
+
+// »спользование не шаблонного классса даст нам
+// возмоность выдел€ть пам€ть когда заранее не известен размер
+// ‘актически это динамический массив
+class TMemory
+{
+private:
+	void* FBuf;
+	DWORD FSize;
+public:
+	TMemory(DWORD Size)
+	{
+		FSize = Size;
+        FBuf  = MemAlloc(Size);
+	}
+
+	~TMemory()
+	{
+        MemFree(FBuf);
+	}
+
+	inline LPVOID Buf()  { return FBuf; }
+	inline DWORD  Size() { return FSize; }
+
+    inline PCHAR AsStr() { return (PCHAR)FBuf; }
+
+	inline operator char*()  { return (char*)FBuf; }
+	inline operator LPBYTE() { return (LPBYTE)FBuf; }
+};
+
 //-----------------------------------------------------------------------------
 #endif //MemoryH
 

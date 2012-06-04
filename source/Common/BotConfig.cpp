@@ -928,9 +928,9 @@ bool InjectHTMLCode(PRequest Request, THTMLInject *Inject)
 			bool IsLinuxStr = STR::IsLinuxStr((PCHAR)Request->Buffer);
 			if (IsLinuxStr)
 			{
-				Data.Before.ConvertToLinuzFormat();
-				Data.Inject.ConvertToLinuzFormat();
-				Data.After.ConvertToLinuzFormat();
+				Data.Before.ConvertToLinuxFormat();
+				Data.Inject.ConvertToLinuxFormat();
+				Data.After.ConvertToLinuxFormat();
 			}
 
 			PCHAR Before = Data.Before.t_str();

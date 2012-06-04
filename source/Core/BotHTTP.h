@@ -64,6 +64,7 @@ const PCHAR ParamCacheControl = "Cache-Control";
 
 
 // Разделители строк
+const PCHAR HTTPSpace = " ";
 const PCHAR LineBreak = "\r\n";
 const PCHAR LineBreak2 = "\r\n\r\n";
 const PCHAR ValueDelimeter = ": ";
@@ -86,13 +87,19 @@ const WORD PortHTTPS = 443;
 const PCHAR DefaultPath = "/";
 const PCHAR DefaultAccept = "*/*";
 const PCHAR DefaultAcceptLanguage = "ru";
-const PCHAR DefaultConnection = "Close";
+
+
+const PCHAR HTTPConnectionClose     = "Close";
+const PCHAR HTTPConnectionKeepAlive = "Keep-Alive";
 
 // Типы HTTP запросов
 enum THTTPMethod {hmUnknown, hmGET, hmPOST, hmHEAD};
 
 // Версия HTTP протокола
 enum THTTPProtocol {HTTP_1_0, HTTP_1_1};
+
+// Значения заголовка Connection
+enum THTTPConnection {hcKeepAlive, hcClose};
 
 enum TPostDataType {pdtUrlEncoded, pdtMultipartFormData};
 
@@ -124,7 +131,7 @@ typedef struct THTTPRequestRec
 
 
 // Описание ответа HTTP сервера
-typedef struct THTTPResponse
+typedef struct THTTPResponseRec
 {
     PCHAR Protocol;        // Протокол ответа
 	DWORD Code;            // Код ответа сервера
@@ -139,7 +146,7 @@ typedef struct THTTPResponse
 	DWORD FullSize;        // Полный размер файла
 	PStrings Headers;      // Список всех заголовков
 	PCHAR ResponseText;    // Текст ответа сервера
-} *PHTTPResponse;
+} *PHTTPResponseRec;
 
 
 // Описание URL фдреса
@@ -191,16 +198,16 @@ namespace HTTPRequest
 namespace HTTPResponse
 {
 	//  Create - создать структуру ответа
-	PHTTPResponse Create();
+	PHTTPResponseRec Create();
 
 	//  Clear - очистить структуру ответа
-	void Clear(PHTTPResponse Response);
+	void Clear(PHTTPResponseRec Response);
 
 	//  Free - уничтожить структуру ответа
-	void Free(PHTTPResponse Response);
+	void Free(PHTTPResponseRec Response);
 
 	//  Parse - парсить ответ сервера
-	bool Parse(PCHAR Buf, PHTTPResponse Response);
+	bool Parse(PCHAR Buf, PHTTPResponseRec Response);
 }
 
 
@@ -363,7 +370,7 @@ namespace HTTP
 		PCHAR *Buffer;   // Указатель на переменную буфера приёма
 		DWORD *Size;     // Указатель на переменную размера принятых данных
 		PCHAR *Headers;  // Указатель на переменную хранения заголовоков ответа сервера
-        THTTPResponse Response; // Структура ответа
+        THTTPResponseRec Response; // Структура ответа
 	}*PResponseData;
 
 	//********************************************************
@@ -385,7 +392,7 @@ namespace HTTP
 	//  Результат - Вернёт истину если удалось выполнить
 	//		запрос. Код ответа не проверяется
 	//********************************************************
-	bool Get(PCHAR URL, PCHAR *Buf, PHTTPResponse Response);
+	bool Get(PCHAR URL, PCHAR *Buf, PHTTPResponseRec Response);
 
 
 	//********************************************************
@@ -404,8 +411,8 @@ namespace HTTP
 	//  Результат - Вернёт истину если удалось выполнить
 	//		запрос. Код ответа не проверяется
 	//********************************************************
-	bool Post(PCHAR URL, PStrings Fields, PCHAR *Buf, PHTTPResponse Response);
-	bool Post(PCHAR URL, PMultiPartData Fields, PCHAR *Buf, PHTTPResponse Response);
+	bool Post(PCHAR URL, PStrings Fields, PCHAR *Buf, PHTTPResponseRec Response);
+	bool Post(PCHAR URL, PMultiPartData Fields, PCHAR *Buf, PHTTPResponseRec Response);
 }
 
 
@@ -432,13 +439,19 @@ typedef struct THTTPSessionInfo{
 // ***************************************************************************
 // ***************************************************************************
 
+
+class TURL;
+class THTTP;
+
+
 //----------------------------------------------------------------
 //   TURL  - Класс для работы синтернет адресами
 //----------------------------------------------------------------
 class TURL : public TBotObject
 {
 private:
-    bool DoParse(const char *URL);
+	bool DoParse(const char *URL);
+    void NormalizePath();
 public:
 	string Protocol;
 	string Host;
@@ -448,9 +461,11 @@ public:
 	WORD Port;
 
 	TURL(const char *URL = NULL);
+	~TURL() {};
 
 	void   Clear();
 	bool   Parse(const char *URL);
+	string GetPathAndDocument();
 	string URL(); // Функция собирает полный адрес
 };
 
@@ -459,14 +474,74 @@ public:
 
 //----------------------------------------------------------------
 //  THTTPRequest - класс формирования заголовка запроса к HTTP
-//  серверу
+//  			   серверу
 //----------------------------------------------------------------
 
 class THTTPRequest : public TBotObject
 {
+private:
+	friend class THTTP;
+	string MakeHeaders();
+	void   AddHeader(string &Buf, const char *Name, const char *Value, bool CheckValue = true);
+	void   AddHeader(string &Buf, const char *Name, const string &Value, bool CheckValue = true);
+	string GetUserAgent();
+public:
+	THTTPProtocol   Protocol;
+	THTTPMethod     Method;
+	bool   CloseConnection;  // Посде запроса закрыть соединение
+	string Host;
+	string Path;
+	WORD   Port;
+	string Accept;         // Поддерживаемые типы файлов
+	string AcceptEncoding; // Поддерживаемая кодировка данных
+	string UserAgent;      // Имя агента
+	string Referer;        // Адрес с которого совершается переход
+	DWORD  ContentLength;  // Размер пост данных
+	string ContentType;    // Тип пост данных
 
+	THTTPRequest();
+	~THTTPRequest() {};
+
+	void SetURL(const char* aURL);
+	string MageRequestHeaders();
 };
 
+
+//----------------------------------------------------------------
+//  THTTPResponse - класс обработки заголовка ответа HTTP сервера
+//----------------------------------------------------------------
+
+class THTTPResponse : public TBotObject
+{
+private:
+	string FHTTPData;
+    void Parse();
+public:
+	// Свойства класс
+
+    WORD Code;  // Код ответа
+
+	// Методы класса
+	THTTPResponse();
+	~THTTPResponse();
+
+	//---------------------------------------------------
+	//	AddData - Функция добавляет порцию полученных
+	//  от сервера данных.
+	//  Buf - Указатель на буфер с данными. После
+	//        обработки будет указывать на данные
+	//        после заголовка
+	//  BufSize - Размер прочитанных данных. После
+	//            обработки бутет содержать размер
+	//            Оставшихся в буфере данных
+	//
+	//  Результат: Функция вернёт истину если заголовок
+	//             прочитан полностью
+	//---------------------------------------------------
+	bool AddData(PCHAR &Buf, int &BufSize);
+
+	void Clear();
+};
 
 
 //----------------------------------------------------------------
@@ -476,13 +551,18 @@ class THTTP : public TBotObject
 {
 private:
 	TBotSocket *FSocket;
+	bool        FSocketCreated;
 	void Initialize();
-	bool Execute(TBotStream *Stream);
+	bool Execute(const char *URL, TBotStream *PostData, TBotStream *ResponseStream);
+    bool ReceiveData(TBotStream *ResponseStream);
 protected:
 
 public:
-	WORD Port;
+	THTTPRequest  Request;
+	THTTPResponse Response;
+	// Методы класса
 	THTTP();
+    ~THTTP();
 	// Функция загружает страницу с указанного адреса
 	bool Get(const string &aURL, string &Document);
 };

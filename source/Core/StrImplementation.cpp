@@ -311,6 +311,41 @@ CHARAPI(TChar*)::End(const TChar *Str)
 
 
 
+// Функция преобразует целое число в строку.
+// Функция не создаёт строки.
+// в переменой n возвращает количество символов
+// Если вызвать функцию с нулевым буфером то функция
+// расчитает необходимый размер строки
+CHARAPI(void)::LongToString(DWORD num, TChar* Str, int &n)
+{
+	// Расчитываем количетво символов
+	// Если n не равен нулю значит идёт второе обращение
+	// к функции и длина уже известна
+	if (!n)
+	{
+		if (!num)
+			n = 1;
+		else
+			for (int j = 1; num/j !=0; j *= 10) n++;
+    }
+
+    // Если буер нулевой то идёт запрос количества символов
+	if (!Str) return;
+
+	// преобразовываем
+	int i = 1;
+	int d = 0;
+	do
+	{
+		d = num % 10;
+		num /= 10;
+		Str[n-i]=(char)(d+48);
+		i++;
+	}
+	while(num != 0);
+}
+
+
 
 //*****************************************************************************
 //                               STRBUF
@@ -703,7 +738,7 @@ STRFUNC(void)::Unique()
 }
 
 
-STRFUNC(void)::ConvertToLinuzFormat()
+STRFUNC(void)::ConvertToLinuxFormat()
 {
 	// Функция преобразовывает строку к формату Linux
 	if (Data)
@@ -774,6 +809,16 @@ STRFUNC(int)::Pos(const TChar* SubStr) const
 STRFUNC(int)::Pos(const TString &SubStr) const
 {
 	return STRUTILS<TCHAR>::Pos(Data, SubStr.Data);
+}
+
+STRFUNC(TString<TChar>&)::LongToStr(DWORD num)
+{
+	STRBUF::Release<TCHAR>(Data);
+	int n = 0;
+	STRUTILS<TChar>::LongToString(num, NULL, n);
+	SetLength(n);
+	STRUTILS<TChar>::LongToString(num, Data, n);
+	return *this;
 }
 
 

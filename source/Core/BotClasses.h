@@ -292,16 +292,24 @@ public:
 class TBotMemoryStream : public TBotStream
 {
 private:
+    bool   FAssigned;
 	LPBYTE FMemory;
 	DWORD  FSize;
 	DWORD  FPosition;
+	DWORD  FCapacity;
+	void   SetPointer(LPBYTE Ptr, DWORD Size);
+	LPBYTE Realloc(DWORD &NewCapacity);
+    void   SetCapacity(DWORD NewCapacity);
 public:
 	TBotMemoryStream(LPVOID Mem, DWORD MemSize);
+	TBotMemoryStream();
+	~TBotMemoryStream();
 
 	DWORD Read(void* Buf, DWORD Count);
 	DWORD Write(const void* Buf, DWORD Count);
 
 	DWORD Size();
+	void  SetSize(DWORD NewSize);
 
 	DWORD Seek(int Count, DWORD SeekMethod);
 };
