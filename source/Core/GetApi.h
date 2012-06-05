@@ -513,6 +513,7 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 #define pCharLowerBuffA        		pushargEx< DLL_USER32, 0x5FDA1871>
 #define pCharUpperBuffA        		pushargEx< DLL_USER32, 0xC0D4187D>
 #define pwvsprintfA 				pushargEx< DLL_USER32, 0x6B3AF0EC>
+#define pwvsprintfW 				pushargEx< DLL_USER32, 0x6B3AF0FA>
 #define pSetWindowsHookExA 			pushargEx< DLL_USER32, 0xB4584DDA>
 #define pSetWindowsHookExW 			pushargEx< DLL_USER32, 0xB4584DCC>
 #define pUnhookWindowsHookEx 		pushargEx< DLL_USER32, 0xB800C8A6>

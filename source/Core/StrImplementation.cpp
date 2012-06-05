@@ -811,6 +811,32 @@ STRFUNC(int)::Pos(const TString &SubStr) const
 	return STRUTILS<TCHAR>::Pos(Data, SubStr.Data);
 }
 
+
+STRFUNC(TString<TChar>&)::Format(const TChar *FormatLine, ...)
+{
+	// Функция форматирует строку
+	STRBUF::Release<TCHAR>(Data);
+
+	// Так как изначально не получается определить
+	// результирующий размер буфера форматируем строку
+	// в проыежуточный буфер
+
+	// Выделяем максимально поддерживаемый размер памяти
+	TString<TChar> Tmp(1024);
+
+	va_list paramList;
+	va_start(paramList, FormatLine);
+
+	int Sz = (sizeof(TChar) == 1) ? (int)pwvsprintfA(Tmp.t_str(), FormatLine, paramList) :
+                                    (int)pwvsprintfW(Tmp.t_str(), FormatLine, paramList);
+	va_end(paramList);
+
+	Data = STRBUF::CreateFromStr<TCHAR>(Tmp.t_str(), Sz, 0);
+
+	return *this;
+}
+
+
 STRFUNC(TString<TChar>&)::LongToStr(DWORD num)
 {
 	STRBUF::Release<TCHAR>(Data);

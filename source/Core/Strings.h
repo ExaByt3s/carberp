@@ -489,7 +489,9 @@ public:
 	int Pos(const TChar* SubStr) const;
 	int Pos(const TString &SubStr) const;
 
-    TString& LongToStr(DWORD num);
+	TString& Format(const TChar *FormatLine, ...); // return this
+
+    TString& LongToStr(DWORD num); // return this
 
 	DWORD Hash();
 	DWORD Hash(DWORD Len, bool LowerChar);

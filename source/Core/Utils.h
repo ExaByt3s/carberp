@@ -124,6 +124,7 @@ bool FileCreateInFolder(int FlagFolderDest, WCHAR*Path,LPVOID Data,int count);
 bool GetFileDataFilder(int FlagFolderDest, WCHAR*Path,LPVOID Data,int *count);
 //мочим папку со всеми подпапками
 bool DeleteFolders(PCHAR From);
+
 // копируем папку либо файлы по саске, включая поддиректории
 bool CopyFileANdFolder(PCHAR From,PCHAR To);
 //----------------------------------------------------------------------------

