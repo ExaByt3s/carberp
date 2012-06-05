@@ -28,4 +28,7 @@ Objs*
 Debug*
 source/lib/winsta.def
 *.suo
+__history/
 
+
+/Builds/BOT_DEBUG_DLL/Bot_Debug_Dll.sln
