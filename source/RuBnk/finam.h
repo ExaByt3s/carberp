@@ -6,7 +6,7 @@
 
 namespace Finam
 {
-	void Init();
+	bool Init();
 }
 
 #endif //FinamH

