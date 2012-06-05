@@ -14,6 +14,8 @@
 #include "BotConfig.h"     // Модуль включает HTML инжекты
 #include "BotCryptHTTP.h" // Шифрование отправляемых и принимаемых данных
 
+//#include "Exploit.h"
+
 #include "ddos.h"
 
 
