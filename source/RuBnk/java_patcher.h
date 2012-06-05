@@ -41,6 +41,6 @@ DWORD WINAPI Run_Path(LPVOID lpData);
 // JavaPatcherSignal - Функция сигнализирует о необходимости
 //                     запуска патчей
 //-------------------------------------------------------------
-void  JavaPatcherSignal();
+DWORD WINAPI JavaPatcherSignal(LPVOID lpData);
 
 #endif		//java_patcher

