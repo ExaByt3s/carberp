@@ -233,7 +233,7 @@ int APIENTRY MyMain()
 {
 	BOT::Initialize();
 
-	
+
 	DWORD* pVirtualAddr = (DWORD*)MagicValue;
 
 	if ( *pVirtualAddr )

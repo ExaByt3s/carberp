@@ -320,6 +320,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Core\BotSocket.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotUtils.cpp"
 				>
 			</File>

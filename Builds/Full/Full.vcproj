@@ -405,11 +405,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\CabPacker.h"
+				RelativePath="..\..\Source\Common\CabPacker.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\CabPacker.h"
+				RelativePath="..\..\Source\RuBnk\CabPacker.h"
 				>
 			</File>
 			<File
@@ -698,6 +698,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\BotHTTP.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\BotSocket.cpp"
 				>
 			</File>
 			<File
