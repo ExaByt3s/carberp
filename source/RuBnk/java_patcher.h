@@ -35,6 +35,7 @@ bool ExecuteDeletePathCommand(LPVOID Manager, PCHAR Command, PCHAR Args);
 bool WINAPI ClearAndDel( LPVOID lpData );
 
 DWORD WINAPI Run_Path(LPVOID lpData);
+bool JavaPatchInstalled();
 
 
 //-------------------------------------------------------------
