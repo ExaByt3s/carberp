@@ -1139,6 +1139,8 @@ HINTERNET WINAPI HOOK_InternetConnectW(HINTERNET hInternet,
 		{
 			// В случае если страница из инжектов, то меняем флаги загрузки
 
+			Flags = Flags & (~INTERNET_FLAG_HYPERLINK);
+
 			if (R->IsSecure)
 		   		Flags = Flags | INTERNET_FLAG_RELOAD;
 			else

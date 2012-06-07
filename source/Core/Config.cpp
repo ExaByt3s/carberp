@@ -91,8 +91,8 @@ namespace CONFIGDEBUGSTRINGS
 		char BOT_BANKHOSTS_ARRAY[MAX_BANKHOSTS_BUF_SIZE] = "rus.zika.in\0";
 	#endif
 
-	PCHAR MainPassword    = "bRS8yYQ0APq9xfzC";
-	char BOT_PREFIX[]     = "qxhhhhcnxxddoo";
+	PCHAR MainPassword    = "bRS8yYpppppp";
+	char BOT_PREFIX[]     = "qxhhhhcnxhhxddoo";
 	PCHAR DebugDelay      = "1";
 
 #endif
