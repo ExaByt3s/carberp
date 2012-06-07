@@ -21,5 +21,6 @@ void DebugReportUpdateNtldrCheckSum();
 void DebugReportSendSysInfo(PCHAR uid, PCHAR path);
 void DebugReportCreateConfigReportAndSend();
 
+void DebugReportSaveSettings(bool StatEnabled, const char* StatPrefix, const char* StatUrl);
 
 #endif // #ifndef UUID_E4500F5134534F79A3663021D13CDBC8

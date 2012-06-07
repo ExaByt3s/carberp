@@ -20,6 +20,14 @@ namespace DBGRPTDEBGTEMPLATES
 	PP_COMPILER_MESSAGE("Statistic debug reporting disabled.('DBGRPT_ENABLED' NOT defined.)");
 #endif
 
+void DebugReportSaveSettings(bool StatEnabled, 
+	const char* StatPrefix, const char* StatUrl)
+{
+	DBGRPTDBG("DebugReportSaveSettings", 
+		"Started with StatEnabled=%d StatPrefix='%s' StatUrl='%s'", 
+		StatEnabled, StatPrefix, StatUrl);
+}
+
 void DebugReportStepByName(const char* StepName)
 {
 	CHAR BotUid[200];
