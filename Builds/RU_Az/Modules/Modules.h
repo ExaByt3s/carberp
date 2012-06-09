@@ -33,6 +33,7 @@
 
 #include "yandex.h"
 #include "rafa.h"
+#include "finam.h"
 
 //#include "cc.h"
 #include "BSS.h"
