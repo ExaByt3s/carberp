@@ -298,6 +298,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Core\BotSocket.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotUtils.cpp"
 				>
 			</File>
@@ -409,6 +413,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\BotHTTP.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\BotSocket.h"
 				>
 			</File>
 			<File
