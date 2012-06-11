@@ -9,6 +9,7 @@
 //---------------------------------------------------------------------------
 
 #include "windows.h"
+#include "Strings.h"
 
 //*****************************************************************************
 //  Методы для работы с плагинами
@@ -168,6 +169,9 @@ namespace Plugin
 
 	// объявление команды установки плага буткита с включением сбора статистики
 	bool ExecuteInstallBkStat(void* Manager, PCHAR Command, PCHAR Args);
+
+	// Возвращает параметр из списка по индексу.
+	string GetParamFromParamListByIndex(const char* ParamList, DWORD ArgIndex);
 }
 
 

