@@ -68,7 +68,7 @@ CHARAPI(bool)::Equal(const TChar* Str1, const TChar* Str2)
 }
 //-----------------------------------------------------------------------------
 
-CHARAPI(int)::Compare(const TChar* Str1, const TChar* Str2)
+CHARAPI(int)::CompareEx(const TChar* Str1, const TChar* Str2, DWORD CmpLen)
 {
 	// Функция сравнивает две строки
 
@@ -77,23 +77,46 @@ CHARAPI(int)::Compare(const TChar* Str1, const TChar* Str2)
 
 	const TChar* S1 = Str1;
 	const TChar* S2 = Str2;
-
+    DWORD Pos = 0;
 	while(1)
 	{
+		Pos++;
+
+
+
 		if (*S1 != *S2)
 		{
-			if (*S1 > *S2)
-				return 1;
+			int R;
+			if (CmpLen)
+			{
+				// В случае если сравнивается часть строки, возвращаем
+				// 0 если дошли до нулевого символа второй строки
+				if (*S2 == 0)
+					R = 0;
+				else
+					R = -1;
+			}
 			else
-            	return -1;
+			if (*S1 > *S2)
+				R = 1;
+			else
+				R = -1;
+			return R;
 		}
 
-		if (*S1 == 0) return 0;
+		if (*S2 == 0) return 0;
 
 		S1++;
 		S2++;
     }
 }
+
+
+CHARAPI(int)::Compare(const TChar* Str1, const TChar* Str2)
+{
+	return CompareEx(Str1, Str2, 0);
+}
+
 //-----------------------------------------------------------------------------
 
 template<class TChar>

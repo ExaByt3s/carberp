@@ -51,6 +51,7 @@ const PCHAR ParamContentType = "Content-Type";
 const PCHAR ParamContentLength = "Content-Length";
 const PCHAR ParamCookie = "Cookie";
 const PCHAR ParamProxyConnection = "Proxy-Connection";
+const PCHAR ParamPragma = "Pragma";
 const PCHAR ParamRange = "Range";
 const PCHAR ParamTransferEncoding = "Transfer-Encoding";
 const PCHAR ParamConnection = "Connection";
@@ -515,11 +516,23 @@ class THTTPResponse : public TBotObject
 {
 private:
 	string FHTTPData;
-    void Parse();
-public:
-	// Свойства класс
 
-    WORD Code;  // Код ответа
+	void Parse();
+	bool ParseFirstLine(const char* Line);
+public:
+	// Свойства класса
+	WORD   Code;             // Код ответа
+	string Protocol;         // информация о протоколе
+	string StatusLine;       // Коментарий к коду ответа
+	string ContentType;      // Тип контента
+	int    ContentLength;    // Размер данных. (-1 означает, что заголовок не передавался)
+	string CacheControl;     // Управление кэшированием
+	string Location;         // Адрес перехода при редиректе
+	string Pragma;           // Особые опции выполнения
+	string TransferEncoding; // Механизм передачи данных
+
+	bool Chunked;        // Признак того, что данные передаются поблочно. см TransferEncoding
+	TBotStrings Headers; // Все заголовки ответа
 
 	// Методы класса
 	THTTPResponse();
@@ -545,26 +558,84 @@ public:
 
 
 //----------------------------------------------------------------
+//  THTTPChunks - класс обработки блочного механизма передачи
+//                данных  HTTP сервером
+//----------------------------------------------------------------
+class THTTPChunks : public TBotObject
+{
+private:
+    enum TState {Unknown, IgnoreSizeEnd, IgnoreBlockEnd, WriteData};
+
+    THTTP*      FOwner;
+	TBotStream* FStream;
+	int    FSize;
+	TState FState;
+	string FSizeBuf;
+	int    FIgnoreSize;
+	bool   FLastBlock;
+	bool   FCompleted;
+	bool GetSize(PCHAR &Buf, int &Size);
+	bool Ignore(PCHAR &Buf, int &Size);
+	void WriteChunk(PCHAR &Buf, int &Size);
+public:
+    THTTPChunks(THTTP* Owner, TBotStream* Stream);
+	void Initialize(TBotStream* Stream);
+	void Write(PCHAR Buf, int BufSize);
+    bool Completed();
+};
+
+
+//----------------------------------------------------------------
 //   THTTP  - Класс для передачи-приёма данных по HTTP протоколу
 //----------------------------------------------------------------
 class THTTP : public TBotObject
 {
 private:
-	TBotSocket *FSocket;
-	bool        FSocketCreated;
+	TBotSocket  *FSocket;
+	THTTPChunks *FChunks;
+	bool FSocketCreated;
+	bool FDocumentCompleted;
+	int  FDocumentSize;
+
 	void Initialize();
 	bool Execute(const char *URL, TBotStream *PostData, TBotStream *ResponseStream);
-    bool ReceiveData(TBotStream *ResponseStream);
+	bool ReceiveData(TBotStream *ResponseStream);
+	void WriteReceivedData(TBotStream* Stream, PCHAR Buf, int BufLen);
+	int  GetChunkSize(PCHAR &Buf, int &BufSize);
+
+    friend class THTTPChunks;
 protected:
 
 public:
 	THTTPRequest  Request;
 	THTTPResponse Response;
+	bool   CheckOkCode;
+
+	// StatusText - Если CheckOkCode == true то в это полу будет
+	// записан ответ в случае кода отличного от 200
+	string StatusText;
+
 	// Методы класса
 	THTTP();
-    ~THTTP();
-	// Функция загружает страницу с указанного адреса
-	bool Get(const string &aURL, string &Document);
+	THTTP(TBotSocket* Socket);
+	~THTTP();
+
+    int DocumentSize();
+
+	// Следующие методы выполняют запросы к HTTP серверу.
+	//
+	// ВАЖНО!!!!!
+	// Для методов, которые возвращают true если запрос
+	// прошёл успешно, следует учесть, что? по умолчанию?
+	// true возвращается только в том случае если
+	// удалось отправить запрос и получить ответ с кодом 200!!!
+	// для того, чтобы получать истину только в случае успешной отправки
+	// и получения данных, не обращая внимания на код ответа
+	// следует установить
+	// CheckOkCode = false;
+
+	bool   Get(const char *aURL, string &Document);
+	string Get(const char *aURL);
 };
 
 //---------------------------------------------------------------------------

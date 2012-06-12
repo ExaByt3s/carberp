@@ -7,9 +7,120 @@
 #include <windows.h>
 #include "Crypt.h"
 #include "Strings.h"
+#include "Memory.h"
 
 
 
+//********************************************************************
+// Шаблон списка элементов. Аналогия вектора C++
+//********************************************************************
+template <class TItem>
+class TListTemplate : public TBotObject
+{
+private:
+	int    FCount;
+	int    FCapacity;
+	TItem* FItems;
+	TItem  FEmptyItem;
+
+	bool UpdateCapacity();
+	bool CheckIndex(int Index);
+protected:
+	void virtual DoDelete(TItem Item);
+public:
+	TListTemplate();
+	~TListTemplate();
+
+	int   Add(TItem Item);
+	int   Count();
+	void  Clear();
+	void  Delete(int Index);
+	int   IndexOf(TItem Item);
+	int   Remove(TItem Item);
+	TItem GetItem(int Index);
+	void  SetItem(int Index, TItem Item);
+	bool  SetCapacity(int Value);
+
+	TItem  operator[](int Index);
+};
+
+// Реализация шаблона выведена в другой модуль
+#include "ListTemplate.h"
+
+
+typedef TListTemplate<void*> TCustomList;
+
+
+class TBotList;
+
+
+typedef void (*TListNotifyEvent)(TBotList*, LPVOID);
+
+
+//********************************************************************
+// TBotList - список указателей
+//********************************************************************
+class TBotList : public TCustomList
+{
+protected:
+	void DoDelete(void* Item);
+public:
+	TBotList();
+	~TBotList();
+	TListNotifyEvent OnDelete;
+};
+
+
+//------------------------------------------------------
+//  Данное обхявление введено для разделения конфликта
+//  имён при программировании в Builder C++
+//------------------------------------------------------
+#define TList TBotList
+
+
+
+
+//********************************************************************
+//	TBotStrings - список строк
+//********************************************************************
+class TBotStrings : public TBotObject
+{
+private:
+	TBotList FItems;
+
+	int    AddStr(const char* Value, DWORD Len);
+	bool   IsName(const string& S, DWORD* NameEnd, DWORD* ValueStart);
+	int    SearchName(const char* Name, string* Value);
+	string MakeValueString(const char* Name, const char* Value);
+public:
+	string ValueDelimeter;
+
+	TBotStrings();
+	~TBotStrings();
+
+	int    Add(const char*   Value);
+	int    Add(const string& Value);
+	int    AddValue(const char* Name, const char* Value);
+	int    Count();
+	void   Clear();
+	void   Delete(int Index);
+	string GetItem(int Index);
+	void   SetItem(int Index, const char* Item);
+	void   SetItem(int Index, const string &Item);
+	void   SetText(const char* Text);
+	string GetText();
+	string NameByIndex(int Index);
+	string ValueByIndex(int Index);
+	string GetValue(const char* Name);
+	void   SetValue(const char* Name, const char* Value);
+
+	string inline operator[](int Index) { return GetItem(Index); }
+};
+
+
+//-----------------------------------------------------------------------------
+//                         Устаревшее!!!!!
+//
 /*----------------  Методы для работы со списками элементов -----------------*/
 
 typedef LPVOID PList;

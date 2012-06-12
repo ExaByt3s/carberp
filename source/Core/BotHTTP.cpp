@@ -11,7 +11,7 @@
 #include "BotHTTP.h"
 #include "HTTPConsts.h"
 
-#include "Modules.h"
+//#include "Modules.h"
 
 //#include "BotDebug.h"
 
@@ -1714,12 +1714,12 @@ LPBYTE Chunks::GetChunkSize(LPBYTE Buf, DWORD BufSize, DWORD &Size)
 
 	// Полуяаем размер
 	if (*Buf == 10 || *Buf == 13)
-    	Buf = (LPBYTE)STR::GotoNextLine((PCHAR)Buf, BufSize);
+		Buf = (LPBYTE)STR::GotoNextLine((PCHAR)Buf, BufSize);
 
 	PCHAR LN = STR::GetLine((PCHAR)Buf, BufSize);
 
 	if (LN == NULL) return NULL;
-    Size = STR::HexToDWORD(LN);
+	Size = STR::HexToDWORD(LN);
 	STR::Free(LN);
 
 	return (LPBYTE)STR::GotoNextLine((PCHAR)Buf, BufSize);
@@ -2038,7 +2038,7 @@ bool TURL::DoParse(const char *URL)
 THTTPRequest::THTTPRequest()
 {
 	Port = HTTPDefaultPort;
-	Protocol   = HTTP_1_0;
+	Protocol   = HTTP_1_1;
 	Method     = hmGET;
 	Accept     = DefaultAccept;
 	CloseConnection = true;
@@ -2233,30 +2233,286 @@ bool THTTPResponse::AddData(PCHAR &Buf, int &BufSize)
 
 void THTTPResponse::Clear()
 {
-
+	// Функция очищает класс ответа
+	Headers.Clear();
+	Protocol.Clear();
+	StatusLine.Clear();
+	ContentType.Clear();
+	CacheControl.Clear();
+	Location.Clear();
+	Pragma.Clear();
+	TransferEncoding.Clear();
+	ContentLength = -1;
+	Chunked = false;
 }
 //----------------------------------------------------------------------------
 
+bool THTTPResponse::ParseFirstLine(const char* Line)
+{
+    // Функция разбирает первую строку ответа
+	if (STRA::IsEmpty(Line) || !StrSame((PCHAR)Line, "HTTP/", false, 5))
+		return false;
+
+
+	PCHAR Start = (PCHAR)Line;
+	PCHAR End;
+
+	// Определяем протокол
+	End = ScanLN(Start, ' ');
+	if (End == NULL)
+		return false;
+	Protocol.Copy(Start, 0, End - Start);
+
+	// Определяем код
+	Start = End;
+	IgnoreSpaces(Start);
+	End = ScanLN(Start, ' ');
+	if (!End) End = Start;
+	string Tmp(Start, End - Start);
+    Code = StrToInt(Tmp.t_str());
+
+
+	// Определяем строку ответа
+	Start = End;
+	IgnoreSpaces(Start);
+	StatusLine = Start;
+
+	return !Protocol.IsEmpty() && Code != 0;
+
+}
+//----------------------------------------------------------------------------
 
 void THTTPResponse::Parse()
 {
 	// Функция распарсивает полученный заголовок
-
-
+	Headers.SetText(FHTTPData.t_str());
 
 	// Очищаем буфер
 	FHTTPData.Clear();
+
+
+    // Разбираем первую строку
+	string FirstLine = Headers[0];
+
+	// Разбираем заголовки
+	if (!ParseFirstLine(FirstLine.t_str()))
+		return;
+
+
+	// Определяем еть ли пробел после разделителя значения
+	// Header: Value
+	// Header:Value
+	PCHAR Delimeter = ValueDelimeter;
+
+	for (int i = 1; i < Headers.Count(); i++)
+	{
+		string L = Headers[i];
+		PCHAR P = STRA::Scan(L.t_str(), ':');
+		if (P && *(++P))
+		{
+			if (*P != ' ')
+				Delimeter = ":";
+			break;
+        }
+	}
+
+	Headers.ValueDelimeter = Delimeter;
+
+	// Получаем значения основных заголовков
+	ContentType      = Headers.GetValue(ParamContentType);
+	CacheControl     = Headers.GetValue(ParamCacheControl);
+	Location         = Headers.GetValue(ParamLocation);
+	Pragma           = Headers.GetValue(ParamPragma);
+	TransferEncoding = Headers.GetValue(ParamTransferEncoding);
+
+	// Определяем поблоковый механизм передачи
+	Chunked = TransferEncoding == ValueChunked;
+
+	// Определяем длину данных
+	string Tmp = Headers.GetValue(ParamContentLength);
+	if (!Tmp.IsEmpty())
+		ContentLength = StrToInt(Tmp.t_str());
+	else
+    	ContentLength = -1;
 }
 //----------------------------------------------------------------------------
+
+
+// ***************************************************************************
+// 								    THTTPChunks
+// ***************************************************************************
+
+THTTPChunks::THTTPChunks(THTTP* Owner, TBotStream* Stream)
+{
+	FOwner = Owner;
+    Initialize(Stream);
+}
+//-------------------------------------------------
+
+void THTTPChunks::Initialize(TBotStream* Stream)
+{
+	FStream = Stream;
+	FSize   = 0;
+	FState  = Unknown;
+	FIgnoreSize = 0;
+	FLastBlock = false;
+	FCompleted = false;
+	FSizeBuf.Clear();
+}
+//-------------------------------------------------
+
+void THTTPChunks::Write(PCHAR Buf, int BufSize)
+{
+	// Функция записывает блок данных с учётом информации о его размере
+	if (!FOwner || !FStream) return;
+
+	while (BufSize && !FCompleted)
+	{
+
+		// Определяем размер текущего блока
+		if (FState == Unknown)
+		{
+			if (!GetSize(Buf, BufSize))
+			{
+				// Не удалось определить размер блока, видимо
+				// поступили не все данные. Ждём следующую
+				// порцию
+                break;
+            }
+		}
+
+
+		// Игнорируем некоторые данные
+		if (FState == IgnoreSizeEnd || FState == IgnoreBlockEnd)
+		if (!Ignore(Buf, BufSize))
+		{
+			// Буер не содержит достаточного количества данных
+			// ждём следующую порцию
+            break;
+		}
+
+		// Записываем данные
+		if (FState == WriteData)
+			WriteChunk(Buf, BufSize);
+    }
+
+	if (FCompleted)
+        FOwner->FDocumentCompleted = FCompleted;
+}
+//-------------------------------------------------
+
+bool THTTPChunks::GetSize(PCHAR &Buf, int &Size)
+{
+	// Функция определяет размер текущего блока и смещает
+	// указатель на начало данных
+	FSize = -1;
+
+	PCHAR End = Buf;
+
+	// Переходим к символам новой строки
+	while (Size && *End != 10 && *End != 13)
+	{
+		End++;
+		Size--;
+    }
+
+	bool Valid = Size > 0;
+
+	*End = 0;
+	FSizeBuf += Buf;
+
+	if (Valid)
+	{
+		FSize = STR::HexToDWORD(FSizeBuf.t_str());
+		FSizeBuf.Clear();
+
+		if (FSize == 0)
+			FLastBlock = true;
+
+		// Смещаем указатель
+        Buf = End;
+
+		// Переходим в состояние игнорирования 2 байт
+		// (после размера идёт пара \r\n)
+		FState      = IgnoreSizeEnd;
+		FIgnoreSize = 2;
+    }
+
+	return Valid;
+}
+//-------------------------------------------------
+
+bool THTTPChunks::Ignore(PCHAR &Buf, int &Size)
+{
+	// игнорируем порцию данных
+    int ToIgnore = Min(FIgnoreSize, Size);
+
+	FIgnoreSize -= ToIgnore;
+	Size        -= ToIgnore;
+    Buf         += ToIgnore;
+
+	if (FIgnoreSize == 0)
+	{
+		if (FState == IgnoreSizeEnd)
+			FState = WriteData;
+		else
+		{
+			// Пропустили окончание блока
+			FState = Unknown;
+			if (FLastBlock)
+            	FCompleted = true;
+        }
+	}
+
+	return FIgnoreSize == 0;
+}
+//-------------------------------------------------
+
+void THTTPChunks::WriteChunk(PCHAR &Buf, int &Size)
+{
+	// Функция записывает нужный размер данных
+	int ToWrite = Min(FSize, Size);
+
+	if (ToWrite)
+	{
+		FOwner->WriteReceivedData(FStream, Buf, ToWrite);
+		Buf   += ToWrite;
+		Size  -= ToWrite;
+		FSize -= ToWrite;
+	}
+
+	if (FSize == 0)
+	{
+		// После блока должны идти пара символов \r\n
+        FIgnoreSize = 2;
+		FState = IgnoreBlockEnd;
+	}
+}
+//-------------------------------------------------
+
+bool THTTPChunks::Completed()
+{
+	return FCompleted;
+}
+//-------------------------------------------------
+
 
 // ***************************************************************************
 // 								THTTP
 // ***************************************************************************
 
+
 THTTP::THTTP()
 {
     Initialize();
 }
+
+THTTP::THTTP(TBotSocket* Socket)
+{
+	Initialize();
+	FSocket = Socket;
+}
+
 //----------------------------------------------------------------------------
 
 THTTP::~THTTP()
@@ -2271,13 +2527,19 @@ void THTTP::Initialize()
 {
 	// Инициализируем  внутренние данные
 	FSocket = NULL;
+	FChunks = NULL;
+	CheckOkCode = true;
 	FSocketCreated = false;
+	FDocumentSize = 0;
 }
 //----------------------------------------------------------------------------
 
 bool THTTP::Execute(const char *URL, TBotStream *PostData, TBotStream *ResponseStream)
 {
 	//  Отправляем данные и читаем ответ
+	FDocumentCompleted = false;
+	FDocumentSize      = 0;
+	StatusText.Clear();
 
 	if (STRA::IsEmpty(URL)) return false;
 
@@ -2311,6 +2573,13 @@ bool THTTP::Execute(const char *URL, TBotStream *PostData, TBotStream *ResponseS
             Result = ReceiveData(ResponseStream);
 	}
 
+	// В случае если включена опция проверки кода ответа
+	// возвращаем истину только в случае если сервер
+	// вернул код 200
+	if (Result && CheckOkCode)
+        Result = Response.Code == HTTP_CODE_OK;
+
+
 	//При необходимости закрываем сокет
 	if (Request.CloseConnection || !ResponseStream)
 		FSocket->Close();
@@ -2324,9 +2593,10 @@ bool THTTP::Execute(const char *URL, TBotStream *PostData, TBotStream *ResponseS
 bool THTTP::ReceiveData(TBotStream *ResponseStream)
 {
 	// Функция читает данве из сокета
-	bool Result = true;
+	TBotStream *Stream = ResponseStream;
+	TBotStream *InternalStream = 0;
 
-	const static DWORD BufSize = 2047;
+	const static DWORD BufSize = 4095;
 
 	TMemory Buf(BufSize + 1);
 
@@ -2338,42 +2608,114 @@ bool THTTP::ReceiveData(TBotStream *ResponseStream)
 		Readed = FSocket->Read(Buf.Buf(), BufSize);
 		if (Readed > 0)
 		{
-			PCHAR Str = Buf;
-
+			PCHAR Str  = Buf;
+            int   Size = Readed;
+			// Для удобства обработки закрываем буфер нулём
+			*(Str + Size) = 0;
 
 			// Проверяем на необходимость чтения заголовка
 			if (!HeaderReaded)
 			{
-				// Для надёжности обработки закрываем строку нулём
-				*(Str + Readed) = 0;
-                HeaderReaded = Response.AddData(Str, Readed);
+				HeaderReaded = Response.AddData(Str, Size);
+				/* TODO : Сделать установку размера потока */
+				if (HeaderReaded)
+				{
+					// Инициализируем необходимые механизмы
+					if (Response.Code != HTTP_CODE_OK && CheckOkCode)
+					{
+						if (Response.Chunked || Response.ContentLength)
+						{
+							// Ожидается поступление данных
+							// для ContentLength допускаются любые значения
+							// отличные от нуля
+							InternalStream = new TBotMemoryStream();
+							Stream = InternalStream;
+						}
+						else
+							Stream = NULL;
+					}
+
+
+					if (Response.Chunked)
+						FChunks = new THTTPChunks(this, Stream);
+				}
 			}
 
-			if (Readed > 0)
-			{
-				ResponseStream->Write(Str, Readed);
-            }
-        }
+			// Записываем данные
+			if (Response.Chunked)
+				FChunks->Write(Str, Size);
+			else
+				WriteReceivedData(Stream, Str, Size);
+		}
 	}
-	while(Readed > 0);
+	while(Readed > 0 && !FDocumentCompleted);
+
+	if (FChunks)
+	{
+		delete FChunks;
+		FChunks = NULL;
+	}
+
+	if (InternalStream)
+	{
+		InternalStream->SetPosition(0);
+		StatusText = InternalStream->ReadToString();
+		delete InternalStream;
+	}
+
+	return FDocumentCompleted;
+}
+//----------------------------------------------------------------------------
 
 
-	return Result;
+void THTTP::WriteReceivedData(TBotStream* Stream, PCHAR Buf, int BufLen)
+{
+	// Функция записывает принятые данные в поток
+
+    if (!Stream || !Buf || !BufLen) return;
+
+
+	Stream->Write(Buf, BufLen);
+	FDocumentSize += BufLen;
+
+
+	// Проверяем окончание загрузки
+	if (!FDocumentCompleted && Response.ContentLength >= 0)
+	{
+		FDocumentCompleted = FDocumentSize == Response.ContentLength;
+    }
 }
 
 //----------------------------------------------------------------------------
-bool THTTP::Get(const string &aURL, string &Document)
+int THTTP::DocumentSize()
+{
+	return FDocumentSize;
+}
+
+
+//----------------------------------------------------------------------------
+bool THTTP::Get(const char *aURL, string &Document)
 {
 	// Функция загружает страницу с указанного адреса
 	Document.Clear();
 
     TBotMemoryStream S;
 
-    bool Result = Execute(aURL.t_str(), NULL, &S);
+    bool Result = Execute(aURL, NULL, &S);
 
-	S.SetPosition(0);
-	Document = S.ReadToString();
+	if (Result)
+	{
+		S.SetPosition(0);
+		Document = S.ReadToString();
+    }
 
 	return Result;
 }
 //----------------------------------------------------------------------------
+
+string THTTP::Get(const char *aURL)
+{
+	string Document;
+	Get(aURL, Document);
+	return Document;
+}

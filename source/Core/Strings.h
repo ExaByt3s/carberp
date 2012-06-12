@@ -356,6 +356,7 @@ public:
 
 	// Функция сравнивает две строки
 	static int Compare(const TChar* Str1, const TChar* Str2);
+	static int CompareEx(const TChar* Str1, const TChar* Str2, DWORD Str1Len);
 
 	// Функция расширяет строку Str с позиции Position на
 	// Count символов

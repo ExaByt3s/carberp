@@ -8,6 +8,352 @@
 #include "wincrypt.h"
 
 
+
+
+
+
+//*****************************************************************************
+//                              TBotList
+//*****************************************************************************
+TBotList::TBotList()
+	: TCustomList()
+{
+	OnDelete = NULL;
+}
+
+TBotList::~TBotList()
+{
+	// т.к. особенности языка не позволяют "корректно"
+	// вызвать виртуальный метод в деструкторе мы
+	// вынуждены сделать очистку списка и в деструкторе потомка
+    Clear();
+}
+
+
+
+void TBotList::DoDelete(void* Item)
+{
+	if (OnDelete) OnDelete(this, Item);
+}
+
+
+
+
+//*****************************************************************************
+//                              TBotStrings
+//*****************************************************************************
+
+void StringsDestroyItem(TBotList*, void* Item)
+{
+	// Функция уничтожает строку
+    delete (string*)Item;
+}
+//---------------------------------------------------
+
+TBotStrings::TBotStrings()
+{
+	FItems.OnDelete = StringsDestroyItem;
+	ValueDelimeter = "=";
+}
+//---------------------------------------------------
+
+TBotStrings::~TBotStrings()
+{
+
+}
+//---------------------------------------------------
+
+int TBotStrings::AddStr(const char* Value, DWORD Len)
+{
+	string *S = new string(Value, Len);
+	return FItems.Add(S);
+}
+//---------------------------------------------------
+
+
+int TBotStrings::Add(const char* Value)
+{
+	return FItems.Add(new string(Value));
+}
+//---------------------------------------------------
+
+int  TBotStrings::Add(const string& Value)
+{
+	return AddStr(Value.t_str(), Value.Length());
+}
+//---------------------------------------------------
+
+string TBotStrings::MakeValueString(const char* Name, const char* Value)
+{
+	// Функция собирает строку Имя=Значение
+	DWORD Len = STRA::Length(Name) + ValueDelimeter.Length() + STRA::Length(Value);
+
+	string Line(Len);
+	Line += Name;
+	Line += ValueDelimeter;
+	Line += Value;
+	return Line;
+}
+//---------------------------------------------------
+
+int TBotStrings::AddValue(const char* Name, const char* Value)
+{
+	// Функция добавляет значение в список
+	if (STRA::IsEmpty(Name))
+		return -1;
+
+	return Add(MakeValueString(Name, Value));
+}
+//---------------------------------------------------
+
+int TBotStrings::Count()
+{
+	return FItems.Count();
+}
+//---------------------------------------------------
+
+void TBotStrings::Clear()
+{
+    FItems.Clear();
+}
+//---------------------------------------------------
+
+void TBotStrings::Delete(int Index)
+{
+	FItems.Delete(Index);
+}
+//---------------------------------------------------
+
+string TBotStrings::GetItem(int Index)
+{
+	string Item;
+
+	string* Ptr = (string*)FItems[Index];
+	if (Ptr)
+		Item = *Ptr;
+
+	return Item;
+}
+//---------------------------------------------------
+
+void TBotStrings::SetItem(int Index, const char* Item)
+{
+	if (Index >= 0 && Index < FItems.Count())
+		SetItem(Index, string(Item));
+}
+
+void TBotStrings::SetItem(int Index, const string &Item)
+{
+	if (Index >= 0 && Index < FItems.Count())
+	{
+		string &S = *(string*)FItems[Index];
+		S = Item;
+    }
+}
+//---------------------------------------------------
+
+string TBotStrings::GetText()
+{
+	// Функция собирает все эементы списка в строку
+
+	// Расчитываем общую длину строки
+	DWORD Len = 0;
+	int Count = FItems.Count();
+	for (int i = 0; i < Count; i++)
+	{
+		string *S = (string*)FItems[i];
+		Len += S->Length();
+		// для всех строк, кроме последней добавляем символы перевода и
+		// новой строки
+		if (i < Count - 1)
+			Len += 2;
+	}
+
+	string Result(Len);
+
+	// Собираем строки
+	for (int i = 0; i < Count; i++)
+	{
+		string *S = (string*)FItems[i];
+
+		Result += *S;
+
+		if (i < Count - 1)
+			Result += "\r\n";
+	}
+
+	return Result;
+}
+//---------------------------------------------------
+
+void TBotStrings::SetText(const char* Text)
+{
+	// функция разбивает многострочный текст на
+	// список строк
+	Clear();
+	if (STRA::IsEmpty(Text)) return;
+
+
+	PCHAR Start = (PCHAR)Text;
+	PCHAR End;
+	PCHAR Line;
+	BYTE Flag;
+	BYTE Ign;
+	DWORD StrLen;
+	while (1)
+	{
+		// Ищем конец строки
+		End = Start;
+		while (*End != 0 && *End != 10 && *End != 13) End++;
+
+		// Добавляем строку
+		if (End != Text)
+		{
+			StrLen = End - Start;
+			Line = (StrLen) ? Start : NULL;
+			AddStr(Line, StrLen);
+        }
+
+        if (*End == 0) break;
+
+		// Переходим на следующую строку
+		Flag = 0;
+		while (*End != 0)
+		{
+			if (*End == 10)
+				Ign = 1;
+			else
+			if (*End == 13)
+				Ign = 2;
+			else
+				break;
+			if ((Flag & Ign) != 0)
+				break;
+
+			Flag |= Ign;
+
+			End++;
+		}
+		Start = End;
+	}
+		
+}
+//---------------------------------------------------
+
+
+string TBotStrings::NameByIndex(int Index)
+{
+	// Функция возвращает имя из строки с индексом
+	string Name;
+
+	DWORD Len = 0;
+
+    string S = GetItem(Index);
+	if (IsName(S, &Len, NULL))
+	{
+        Name.Copy(S, 0, Len);
+    }
+
+
+    return Name;
+}
+//---------------------------------------------------
+
+string TBotStrings::ValueByIndex(int Index)
+{
+	// Функция возвращает значение из строки с
+	// указанным индексом
+
+	string Value;
+
+	DWORD Start = 0;
+	string S = GetItem(Index);
+
+	if (IsName(S, NULL, &Start))
+	{
+        Value.Copy(S, Start, S.Length() - Start);
+    }
+
+	return Value;
+}
+//---------------------------------------------------
+
+bool TBotStrings::IsName(const string& S, DWORD* NameEnd, DWORD* ValueStart)
+{
+	// Функция возвращает истину если строка является
+	// парой Имя Значение
+
+	if (S.IsEmpty() || ValueDelimeter.IsEmpty())
+		return false;
+
+	int Pos = S.Pos(ValueDelimeter);
+	bool IsName = Pos >= 0;
+
+	if (IsName)
+	{
+		if (NameEnd)
+			*NameEnd = Pos;
+		if (ValueStart)
+			*ValueStart = Pos + ValueDelimeter.Length();
+    }
+
+	return IsName;
+}
+//---------------------------------------------------
+
+int TBotStrings::SearchName(const char* Name, string* Value)
+{
+	// Функция ищет пизоцию элемента с именем Name;
+	if (STRA::IsEmpty(Name)) return -1;
+
+	for (int i = 0; i < FItems.Count(); i++)
+	{
+		string S = GetItem(i);
+		DWORD NamePos  = 0;
+		DWORD ValuePos = 0;
+		if (!IsName(S, &NamePos, &ValuePos)) continue;
+
+		if (STRA::CompareEx(S.t_str(), Name, NamePos) == 0)
+		{
+			if (Value)
+				Value->Copy(S, ValuePos, S.Length() - ValuePos);
+            return i;
+		}
+	}
+
+	return -1;
+
+}
+//---------------------------------------------------
+
+string TBotStrings::GetValue(const char* Name)
+{
+	// Функция возвращает значения для элемента
+	// с указанным именем
+
+    string Value;
+
+	SearchName(Name, &Value);
+
+	return Value;
+}
+//---------------------------------------------------
+
+void TBotStrings::SetValue(const char* Name, const char* Value)
+{
+	// Функция устанавливает значение для указанного имени
+	if (STRA::IsEmpty(Name))
+		return;
+	int Pos = SearchName(Name, NULL);
+	if (Pos < 0)
+		AddValue(Name, Value);
+	else
+		SetItem(Pos, MakeValueString(Name, Value));
+}
+//---------------------------------------------------
+
+
+
 /*----------------  Методы для работы со списками элементов -----------------*/
 
 DWORD MaxListSize = 4000000;

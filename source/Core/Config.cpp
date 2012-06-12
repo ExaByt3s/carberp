@@ -92,7 +92,7 @@ namespace CONFIGDEBUGSTRINGS
 	#endif
 
 	PCHAR MainPassword    = "bRS8yYpppppp";
-	char BOT_PREFIX[]     = "qxhhhhcnxhhxddoo";
+	char BOT_PREFIX[]     = "qxwwnnmo";
 	PCHAR DebugDelay      = "1";
 
 #endif
