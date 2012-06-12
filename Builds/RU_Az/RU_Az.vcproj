@@ -515,6 +515,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\finam.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Common\Firefox.h"
 				>
 			</File>
@@ -860,6 +864,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\FileGrabber.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\finam.cpp"
 				>
 			</File>
 			<File

