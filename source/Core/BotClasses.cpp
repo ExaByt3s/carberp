@@ -10,8 +10,6 @@
 
 
 
-
-
 //*****************************************************************************
 //                              TBotList
 //*****************************************************************************
@@ -28,8 +26,6 @@ TBotList::~TBotList()
 	// вынуждены сделать очистку списка и в деструкторе потомка
     Clear();
 }
-
-
 
 void TBotList::DoDelete(void* Item)
 {
@@ -152,9 +148,12 @@ void TBotStrings::SetItem(int Index, const string &Item)
 }
 //---------------------------------------------------
 
-string TBotStrings::GetText()
+string TBotStrings::GetDelimetedText(const  char* Delimeter)
 {
 	// Функция собирает все эементы списка в строку
+	if (Count() == 0) return NULLSTR;
+
+	string D = Delimeter;
 
 	// Расчитываем общую длину строки
 	DWORD Len = 0;
@@ -166,7 +165,7 @@ string TBotStrings::GetText()
 		// для всех строк, кроме последней добавляем символы перевода и
 		// новой строки
 		if (i < Count - 1)
-			Len += 2;
+			Len += D.Length();
 	}
 
 	string Result(Len);
@@ -175,14 +174,18 @@ string TBotStrings::GetText()
 	for (int i = 0; i < Count; i++)
 	{
 		string *S = (string*)FItems[i];
-
 		Result += *S;
-
 		if (i < Count - 1)
-			Result += "\r\n";
+			Result += D;
 	}
 
 	return Result;
+}
+//---------------------------------------------------
+
+string TBotStrings::GetText()
+{
+	return GetDelimetedText("\r\n");
 }
 //---------------------------------------------------
 
@@ -239,7 +242,6 @@ void TBotStrings::SetText(const char* Text)
 		
 }
 //---------------------------------------------------
-
 
 string TBotStrings::NameByIndex(int Index)
 {
@@ -349,6 +351,17 @@ void TBotStrings::SetValue(const char* Name, const char* Value)
 		AddValue(Name, Value);
 	else
 		SetItem(Pos, MakeValueString(Name, Value));
+}
+//---------------------------------------------------
+
+void TBotStrings::SaveToStream(TBotStream* Stream)
+{
+	// етод записывает набор строк в поток данных
+	if (Stream)
+	{
+		string Buf = GetText();
+		Stream->Write(Buf.t_str(), Buf.Length());
+    }
 }
 //---------------------------------------------------
 

@@ -504,14 +504,13 @@ public:
 	~THTTPRequest() {};
 
 	void SetURL(const char* aURL);
-	string MageRequestHeaders();
+	string MakeRequestHeaders();
 };
 
 
 //----------------------------------------------------------------
 //  THTTPResponse - класс обработки заголовка ответа HTTP сервера
 //----------------------------------------------------------------
-
 class THTTPResponse : public TBotObject
 {
 private:
@@ -598,10 +597,11 @@ private:
 	int  FDocumentSize;
 
 	void Initialize();
-	bool Execute(const char *URL, TBotStream *PostData, TBotStream *ResponseStream);
+	bool Execute(THTTPMethod Method, const char *URL, TBotStream *PostData, TBotStream *ResponseStream);
+	bool SendPostData(TBotStream* Data);
+	bool ExecuteToStr(THTTPMethod Method, const char *URL, TBotStream *PostData, string &Document);
 	bool ReceiveData(TBotStream *ResponseStream);
 	void WriteReceivedData(TBotStream* Stream, PCHAR Buf, int BufLen);
-	int  GetChunkSize(PCHAR &Buf, int &BufSize);
 
     friend class THTTPChunks;
 protected:
@@ -634,8 +634,11 @@ public:
 	// следует установить
 	// CheckOkCode = false;
 
-	bool   Get(const char *aURL, string &Document);
-	string Get(const char *aURL);
+	bool   Get(const char *URL, string &Document);
+	string Get(const char *URL);
+
+	bool   Post(const char *URL, TBotStrings *Fields, string &Document);
+	string Post(const char *URL, TBotStrings *Fields);
 };
 
 //---------------------------------------------------------------------------
