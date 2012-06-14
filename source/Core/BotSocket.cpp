@@ -2,9 +2,10 @@
 
 #pragma hdrstop
 
-
+#include <winsock2.h>
 #include "Memory.h"
 #include "BotSocket.h"
+
 
 #include "BotDebug.h"
 namespace SOCKETDBGTEMPLATES

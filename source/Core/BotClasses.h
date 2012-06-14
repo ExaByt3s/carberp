@@ -49,7 +49,7 @@ public:
 };
 
 // Реализация шаблона выведена в другой модуль
-#include "ListTemplate.h"
+#include "ListTemplate.cpp"
 
 
 typedef TListTemplate<void*> TCustomList;
