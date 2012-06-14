@@ -416,6 +416,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Core\BotSocket.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotUtils.h"
 				>
 			</File>

