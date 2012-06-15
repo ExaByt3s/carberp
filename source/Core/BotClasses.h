@@ -11,6 +11,10 @@
 
 
 
+class TBotStream;
+
+
+
 //********************************************************************
 // Шаблон списка элементов. Аналогия вектора C++
 //********************************************************************
@@ -45,7 +49,7 @@ public:
 };
 
 // Реализация шаблона выведена в другой модуль
-#include "ListTemplate.h"
+#include "ListTemplate.cpp"
 
 
 typedef TListTemplate<void*> TCustomList;
@@ -109,11 +113,12 @@ public:
 	void   SetItem(int Index, const string &Item);
 	void   SetText(const char* Text);
 	string GetText();
+    string GetDelimetedText(const  char* Delimeter);
 	string NameByIndex(int Index);
 	string ValueByIndex(int Index);
 	string GetValue(const char* Name);
 	void   SetValue(const char* Name, const char* Value);
-
+    void   SaveToStream(TBotStream* Stream);
 	string inline operator[](int Index) { return GetItem(Index); }
 };
 

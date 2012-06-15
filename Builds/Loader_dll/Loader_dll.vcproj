@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="9,00"
 	Name="Loader_dll"
 	ProjectGUID="{73638EAF-FFC4-4A1B-8C26-424069D8AE17}"
 	RootNamespace="Loader_dll"
@@ -298,6 +298,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Core\BotSocket.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotUtils.cpp"
 				>
 			</File>
@@ -409,6 +413,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\BotHTTP.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\BotSocket.h"
 				>
 			</File>
 			<File

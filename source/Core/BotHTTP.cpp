@@ -2060,7 +2060,7 @@ void THTTPRequest::SetURL(const char* aURL)
 //  Функция формирует заголовок HTTP запроса.
 //  Post данные к заголовку не добавляются
 //-----------------------------------------------------
-string THTTPRequest::MageRequestHeaders()
+string THTTPRequest::MakeRequestHeaders()
 {
 	if (Path.IsEmpty()) Path = HTTPSlash;
 
@@ -2534,7 +2534,33 @@ void THTTP::Initialize()
 }
 //----------------------------------------------------------------------------
 
-bool THTTP::Execute(const char *URL, TBotStream *PostData, TBotStream *ResponseStream)
+bool THTTP::SendPostData(TBotStream* Data)
+{
+	// Функция отправляет пост данные на сервер
+	const DWORD Size = 512;
+	TMemory Buf(Size);
+
+
+	do
+	{
+		int Readed = Data->Read(Buf.Buf(), Size);
+		if (Readed == 0) break;
+
+		int Sended = FSocket->Write(Buf.Buf(), Readed);
+
+		if (Sended == SOCKET_ERROR || Sended != Readed)
+		{
+			// Произошла ошибка записи в сокет
+            return false;
+        }
+	}
+	while(1);
+
+    return true;
+}
+//----------------------------------------------------------------------------
+
+bool THTTP::Execute(THTTPMethod Method, const char *URL, TBotStream *PostData, TBotStream *ResponseStream)
 {
 	//  Отправляем данные и читаем ответ
 	FDocumentCompleted = false;
@@ -2543,7 +2569,9 @@ bool THTTP::Execute(const char *URL, TBotStream *PostData, TBotStream *ResponseS
 
 	if (STRA::IsEmpty(URL)) return false;
 
+	Request.Method = Method;
 	Request.SetURL(URL);
+
 	if (Request.Host.IsEmpty())
 		return false;
 
@@ -2562,11 +2590,19 @@ bool THTTP::Execute(const char *URL, TBotStream *PostData, TBotStream *ResponseS
 	if (Result)
 	{
 		// Отправляем заголовок
-		string Headers = Request.MageRequestHeaders();
+		if (Request.Method  == hmPOST)
+			Request.ContentLength = (PostData) ? PostData->Size() - PostData->Position() : 0;
+
+		string Headers = Request.MakeRequestHeaders();
 		if (!Headers.IsEmpty())
-		{
 			Result = FSocket->Write(Headers.t_str(), Headers.Length()) == Headers.Length();
-		}
+
+
+		// Отправляем пост данные
+		if (Request.Method == hmPOST && PostData)
+		{
+        	Result = SendPostData(PostData);
+        }
 
 		// Читаем данные
 		if (Result)
@@ -2589,6 +2625,23 @@ bool THTTP::Execute(const char *URL, TBotStream *PostData, TBotStream *ResponseS
 }
 //----------------------------------------------------------------------------
 
+bool THTTP::ExecuteToStr(THTTPMethod Method, const char *URL, TBotStream *PostData, string &Document)
+{
+	Document.Clear();
+
+    TBotMemoryStream S;
+
+    bool Result = Execute(Method, URL, PostData, &S);
+
+	if (Result)
+	{
+		S.SetPosition(0);
+		Document = S.ReadToString();
+    }
+
+	return Result;
+}
+//----------------------------------------------------------------------------
 
 bool THTTP::ReceiveData(TBotStream *ResponseStream)
 {
@@ -2606,6 +2659,9 @@ bool THTTP::ReceiveData(TBotStream *ResponseStream)
 	do
 	{
 		Readed = FSocket->Read(Buf.Buf(), BufSize);
+
+		if (Readed == SOCKET_ERROR) return false;
+
 		if (Readed > 0)
 		{
 			PCHAR Str  = Buf;
@@ -2691,25 +2747,12 @@ int THTTP::DocumentSize()
 {
 	return FDocumentSize;
 }
-
-
 //----------------------------------------------------------------------------
-bool THTTP::Get(const char *aURL, string &Document)
+
+bool THTTP::Get(const char *URL, string &Document)
 {
 	// Функция загружает страницу с указанного адреса
-	Document.Clear();
-
-    TBotMemoryStream S;
-
-    bool Result = Execute(aURL, NULL, &S);
-
-	if (Result)
-	{
-		S.SetPosition(0);
-		Document = S.ReadToString();
-    }
-
-	return Result;
+	return ExecuteToStr(hmGET, URL, NULL, Document);
 }
 //----------------------------------------------------------------------------
 
@@ -2719,3 +2762,27 @@ string THTTP::Get(const char *aURL)
 	Get(aURL, Document);
 	return Document;
 }
+//----------------------------------------------------------------------------
+
+bool THTTP::Post(const char *URL, TBotStrings *Fields, string &Document)
+{
+	if (STRA::IsEmpty(URL) || !Fields)
+		return false;
+
+	TBotMemoryStream Data;
+
+	Fields->SaveToStream(&Data);
+    Data.SetPosition(0);
+	Request.ContentType = FormDataURLEncoded;
+
+	return ExecuteToStr(hmPOST, URL, &Data, Document);
+}
+//----------------------------------------------------------------------------
+
+string THTTP::Post(const char *URL, TBotStrings *Fields)
+{
+	string S;
+    Post(URL, Fields, S);
+	return S;
+}
+//----------------------------------------------------------------------------

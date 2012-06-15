@@ -7,10 +7,16 @@
 //*****************************************************************************
 
 
+#ifndef BotClassesH
+	#error Exclude module from project
+#endif
+
+
 #define LISTFUNC(Result_Type) template<class TItem> Result_Type TListTemplate<TItem>
+#define LISTCONSTRUCT() template<class TItem> TListTemplate<TItem>
 
 
-LISTFUNC()::TListTemplate()
+LISTCONSTRUCT()::TListTemplate()
 {
 	// Конструктор списка
 	FCount    = 0;
@@ -26,7 +32,7 @@ LISTFUNC()::TListTemplate()
 }
 //-------------------------------------------------------------------
 
-LISTFUNC()::~TListTemplate()
+LISTCONSTRUCT()::~TListTemplate()
 {
 	// Деструктор списка
 	Clear();

