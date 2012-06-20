@@ -1,10 +1,7 @@
 
 #include <windows.h>
 
-#include "GetApi.h"
 #include "BotClasses.h"
-#include "Memory.h"
-#include "Strings.h"
 #include "wincrypt.h"
 
 
@@ -243,6 +240,12 @@ void TBotStrings::SetText(const char* Text)
 }
 //---------------------------------------------------
 
+void TBotStrings::SetText(const string &Text)
+{
+	SetText(Text.t_str());
+}
+//---------------------------------------------------
+
 string TBotStrings::NameByIndex(int Index)
 {
 	// Функция возвращает имя из строки с индексом
@@ -365,6 +368,17 @@ void TBotStrings::SaveToStream(TBotStream* Stream)
 }
 //---------------------------------------------------
 
+void TBotStrings::LoadFromStream(TBotStream* Stream)
+{
+	// Функция загружает строки из потока данных
+	Clear();
+	if (Stream)
+	{
+		string Buf = Stream->ReadToString();
+		SetText(Buf);
+    }
+}
+//---------------------------------------------------
 
 
 /*----------------  Методы для работы со списками элементов -----------------*/
@@ -1418,6 +1432,19 @@ LPBYTE TBotMemoryStream::Realloc(DWORD &NewCapacity)
 		return FMemory;
     }
 
+	// Устанавливается нулевое значение, освобождаем память
+	if (NewCapacity == 0)
+	{
+		if (FMemory)
+		{
+			MemFree(FMemory);
+			FMemory = NULL;
+			FPosition = 0;
+			FSize = 0;
+        }
+        return FMemory;
+    }
+
 	/* TODO : Продумать оптимизацию выделения памяти */
 	const static WORD BlockSize = 4096;
 
@@ -1450,8 +1477,8 @@ void TBotMemoryStream::SetSize(DWORD NewSize)
 		DWORD Old = FSize;
 		SetCapacity(NewSize);
 		FSize = NewSize;
-		if (FSize < Old)
-            Seek(0, SO_BEGIN);
+		if (Position() > NewSize)
+            Seek(NewSize, SO_BEGIN);
     }
 }
 
@@ -2138,4 +2165,78 @@ bool TDataFile::WriteBlock(const TDataBlock &Block)
 bool TDataFile::ReadBlock(const TDataBlock &Block)
 {
 	return false;
+}
+
+
+
+
+//****************************************************************************
+//                                TBotThread
+//****************************************************************************
+
+
+DWORD WINAPI __BotThreadProcedure(LPVOID Owner)
+{
+	// Функция потока
+    ((TBotThread*)Owner)->Execute();
+}
+//------------------------------------------------------------
+
+TBotThread::TBotThread(bool StartThread)
+{
+	FTerminated = false;
+
+	if (StartThread)
+		Start();
+}
+//------------------------------------------------------------
+
+
+TBotThread::~TBotThread()
+{
+	if (FHandle)
+	{
+		Terminate();
+		Wait();
+    }
+}
+//------------------------------------------------------------
+
+void TBotThread::Execute()
+{
+	DoExecute();
+	FHandle = NULL;
+}
+//------------------------------------------------------------
+
+void TBotThread::DoExecute()
+{
+
+}
+//------------------------------------------------------------
+
+void TBotThread::Start()
+{
+	if (!FHandle)
+		FHandle = (HANDLE)pCreateThread(NULL, NULL, __BotThreadProcedure, this, NULL, &FId);
+}
+//------------------------------------------------------------
+
+void TBotThread::Terminate()
+{
+	FTerminated = true;
+}
+//------------------------------------------------------------
+
+bool TBotThread::Terminated()
+{
+	return FTerminated;
+}
+//------------------------------------------------------------
+
+void TBotThread::Wait()
+{
+	// Функция ожидает завершения потока
+	if (FHandle)
+		pWaitForSingleObject(FHandle, INFINITE);
 }

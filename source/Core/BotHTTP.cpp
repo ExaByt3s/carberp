@@ -2140,9 +2140,9 @@ string THTTPRequest::MakeHeaders()
 	// Записываем информацию о пост данных
 	if (Method == hmPOST)
 	{
+		AddHeader(Buf, ParamContentLength, LongToStr(ContentLength));
 		AddHeader(Buf, ParamContentType, ContentType);
-    	AddHeader(Buf, ParamContentLength, LongToStr(ContentLength));
-    }
+	}
 
 	// Добавляес пустую строку в конец
     Buf += LineBreak;
@@ -2497,6 +2497,7 @@ bool THTTPChunks::Completed()
 //-------------------------------------------------
 
 
+
 // ***************************************************************************
 // 								THTTP
 // ***************************************************************************
@@ -2569,6 +2570,10 @@ bool THTTP::Execute(THTTPMethod Method, const char *URL, TBotStream *PostData, T
 
 	if (STRA::IsEmpty(URL)) return false;
 
+	// Сохраняем позицию потока
+	int StreamPos = (ResponseStream) ? ResponseStream->Position() : 0;
+
+	// Инициализируем запрос
 	Request.Method = Method;
 	Request.SetURL(URL);
 
@@ -2589,9 +2594,13 @@ bool THTTP::Execute(THTTPMethod Method, const char *URL, TBotStream *PostData, T
 	// Отправляем данные
 	if (Result)
 	{
+
 		// Отправляем заголовок
 		if (Request.Method  == hmPOST)
+		{
+			DoBeforePostData(PostData);
 			Request.ContentLength = (PostData) ? PostData->Size() - PostData->Position() : 0;
+        }
 
 		string Headers = Request.MakeRequestHeaders();
 		if (!Headers.IsEmpty())
@@ -2620,6 +2629,15 @@ bool THTTP::Execute(THTTPMethod Method, const char *URL, TBotStream *PostData, T
 	if (Request.CloseConnection || !ResponseStream)
 		FSocket->Close();
 
+
+	// Восстанавливаем позицию потока
+	if (ResponseStream)
+		ResponseStream->SetPosition(StreamPos);
+
+	// Уведомляем об окончании загрузки
+	if (Result)
+		DoDownloadCompleted(ResponseStream);
+
 	// Инициализируем библиотеку
 	return Result;
 }
@@ -2634,10 +2652,7 @@ bool THTTP::ExecuteToStr(THTTPMethod Method, const char *URL, TBotStream *PostDa
     bool Result = Execute(Method, URL, PostData, &S);
 
 	if (Result)
-	{
-		S.SetPosition(0);
 		Document = S.ReadToString();
-    }
 
 	return Result;
 }
@@ -2741,11 +2756,70 @@ void THTTP::WriteReceivedData(TBotStream* Stream, PCHAR Buf, int BufLen)
 		FDocumentCompleted = FDocumentSize == Response.ContentLength;
     }
 }
+//----------------------------------------------------------------------------
+void THTTP::WriteStringsToStream(TBotStream* Stream, TBotStrings* Strings)
+{
+	// Записываем набор строк в фпоток данных
+	if (!Stream || ! Strings) return;
+
+	/* TODO : Сделать гифрование пост данных */
+	int Count =  Strings->Count();
+	for (int i = 0; i < Count; i++)
+	{
+		string S = Strings->GetItem(i);
+
+		int Pos = S.Pos("=");
+		PCHAR Name  = NULL;
+		PCHAR Value = NULL;
+		if (Pos < 0)
+		{
+			// Строка не содержит разделителя, записываем полностью
+			Value = URLEncode(S.t_str(), S.Length());
+		}
+		else
+		{
+			Name  = URLEncode(S.t_str(), Pos);
+			Value = URLEncode(S.t_str() + Pos + 1, 0);
+        }
+
+        // Записываем данные
+		if (Name)
+		{
+			Stream->Write(Name, STR::Length(Name));
+			Stream->Write("=", 1);
+        }
+
+		if (Value)
+			Stream->Write(Value, STR::Length(Value));
+
+        if (i < Count - 1)
+			Stream->Write("&", 1);
+
+        // Уничтожаем строки
+		STR::Free2(Name);
+        STR::Free2(Value);
+	}
+
+
+	Stream->SetPosition(0);
+}
 
 //----------------------------------------------------------------------------
 int THTTP::DocumentSize()
 {
 	return FDocumentSize;
+}
+//----------------------------------------------------------------------------
+
+void THTTP::DoDownloadCompleted(TBotStream* ResponseData)
+{
+	// Функция зарезервированна для обработки загруженных данных
+}
+//----------------------------------------------------------------------------
+
+void THTTP::DoBeforePostData(TBotStream* PostData)
+{
+	// Функция предъобработки отправляемых данных
 }
 //----------------------------------------------------------------------------
 
@@ -2771,8 +2845,9 @@ bool THTTP::Post(const char *URL, TBotStrings *Fields, string &Document)
 
 	TBotMemoryStream Data;
 
-	Fields->SaveToStream(&Data);
-    Data.SetPosition(0);
+
+	WriteStringsToStream(&Data, Fields);
+
 	Request.ContentType = FormDataURLEncoded;
 
 	return ExecuteToStr(hmPOST, URL, &Data, Document);
@@ -2782,7 +2857,8 @@ bool THTTP::Post(const char *URL, TBotStrings *Fields, string &Document)
 string THTTP::Post(const char *URL, TBotStrings *Fields)
 {
 	string S;
-    Post(URL, Fields, S);
+	Post(URL, Fields, S);
 	return S;
 }
 //----------------------------------------------------------------------------
+

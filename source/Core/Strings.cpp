@@ -2185,6 +2185,24 @@ int Strings::AddValue(PStrings Strings, PCHAR Name, PCHAR Value, PCHAR Delimeter
 
 
 
+// Функция преобразует многобайтную строку в однобайтную
+string UnicodeToAnsi(const wchar_t *Str, DWORD Len)
+{
+	string Result;
+
+	if (!Len) Len = STRW::Length(Str);
+
+	if (Len)
+	{
+		// Преобразовываем строку
+		Result.SetLength(Len);
+		pWideCharToMultiByte(1251, 0, Str, Len, Result.t_str(), Len, NULL, NULL);
+    }
+
+	return Result;
+}
+
+
 //****************************************************************************
 //                              TStrEnum
 //****************************************************************************

