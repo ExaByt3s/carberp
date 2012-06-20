@@ -417,11 +417,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\CabPacker.h"
+				RelativePath="..\..\Source\RuBnk\CabPacker.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\CabPacker.h"
+				RelativePath="..\..\Source\Common\CabPacker.h"
 				>
 			</File>
 			<File
@@ -778,6 +778,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\CyberPlatDLL.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\DbgRpt.cpp"
 				>
 			</File>
 			<File
