@@ -2179,6 +2179,7 @@ DWORD WINAPI __BotThreadProcedure(LPVOID Owner)
 {
 	// Функция потока
     ((TBotThread*)Owner)->Execute();
+	return 0;
 }
 //------------------------------------------------------------
 

