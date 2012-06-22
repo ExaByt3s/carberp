@@ -491,10 +491,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Common\DbgRpt.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Core\DbgTemplates.h"
 				>
 			</File>
@@ -848,10 +844,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\CyberPlatDLL.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\Common\DbgRpt.cpp"
 				>
 			</File>
 			<File
