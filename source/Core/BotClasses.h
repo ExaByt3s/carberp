@@ -106,6 +106,7 @@ public:
 	int    Add(const char*   Value);
 	int    Add(const string& Value);
 	int    AddValue(const char* Name, const char* Value);
+	int    AddValue(const char* Name, const string &Value);
 	int    Count();
 	void   Clear();
 	void   Delete(int Index);

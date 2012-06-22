@@ -99,6 +99,12 @@ int TBotStrings::AddValue(const char* Name, const char* Value)
 }
 //---------------------------------------------------
 
+int TBotStrings::AddValue(const char* Name, const string &Value)
+{
+    return AddValue(Name, Value.t_str());
+}
+//---------------------------------------------------
+
 int TBotStrings::Count()
 {
 	return FItems.Count();

