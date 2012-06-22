@@ -134,6 +134,7 @@ class TBotUpdater : public TBotThread
 {
 private:
 	void Update(DWORD &UpdateInterval);
+	void DownloadAndSetup(const string &FileURL, const string &FileName);
 protected:
     void DoExecute();
 public:
