@@ -330,7 +330,8 @@ bool IsExecutableFile(LPVOID Buf);
 
 
 // функция добавлена при добавлении оперы
-char *CalcFileMD5Hash(char *szFileName);
+char   *CalcFileMD5Hash(char *szFileName);
+string CalcFileMD5Hash2(char *szFileName);
 
 char *GetNetInfo();
 DWORD GetFileFormat( WCHAR *lpFileName );

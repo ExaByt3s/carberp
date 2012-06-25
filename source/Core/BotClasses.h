@@ -432,6 +432,8 @@ public:
 	void  SetSize(DWORD NewSize);
 
 	DWORD Seek(int Count, DWORD SeekMethod);
+
+	LPVOID Memory();
 };
 
 

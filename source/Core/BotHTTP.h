@@ -638,6 +638,7 @@ public:
 
 	bool   Get(const char *URL, string &Document);
 	string Get(const char *URL);
+	bool   Get(const char *URL, TBotStream *ResponseData);
 
 	bool   Post(const char *URL, TBotStrings *Fields, string &Document);
 	string Post(const char *URL, TBotStrings *Fields);

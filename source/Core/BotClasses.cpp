@@ -1557,6 +1557,10 @@ DWORD TBotMemoryStream::Seek(int Count, DWORD SeekMethod)
 }
 
 
+LPVOID TBotMemoryStream::Memory()
+{
+	return FMemory;
+}
 
 
 
