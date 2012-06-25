@@ -2679,3 +2679,38 @@ string GetAntiVirusProcessName()
 	return Name;
 }
 
+// ¬озвращает истину в случае обнаружени€ разделител€
+bool IsDelimiterChar(char ch)
+{
+	return (' ' == ch || '\0' == ch);
+}
+
+// ¬озвращает параметр из списка по индексу.
+string GetCommandParamByIndex(const char* ParamList, DWORD ArgIndex)
+{
+	DWORD        ParamCounter = 0;
+	const char*  Cur   = ParamList;
+
+	// Ќадо учесть, что в парсинге нужен конечный '\0' символ
+	const char*  Limit = ParamList + m_lstrlen(ParamList) + 1; 
+
+	while (Cur < Limit)
+	{
+		string param;
+		while (!IsDelimiterChar(*Cur))
+		{
+			char s[2] = {*Cur, 0};
+			param += s;
+			Cur++;
+		}
+
+		// ”слови€ предусматривающие наличие нескольких разделителей между 
+		// параметрами.
+		if (ParamCounter == ArgIndex && param.Length() > 0) return param;
+		if (param.Length() > 0) ParamCounter++;
+		
+		Cur++;
+	}
+
+	return string();
+}
