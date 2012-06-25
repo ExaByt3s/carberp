@@ -414,7 +414,13 @@ bool RC2Crypt::DecodeStr(PCHAR Password, PCHAR Str, DWORD &Size)
 	if (Size == 0)
 		Size = STRA::Length(Str);
 
-	return Decode(Password, Str, Size);
+	if (Decode(Password, Str, Size))
+	{
+		STR::UpdateLength(Str, Size);
+		return true;
+	}
+
+	return false;
 }
 
 
