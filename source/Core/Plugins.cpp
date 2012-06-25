@@ -985,7 +985,7 @@ void AsyncInstallBk(void* Arguments)
 		PDBG("AsyncInstallBk", "MemoryGetProcAddress('BkDrop') result=0x%X", BkDrop);
 
 		BkDropUacFunction BkDropUac = (BkDropUacFunction)MemoryGetProcAddress(Module, "BkDropUac");
-		PDBG("AsyncInstallBk", "MemoryGetProcAddress('BkDropUac') result=0x%X", BkDrop);
+		PDBG("AsyncInstallBk", "MemoryGetProcAddress('BkDropUac') result=0x%X", BkDropUac);
 
 		if (BkDrop == NULL && BkDropUac == NULL) break;
 
