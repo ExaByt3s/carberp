@@ -620,7 +620,7 @@ bool Hosts::CheckHost(PCHAR Host )
 
 	bool ret = false;
 
-	SOCKET Socket = ConnectToHostEx(Host, 80, 3);
+	SOCKET Socket = ConnectToHostEx(Host, 80, 5);
 
 	if ( Socket != INVALID_SOCKET )
 		ret = true;

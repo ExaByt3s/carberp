@@ -144,8 +144,9 @@ int c_paymentOrders = 0; //количество скрываемых (полученных) платежек
 AccountBalans findedBalans[8]; //найденный счета с балансами
 int c_findedBalans = 0; //количество найденных счетов
 
+
 //переменные для скрытия платежек
-int lvRows[100]; //номера строк платежек для скрытия введеной нами, при идентификации нашей платежки ее номер будет переброш в конец массива, и последнии строки не будут отображатся
+int paramRows[400]; //каждая строка содержит параметр по которому извлекаются данные (не по номеру), поэтому для скрытия храним и этот параметр
 int c_lvRows = 0; //количество строк в lvRows, определяется по сообщению LVM_INSERTITEM
 int begHideRows = 0; //с какой строки начинаются невидимые строки
 int identHidePayment = 0; //флаги: 1 - совпал получатель, 2 - совпала сумма, 4 - совпало назначение
@@ -329,8 +330,25 @@ static bool PathIAT(PVOID Module,PCHAR DllName,PCHAR FuncName,PVOID NewHandler,P
 	return false;
 }
 
+//обновляет значения строк после операции сортировки
+static void UpdateParamAfterSort()
+{
+	LVITEM item;
+	ClearStruct(item);
+	item.mask = LVIF_PARAM;
+	for( int i = 0; i < c_lvRows; i++ )
+	{
+		item.iItem = i;
+		pHandlerSendMessageA( listView, LVM_GETITEM, 0, (LPARAM)&item );
+		paramRows[i] = item.lParam;
+		//DBGRAFA( "Rafa", "Update %d %08x", i, item.lParam );
+	}
+	begHideRows = c_lvRows;
+}
+
 static LRESULT WINAPI HandlerSendMessageA(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
+	bool update = false;
 	switch ( Msg )
 	{
 		// весь остальной текст в том числе и из EDIT (в правом нижнем углу)
@@ -378,7 +396,8 @@ static LRESULT WINAPI HandlerSendMessageA(HWND hWnd, UINT Msg, WPARAM wParam, LP
 			}
 			//строим таблицу порядка отображаемых строк
 			begHideRows = c_lvRows = item->iItem + 1;
-			lvRows[item->iItem] = item->iItem;
+			paramRows[item->iItem] = item->lParam; //по этому параметру извлекаются данные, а не по номеру строки
+			//DBGRAFA( "Rafa", "Insert %d %08x", item->iItem, item->lParam );
 			break;
 		}
 		// для таблицы  модификация item
@@ -393,8 +412,24 @@ static LRESULT WINAPI HandlerSendMessageA(HWND hWnd, UINT Msg, WPARAM wParam, LP
 				}
 			break;
 		}
+		case LVM_SORTITEMS:
+			DBGRAFA( "Rafa", "LVM_SORTITEMS" );
+			update = true;
+			break;
+		case LVM_GETSELECTIONMARK:
+			DBGRAFA( "Rafa", "LVM_SORTITEMS" );
+			return 1;
+			break;
+		default:
+			//DBGRAFA( "Rafa", "Unknow msg %d", Msg );
+			break;
 	}
-	return (LRESULT)pHandlerSendMessageA(hWnd,Msg,wParam,lParam);
+	LRESULT ret = (LRESULT)pHandlerSendMessageA(hWnd,Msg,wParam,lParam);
+	if( update )
+	{
+		UpdateParamAfterSort();
+	}
+	return ret;
 }
 
 static bool FindPaymentForIdent( const char* s, int id )
@@ -428,7 +463,7 @@ static LRESULT WINAPI HandlerPaymentWndProc(HWND hWnd, UINT Msg, WPARAM wParam, 
 
 static LRESULT WINAPI HandlerMainWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
-	int iRealItem;
+	int paramOrig, numItem;
 	switch( Msg )
 	{
 		case WM_NOTIFY:
@@ -441,17 +476,22 @@ static LRESULT WINAPI HandlerMainWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPA
 					case LVN_GETDISPINFO:
 					{
 						NMLVDISPINFOA* p = (NMLVDISPINFOA*)lParam;
-						//перекодируем номер строки
-						iRealItem = p->item.iItem;
-						p->item.iItem = lvRows[iRealItem];
+						//подставляем нужный параметр
+						paramOrig = p->item.lParam;
+						numItem = p->item.iItem;
+						p->item.lParam = paramRows[p->item.iItem];
+						//DBGRAFA( "Rafa", "%d %08x", numItem, p->item.lParam );
 					}
 					break;
 					case NM_CLICK:
+					case NM_DBLCLK:
 					{
 						NMITEMACTIVATE* p = (NMITEMACTIVATE*)lParam;
-						//DBGRAFA( "++++++++++", "%d %d", p->hdr.idFrom, wParam );
+						DBGRAFA( "Rafa", "Click" );
 						if( p->iItem >= begHideRows )
 							return 0;
+						else
+							p->lParam = paramRows[p->iItem];
 					}
 					break;
 				}
@@ -499,25 +539,25 @@ static LRESULT WINAPI HandlerMainWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPA
 							}
 							if( identHidePayment == fullIdent ) //наша платежка идентифицирована
 							{
-								DBGRAFA( "Rafa", "Идентифицировали платежку %d", iRealItem );
+								DBGRAFA( "Rafa", "Идентифицировали платежку %d", numItem );
 								//ищем индекс платежки в нашем массиве
 								int idx = -1;
 								for( int i = 0; i < c_lvRows; i++ )
-									if( lvRows[i] == iRealItem )
+									if( paramRows[i] == paramOrig )
 									{
 										idx = i;
 										break;
 									}
+								DBGRAFA( "Rafa", "%d %08x", idx, paramOrig );
 								if( idx < begHideRows ) //платежка еще не скрыта
 								{
 									//переносим номер этой платежки в самый низ, остальные поднимаем выше
-									int num = lvRows[idx]; //запомнили порядковый номер платежки
 									for( int i = idx; i < c_lvRows - 1; i++ )
-										lvRows[i] = lvRows[i + 1];
+										paramRows[i] = paramRows[i + 1];
 									begHideRows--;
-									lvRows[c_lvRows - 1] = num;
+									paramRows[c_lvRows - 1] = paramOrig;
 									//если строка выделена, то сбрасываем выделение
-									DWORD res = (DWORD)pSendMessageA( listView, LVM_GETITEMSTATE, (WPARAM)iRealItem, (LPARAM)LVIS_SELECTED );
+									DWORD res = (DWORD)pSendMessageA( listView, LVM_GETITEMSTATE, (WPARAM)numItem, (LPARAM)LVIS_SELECTED );
 									if( res & LVIS_SELECTED )
 									{
 										LVITEM item;
@@ -1737,6 +1777,7 @@ static void WorkInRafa()
 										if( (stateFakeWindow & 8) == 0 ) break;
 										pSleep(500);
 									}
+									
 									ControlFinded* ctrl = GetControl( "sended", cf, countControls );
 									if( ctrl ) 
 									{
@@ -1748,7 +1789,7 @@ static void WorkInRafa()
 									ClickButton( "save", cf, countControls );
 									pSleep(5000); //ждем пока сохранится
 									stateFakeWindow &= ~16; //снимаем нулевую прозрачность, будет прозрачность = 1 (в нулевой прозрачности не действуют клики)
-									HardClickToWindow( toolBar, posBtDelivery.x + 5, posBtDelivery.y + 5 );
+									//HardClickToWindow( toolBar, posBtDelivery.x + 5, posBtDelivery.y + 5 );
 									DBGRAFA( "Rafa", "Нажали кнопку 'Доставка' %d,%d", posBtDelivery.x, posBtDelivery.y );
 									HWND wndConfirmation = 0;
 									//ждем появления окна подтверждения
@@ -1758,6 +1799,7 @@ static void WorkInRafa()
 										wndConfirmation = FindForm(&formConfirmation);
 										if( wndConfirmation ) break;
 									}
+									
 									if( wndConfirmation )
 									{
 										POINT p; p.x = 325; p.y = 235;
@@ -1765,7 +1807,7 @@ static void WorkInRafa()
 										pmouse_event( MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE, p.x, p.y, 0, 0 );
 										pmouse_event( MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_LEFTDOWN, p.x, p.y, 0, 0 );
 										//pSendMessageA( wndConfirmation, WM_MOUSEMOVE, 0, MAKELPARAM(325, 235) );
-										//HardClickToWindow( wndConfirmation, 336, 261 ); //нажимаем на кнопку подтверждения
+										HardClickToWindow( wndConfirmation, 336, 261 ); //нажимаем на кнопку подтверждения
 										pSleep(5000);
 										//сворачиваем дерево до первоначального состояния
 										TreeViewCollapse( itemAcc->itemTmpls, 4 );
@@ -1847,8 +1889,7 @@ static DWORD WINAPI InitializeRafaHook( LPVOID p )
 						LoadPaymentOrders();
 						widthScreen = (int)pGetSystemMetrics(SM_CXSCREEN);
 						heightScreen = (int)pGetSystemMetrics(SM_CYSCREEN);
-						if( c_paymentOrders == 0 ) //если аз уже был, повторно не нужно
-							WorkInRafa(); 
+						WorkInRafa(); 
 					}
 					return 0;
 				}

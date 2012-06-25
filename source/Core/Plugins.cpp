@@ -17,7 +17,7 @@
 
 // Создаём средства для вывода отладочной инфлормации
 
-#include "BotDebug.h"
+//#include "BotDebug.h"
 
 namespace PLGDEBUGTEMPLATES
 {
