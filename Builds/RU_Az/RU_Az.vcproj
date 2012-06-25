@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="9,00"
 	Name="RU_Az"
 	ProjectGUID="{1AE7F58C-6FBE-46F2-A80A-737BAF8D81D2}"
 	RootNamespace="WhiteJOE_Bank"
@@ -395,6 +395,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\BotAutoUpdate.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotClasses.h"
 				>
 			</File>
@@ -752,6 +756,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\RuBnk\bootkit.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\BotAutoUpdate.cpp"
 				>
 			</File>
 			<File

