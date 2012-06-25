@@ -667,7 +667,6 @@ STRCONSTRUCTOR()::TString(const TChar* Src)
 	Data = STRBUF::CreateFromStr<TChar>(Src, 0, 0);
 }
 
-
 STRCONSTRUCTOR()::TString(const TChar* src, DWORD copylen)
 {
 	Data = STRBUF::CreateFromStr<TChar>(src, copylen, 0);
@@ -944,8 +943,6 @@ STRFUNC(TChar)::operator[](const DWORD Index) const
 	else
     	return 0;
 }
-
-
 
 STRFUNC(TChar&)::operator[](const DWORD Index)
 {

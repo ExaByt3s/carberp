@@ -90,7 +90,7 @@ const PCHAR DefaultAccept = "*/*";
 const PCHAR DefaultAcceptLanguage = "ru";
 
 
-const PCHAR HTTPConnectionClose     = "Close";
+const PCHAR HTTPConnectionClose     = "close";
 const PCHAR HTTPConnectionKeepAlive = "Keep-Alive";
 
 // Типы HTTP запросов
@@ -602,10 +602,12 @@ private:
 	bool ExecuteToStr(THTTPMethod Method, const char *URL, TBotStream *PostData, string &Document);
 	bool ReceiveData(TBotStream *ResponseStream);
 	void WriteReceivedData(TBotStream* Stream, PCHAR Buf, int BufLen);
+	void WriteStringsToStream(TBotStream* Stream, TBotStrings* Strings);
 
     friend class THTTPChunks;
 protected:
-
+	void virtual DoBeforePostData(TBotStream* PostData);
+    void virtual DoDownloadCompleted(TBotStream* ResponseData);
 public:
 	THTTPRequest  Request;
 	THTTPResponse Response;
@@ -618,7 +620,7 @@ public:
 	// Методы класса
 	THTTP();
 	THTTP(TBotSocket* Socket);
-	~THTTP();
+	virtual ~THTTP();
 
     int DocumentSize();
 

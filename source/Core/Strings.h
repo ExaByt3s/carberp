@@ -533,6 +533,9 @@ typedef TString<wchar_t> wstring;
 // Доп функции
 string LongToStr(DWORD num);
 
+// Функция преобразует многобайтную строку в однобайтную
+string UnicodeToAnsi(const wchar_t *Str, DWORD Len = 0);
+
 
 //****************************************************
 //  Макрос объявлен для устранения неоднозначности

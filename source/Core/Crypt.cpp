@@ -406,13 +406,13 @@ bool RC2Crypt::Decode(PCHAR Password, PCHAR Buf, DWORD &BufSize)
 }
 
 
-bool RC2Crypt::DecodeStr(PCHAR Password, PCHAR Str, DWORD Size)
+bool RC2Crypt::DecodeStr(PCHAR Password, PCHAR Str, DWORD &Size)
 {
 	// Функция декодирует строку и обновляет её размер
-	if (STR::IsEmpty(Str) || STR::IsEmpty(Password))
+	if (STRA::IsEmpty(Str) || STRA::IsEmpty(Password))
 		return false;
 	if (Size == 0)
-		Size = STR::Length(Str);
+		Size = STRA::Length(Str);
 
 	if (Decode(Password, Str, Size))
 	{

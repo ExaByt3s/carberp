@@ -14,7 +14,7 @@
 //********************************************
 // Версия бота
 //********************************************
-const static char BOT_VERSION[] = "1.0.2";
+const static char BOT_VERSION[] = "1.0.3";
 
 
 //********************************************
@@ -24,6 +24,15 @@ const static char BOT_VERSION[] = "1.0.2";
 #define BOT_EVENT_HTMLINJECTS_LOADED   102    /* Загружен список HTML инжектов */
 #define BOT_EVENT_HTMLINJECT_ACTIVATED 103    /* HTML инжект использован в документах */
 #define BOT_EVENT_HTMLINJECT_EXECUTE   104    /* Выполнение HTML инжекта */
+
+
+//********************************************
+//  Имена полей HTML форм
+//********************************************
+
+const static char* HTTP_FIELD_UID     = "uid";
+const static char* HTTP_FIELD_ANTIVIR = "av";
+const static char* HTTP_FIELD_MD5     = "md5";
 
 //-----------------------------------------------------------------------------
 #endif

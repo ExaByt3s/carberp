@@ -215,8 +215,8 @@ void HEAP::Free(LPVOID Buf)
 	if (Buf == NULL) return;
 
 	HANDLE Heap = pGetProcessHeap();
-	if (Heap != NULL)
-		BOOL V = (BOOL)pHeapFree(Heap, 0, Buf);
+	if (Heap)
+		pHeapFree(Heap, 0, Buf);
 }
 
 void HEAP::Free2(LPVOID &Buf)

