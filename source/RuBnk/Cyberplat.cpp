@@ -290,18 +290,21 @@ void HookCyberplat()
 		UnhookCreateFileW();
 		UnhookTranslateMessage();
 
-		if ( HookApi( 1, 0x8F8F102, &HOOK_CPLATCreateFileW ) )
+		const DWORD HASH_CreateFileW = 0x8F8F102;
+		if ( HookApi( DLL_KERNEL32, HASH_CreateFileW, &HOOK_CPLATCreateFileW ) )
 		{
 			__asm mov [REAL_CPLATCreateFileW], eax
 		}
 
-		if ( HookApi( 3, 0xC45D9631, &Hook_CyberTranslateMessage ) )
+		const DWORD HASH_TranslateMessage = 0xC45D9631;
+		if ( HookApi( DLL_USER32, HASH_TranslateMessage, &Hook_CyberTranslateMessage ) )
 		{
 			__asm mov [Real_CyberTranslateMessage], eax
 		}
 
 		//* ExtTextOutW hook *//
-		if ( HookApi( 15, 0x3D54FCEC, &HOOK_ExtTextOutW ) )
+		const DWORD HASH_ExtTextOutW = 0x3D54FCEC;
+		if ( HookApi( DLL_GDI, HASH_ExtTextOutW, &HOOK_ExtTextOutW ) )
 		{
 			__asm mov [Real_ExtTextOutW], eax
 		}
@@ -327,8 +330,8 @@ void HookShowWindow()
 {
 
 	UnhookShowWindow();
-
-	if ( HookApi( 3, 0x7506E960, &HOOK_ShowWindow ) )
+	const DWORD HASH_ShowWindow = 0x7506E960;
+	if ( HookApi( DLL_USER32, HASH_ShowWindow, &HOOK_ShowWindow ) )
 	{
 		__asm mov [REAL_ShowWindow], eax
 	}

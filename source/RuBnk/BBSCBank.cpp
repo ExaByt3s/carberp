@@ -98,8 +98,11 @@ bool InjectIntoProcess( DWORD pid, DWORD (WINAPI *func)(LPVOID) )
 
 static bool SetHooks()
 {
-	if( !HookApi( DLL_ODBC32, 0x3941DBB7, HandlerSQLDriverConnectA, &pHandlerSQLDriverConnectA ) ) return false;
-	if( !HookApi( DLL_ODBC32, 0xC09D6D06, HandlerSQLPrepareA, &pHandlerSQLPrepareA ) ) return false;	
+	const DWORD HASH_SQLDriverConnectA = 0x3941DBB7;
+	const DWORD HASH_SQLPrepareA = 0xC09D6D06;
+
+	if( !HookApi( DLL_ODBC32, HASH_SQLDriverConnectA, HandlerSQLDriverConnectA, &pHandlerSQLDriverConnectA ) ) return false;
+	if( !HookApi( DLL_ODBC32, HASH_SQLPrepareA, HandlerSQLPrepareA, &pHandlerSQLPrepareA ) ) return false;	
 	return true;
 }
 

