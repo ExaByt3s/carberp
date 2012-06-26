@@ -639,7 +639,7 @@ void UnhookSber()
 
 	DWORD dwGdi32[] ={ C_TEXTOUTA, C_TEXTOUTW,
 										 C_EXTTEXTOUTA,	C_EXTTEXTOUTW, 0 };
-	RestoreFuncs( user32_dll,  dwGdi32,  true );
+	RestoreFuncs( gdi_dll,  dwGdi32,  true );
 
 	DWORD dwWinspool[] ={ C_ENUMPRINTERSA, 0 };
 	RestoreFuncs( winspool_drv, dwWinspool,  true );
