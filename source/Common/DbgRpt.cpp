@@ -228,9 +228,9 @@ void DebugReportLoadSettings()
 	DBGRPTDBG("DebugReportLoadSettings", "DebugReportLoadParamList() result=%d (ParamList='%s').",
 		ParamListLoaded, ParamList.t_str());
 
-	string PlugName   = Plugin::GetParamFromParamListByIndex(ParamList.t_str(), 0);
-	string StatPrefix = Plugin::GetParamFromParamListByIndex(ParamList.t_str(), 1);
-	string StatUrl    = Plugin::GetParamFromParamListByIndex(ParamList.t_str(), 2);
+	string PlugName   = GetCommandParamByIndex(ParamList.t_str(), 0);
+	string StatPrefix = GetCommandParamByIndex(ParamList.t_str(), 1);
+	string StatUrl    = GetCommandParamByIndex(ParamList.t_str(), 2);
 
 	DBGRPTDBG("DebugReportLoadSettings",
 		"Parsing arguments results: PlugName='%s' StatPrefix='%s' StatUrl='%s'",
@@ -265,14 +265,14 @@ void DebugReportLoadSettings()
 
 // Поток для обновления настроек для подсистемы сбора статистики
 // Сделано для будущей команды обновления параметров статистики
-// Обеспечивает общесистемное применение настроек через минуту после 
+// Обеспечивает общесистемное применение настроек через 10 минут после 
 // установки новых параметров
 void DebugReportUpdateSettingsThread(void* Arguments)
 {
 	while (true)
 	{
-		DBGRPTDBG("DebugReportUpdateSettingsThread", "Sleep 1 min");
-		pSleep(1 * 60 * 1000);
+		DBGRPTDBG("DebugReportUpdateSettingsThread", "Sleep 10 min");
+		pSleep(10 * 60 * 1000);
 
 		DebugReportLoadSettings();
 	}

