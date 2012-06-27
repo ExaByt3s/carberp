@@ -1,3 +1,2 @@
 EXPORTS 
-  Export_InstallForIe;
-  ;Export_RunTests;
+  FakeInstall;
