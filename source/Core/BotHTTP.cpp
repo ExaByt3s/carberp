@@ -2675,7 +2675,7 @@ bool THTTP::ReceiveData(TBotStream *ResponseStream)
 	{
 		Readed = FSocket->Read(Buf.Buf(), BufSize);
 
-		if (Readed == SOCKET_ERROR) return false;
+		if (Readed == SOCKET_ERROR) break;
 
 		if (Readed > 0)
 		{
@@ -2835,6 +2835,12 @@ string THTTP::Get(const char *aURL)
 	string Document;
 	Get(aURL, Document);
 	return Document;
+}
+//----------------------------------------------------------------------------
+
+bool THTTP::Get(const char *URL, TBotStream *ResponseData)
+{
+	return Execute(hmGET, URL, NULL, ResponseData);
 }
 //----------------------------------------------------------------------------
 

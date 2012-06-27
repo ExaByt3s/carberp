@@ -127,21 +127,7 @@ extern char BOT_UID[128];
 
 
 
-//************************************************************
-//	TBotUpdater - Класс автоматического обновления бота
-//************************************************************
-class TBotUpdater : public TBotThread
-{
-private:
-	void Update(DWORD &UpdateInterval);
-	void DownloadAndSetup(const string &FileURL, const string &FileName);
-protected:
-    void DoExecute();
-public:
-	DWORD Interval;
-    TBotUpdater();
 
-};
 
 //---------------------------------------------------------------------------
 #endif

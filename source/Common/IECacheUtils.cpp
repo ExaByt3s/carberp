@@ -146,11 +146,11 @@ namespace IECUtils {
 		#define Hash_CreateFileA 0x8F8F114
 		#define Hash_CreateFileW 0x8F8F102
 
-		if (HookApi(1, Hash_CreateFileA, &Hook_CreateFileA)) {
+		if (HookApi(DLL_KERNEL32, Hash_CreateFileA, &Hook_CreateFileA)) {
 			__asm mov[Real_CreateFileA], eax
 		}
 
-		 if (HookApi(1, Hash_CreateFileW, &Hook_CreateFileW) )
+		 if (HookApi(DLL_KERNEL32, Hash_CreateFileW, &Hook_CreateFileW) )
 		 {
 		 __asm mov [Real_CreateFileW], eax
 		 }

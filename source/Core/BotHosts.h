@@ -198,27 +198,5 @@ public:
 
 
 
-//**************************************************************
-//  THostsUpdater - класс автоматического обновления хостов
-//**************************************************************
-class THostsUpdater : public TBotThread
-{
-private:
-	void Update(DWORD &UpdateInterval);
-	void SaveHosts(const string &Buf);
-protected:
-    void DoExecute();
-public:
-	DWORD Interval;
-
-	THostsUpdater();
-	~THostsUpdater();
-};
-
-// Функция запускает автоматическое обновление хостов
-void StartHostsUpdater();
-
-
-
 //---------------------------------------------------------------------------
 #endif

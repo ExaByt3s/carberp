@@ -1,3 +1,11 @@
+
+#ifndef MD5H
+#define MD5H
+//----------------------------------------------------------------------------
+
+
+#include "Strings.h"
+
 typedef unsigned char *POINTER;
 
 
@@ -17,3 +25,12 @@ void MD5Init (MD5_CTX*);
 void MD5Update (MD5_CTX*, unsigned char*, unsigned int);
 void MD5Final (unsigned char [16], MD5_CTX*);
 
+
+
+// Дополнительные функции
+char*  CalcMd5SummForBuffer(const void* data, DWORD size, char* md5buffer, DWORD md5buffer_size);
+string CalcMd5SummForBuffer(const void* data, DWORD size);
+
+
+//----------------------------------------------------------------------------
+#endif

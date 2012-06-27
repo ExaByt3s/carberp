@@ -267,4 +267,40 @@ void Decode (unsigned long int *output, unsigned char *input, unsigned int len)
 			     (((unsigned long int)input[j+2]) << 16) |
 			     (((unsigned long int)input[j+3]) << 24);
 }
+//----------------------------------------------------------------------------
 
+
+
+char* CalcMd5SummForBuffer(const void* data, DWORD size, char* md5buffer, DWORD md5buffer_size)
+{
+	if (md5buffer_size < 33) return NULL;
+
+	BYTE    summ[16];
+	MD5_CTX ctx;
+
+	MD5Init(&ctx);
+	MD5Update( &ctx, (unsigned char*)data, size );
+
+	MD5Final(summ, &ctx);
+
+	m_memset(md5buffer, 0, md5buffer_size);
+
+	char hexval[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+	for (int j = 0; j < ARRAYSIZE(summ); j++)
+	{
+		md5buffer[j*2] = hexval[((summ[j] >> 4) & 0x0F)];
+		md5buffer[(j*2) + 1] = hexval[(summ[j]) & 0x0F];
+	}
+	return md5buffer;
+}
+
+
+
+string CalcMd5SummForBuffer(const void* data, DWORD size)
+{
+	string MD5(33);
+
+	CalcMd5SummForBuffer(data, size, MD5.t_str(), 33);
+	MD5.CalcLength();
+	return MD5;
+}
