@@ -338,6 +338,12 @@ string BOT::BotExeMD5()
 
 	string Result = CalcFileMD5Hash2(FileName);
 
+	if (Result.IsEmpty())
+	{
+		Result.SetLength(32);
+		m_memset(Result.t_str(), '0', 32);
+    }
+
 	STR::Free(FileName);
 
 	return Result;

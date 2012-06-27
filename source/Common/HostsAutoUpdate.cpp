@@ -26,7 +26,7 @@ THostsUpdater::THostsUpdater()
 	: TBotThread(false)
 {
 	Interval = 5 * 60 * 1000;   // Интервал в отладке
-//	Interval = 60 * 60 * 1000;  // интервал 1 час
+//	Interval = 30 * 60 * 1000;  // интервал 1 час
 
 	Start();
 }
@@ -116,18 +116,27 @@ void THostsUpdater::SaveHosts(const string &Buf)
 
 	HOSTSDBG("HostsUpdater", "Загруженные хосты:");
 
+    bool Added = false;
+
 	for (int i = 0; i < H.Count(); i++)
 	{
 		string Host = H.GetItem(i);
-		HOSTSDBG("HostsUpdater", "     %s", Host.t_str());
-		Hosts::AddHost(List, Host);
+		if (!Host.IsEmpty())
+		{
+            Added = true;
+			HOSTSDBG("HostsUpdater", "     %s", Host.t_str());
+			Hosts::AddHost(List, Host);
+        }
     }
 
-	PCHAR FileName = Hosts::GetFileName();
+	if (Added)
+	{
+		PCHAR FileName = Hosts::GetFileName();
 
-	Hosts::SaveListToFile(List, FileName, true);
+		Hosts::SaveListToFile(List, FileName, true);
 
-    STR::Free(FileName);
+		STR::Free(FileName);
+    }
 
 	Hosts::FreeList(List);
 }

