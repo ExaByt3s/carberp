@@ -502,7 +502,7 @@ STRBUFAPI(void) STRBUF::Append(TChar* &Dst, const TChar* Src, DWORD SrcLen)
         	Tmp = Dst;
 			Dst = CreateFromStr<TChar>(Tmp, DstLen, TotalLen);
         }
-		m_memcpy(Dst + DstLen, Src, SrcLen);
+		m_memcpy(Dst + DstLen, Src, SrcLen * sizeof(TChar));
 		GetRec(Dst).Length = TotalLen;
 
 		if (Tmp)
