@@ -45,8 +45,9 @@ enum TDllId
 	DLL_IPHLPAPI   = 20,  /* Iphlpapi.dll */
 	DLL_WINSPOOL   = 21,  /* winspool_drv* */
 	DLL_COMANDLG32 = 22,  /* commdlg32_dll */
-	DLL_ODBC32	   = 23,   /* odbc32_dll */
-	DLL_VERSION    = 24   /* version.dll */
+	DLL_ODBC32	   = 23,  /* odbc32_dll */
+	DLL_VERSION    = 24,  /* version.dll */
+	DLL_OLE32      = 25   /* ole32.dll */
 };
 
 
@@ -755,6 +756,9 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 #define pGetFileVersionInfoSizeA	pushargEx< DLL_VERSION, 0x8A94F707>
 #define pGetFileVersionInfoA		pushargEx< DLL_VERSION, 0x7AA45C7A>
 #define pVerQueryValueA				pushargEx< DLL_VERSION, 0x4E26C00F>
+
+// ole32.dll
+#define pCoCreateGuid				pushargEx< DLL_OLE32, 0xAA3E88A3>
 
 
 
