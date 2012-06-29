@@ -73,7 +73,7 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	// Регистрируем глобальный менеджер задач
 	InitializeTaskManager(NULL, true);
 
-	// Инициализируем отсылку статистики
+	// Инициализируем систему отправки статистической информации
 	DebugReportInit();
 
 	// 402_pl запуск цикла получения команд (он получается в другом процессе)
@@ -139,7 +139,7 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 	// Отключаем отображение ошибок при крахе процесса
 	DisableShowFatalErrorDialog();
 
-	// Инициализируем отсылку статистики
+	// Инициализируем систему отправки статистической информации
 	DebugReportInit();
 
 	HookZwResumeThread();
