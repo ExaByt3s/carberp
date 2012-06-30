@@ -49,6 +49,9 @@ TBotApplication::TBotApplication()
 	// Определяем PID процесса
 	FPID = GetUniquePID();
 
+	// Получаем идентификатор бота
+	FUID = GenerateBotID2();
+
 	// Определяем имя процесса в котором работает бот
 	pGetModuleFileNameA(NULL, FApplicationName.t_str(), MAX_PATH);
 	FApplicationName.CalcLength();
@@ -66,6 +69,12 @@ DWORD TBotApplication::PID()
 {
 	// Функция возвращает идентификатор процесса в котором работает бот
 	return FPID;
+}
+//-------------------------------------------------------------
+
+string TBotApplication::UID()
+{
+	return FUID;
 }
 //-------------------------------------------------------------
 
@@ -130,7 +139,6 @@ PCHAR TBotApplication::GetWorkFolder()
 }
 //----------------------------------------------------------------------------
 
-
 string TBotApplication::MakeWorkPath(bool SystemPath)
 {
 	// Функция генерирует рабочий путь
@@ -156,6 +164,21 @@ string TBotApplication::MakeWorkPath(bool SystemPath)
 
 	return Result;
 }
+//----------------------------------------------------------------------------
+
+void TBotApplication::SaveSettings()
+{
+	// Функция сохраняет базовые настройки
+}
+//----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
 
 
 PCHAR BOTDoGetWorkPath(bool InSysPath, PCHAR SubDir, PCHAR FileName)

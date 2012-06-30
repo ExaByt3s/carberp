@@ -54,6 +54,7 @@ class TBotApplication : public TBotObject
 private:
 	bool   FTerminated;
 	DWORD  FPID;
+    string FUID;
 	string FApplicationName;
 	string FWorkPath;
 	string FWorkSystemPath;
@@ -64,13 +65,15 @@ public:
 	TBotApplication();
 	~TBotApplication();
 
-	DWORD PID();
-	bool  Terminated();
+	DWORD  PID();
+	string UID();
 
 	PCHAR  GetWorkFolder();
 	string ApplicationName(); // Имя приложения в котором работает бот
 	string WorkPath();        // Путь к рабочему каталогу бота, привязан  к текущему пользователю
 	string WorkSystemPath();  // Путь к рабочему каталогу на системном диске, не привязан к пользователю
+	void   SaveSettings();    // Функция сохраняет базовые настройки
+	bool   Terminated();
 };
 
 
