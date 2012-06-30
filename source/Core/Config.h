@@ -118,6 +118,22 @@ PCHAR GetBotHosts();
 string GetActiveHost(bool CheckBankingMode = true);
 
 
+//------------------------------------------------------------------
+//  SaveHostsToFile - Функция записывает носты в файл
+//------------------------------------------------------------------
+void SaveHostsToFile(const char* FileName);
+
+//------------------------------------------------------------------
+//  SavePrefixToFile - Функция записывает префикс в файл
+//------------------------------------------------------------------
+void SavePrefixToFile(const char* FileName);
+
+//------------------------------------------------------------------
+//  LoadPrefixFromFile - Функция загружает префикс из файла
+//------------------------------------------------------------------
+string LoadPrefixFromFile(const char* FileName);
+
+
 //-------------------------------------------------------------------
 //  IsMainHost - функция возвращает истину если
 //  указанный хост принадлежит массиву основных хостов бота
@@ -173,7 +189,7 @@ PCHAR GenerateRandomScript(DWORD Min1, DWORD Max1, DWORD Min2, DWORD Max2, PCHAR
 
 int GetDelay();
 
-char *GetPrefix(bool CheckBankingMode = false);
+string GetPrefix(bool CheckBankingMode = false);
 
 
 
