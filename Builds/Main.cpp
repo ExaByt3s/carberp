@@ -18,7 +18,7 @@
 #include "Task.h"
 #include "md5.h"
 #include "BotDef.h"
-//#include "DbgRpt.h"
+#include "DbgRpt.h"
 #include "Modules.h"
 #include "BotDebug.h"
 

