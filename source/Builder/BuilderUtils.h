@@ -84,7 +84,7 @@ private:
 	bool FResultFileNameChanged;
 	TCollection* FParams;
 	TCollection* FModules;
-	TList* FActiveModules;
+	TList*       FActiveModules;
 	TMemoryStream* FFile;   // Загруженный файл
 	TBotParam* FPrefix;     // Префикс бота
 	TBotParam* FPassword;   // Пароль бота
@@ -98,6 +98,8 @@ private:
 	void __fastcall ActivateModules();
 	void __fastcall DeactivateModules();
 	int  __fastcall GetActiveModulesCount();
+	int  __fastcall GetCount();
+	TBotParam*   __fastcall GetParam(int Index);
 	TBotModule*  __fastcall GetActiveModules(int Index);
 protected:
 	void __fastcall virtual ParamValueChanged(TBotParam* Sender);
@@ -134,7 +136,8 @@ public:
 	__property TBotParam* Password = {read = FPassword};
 	__property TBotParam* Delay    = {read = FDelay};
 	__property TBotParam* Hosts    = {read = FHosts};
-
+	__property int        Count = {read = GetCount};
+	__property TBotParam* Params[int Index] = {read = GetParam};
 	// События
     __property TBuilderMessage OnMessage  = {read=FOnMessage, write=FOnMessage};
 };
@@ -149,6 +152,7 @@ private:
 	TBotBuilder* FOwner;
 	TBotModule*  FModule;
 	AnsiString FName;
+	bool  FEnabled;
 	bool  FNotNull;   // Обязательный параметр
 	bool  FEncrypted; // Параметр должен быть шифрованным
 	DWORD FSize;      // Размер буфера параметра
@@ -190,7 +194,8 @@ public:
 	void __fastcall SaveToStrings(TStrings *Strings);
 	void __fastcall LoadFromStrings(TStrings *Strings);
 
-    __property bool Active = {read=GetActive};
+	__property bool Enabled = {read = FEnabled, write = FEnabled};
+	__property bool Active  = {read=GetActive};
 	__property TBotModule*  Module = {read=FModule};
 	__property DWORD Size = {read=FSize};
 	__property bool Encrypted = {read = FEncrypted};
