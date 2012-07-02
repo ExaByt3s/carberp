@@ -55,8 +55,9 @@ TBotApplication::TBotApplication()
 	FPID = GetUniquePID();
 
 	// Определяем имя процесса в котором работает бот
-	pGetModuleFileNameA(NULL, FApplicationName.t_str(), MAX_PATH);
-	FApplicationName.CalcLength();
+	TMemory Buf(MAX_PATH);
+	pGetModuleFileNameA(NULL, Buf.Buf(), MAX_PATH);
+	FApplicationName = Buf.AsStr();
 
 	// Генерируем рабочие пути
 	FWorkPath       = MakeWorkPath(false);

