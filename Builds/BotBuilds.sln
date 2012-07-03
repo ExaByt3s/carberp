@@ -23,6 +23,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Loader_dll", "Loader_dll\Lo
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RU_Az", "RU_Az\RU_Az.vcproj", "{1AE7F58C-6FBE-46F2-A80A-737BAF8D81D2}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FakeDllInstaller", "FakeDllInstaller\FakeDllInstaller.vcproj", "{AB3EE774-F225-48E4-ACB0-54A509C21973}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -118,6 +120,14 @@ Global
 		{1AE7F58C-6FBE-46F2-A80A-737BAF8D81D2}.Release DEBUGCONFIG|Win32.Build.0 = Release DEBUGCONFIG|Win32
 		{1AE7F58C-6FBE-46F2-A80A-737BAF8D81D2}.Release|Win32.ActiveCfg = Release|Win32
 		{1AE7F58C-6FBE-46F2-A80A-737BAF8D81D2}.Release|Win32.Build.0 = Release|Win32
+		{AB3EE774-F225-48E4-ACB0-54A509C21973}.Debug|Win32.ActiveCfg = Debug|Win32
+		{AB3EE774-F225-48E4-ACB0-54A509C21973}.Debug|Win32.Build.0 = Debug|Win32
+		{AB3EE774-F225-48E4-ACB0-54A509C21973}.Release DEBUGBOT|Win32.ActiveCfg = Release DEBUGCONFIG|Win32
+		{AB3EE774-F225-48E4-ACB0-54A509C21973}.Release DEBUGBOT|Win32.Build.0 = Release DEBUGCONFIG|Win32
+		{AB3EE774-F225-48E4-ACB0-54A509C21973}.Release DEBUGCONFIG|Win32.ActiveCfg = Release DEBUGCONFIG|Win32
+		{AB3EE774-F225-48E4-ACB0-54A509C21973}.Release DEBUGCONFIG|Win32.Build.0 = Release DEBUGCONFIG|Win32
+		{AB3EE774-F225-48E4-ACB0-54A509C21973}.Release|Win32.ActiveCfg = Release|Win32
+		{AB3EE774-F225-48E4-ACB0-54A509C21973}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
