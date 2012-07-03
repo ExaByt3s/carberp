@@ -6,7 +6,7 @@
 #include "HTTPConsts.h"
 #include "BotDef.h"
 #include "BotHosts.h"
-#include "DbgRpt.h"
+//#include "DbgRpt.h"
 
 //---------------------------------------------------------------------------
 
@@ -284,7 +284,7 @@ void BOT::Initialize()
 	//InitialializeGlogalExceptionLogger(TRUE);
 
 	// Инициализируем подсистему статистической отчетности.
-	DebugReportInit();
+//	DebugReportInit();
 }
 
 //----------------------------------------------------------------------------

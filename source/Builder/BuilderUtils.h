@@ -112,8 +112,8 @@ public:
 
     TBotModule*     __fastcall AddModule(const char *Name);
 	void            __fastcall LoadSourceFile(const UnicodeString &FileName);
-	TBotParamStatus __fastcall CheckParams(TStrings* Errors);
-	bool            __fastcall Build();
+	TBotParamStatus __fastcall CheckParams(TStrings* Errors, bool FullBuild);
+	bool            __fastcall Build(bool FullBuild);
 	TBotParam*      __fastcall ParamByName(const AnsiString &Name);
     void            __fastcall ClearParams();
 
@@ -176,6 +176,7 @@ protected:
 	UnicodeString __fastcall GetDisplayName(void);
 	void __fastcall virtual DoChanged();
 	bool __fastcall virtual Write(PCHAR Buf, DWORD BufSize);
+    bool __fastcall virtual WriteEmptyData(PCHAR Buf, DWORD BufSize);
 	bool __fastcall DoWrite(PCHAR Buf, DWORD BufSize, PCHAR AData, DWORD ADataSize);
 	__property PCHAR Data = {read = FData};
 public:
@@ -220,13 +221,12 @@ class TBotPassword : public TBotParam
 private:
 	DWORD FRealSize;
 protected:
-    bool __fastcall Write(PCHAR Buf, DWORD BufSize);
+	bool __fastcall Write(PCHAR Buf, DWORD BufSize);
+	bool __fastcall WriteEmptyData(PCHAR Buf, DWORD BufSize);
 public:
 	__fastcall TBotPassword(TBotBuilder* AOwner, bool NotNull, bool Encrypted, const char* Name, DWORD Size, const char* Title);
 
 };
-
-
 
 
 //*************************************************************
