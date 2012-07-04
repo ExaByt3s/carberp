@@ -242,7 +242,7 @@ void BOT::Initialize()
 	InitializeAPI();
 
 	//Создаём глобальный объект бота
-    Bot = new TBotApplication();
+    //Bot = new TBotApplication();
 
 	// Создаём имя рабочей папки
 	GetWorkFolderHash();

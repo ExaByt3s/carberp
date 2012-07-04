@@ -43,5 +43,10 @@ bool JavaPatchInstalled();
 //                     запуска патчей
 //-------------------------------------------------------------
 DWORD WINAPI JavaPatcherSignal(LPVOID lpData);
+//устанвливает хуки для ява патчера, только в случае если основной механизм не сработал
+bool SetJavaPatcherHook();
+//возвращает рабочую папку ява патчера, path должен иметь достаточное колчество памяти, если указан fileName, то имя
+//этого файла добавляется к рабочей папке
+char* GetJavaPatchWorkFolder( char* path, const char* fileName = 0 );
 
 #endif		//java_patcher
