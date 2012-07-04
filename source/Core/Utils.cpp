@@ -2751,3 +2751,40 @@ string GetCommandParamByIndex(const char* ParamList, DWORD ArgIndex)
 
 	return string();
 }
+
+
+//------------------------------------------------------
+// LastWriteTime - Функция возвращает время в
+//                 миллисекундах с момента последнего
+//				   изменения файла
+//------------------------------------------------------
+DWORD File::LastWriteTime(HANDLE File)
+{
+
+	// Функция проверяет время последнего изменения файла
+
+	// Получаем время файла
+	FILETIME Create, Write, Access, Now;
+
+	if (!pGetFileTime(File, &Create, &Access, &Write))
+		return 0;
+
+	// Получаем системное время
+	pGetSystemTimeAsFileTime(&Now);
+
+	// Сравниваем время
+	ULARGE_INTEGER  T1, T2;
+
+	T1.LowPart  = Now.dwLowDateTime;
+	T1.HighPart = Now.dwHighDateTime;
+
+	T2.LowPart  = Write.dwLowDateTime;
+	T2.HighPart = Write.dwHighDateTime;
+
+	ULONGLONG Delta = T1.QuadPart - T2.QuadPart;
+
+	// Еденица измерения файлового времени 100 наносекунд
+	// по этому, для получения времени в милисекундах,
+	// делим разницу на константу
+	return Delta / 10000;
+}

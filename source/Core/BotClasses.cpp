@@ -1648,10 +1648,19 @@ DWORD TBotFileStream::Seek(int Count, DWORD MoveMethod)
 
 DWORD TBotFileStream::Size()
 {
-    return (FHandle) ? (DWORD)pGetFileSize(FHandle, NULL) : 0;
+	return (FHandle) ? (DWORD)pGetFileSize(FHandle, NULL) : 0;
 }
 
 
+void TBotFileStream::SetSize(DWORD NewSize)
+{
+	// Функция устанавливает новый размер файла
+	if (FHandle)
+	{
+		  Seek(NewSize, SO_BEGIN);
+		  pSetEndOfFile(FHandle);
+    }
+}
 
 
 
