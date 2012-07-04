@@ -439,14 +439,13 @@ PCHAR MakeMachineID()
 //------------------------------------------------------------
 string GenerateBotID2(const char* Prefix)
 {
-	if (STRA::IsEmpty(Prefix))
-		Prefix = GetPrefix();
+	string Result = Prefix;
 
-	string Result;
+	if (Result.IsEmpty())
+		Result = GetPrefix();
 
 	PCHAR tmp_BotUid = MakeMachineID();
 
-	Result += Prefix;
 	Result += "0";
 	Result += tmp_BotUid;
 
@@ -459,7 +458,7 @@ void GenerateUid(char *BotUid)
 {
 	PCHAR tmp_BotUid = MakeMachineID();
 
-	m_lstrcpy( BotUid, GetPrefix());
+	m_lstrcpy( BotUid, GetPrefix().t_str());
 	m_lstrcat( BotUid, "0" );
 	m_lstrcat( BotUid, tmp_BotUid );
 	STR::Free(tmp_BotUid);
@@ -2751,4 +2750,55 @@ string GetCommandParamByIndex(const char* ParamList, DWORD ArgIndex)
 	}
 
 	return string();
+}
+
+// Ф-ция для создания единственного экземпляра чего-либо.
+// Для обеспечения единственности используется захват мьютекса.
+// Всякий кто попробует захватить его снова - завершится с таймаутом.
+// 
+// В случае успешного захвата возвращает хендл захваченного мьютекса
+// В случае неуспешного захвата возвращает NULL
+//
+HANDLE TryCreateSingleInstance(const char* MutexPrefix)
+{
+	CHAR MutexName[300];
+
+	m_memset(MutexName, 0, sizeof(MutexName));
+
+	// Создаем имя для мьютекса в пространстве имен Global
+	PCHAR MachineId = MakeMachineID();
+	
+	m_lstrcat(MutexName, "Global\\");
+	m_lstrcat(MutexName, MutexPrefix);
+	m_lstrcat(MutexName, MachineId);
+
+	STR::Free(MachineId);
+
+	//DBG("TryCreateSingleInstance", "Mutex name '%s'.", MutexName);
+
+	// При создании делаем нулевой DACL для возможности открытия мьютекса 
+	// из под любого пользователя
+
+	SECURITY_ATTRIBUTES sa;
+	SECURITY_DESCRIPTOR sd;
+
+	pInitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION);
+	pSetSecurityDescriptorDacl(&sd, TRUE, NULL, FALSE);
+
+	sa.nLength = sizeof (SECURITY_ATTRIBUTES);
+	sa.lpSecurityDescriptor = &sd;
+	sa.bInheritHandle = FALSE;
+
+	// Создаем мьютекс с нулевым DACL
+	HANDLE MutexHandle = (HANDLE)pCreateMutexA(&sa, FALSE, MutexName);
+	if (MutexHandle == NULL) return NULL;
+
+	// При помощи WaitForSingleObject захватываем владение мьютексом.
+	DWORD WaitResult = (DWORD)pWaitForSingleObject(MutexHandle, 1000);
+	if (WaitResult == WAIT_OBJECT_0) return MutexHandle;
+
+	// Все коды возврата, которые отличаются от WAIT_OBJECT_0 - считать неудачей.
+	pCloseHandle(MutexHandle);
+
+	return NULL;
 }

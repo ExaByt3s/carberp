@@ -142,7 +142,12 @@ void TBotUpdater::DownloadAndSetup(const string &FileURL, const string &MD5)
 			PCHAR Name = File::GetTempNameA();
 
 			File::WriteBufferA(Name, Data.Memory(), Data.Size());
-            BAUDBG("АвтоОбновление", "Новая версия бота успешно загружена. Запускаем установку.");
+			BAUDBG("АвтоОбновление", "Новая версия бота успешно загружена. Запускаем установку.");
+
+			// Сохраняем текущие настройки
+			Bot->SaveSettings();
+
+			// Устанавливаем новую версию
 			MakeUpdate(Name);
 
 			STR::Free(Name);

@@ -502,7 +502,7 @@ STRBUFAPI(void) STRBUF::Append(TChar* &Dst, const TChar* Src, DWORD SrcLen)
         	Tmp = Dst;
 			Dst = CreateFromStr<TChar>(Tmp, DstLen, TotalLen);
         }
-		m_memcpy(Dst + DstLen, Src, SrcLen);
+		m_memcpy(Dst + DstLen, Src, SrcLen * sizeof(TChar));
 		GetRec(Dst).Length = TotalLen;
 
 		if (Tmp)
@@ -514,7 +514,7 @@ STRBUFAPI(void) STRBUF::Append(TChar* &Dst, const TChar* Src, DWORD SrcLen)
 STRBUFAPI(void) STRBUF::Copy(TChar* &Dst, const TChar* Src, DWORD Pos, DWORD Count)
 {
 	// Функция копирует количество символов Count с позиции Pos
-	if (STRUTILS<TCHAR>::IsEmpty(Src) || Count == 0)
+	if (STRUTILS<TChar>::IsEmpty(Src) || Count == 0)
 		return;
 
 	if (Dst == NULL)
@@ -542,7 +542,7 @@ STRBUFAPI(void) STRBUF::Copy(TChar* &Dst, const TChar* Src, DWORD Pos, DWORD Cou
 		{
 			// На случай если копирование происходит из самой себя
 			// уничтожим строку после копирования
-			TCHAR* Tmp = Dst;
+			TChar* Tmp = Dst;
 			Dst = CreateFromStr(Src + Pos, Count, 0);
 			Release<TChar>(Tmp);
 		}
@@ -800,44 +800,44 @@ STRFUNC(void)::SetLength(DWORD NewLength)
 {
 	// Функция устанавливает длину строки
 	if (NewLength == 0)
-		STRBUF::Release<TCHAR>(Data);
+		STRBUF::Release<TChar>(Data);
 	else
 	{
 		if (Data)
 		{
-			STRBUF::TStrRec &Rec = STRBUF::GetRec<TCHAR>(Data);
+			STRBUF::TStrRec &Rec = STRBUF::GetRec<TChar>(Data);
 
 			if (Rec.RefCount > 1 || Rec.Size < NewLength)
 			{
-				TCHAR* Tmp = Data;
-				Data = STRBUF::CreateFromStr<TCHAR>(Tmp, Rec.Length, NewLength);
-				STRBUF::Release<TCHAR>(Tmp);
+				TChar* Tmp = Data;
+				Data = STRBUF::CreateFromStr<TChar>(Tmp, Rec.Length, NewLength);
+				STRBUF::Release<TChar>(Tmp);
 			}
 			*(Data + NewLength) = 0;
 		}
 		else
-			Data = STRBUF::Alloc<TCHAR>(NewLength);
+			Data = STRBUF::Alloc<TChar>(NewLength);
 
-        STRBUF::GetRec<TCHAR>(Data).Length = NewLength;
+        STRBUF::GetRec<TChar>(Data).Length = NewLength;
 	}
 }
 
 
 STRFUNC(int)::Pos(const TChar* SubStr) const
 {
-	return STRUTILS<TCHAR>::Pos(Data, SubStr);
+	return STRUTILS<TChar>::Pos(Data, SubStr);
 }
 
 STRFUNC(int)::Pos(const TString &SubStr) const
 {
-	return STRUTILS<TCHAR>::Pos(Data, SubStr.Data);
+	return STRUTILS<TChar>::Pos(Data, SubStr.Data);
 }
 
 
 STRFUNC(TString<TChar>&)::Format(const TChar *FormatLine, ...)
 {
 	// Функция форматирует строку
-	STRBUF::Release<TCHAR>(Data);
+	STRBUF::Release<TChar>(Data);
 
 	// Так как изначально не получается определить
 	// результирующий размер буфера форматируем строку
@@ -853,7 +853,7 @@ STRFUNC(TString<TChar>&)::Format(const TChar *FormatLine, ...)
                                     (int)pwvsprintfW(Tmp.t_str(), FormatLine, paramList);
 	va_end(paramList);
 
-	Data = STRBUF::CreateFromStr<TCHAR>(Tmp.t_str(), Sz, 0);
+	Data = STRBUF::CreateFromStr<TChar>(Tmp.t_str(), Sz, 0);
 
 	return *this;
 }
@@ -861,7 +861,7 @@ STRFUNC(TString<TChar>&)::Format(const TChar *FormatLine, ...)
 
 STRFUNC(TString<TChar>&)::LongToStr(DWORD num)
 {
-	STRBUF::Release<TCHAR>(Data);
+	STRBUF::Release<TChar>(Data);
 	int n = 0;
 	STRUTILS<TChar>::LongToString(num, NULL, n);
 	SetLength(n);

