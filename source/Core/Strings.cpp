@@ -460,21 +460,21 @@ int WINAPI m_istrstr( const char * _Str, const char * _SubStr )
 
 WCHAR *AnsiToUnicode( char *AnsiString, DWORD dwStrLen )
 {
-	if ( !AnsiString )
+	wchar_t* res = 0;
+	// тест на возможность преобразования
+	if( dwStrLen == 0 ) dwStrLen = -1;
+	int resLen = (int)pMultiByteToWideChar( CP_ACP, 0, AnsiString, dwStrLen, 0, 0);
+	if( resLen == 0 ) return 0;
+ 	// выделяем память
+	res = (wchar_t*)MemAlloc(resLen);
+ 	if( res == 0 ) return 0;
+	// преобразование
+	if( !pMultiByteToWideChar( CP_ACP, 0, AnsiString, -1, res, resLen ) )
 	{
-		return NULL;
+		MemFree(res);
+		res = 0;
 	}
-
-	WCHAR *pszwString = (WCHAR *)MemAlloc(  dwStrLen + 1 );
-
-	if ( pszwString == NULL )
-	{
-		return NULL;
-	}
-
-	pMultiByteToWideChar( CP_ACP, 0, AnsiString, dwStrLen, (LPWSTR)pszwString, dwStrLen + 1 );
-
-	return  pszwString;
+ 	return res;
 }
 
 wchar_t* UTF8ToUnicode( const char* utf8String )

