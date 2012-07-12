@@ -631,6 +631,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Core\odbc.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Common\Opera.h"
 				>
 			</File>
@@ -976,6 +980,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\Memory.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\ODBC.cpp"
 				>
 			</File>
 			<File

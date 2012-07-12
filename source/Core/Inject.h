@@ -12,6 +12,7 @@ bool InjectCode4( HANDLE hProcess, DWORD (WINAPI f_Main)(LPVOID) );
 
 bool InjectIntoSvchost( DWORD (WINAPI f_Main)(LPVOID) );
 bool InjectIntoExplorer( DWORD (WINAPI f_Main)(LPVOID) );
+bool InjectIntoProcess( DWORD pid, DWORD (WINAPI *func)(LPVOID) );
 bool JmpToExplorer( DWORD (WINAPI f_Main)(LPVOID) );
 bool TwiceJump( DWORD (WINAPI f_Main)(LPVOID) );
 bool TwiceJumpSelf( DWORD (WINAPI f_Main)(LPVOID) );
