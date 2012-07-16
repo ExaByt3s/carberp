@@ -181,7 +181,6 @@ SQLHSTMT ODBC::ExecuteSql( const char* sqltext, const char* format, ... )
 	if( SQLExecute(qr) != SQL_ERROR )
 		if( onum > 1 ) //есть выходные поля
 		{
-			DBG( "ODBC", "111" );
 			if( NextRow(qr) )
 				return qr;
 		}

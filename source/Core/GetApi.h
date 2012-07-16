@@ -751,6 +751,8 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 #define pSQLCloseCursor				pushargEx< DLL_ODBC32, 0xACA2F119>
 #define pSQLFreeHandle				pushargEx< DLL_ODBC32, 0x6A289300>
 #define pSQLDisconnect				pushargEx< DLL_ODBC32, 0x8104CDA8>
+#define pSQLBindParameter			pushargEx< DLL_ODBC32, 0xE8536508>
+#define pSQLGetDiagRecA				pushargEx< DLL_ODBC32, 0x13C9473F>
 
 //version.dll
 #define pGetFileVersionInfoSizeA	pushargEx< DLL_VERSION, 0x8A94F707>

