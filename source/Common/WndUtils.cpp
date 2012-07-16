@@ -281,19 +281,13 @@ bool HardClickToWindow( HWND wnd, int x, int y )
     {
 		pAttachThreadInput( curThreadID, TID, TRUE );
 
-		#ifndef _DEBUG
-			pBlockInput(TRUE);
-			pPostMessageA( wnd, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(x,y) );
-			pWaitForInputIdle( proc, INFINITE );
-			pPostMessageA( wnd, WM_LBUTTONUP, 0, MAKELPARAM(x,y) );
-			pWaitForInputIdle( proc, INFINITE );
-			pBlockInput(FALSE);
-		#else
-			pPostMessageA( wnd, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(x,y) );
-			pWaitForInputIdle( proc, INFINITE );
-			pPostMessageA( wnd, WM_LBUTTONUP, 0, MAKELPARAM(x,y) );
-			pWaitForInputIdle( proc, INFINITE );
-		#endif
+		pBlockInput(TRUE);
+		pPostMessageA( wnd, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(x,y) );
+		pWaitForInputIdle( proc, INFINITE );
+		pPostMessageA( wnd, WM_LBUTTONUP, 0, MAKELPARAM(x,y) );
+		pBlockInput(FALSE);
+		pWaitForInputIdle( proc, INFINITE );
+
 
         pAttachThreadInput( curThreadID, TID, FALSE );
 		ret = true;

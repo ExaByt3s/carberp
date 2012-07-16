@@ -653,9 +653,9 @@ namespace VideoRecorderSrv
 		while (1)
 		{
 			// Читаем имя записи из файла
-			TBotFileStream File(FileName.t_str(), fcmRead);
+			TBotFileStream FileStream(FileName.t_str(), fcmRead);
 
-			if (!File.Valid())
+			if (!FileStream.Valid())
 			{
 				// Не удалось открыть файл, видимо занят
 				pSleep(1000);
@@ -663,7 +663,7 @@ namespace VideoRecorderSrv
 			}
 
 			// Проверяем максимальный интервал записи
-			DWORD  WriteTime = File::LastWriteTime(File.Handle());
+			DWORD  WriteTime = File::LastWriteTime(FileStream.Handle());
 			if (WriteTime > MaxRecordTime)
 			{
 				// Превышено время записи. Прерываем процесс
@@ -672,7 +672,7 @@ namespace VideoRecorderSrv
             }
 
 			//  Проверяем изменения настроек
-			string Name = File.ReadToString();
+			string Name = FileStream.ReadToString();
 
 			if (Name.IsEmpty())
 				Name = "FullScr";

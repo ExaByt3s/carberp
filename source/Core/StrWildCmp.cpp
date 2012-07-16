@@ -1,6 +1,6 @@
 
 #ifndef StringsH
-	Исключите файл из проекта
+	#error Исключите файл из проекта
 #endif
 
 #include <windows.h>
