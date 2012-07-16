@@ -189,7 +189,7 @@ struct TKeyLoggerInternalData
 	PCHAR CurrentURL;        // Текущий адрес открытый в активной закладке IE
 	DWORD MaxWndParentLevel; // Максимальный уровень проверки родительских окон
 	PKeyLogSystem System;    // Активная система
-	PKlgWndFilter Filter;       // Активный фильтр
+	PKlgWndFilter Filter;    // Активный фильтр
 	DWORD LastWriteTime;     // Время последней записи в файл
 	DWORD ImageIndex;        // Индекс текущей картинки
 	bool SystemCompleted;    // Система отработала

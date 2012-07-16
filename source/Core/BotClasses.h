@@ -462,6 +462,7 @@ public:
 	bool Valid();
 	void Close();
 	DWORD Size();
+    void  SetSize(DWORD NewSize);
 	DWORD Seek(int Count, DWORD MoveMode);
 	DWORD Write(const void* Buf, DWORD Count);
 	DWORD Read(void* Buf, DWORD Count);

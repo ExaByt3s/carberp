@@ -201,6 +201,7 @@ namespace Registry
 {
 	// создать раздел в реестре пример CreateKey(HKEY_CURRENT_USER,"Software\\Microsoft\\Internet Explorer\\Main","TabProcGrowth");
 	bool CreateKey(HKEY h, char* path, char* name );
+
 	//корневой ключ, путь без ключа, имя создаваемого значения, значение(заменяет значение REG_SZ)
 	bool SetValueString(HKEY h, char* path, char* name,  char* values );
 	//корневой ключ, путь без ключа, имя создаваемого значения, значение(создает заменяет значение DWORD)
@@ -292,7 +293,16 @@ namespace File
 	{
 		return FileExistsW(FileName);
 	}
+
+	//------------------------------------------------------
+	// LastWriteTime - Функция возвращает время в
+	//                 миллисекундах с момента последнего
+	//				   изменения файла
+	//------------------------------------------------------
+	DWORD LastWriteTime(HANDLE File);
 }
+
+
 
 //Работа с директориями
 namespace Directory
