@@ -17,7 +17,7 @@
 #include "Richedit.h"
 
 
-#include "BotDebug.h"
+//#include "BotDebug.h"
 
 namespace java_patcher
 {

