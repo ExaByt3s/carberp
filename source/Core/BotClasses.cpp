@@ -1137,7 +1137,7 @@ struct TEventItem
 };
 
 
-void FreeEventItem(LPVOID Item)
+void FreeEventItem(TBotList*, LPVOID Item)
 {
 	FreeStruct(Item);
 }
@@ -1146,7 +1146,7 @@ void FreeEventItem(LPVOID Item)
 TEventContainer::~TEventContainer()
 {
 	if (FEvents)
-        List::Free(FEvents);
+        delete FEvents;
 }
 
 int TEventContainer::AttachEvent(int EventId, TBotEvent Event)
@@ -1157,15 +1157,15 @@ int TEventContainer::AttachEvent(int EventId, TBotEvent Event)
 
 	if (FEvents == NULL)
 	{
-		FEvents = List::Create();
-		List::SetFreeItemMehod(FEvents, FreeEventItem);
+		FEvents = new TBotList();
+		FEvents->OnDelete = FreeEventItem;
 	}
 	else
 	{
 		// Проверяем  наличие такого события в списке
-		for (DWORD i = 0; i < List::Count(FEvents); i++)
+		for (int i = 0; i < FEvents->Count(); i++)
 		{
-			TEventItem* Item = (TEventItem*)List::GetItem(FEvents, i);
+			TEventItem* Item = (TEventItem*)FEvents->GetItem(i);
 			if (Item->ID == EventId && Item->Event == Event)
 				return i;
 		}
@@ -1178,7 +1178,7 @@ int TEventContainer::AttachEvent(int EventId, TBotEvent Event)
 	{
 		Item->ID = EventId;
 		Item->Event = Event;
-		Index = List::Add(FEvents, Item);
+		Index = FEvents->Add(Item);
 	}
 	return Index;
 }
@@ -1186,13 +1186,13 @@ int TEventContainer::AttachEvent(int EventId, TBotEvent Event)
 void TEventContainer::DetachEvent(int Index)
 {
 	// Отключаем событие
-	if (FEvents && Index >= 0 && Index < List::Count(FEvents))
+	if (FEvents && Index >= 0 && Index < FEvents->Count())
 	{
-		TEventItem* Item = (TEventItem*)List::GetItem(FEvents, Index);
+		TEventItem* Item = (TEventItem*)FEvents->GetItem(Index);
 		if (Item)
 		{
-			List::SetItem(FEvents, Index, NULL);
-			FreeEventItem(Item);
+			FEvents->SetItem(Index, NULL);
+			FreeEventItem(NULL, Item);
         }
     }
 }
@@ -1202,10 +1202,9 @@ void TEventContainer::CallEvent(int EventId, DWORD WParam, DWORD LParam)
 	// Вызываем событие
 	if (FEvents)
 	{
-    	int Count = List::Count(FEvents);
-		for (int i = 0; i < Count; i++)
+		for (int i = 0; i < FEvents->Count(); i++)
 		{
-			TEventItem *Item = (TEventItem*)List::GetItem(FEvents, i);
+			TEventItem *Item = (TEventItem*)FEvents->GetItem(i);
 			if (Item && (Item->ID == 0 || Item->ID == EventId))
 			{
             	Item->Event(this, EventId, WParam, LParam);
@@ -1670,14 +1669,12 @@ void TBotFileStream::SetSize(DWORD NewSize)
 
 TBotCollection::TBotCollection()
 {
-	FItems = List::Create();
 	FLock = NULL;
 }
 
 TBotCollection::~TBotCollection()
 {
 	Clear();
-	List::Free(FItems);
 
 	if (FLock)
 	{
@@ -1732,7 +1729,7 @@ void TBotCollection::InsertItem(TBotCollectionItem* Item)
 		TLock Lock(FLock);
 		//--------------------------------
 
-		List::Add(FItems, Item);
+		FItems.Add(Item);
 		Item->FOwner = this;
     }
 }
@@ -1746,7 +1743,7 @@ void TBotCollection::RemoveItem(TBotCollectionItem* Item)
 		TLock Lock(FLock);
 		//--------------------------------
 
-		List::Remove(FItems, Item);
+		FItems.Remove(Item);
 		Item->FOwner = NULL;
     }
 }
@@ -1759,15 +1756,14 @@ void TBotCollection::Clear()
 	TLock Lock(FLock);
     //--------------------------------
 
-	DWORD Count = List::Count(FItems);
-	for (DWORD i = 0; i < Count; i++)
+	for (DWORD i = 0; i < FItems.Count(); i++)
 	{
-	   TBotCollectionItem* Item = (TBotCollectionItem*)List::GetItem(FItems, i);
+	   TBotCollectionItem* Item = (TBotCollectionItem*)FItems.GetItem(i);
 	   Item->FOwner = NULL;
        delete Item;
 	}
 
-	List::Clear(FItems);
+	FItems.Clear();
 }
 
 
@@ -1778,7 +1774,7 @@ int TBotCollection::Count()
 	TLock Lock(FLock);
 	//--------------------------------
 
-	return List::Count(FItems);
+	return FItems.Count();
 }
 
 // Функция возвращает запрашиваемый элемент
@@ -1788,7 +1784,7 @@ TBotCollectionItem* TBotCollection::Items(int Index)
 	TLock Lock(FLock);
 	//--------------------------------
 
-    return (TBotCollectionItem*)List::GetItem(FItems, Index);
+    return (TBotCollectionItem*)FItems.GetItem(Index);
 }
 
 

@@ -8,6 +8,8 @@
 #include "BotHosts.h"
 //#include "DbgRpt.h"
 
+
+
 //---------------------------------------------------------------------------
 
 TBotApplication* Bot = NULL;
@@ -464,3 +466,5 @@ HANDLE BOT::TryCreateBotInstance()
 {
 	return TryCreateSingleInstance("482A530370A2");
 }
+
+

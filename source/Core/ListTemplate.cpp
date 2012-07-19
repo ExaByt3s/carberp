@@ -50,10 +50,11 @@ LISTFUNC(int)::Add(TItem Item)
 			return -1;
     }
 
+	int Index = FCount;
 	FItems[FCount] = Item;
 	FCount++;
 
-	return FCount;
+	return Index;
 }
 //-------------------------------------------------------------------
 
@@ -75,7 +76,8 @@ LISTFUNC(void)::Clear()
 	while (FCount)
 	{
 		FCount--;
-        DoDelete(FItems[FCount]);
+		if (FItems[FCount])
+			DoDelete(FItems[FCount]);
     }
 
     // Обнуляем поля

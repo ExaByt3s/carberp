@@ -326,12 +326,12 @@ typedef void (*TBotEvent)(LPVOID Sender, int EventId, DWORD WParam, DWORD LParam
 class TEventContainer : public TBotObject
 {
 private:
-	PList FEvents;
+	TBotList *FEvents;
 public:
     TEventContainer() { FEvents = NULL; }
 	~TEventContainer();
 
-	int AttachEvent(int EventId, TBotEvent Event);
+	int  AttachEvent(int EventId, TBotEvent Event);
 	void DetachEvent(int Index);
 	void CallEvent(int EventId, DWORD WParam, DWORD LParam);
 	void CallEvent(int EventId);
@@ -478,7 +478,7 @@ class TBotCollectionItem;
 class TBotCollection : public TBotObject
 {
 private:
-	PList FItems;
+	TBotList FItems;
     PRTL_CRITICAL_SECTION FLock;
 	void InsertItem(TBotCollectionItem* Item);
 	void RemoveItem(TBotCollectionItem* Item);

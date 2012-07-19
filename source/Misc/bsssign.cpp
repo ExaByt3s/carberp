@@ -713,7 +713,7 @@ private:
 			// Проверяем необходимость завершения
 			TLock L = GetLocker();
 			FRunning = Count() > 0 && FActive;
-            if (!FRunning) break;
+			if (!FRunning) break;
 		}
 		while (true);
 	}
@@ -722,11 +722,12 @@ private:
 
 public:
 	//  Constructor
-	TBSSClicker() : TBotCollection()
+	TBSSClicker()
+		: TBotCollection()
 	{
+		FActive = false;
 		FRunning = false;
 		SetThreadSafe();
-		FActive = false;
 	};
 	//------------------------------------------------------------------------
 
