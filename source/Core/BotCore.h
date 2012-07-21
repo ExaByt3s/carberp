@@ -57,7 +57,6 @@ private:
     string FUID;
 	string FApplicationName;
 	string FWorkPath;
-	string FWorkSystemPath;
     string FPerfixFileName;
 
 	string MakeWorkPath(bool SystemPath);
@@ -71,7 +70,6 @@ public:
 	PCHAR  GetWorkFolder();
 	string ApplicationName(); // Имя приложения в котором работает бот
 	string WorkPath();        // Путь к рабочему каталогу бота, привязан  к текущему пользователю
-	string WorkSystemPath();  // Путь к рабочему каталогу на системном диске, не привязан к пользователю
 	string PrefixFileName();  // Функция возвращает имя файла для хранения префикса
 	void   SaveSettings();    // Функция сохраняет базовые настройки
 	bool   Terminated();

