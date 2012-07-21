@@ -420,6 +420,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\HostsAutoUpdate.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\Hunter.cpp"
 				>
 			</File>

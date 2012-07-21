@@ -67,7 +67,7 @@
 
 #include "FgrFilters.h"
 
-//#include "HostsAutoUpdate.h"
+#include "HostsAutoUpdate.h"
 //#include "BotAutoUpdate.h"
 
 //#include "BotMonitor.h"

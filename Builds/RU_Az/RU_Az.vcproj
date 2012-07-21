@@ -695,6 +695,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Core\StrConsts.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\Strings.h"
 				>
 			</File>
@@ -1048,6 +1052,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\StealthBrowser.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\StrConsts.cpp"
 				>
 			</File>
 			<File
