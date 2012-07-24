@@ -286,7 +286,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="0"
+				Optimization="1"
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="0"
@@ -315,6 +315,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="..\..\source\lib\ntdll.lib shlwapi.lib Ws2_32.lib urlmon.lib Crypt32.lib ..\..\source\lib\winsta.lib Wininet.lib gdiplus.lib Iphlpapi.lib"
 				OutputFile="$(OutDir)\$(ProjectName)_DBG.exe"
 				LinkIncremental="1"
 				GenerateManifest="false"
@@ -570,6 +571,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\ntstatus.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\odbc.h"
 				>
 			</File>
 			<File
@@ -890,6 +895,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\Memory.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\ODBC.cpp"
 				>
 			</File>
 			<File
