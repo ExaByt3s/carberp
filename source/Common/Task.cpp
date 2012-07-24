@@ -18,6 +18,7 @@
 #include "DllLoader.h"
 #include "CabPacker.h"
 #include "BotDef.h"
+#include "VideoRecorder.h"
 #include <shlobj.h>
 #include <shlwapi.h>
 
