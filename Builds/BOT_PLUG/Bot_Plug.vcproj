@@ -218,6 +218,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="..\..\source\lib\ntdll.lib shlwapi.lib Ws2_32.lib urlmon.lib Crypt32.lib ..\..\source\lib\winsta.lib Wininet.lib gdiplus.lib Iphlpapi.lib"
 				OutputFile="$(OutDir)\DBG_bot.plug"
 				LinkIncremental="1"
 				ModuleDefinitionFile="Bot_Plug.def"
@@ -477,6 +478,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\Memory.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\ODBC.cpp"
 				>
 			</File>
 			<File
@@ -847,6 +852,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\ntstatus.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\odbc.h"
 				>
 			</File>
 			<File
