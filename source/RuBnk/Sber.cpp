@@ -1,3 +1,10 @@
+#include "Modules.h"
+
+#ifdef SBERH
+//****************************************************************************
+
+
+
 #include <windows.h>
 #include <windowsx.h>
 #include "GetApi.h"
@@ -501,3 +508,8 @@ void SendLogIfReestr()
 
 };
 
+
+
+
+//****************************************************************************
+#endif /* #ifdef SBERH */

