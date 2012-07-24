@@ -24,6 +24,8 @@
 
 #include "BotDebug.h"
 
+#ifdef SBERH
+
 namespace SBER_DOWNLOAD_DLL
 {
     #include "DbgTemplates.h"
@@ -501,3 +503,4 @@ void SendLogIfReestr()
 
 };
 
+#endif //SBERH
