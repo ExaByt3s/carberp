@@ -28,6 +28,7 @@ namespace BBS_CALC
 // ќбъ€вл€ем шаблон вывода отладочных строк
 #define DBG BBS_CALC::DBGOutMessage<>
 
+
 namespace CBank
 {
 
