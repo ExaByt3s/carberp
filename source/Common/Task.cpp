@@ -747,6 +747,7 @@ bool ExecuteUpdate(PTaskManager, PCHAR Command, PCHAR Args)
 		{
 			/* TODO : Исправить временное решение с преобразованием в анси строку */
 			PCHAR Name = WSTR::ToAnsi(FileName, 0);
+			Bot->DeleteSettings();
 			Result = MakeUpdate(Name);
 			STR::Free(Name);
         }

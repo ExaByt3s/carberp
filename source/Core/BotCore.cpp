@@ -207,10 +207,8 @@ string TBotApplication::PrefixFileName()
 {
 	// Функция возвращает имя файла для хранения префикса
 	if (FPerfixFileName.IsEmpty())
-	{
-		FPerfixFileName = WorkPath();
-        FPerfixFileName += FILE_PREFIX;
-	}
+		FPerfixFileName = MakeFileName(NULL, GetStr(StrPrefixFileName).t_str());
+
 	return FPerfixFileName;
 }
 //----------------------------------------------------------------------------
@@ -314,10 +312,19 @@ void TBotApplication::SaveSettings()
 }
 //----------------------------------------------------------------------------
 
+void TBotApplication::DeleteSettings()
+{
+	// Функция удаляет ранее сохранённые настройки
+	// Удаляем хосты
+	PCHAR HostsName = Hosts::GetFileName();
+	pDeleteFileA(HostsName);
+	STR::Free(HostsName);
 
+	// Удаляем файл префикса
+	pDeleteFileA(PrefixFileName().t_str());
+}
 
-
-
+//----------------------------------------------------------------------------
 
 
 

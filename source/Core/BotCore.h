@@ -88,6 +88,7 @@ public:
 	bool   FileExists(const string &SubDir, const char* FileName);
 
 	void   SaveSettings();    // Функция сохраняет базовые настройки
+	void   DeleteSettings();  // Функция удаляет ранее сохранённые настройки
 	bool   Terminated();
 };
 

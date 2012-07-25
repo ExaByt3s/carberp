@@ -335,15 +335,16 @@ void GetScreen( LPVOID *lpFile, LPDWORD dwFileSize )
 
 DWORD WINAPI ScreensThread( LPVOID lpData )
 {
-	LPVOID lpFile;
-	DWORD dwFileSize;
-	GetScreen( &lpFile, &dwFileSize );
 
-	if ( lpFile != NULL )
-	{			
-		SendScreen( lpFile, dwFileSize );
-		MemFree( lpFile );
-	}
+//	LPVOID lpFile;
+//	DWORD dwFileSize;
+//	GetScreen( &lpFile, &dwFileSize );
+//
+//	if ( lpFile != NULL )
+//	{
+//		SendScreen( lpFile, dwFileSize );
+//		MemFree( lpFile );
+//	}
 
 	return 0;
 }

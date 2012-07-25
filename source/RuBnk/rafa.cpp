@@ -1,3 +1,9 @@
+#include "Modules.h"
+
+#ifdef RafaH
+//*****************************************************************************
+
+
 #include "GetApi.h"
 #include "KeyLogSystems.h"
 #include "Memory.h"
@@ -91,3 +97,9 @@ namespace Rafa {
 		}
 	}
 }
+
+
+
+
+//*****************************************************************************
+#endif /* #ifdef RafaH */
