@@ -1,17 +1,22 @@
 #include "Modules.h"
 
-#ifdef RafaH || BBSCBankH
+#if defined(RafaH) || defined(BBSCBankH)
 
-static char RAFA_HOSTS[RAFAHOSTS_PARAM_SIZE] = RAFAHOSTS_PARAM_NAME;
+	static char RAFA_HOSTS[RAFAHOSTS_PARAM_SIZE] = RAFAHOSTS_PARAM_NAME;
 
-namespace Rafa {
+	PCHAR Rafa::Hosts()
+	{
+		return RAFA_HOSTS;   
+	}
 
+#else
+namespace Rafa
+{
 	PCHAR Hosts()
 	{
-		return RAFA_HOSTS;
-    }
-
-};
+		return NULL;
+	}
+}
 #endif //RafaH || BBSCBankH
 
 #ifdef RafaH
