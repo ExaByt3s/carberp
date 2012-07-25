@@ -374,6 +374,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\BotAutoUpdate.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotClasses.h"
 				>
 			</File>
@@ -418,11 +422,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\CabPacker.h"
+				RelativePath="..\..\Source\RuBnk\CabPacker.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\CabPacker.h"
+				RelativePath="..\..\Source\Common\CabPacker.h"
 				>
 			</File>
 			<File
@@ -495,6 +499,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\HistoryAnalizer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\HostsAutoUpdate.h"
 				>
 			</File>
 			<File
@@ -706,6 +714,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\BotAutoUpdate.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotClasses.cpp"
 				>
 			</File>
@@ -831,6 +843,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\HistoryAnalizer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\HostsAutoUpdate.cpp"
 				>
 			</File>
 			<File

