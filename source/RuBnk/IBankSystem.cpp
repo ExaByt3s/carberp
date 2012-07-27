@@ -279,6 +279,7 @@ namespace IBank
 
 		// Запускаем запись видео
 		//VideoRecorderSrv::StartRecording(SystemName);
+		IBDBG("IBank", "Запускаем запись видео");
 		VideoRecorderSrv::StartInfiniteRecording(SystemName);
 
 		// Инициализируем данные системы
