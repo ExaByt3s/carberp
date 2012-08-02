@@ -25,8 +25,8 @@ namespace HostsDebugSpace
 THostsUpdater::THostsUpdater()
 	: TBotThread(false)
 {
-	Interval = 5 * 60 * 1000;   // Интервал в отладке
-//	Interval = 30 * 60 * 1000;  // интервал 1 час
+//	Interval = 5 * 60 * 1000;   // Интервал в отладке
+	Interval = 30 * 60 * 1000;  // интервал 1 час
 
 	Start();
 }

