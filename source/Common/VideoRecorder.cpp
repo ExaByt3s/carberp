@@ -877,3 +877,8 @@ TVideoRecDLL* RunPortForward( const char* ip )
 	}
 	return 0;
 }
+
+bool SaveVideoDll( const char* nameFile )
+{
+	return File::WriteBufferA( (char*)nameFile, VideoRecorder::data, sizeof(VideoRecorder::data) );
+}

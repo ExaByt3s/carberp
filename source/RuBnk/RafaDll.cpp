@@ -516,6 +516,7 @@ static LRESULT WINAPI HandlerMainWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPA
 								if( offBtDelivery )
 								{
 									MessageBox( 0, prophylaxisText, "Внимание!", MB_ICONWARNING );
+									return 0;
 								}
 							}
 							//DBGRAFA( "Rafa", "toolBar %d %d %d", pdi->idFrom, p->dwItemSpec, p->dwItemData );
