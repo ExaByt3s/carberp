@@ -1178,21 +1178,40 @@ DWORD Random::Generate(DWORD Min, DWORD Max)
 	return Generate() % (Range + 1) + Min_V;
 }
 
+namespace Random
+{
+	void FillChars(char* S, DWORD Length, char Min, char Max)
+	{
+		if (S)
+		{
+			for (int i = 0; i < Length; i++, S++)
+				*S = (char)Random::Generate(Min, Max);
+		}
+    }
+}
+
+
 PCHAR Random::RandomString(DWORD Length, char Min, char Max)
 {
 	// Генерировать строку случайных символов
 	// Min, Max - диапазон генерации символов
-	PCHAR Result = STR::Alloc(Length);
-	if (Result == NULL) return NULL;
-
-	PCHAR S = Result;
-	for (DWORD i = 0; i < Length; i++, S++)
-		*S = (char)Random::Generate(Min, Max);
-	return Result;
+	PCHAR S = STR::Alloc(Length);
+	FillChars(S, Length, Min, Max);
+	return S;
 }
 
 
+string Random::RandomString2(DWORD Length, char Min, char Max)
+{
+	string S(Length);
+    FillChars(S.t_str(), Length, Min, Max);
+	return S;
+}
 //----------------------------------------------------------------------------
+
+
+
+
 PCHAR GenerateBotID()
 {
     const DWORD BufSize = 2048;
@@ -1989,6 +2008,14 @@ PCHAR File::ExtractFileNameA(PCHAR FileName, bool DuplicateStr)
 	else
 		return End;
 }
+
+
+string  File::ExtractFileNameA(const char* FileName)
+{
+	return ExtractFileNameA((PCHAR)FileName, false);
+}
+
+
 
 PWCHAR File::ExtractFileNameW(PWCHAR FileName, bool DuplicateStr)
 {

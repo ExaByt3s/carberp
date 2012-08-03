@@ -76,6 +76,8 @@ const PCHAR URLValueDelimeter = "&";
 const PCHAR FormDataURLEncoded = "application/x-www-form-urlencoded";
 const PCHAR FormDataMultiPart = "multipart/form-data; boundary=";
 
+const static PCHAR ContentDispositionName = "Content-Disposition: form-data; name=\"";
+const static PCHAR FileNameHeader = "; filename=\"";
 
 #define HTTP_CODE_OK 200
 
@@ -290,7 +292,7 @@ namespace HTTPUtils
 //***************************************************************************
 
 
-typedef struct TMultiPartData
+typedef struct TMultiPartDataRec
 {
 	PList Items;
 	PCHAR Boundary;
@@ -303,11 +305,11 @@ enum TMultiItemReadState {mprsUnknown, mprsHeader, mprsData, mprsBoundary, mprsC
 
 typedef struct TMultiPartItem
 {
-	PCHAR Name;        // Имя поля
-	PCHAR FileName;    // Имя файла
-	LPVOID Data;       // Буфер данных
-	DWORD Size;        // Размер буфера
-	PCHAR ContentType; // Тип контента файла
+	PCHAR  Name;        // Имя поля
+	PCHAR  FileName;    // Имя файла
+	LPVOID Data;        // Буфер данных
+	DWORD  Size;        // Размер буфера
+	PCHAR  ContentType; // Тип контента файла
 
 	// Следующие поля необходимы только для записи данных в сокет
 	PCHAR Header;      // Заголовок элемента (для отправки)
@@ -584,6 +586,76 @@ public:
 };
 
 
+
+//----------------------------------------------------------------
+//  TMultiPartDataItem - Кдасс хранения информации о блоке данных
+//                       отправляемых на сервер
+//----------------------------------------------------------------
+class TMultiPartDataItem : public TBotCollectionItem
+{
+private:
+	LPVOID FData;          // Данные поля
+	DWORD  FSize;          // Размер данных
+	string FName;          // Имя поля
+	string FFileName;      // Имя файла
+	string FContentType;   // Тип контента, для файлов
+	string FBlockHeader;   // Заголовок блока, используется при отправке
+	TBotFileStream *FFile; // Пото чтения данных файла
+
+	void SetData(LPVOID Data, DWORD DataSize);
+	void MakeHeader();
+    bool WriteDataToBuf(LPBYTE Buf, DWORD BufSize, DWORD Offset, DWORD &Writen);
+	friend class TMultiPartData;
+public:
+	TMultiPartDataItem(TBotCollection* Owner);
+	TMultiPartDataItem(TBotCollection* Owner, LPVOID Data, DWORD DataSize);
+	~TMultiPartDataItem();
+
+	LPVOID inline Data() { return FData; }
+	DWORD  inline Size() { return FSize; }
+};
+
+
+//----------------------------------------------------------------
+//  TMultiPartData - класс для работы с данными HTML формы в
+//                   формате multipart/form-data
+//----------------------------------------------------------------
+class TMultiPartData : public TBotStream
+{
+private:
+	TBotCollection FItems;
+	string FBoundary;
+
+	DWORD FPosition;
+	int   FCurrentItem;
+	int   FReadOffset;
+
+	enum TReadPart {rpBoundaryStart, rpBoundary, rpBoundaryLB, rpHeader,
+					rpData, rpDataLB, rpBoundaryEnd, rpCompleted};
+
+	TReadPart FCurrentPart;
+
+    friend class THTTP;
+public:
+	TMultiPartData();
+
+	DWORD Size();
+	DWORD Read(void* Buf, DWORD BufSize);
+
+	// Функции добавления данных
+	void        Add(const char*   Name, LPVOID Data, DWORD Size);
+	void inline Add(const char*   Name, const char* Data)        { Add(Name, (LPVOID)Data, STRA::Length(Data)); }
+	void inline Add(const string& Name, LPVOID Data, DWORD Size) { Add(Name.t_str(), Data, Size); };
+	void inline Add(const string& Name, const char* Data)        { Add(Name.t_str(), Data); }
+	void inline Add(const char*   Name, const string& Data)      { Add(Name, Data.t_str(), Data.Length()); }
+	void inline Add(const string& Name, const string& Data)      { Add(Name.t_str(), Data.t_str(), Data.Length()); }
+
+	// Функции добавления файлов
+	void AddFile(const char* Name, const char* FileName, const char* CotentType);
+
+};
+
+
 //----------------------------------------------------------------
 //   THTTP  - Класс для передачи-приёма данных по HTTP протоколу
 //----------------------------------------------------------------
@@ -632,7 +704,7 @@ public:
 	// true возвращается только в том случае если
 	// удалось отправить запрос и получить ответ с кодом 200!!!
 	// для того, чтобы получать истину только в случае успешной отправки
-	// и получения данных, не обращая внимания на код ответа
+	// и получения данных, не обращая внимания на код ответа,
 	// следует установить
 	// CheckOkCode = false;
 
@@ -642,6 +714,8 @@ public:
 
 	bool   Post(const char *URL, TBotStrings *Fields, string &Document);
 	string Post(const char *URL, TBotStrings *Fields);
+	bool   Post(const char *URL, TMultiPartData *Fields, string &Document);
+	string Post(const char *URL, TMultiPartData *Fields);
 };
 
 //---------------------------------------------------------------------------

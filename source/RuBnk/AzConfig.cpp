@@ -10,8 +10,8 @@
 	//   Файл включен в модули проекта
 	//   используем отдельные настройки
 	//****************************************
-	#define USE_AZ_CONFIG
-
+//	#define USE_AZ_CONFIG
+    #define USE_AZ_USER
 #endif
 
 
@@ -34,11 +34,34 @@ namespace AZDATA
 }
 
 
+//*******************************************************
+// Имя пользователя для скриптов авто залива
+//*******************************************************
+#ifdef USE_AZ_USER
+	char AZ_USER[AZCONFIG_PARAM_SIZE_AZUSER] = AZCONFIG_PARAM_NAME_AZUSER;
+#endif
+
+
+string GetAzUser()
+{
+	// Функция возвращает имя пользователя для систем автозалива
+
+	string User;
+
+    #ifdef USE_AZ_USER
+		User = AZ_USER;
+		if (AZCONFIG_PARAM_ENCRYPTED_AZUSER)
+			Decrypt(User.t_str(), User.t_str());
+	#endif
+	return User;
+}
+
+
+//-------------------------------------------------------
+
+
 
 #ifdef USE_AZ_CONFIG
-
-
-
 
 	char AZ_HOSTS[AZCONFIG_PARAM_SIZE_HOSTS] = AZCONFIG_PARAM_NAME_HOSTS;
 
@@ -203,8 +226,11 @@ string AzGetScriptHost()
 	return AZDATA::Checker->GetWorkHost();
 }
 //-----------------------------------------------------------------------------
+#else
 
-
+void AzInizializeHTMLInjects()
+{
+}
 
 
 

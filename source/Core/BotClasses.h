@@ -383,13 +383,12 @@ class TBotStream : public TBotObject
 public:
 	DWORD virtual Size();
 	void  virtual SetSize(DWORD NewSize);
-
 	DWORD virtual Seek(int Count, DWORD SeekMethod);
-	DWORD Position();
-	void  SetPosition(DWORD NewPosition);
-
 	DWORD virtual Write(const void* Buf, DWORD Count);
 	DWORD virtual Read(void* Buf, DWORD Count);
+
+	DWORD Position();
+	void  SetPosition(DWORD NewPosition);
 
 	DWORD WriteString(const char* Str);
 	DWORD WriteString(const string &Str);
@@ -496,7 +495,8 @@ public:
 	void  SetThreadSafe();
 	int   Count();
 	TLock GetLocker();
-    TBotCollectionItem* Items(int Index);
+	TBotCollectionItem* Items(int Index);
+	inline TBotCollectionItem* operator [](int Index) { return Items(Index); }
 };
 
 

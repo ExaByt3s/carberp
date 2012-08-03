@@ -78,7 +78,8 @@ namespace Random
 
 	// Генерировать строку случайных символов
 	// Min, Max - диапазон генерации символов
-	PCHAR RandomString(DWORD Length, char Min, char Max);
+	PCHAR  RandomString(DWORD Length, char Min, char Max);
+	string RandomString2(DWORD Length, char Min, char Max);
 }
 
 
@@ -263,7 +264,9 @@ namespace File
 	//		новую строку из результата. В случае false функция вернёт указатель
 	//      на первый символ имени в исходной строке
 	//-------------------------------------------------------------------------
-	PCHAR ExtractFileNameA(PCHAR FileName, bool DuplicateStr);
+	PCHAR   ExtractFileNameA(PCHAR FileName, bool DuplicateStr);
+    string  ExtractFileNameA(const char* FileName);
+
 	PWCHAR ExtractFileNameW(PWCHAR FileName, bool DuplicateStr);
 
 	//-------------------------------------------------------------------------

