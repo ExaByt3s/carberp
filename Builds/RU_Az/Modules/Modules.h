@@ -70,6 +70,8 @@
 #include "HostsAutoUpdate.h"
 #include "BotAutoUpdate.h"
 
+#include "AzConfig.h"
+
 //#include "BotMonitor.h"
 
 #ifdef  DEBUGCONFIG
