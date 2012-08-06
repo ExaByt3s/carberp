@@ -276,7 +276,6 @@ namespace IBank
 				StartThread( JavaPatcherSignal, 0 );
 		#endif
 
-
 		// Запускаем запись видео
 		//VideoRecorderSrv::StartRecording(SystemName);
 		IBDBG("IBank", "Запускаем запись видео");

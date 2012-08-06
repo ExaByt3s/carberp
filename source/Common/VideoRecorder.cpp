@@ -792,7 +792,6 @@ bool VideoRecorderSrv::StartRecording(PCHAR URL)
 	VDRDBG("VideoRecorder", "Отправляем команду запуска удалённой записи видео");
 
 	bool Result = PIPE::SendMessage(ServerName, CommandStart, URL, 0, NULL);
-
 	if (!Result)
 	{
 		VDRDBG("VideoRecorder", "Ошибка запуска удалённой записи. Возможно сервер не доступен.");
