@@ -1208,7 +1208,8 @@ char *GetInfoFromBcServer( char *Url )
 //	MemFree( SendBuffer_2 );
 //
 //	return ret;
-//}
+//}
+
 
 
 
