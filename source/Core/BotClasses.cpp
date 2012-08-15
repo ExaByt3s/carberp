@@ -56,23 +56,22 @@ TBotStrings::~TBotStrings()
 }
 //---------------------------------------------------
 
-int TBotStrings::AddStr(const char* Value, DWORD Len)
+int TBotStrings::PutStr(string *Str)
 {
-	string *S = new string(Value, Len);
-	return FItems.Add(S);
+	// Фунция вставляет строку
+    return FItems.Add(Str);
 }
 //---------------------------------------------------
 
-
 int TBotStrings::Add(const char* Value)
 {
-	return FItems.Add(new string(Value));
+	return PutStr(new string(Value));
 }
 //---------------------------------------------------
 
 int  TBotStrings::Add(const string& Value)
 {
-	return AddStr(Value.t_str(), Value.Length());
+	return PutStr(new string(Value));
 }
 //---------------------------------------------------
 
@@ -217,7 +216,7 @@ void TBotStrings::SetText(const char* Text)
 		{
 			StrLen = End - Start;
 			Line = (StrLen) ? Start : NULL;
-			AddStr(Line, StrLen);
+			PutStr(new string(Line, StrLen));
         }
 
         if (*End == 0) break;

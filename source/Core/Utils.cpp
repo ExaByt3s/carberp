@@ -1184,7 +1184,7 @@ namespace Random
 	{
 		if (S)
 		{
-			for (int i = 0; i < Length; i++, S++)
+			for (DWORD i = 0; i < Length; i++, S++)
 				*S = (char)Random::Generate(Min, Max);
 		}
     }

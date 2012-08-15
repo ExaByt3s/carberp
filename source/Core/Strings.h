@@ -9,10 +9,7 @@
 
 //int WINAPI URLEncode( char *pszDestiny, char *pszSource );
 
-//void DbgMsg(char *file, int line, char *msg, ...);
-//void DbgMsgW(WCHAR *file, int line, WCHAR *msg, ...);
-
-int m_atoi( const char *nptr );
+int m_atoi(const char *nptr);
 
 void   WINAPI m_lstrcat( char *szBuf, const char *szStr );
 void   WINAPI m_lstrcpy( char *szBuf, const char *szStr );
@@ -47,13 +44,11 @@ bool WildCmp(PCHAR Buffer, PCHAR Mask);
 
 bool CompareUrl(const char *MaskUrl, const char *Url );
 
-WCHAR * AnsiToUnicode( char *AnsiString, DWORD dwStrLen );
+WCHAR*   AnsiToUnicode( char *AnsiString, DWORD dwStrLen );
 wchar_t* UTF8ToUnicode( const char* utf8String );
 char*    UTF8ToAnsi( const char* utf8String );
 
 
-
-//void AlertError( LPTSTR lpszFunction ) ;
 
 //убирает в начале и конце символы c, возвращает указатель на s, только внутри уже обработанная строка
 char* trimall( char* s, char c = ' ' );

