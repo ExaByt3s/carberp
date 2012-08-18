@@ -72,7 +72,7 @@
 
 #include "AzConfig.h"
 
-#include "HistoryAnalizer.h"
+//#include "HistoryAnalizer.h"
 
 //#include "BotMonitor.h"
 
