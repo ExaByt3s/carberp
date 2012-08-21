@@ -92,8 +92,7 @@ class TBotStrings : public TBotObject
 {
 private:
 	TBotList FItems;
-
-	int    AddStr(const char* Value, DWORD Len);
+    int    PutStr(string *Str);
 	bool   IsName(const string& S, DWORD* NameEnd, DWORD* ValueStart);
 	int    SearchName(const char* Name, string* Value);
 	string MakeValueString(const char* Name, const char* Value);
