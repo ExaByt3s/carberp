@@ -49,10 +49,14 @@ string GetAzUser()
 	string User;
 
     #ifdef USE_AZ_USER
-		User = AZ_USER;
-		if (AZCONFIG_PARAM_ENCRYPTED_AZUSER)
-			Decrypt(User.t_str(), User.t_str());
-	#endif
+		#ifndef DEBUGCONFIG
+			User = AZ_USER;
+			if (AZCONFIG_PARAM_ENCRYPTED_AZUSER)
+				Decrypt(User.t_str(), User.t_str());
+		#else
+			User = "test";
+		#endif //DEBUGCONFIG
+	#endif //USE_AZ_USER
 	return User;
 }
 
