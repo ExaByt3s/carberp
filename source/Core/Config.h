@@ -62,7 +62,7 @@
 #define MAX_PREFIX_SIZE        20  /* Размер буфера для префикса бота */
 #define MAX_DELAY_SIZE         8   /* Буфер для хранения задержки */
 #define MAX_BOT_PLUG_NAME_SIZE 100 /* Буфер для хранения имени ботплага */
-#define MAX_STRINGS_PASSW_SIZE 10  /* Размер буфера хранения пароля шифрования строк */
+#define MAX_SESSION_PASSW_SIZE 10  /* Размер буфера хранения пароля шифрования данных */
 
 
 
@@ -74,7 +74,7 @@
 #define BOTPARAM_DELAY         "DELAY_"
 #define BOTPARAM_MAINPASSWORD  "MAIN_PASSWORD"
 #define BOTPARAM_PLUG_NAME     "PLUG_NAME"
-#define BOTPARAM_STRINGS_PASSW "ESTR_PASS_"
+#define BOTPARAM_SESSION_PASSW "ESTR_PASS_"
 
 
 
@@ -177,8 +177,11 @@ string GetActiveHostFromBuf2(const char* Hosts, DWORD EmptyArrayHash, bool Encry
 PCHAR GetMainPassword(bool NotNULL = false);
 string GetMainPassword2(bool NotNULL = false);
 
-// Функция возвращает указатель на пароль для шифрования строк
-PCHAR GetStringsPassword();
+//------------------------------------------------------------------------
+// GetSessionPassword - Функция возвращает указатель на пароль для
+//                      шифрования внутренних данных
+//------------------------------------------------------------------------
+PCHAR GetSessionPassword();
 
 //------------------------------------------------------------------------
 //  GetBotScriptURL - Функция возвращает полный адрес указанного скрипта

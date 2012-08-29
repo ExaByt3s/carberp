@@ -107,6 +107,7 @@ private:
 	int  __fastcall GetCount();
 	TBotParam*   __fastcall GetParam(int Index);
 	TBotModule*  __fastcall GetActiveModules(int Index);
+	void __fastcall EncryptDllData(PCHAR Buf, DWORD BufSize, PCHAR Passw);
 protected:
 	void __fastcall virtual ParamValueChanged(TBotParam* Sender);
 	void __fastcall Message(const UnicodeString &Message);

