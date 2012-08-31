@@ -30,7 +30,7 @@
 
 #include "DbgRpt.h"
 
-//#pragma comment(linker, "/ENTRY:MyDllMain" )
+#pragma comment(linker, "/ENTRY:MyDllMain" )
 
 //------------------------------------------------------------------------------
 //  Система отладочных строк
@@ -175,10 +175,18 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 	return 0;
 }
 
-
 extern"C"  void WINAPI Start(LPVOID, LPVOID, LPVOID)
 {
+//	StartThread(ExplorerMain, NULL);
+}
+
+BOOL APIENTRY MyDllMain( HMODULE hModule,
+                       DWORD  ul_reason_for_call,
+                       LPVOID lpReserved
+					 )
+{
 	StartThread(ExplorerMain, NULL);
+	return TRUE;
 }
 
 
