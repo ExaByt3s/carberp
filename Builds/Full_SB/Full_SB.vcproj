@@ -359,6 +359,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\AzConfig.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\BackConnect.h"
 				>
 			</File>
@@ -403,11 +407,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\CabPacker.h"
+				RelativePath="..\..\Source\Common\CabPacker.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\CabPacker.h"
+				RelativePath="..\..\Source\RuBnk\CabPacker.h"
 				>
 			</File>
 			<File
@@ -615,6 +619,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Core\StrConsts.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\Strings.h"
 				>
 			</File>
@@ -668,6 +676,10 @@
 			>
 			<File
 				RelativePath="..\..\Source\Misc\antirapport.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\AzConfig.cpp"
 				>
 			</File>
 			<File
@@ -908,6 +920,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\StealthBrowser.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\StrConsts.cpp"
 				>
 			</File>
 			<File
