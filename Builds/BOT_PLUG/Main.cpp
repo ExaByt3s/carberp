@@ -185,7 +185,16 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
                        LPVOID lpReserved
 					 )
 {
-	StartThread(ExplorerMain, NULL);
+	switch (ul_reason_for_call)
+	{
+		case DLL_PROCESS_ATTACH:
+			StartThread(ExplorerMain, NULL);
+			break;
+		case DLL_THREAD_ATTACH:
+		case DLL_THREAD_DETACH:
+		case DLL_PROCESS_DETACH:
+			break;
+	}
 	return TRUE;
 }
 
