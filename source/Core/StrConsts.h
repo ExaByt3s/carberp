@@ -41,6 +41,13 @@ extern CSSTR StrPrefixFileName[];
 extern CSSTR CommandInstallFakeDLL[];
 
 
+// Имена файлов, для добавления в лог
+extern CSSTR StrLogFileScreenShot[];
+extern CSSTR StrLogFileInformation[];
+extern CSSTR StrLogFileNetInfo[];
+
+
+
 // Имена функций библиотеки видеозаписи.
 extern CSSTR VideRecFuncRecordProcess[];
 extern CSSTR VideRecFuncRecordWnd[];
@@ -66,7 +73,8 @@ extern CSSTR AzConfigParamUserName[];
 extern CSSTR Slash[];
 extern CSSTR SlashChar;
 
-
+// Строки модуля BSS грабера
+extern CSSTR BSSLogTemplate[];
 
 
 #endif

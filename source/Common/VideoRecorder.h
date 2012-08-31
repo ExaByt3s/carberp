@@ -32,7 +32,7 @@ static const int VIDEO_ALWAYS		= 0x0002; //записывать всегда, даже если окно не 
 //  TVideoRecDLL - класс для работы с библиотекой
 //                 видеозаписи
 //****************************************************
-class TVideoRecDLL : public TDLL
+class TVideoRecDLL : public TMemoryDLL
 {
 private:
 

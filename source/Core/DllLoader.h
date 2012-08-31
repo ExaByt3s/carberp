@@ -83,13 +83,13 @@ bool BuildImport(PVOID ImageBase);
 //
 //  Алгоритм шифрования DLL:
 //*******************************************************
-class TDLL : public TBotObject
+class TMemoryDLL : public TBotObject
 {
 private:
 	HMEMORYMODULE FHandle;
 public:
-	TDLL(const void* DllBuf);
-	~TDLL();
+	TMemoryDLL(const void* DllBuf);
+	~TMemoryDLL();
 
     HMEMORYMODULE inline Handle() { return FHandle; }
 

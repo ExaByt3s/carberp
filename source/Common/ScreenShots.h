@@ -38,10 +38,18 @@ namespace ScreenShot
 	//    DrawCursor - Информация для отрисовки курсора мыши
 	//
 	//    FileName - Имя файла куда будет записан снимок
-    //------------------------------------------------------
+	//------------------------------------------------------
 	bool Make(HWND Wnd, int X, int Y, DWORD Width, DWORD Height,
 			  PDrawCursorInfo DrawCursor, PWCHAR FileName);
 
+	bool Make(HWND Wnd, int X, int Y, DWORD Width, DWORD Height,
+			  PDrawCursorInfo DrawCursor, PCHAR FileName);
+
+	//------------------------------------------------------
+	//  CaptureScreen - Функция делает скриншот экрана
+	//------------------------------------------------------
+	bool CaptureScreenA(PCHAR  FileName);
+	bool CaptureScreenW(PWCHAR FileName);
 
 	//------------------------------------------------------
 	//  MakeToMem - Функция делает снимок экрана и помещает

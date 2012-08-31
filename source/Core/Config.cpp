@@ -105,7 +105,7 @@ namespace CONFIGDEBUGSTRINGS
 //----------------------------------------------------------------------------
 
 #ifdef USE_BANKING_PREFIX
-	char BOT_PREFIX_BANK[] = {'b','a','n','k','i','n','g', 0};
+	char BOT_PREFIX_BANK[] = "banking";
 #endif
 
 

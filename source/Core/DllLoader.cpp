@@ -429,10 +429,10 @@ bool BuildImport(PVOID ImageBase)
 
 
 //*****************************************************************************
-//                            TDLL
+//                            TMemoryDLL
 //*****************************************************************************
 
-TDLL::TDLL(const void* DllBuf)
+TMemoryDLL::TMemoryDLL(const void* DllBuf)
 {
 	FHandle = NULL;
 	if (!DllBuf) return;
@@ -476,14 +476,14 @@ TDLL::TDLL(const void* DllBuf)
 //----------------------------------------------------------------------------
 
 
-TDLL::~TDLL()
+TMemoryDLL::~TMemoryDLL()
 {
 	if (FHandle)
 		MemoryFreeLibrary(FHandle);
 }
 //----------------------------------------------------------------------------
 
-LPVOID TDLL::GetProcAddress(const char* Name)
+LPVOID TMemoryDLL::GetProcAddress(const char* Name)
 {
 	// Функция возвращает адрес функции библиотеки
 	if (FHandle && !STRA::IsEmpty(Name))
@@ -493,7 +493,7 @@ LPVOID TDLL::GetProcAddress(const char* Name)
 }
 //----------------------------------------------------------------------------
 
-bool TDLL::GetProcAddress(const char* Name, LPVOID &Addr)
+bool TMemoryDLL::GetProcAddress(const char* Name, LPVOID &Addr)
 {
 	Addr = GetProcAddress(Name);
 	return Addr != NULL;

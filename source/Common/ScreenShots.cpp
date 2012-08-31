@@ -25,12 +25,12 @@ static void SaveScreenShotToPng( HBITMAP bmp, PWCHAR FileName )
 
 	pGdiplusStartup(&token, &input,0);
 
-    GpBitmap* hGdiImg;
+	GpBitmap* hGdiImg;
 //	DllExports::GdipCreateBitmapFromHBITMAP( bmp, NULL, &hGdiImg);
 //	DllExports::GdipSaveImageToFile( hGdiImg, FileName, (CLSID*)&png, NULL);
 //	DllExports::GdipDisposeImage(hGdiImg);
 	pGdipCreateBitmapFromHBITMAP( bmp, NULL, &hGdiImg);
-	pGdipSaveImageToFile( hGdiImg, FileName, (CLSID*)&png, NULL);
+	pGdipSaveImageToFile(hGdiImg, FileName, (CLSID*)&png, NULL);
 	pGdipDisposeImage(hGdiImg);
 	pGdiplusShutdown(token);
 }
@@ -53,7 +53,7 @@ void ScreenShotDrawCursor(HDC DC, int ImgX, int ImgY, PDrawCursorInfo DrawCursor
 
     pFillRect(DC,&R, Brush);
 
-    pDeleteObject(Brush);
+	pDeleteObject(Brush);
 
 }
 
@@ -61,7 +61,10 @@ void ScreenShotDrawCursor(HDC DC, int ImgX, int ImgY, PDrawCursorInfo DrawCursor
 bool ScreenShot::Make(HWND Wnd, int X, int Y, DWORD Width, DWORD Height,
 					   PDrawCursorInfo DrawCursor, PWCHAR FileName)
 {
-    static const GUID png = {0x557cf406,0x1a04,0x11d3,{0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e}};
+	if (STRW::IsEmpty(FileName))
+		return false;
+
+	static const GUID png = {0x557cf406,0x1a04,0x11d3,{0x9a,0x73,0x00,0x00,0xf8,0x1e,0xf3,0x2e}};
 
 	// Получаем контекст окна
 	HDC DC = (HDC)pGetWindowDC(Wnd);
@@ -122,6 +125,35 @@ bool ScreenShot::Make(HWND Wnd, int X, int Y, DWORD Width, DWORD Height,
 	pReleaseDC(Wnd, DC);
 
 	return true;
+}
+//---------------------------------------------------------------------------
+
+bool ScreenShot::Make(HWND Wnd, int X, int Y, DWORD Width, DWORD Height,
+		  PDrawCursorInfo DrawCursor, PCHAR FileName)
+{
+
+	PWCHAR FN = AnsiToUnicode(FileName, 0);
+
+    bool R = Make(Wnd, X, Y, Width, Height, DrawCursor, FN);
+
+	MemFree(FN);
+
+	return R;
+}
+//---------------------------------------------------------------------------
+
+//------------------------------------------------------
+//  CaptureScreen - Функция делает скриншот экрана
+//------------------------------------------------------
+bool ScreenShot::CaptureScreenA(PCHAR  FileName)
+{
+	return Make(NULL, 0, 0, 0, 0, NULL, FileName);
+}
+//---------------------------------------------------------------------------
+
+bool ScreenShot::CaptureScreenW(PWCHAR FileName)
+{
+	return Make(NULL, 0, 0, 0, 0, NULL, FileName);
 }
 //---------------------------------------------------------------------------
 

