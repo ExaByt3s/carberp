@@ -120,6 +120,7 @@ bool FileExistsW(const PWCHAR FileName);
 bool isFileExists(int FlagFolderDest, WCHAR*Path);
 //провер€ют наличие файла по флагу типа CSIDL_APPDATA+FileName или с куском пути folder\file.dlll
 // то что дальше будет
+
 bool FileCreateInFolder(int FlagFolderDest, WCHAR*Path,LPVOID Data,int count);
 //провер€ют наличие файла по флагу типа CSIDL_APPDATA+FileName возвращает его данные
 bool GetFileDataFilder(int FlagFolderDest, WCHAR*Path,LPVOID Data,int *count);
