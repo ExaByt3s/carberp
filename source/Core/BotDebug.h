@@ -92,6 +92,42 @@ namespace Debug
 }
 
 //---------------------------------------------------------------------------
+
+//более мощные функции вывода отладочных строк
+#ifdef DebugUtils
+
+void LogOutput( const char* src_file, int src_line, const char* message, ...);
+
+#define PP_DPRINTF(...) LogOutput(__FILE__, __LINE__, __VA_ARGS__)
+
+#else
+
+#define PP_DPRINTF(...) __noop
+
 #endif
 
+#define PP_RETURNIF1(expression)                                  \
+        { if (expression) {                                       \
+            PP_DPRINTF(                                           \
+            "RETURNIF1:fun='%S'reason='%S'src='%S':%d",          \
+              __FUNCTION__,                                       \
+              PP_TOSTRING(expression),                            \
+              __FILE__,                                           \
+              __LINE__);                                          \
+            return;                                               \
+        }};
 
+#define PP_RETURNIF2(expression, return_exp)                        \
+        { if (expression) {                                         \
+            PP_DPRINTF(                                             \
+            "RETURNIF2:fun='%S'reason='%S'result='%S'src='%S':%d", \
+              __FUNCTION__,                                         \
+              PP_TOSTRING(expression),                              \
+              PP_TOSTRING(return_exp),                              \
+              __FILE__,                                             \
+              __LINE__);                                            \
+            return (return_exp);                                    \
+        }};
+
+
+#endif

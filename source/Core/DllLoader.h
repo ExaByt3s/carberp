@@ -92,6 +92,7 @@ public:
 	~TMemoryDLL();
 
     HMEMORYMODULE inline Handle() { return FHandle; }
+	bool		  IsTrue() { return FHandle != NULL; } //true если dll инициализирована
 
 	LPVOID        GetProcAddress(const char*   Name);
 	LPVOID inline GetProcAddress(const string& Name) { return GetProcAddress(Name.t_str()); }

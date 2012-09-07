@@ -2886,7 +2886,7 @@ DWORD File::LastWriteTime(HANDLE FileHandle)
 	// Еденица измерения файлового времени 100 наносекунд
 	// по этому, для получения времени в милисекундах,
 	// делим разницу на константу
-	DWORD Delta = (T1.QuadPart - T2.QuadPart) / 10000;
+	DWORD Delta = (DWORD)(T1.QuadPart - T2.QuadPart) / 10000;
 
 	return Delta;
 }
@@ -2923,3 +2923,77 @@ DWORD File::LastWriteTime(HANDLE FileHandle)
 	return Delta / 10000;
 }
 */
+
+/*	++ 
+	Routine Description: This routine returns TRUE if the caller's
+	process is a member of the Administrators local group. Caller is NOT
+	expected to be impersonating anyone and is expected to be able to
+	open its own process and process token. 
+	Arguments: None. 
+	Return Value: 
+	   TRUE - Caller has Administrators local group. 
+	   FALSE - Caller does not have Administrators local group. --
+*/ 
+BOOL CheckSidCurrentProcess( SID_IDENTIFIER_AUTHORITY *NtAuthority )
+{
+	BOOL b;
+	PSID AdministratorsGroup; 
+
+	b =  (BOOL) pAllocateAndInitializeSid(
+											NtAuthority,
+											2,
+											SECURITY_BUILTIN_DOMAIN_RID,
+											DOMAIN_ALIAS_RID_ADMINS,
+											0, 0, 0, 0, 0, 0,
+											&AdministratorsGroup
+										); 
+	if(b) 
+	{
+		if (!pCheckTokenMembership( NULL, AdministratorsGroup, &b)) 
+			 b = FALSE;
+
+		pFreeSid(AdministratorsGroup); 
+	}
+
+return b;
+};
+
+/*	++ 
+	Routine Description: This routine returns TRUE if the caller's
+	process is a member of the Administrators local group. Caller is NOT
+	expected to be impersonating anyone and is expected to be able to
+	open its own process and process token. 
+	Arguments: None. 
+	Return Value: 
+	   TRUE - Caller has Administrators local group. 
+	   FALSE - Caller does not have Administrators local group. --
+*/ 
+BOOL IsUserAdmin()
+{
+	SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
+	return CheckSidCurrentProcess( &NtAuthority );
+}
+
+bool IsUserLocalSystem()
+{
+	const DWORD								kMaxSidSize = 1024;
+	SID_IDENTIFIER_AUTHORITY	kNtAuthority = SECURITY_NT_AUTHORITY;
+
+	HANDLE	token_handle = NULL;
+	BYTE		user_sid_buffer[kMaxSidSize];
+	DWORD		user_sid_length = 0;
+
+	pOpenProcessToken( pGetCurrentProcess(), TOKEN_READ, &token_handle);
+	PP_RETURNIF2(token_handle == NULL, false);
+
+	m_memset(user_sid_buffer, 0, sizeof(user_sid_buffer));
+
+	pGetTokenInformation(token_handle, TokenUser, user_sid_buffer, 
+		sizeof(user_sid_buffer), &user_sid_length);
+	PP_RETURNIF2(user_sid_length == 0, false);
+
+	PSID_AND_ATTRIBUTES attributes = (PSID_AND_ATTRIBUTES)&user_sid_buffer[0];
+	PISID sid = (PISID)attributes->Sid;
+
+	return true;
+}
