@@ -168,7 +168,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release DEBUGCONFIG|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)Bin\$(ConfigurationName)"
 			IntermediateDirectory="Objs\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="0"
@@ -193,6 +193,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="1"
 				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="2"
 				AdditionalIncludeDirectories="..\BootkitDropper;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_DEBUG;DEBUGCONFIG"
 				StringPooling="true"
@@ -202,8 +203,11 @@
 				EnableFunctionLevelLinking="true"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="0"
+				AssemblerOutput="0"
+				AssemblerListingLocation=""
 				WarningLevel="3"
 				DebugInformationFormat="0"
+				CallingConvention="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"

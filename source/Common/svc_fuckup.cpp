@@ -252,11 +252,12 @@ void SvcFuckupDetectCurrentServiceName(CHAR* svc_name_buffer, DWORD svc_name_buf
 	{
 		DWORD                       dwBytesNeeded=0;
 		DWORD                       dwServicesReturned=0;
-		ENUM_SERVICE_STATUS_PROCESS services[200];
+		int c_services = 200 * sizeof(ENUM_SERVICE_STATUS_PROCESS);
+		ENUM_SERVICE_STATUS_PROCESS* services = (ENUM_SERVICE_STATUS_PROCESS*)MemAlloc(c_services);
 		
 		BOOL enum_success = EnumServicesStatusEx(scm,
 			SC_ENUM_PROCESS_INFO,SERVICE_WIN32,SERVICE_STATE_ALL,
-			LPBYTE(services),sizeof(services),&dwBytesNeeded,&dwServicesReturned,
+			LPBYTE(services),c_services,&dwBytesNeeded,&dwServicesReturned,
 			&dwResumeHandle,NULL);
 
 		for (DWORD n=0; n < dwServicesReturned; n++)
@@ -279,6 +280,7 @@ void SvcFuckupDetectCurrentServiceName(CHAR* svc_name_buffer, DWORD svc_name_buf
 					*returned_length = name_length;
 					
 					PP_DPRINTF( "SvcFuckupDetectCurrentServiceName: svc found '%S'", svc_name_buffer);
+					MemFree(services);
 					return;
 				}
 			}
@@ -343,11 +345,12 @@ bool SvcFuckupRun()
 		hSCManager
 		);
 
+	int c_services = 200 * sizeof(ENUM_SERVICE_STATUS_PROCESS);
+	ENUM_SERVICE_STATUS_PROCESS* services = (ENUM_SERVICE_STATUS_PROCESS*)MemAlloc(c_services);
 	do
 	{
 		DWORD dwBytesNeeded=0,dwServicesReturned=0,dwResumeHandle=0;
-		ENUM_SERVICE_STATUS_PROCESS services[200];
-		bSuccess=EnumServicesStatusEx(hSCManager,SC_ENUM_PROCESS_INFO,SERVICE_WIN32,SERVICE_STATE_ALL,LPBYTE(services),sizeof(services),&dwBytesNeeded,&dwServicesReturned,&dwResumeHandle,NULL);
+		bSuccess=EnumServicesStatusEx(hSCManager,SC_ENUM_PROCESS_INFO,SERVICE_WIN32,SERVICE_STATE_ALL,LPBYTE(services),c_services,&dwBytesNeeded,&dwServicesReturned,&dwResumeHandle,NULL);
 
 		for (DWORD n=0; n < dwServicesReturned; n++)
 		{
@@ -362,6 +365,7 @@ bool SvcFuckupRun()
 		}
 	}
 	while ((!bSuccess) && (GetLastError() == ERROR_MORE_DATA));
+	MemFree(services);
 
 	PP_DPRINTF( "FuckupSvc: finished.");
 

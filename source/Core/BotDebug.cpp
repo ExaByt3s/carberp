@@ -180,7 +180,7 @@ void Debug::Message(PCHAR Module, PCHAR Str)
 
 void logoutputv( const char* src_file, int src_line, const char* message, va_list ptr )
 {
-	char buffer[4096];
+	char buffer[1024];
 	DWORD written = (DWORD)pwvsprintfW( buffer, message, ptr );
 	pOutputDebugStringA(buffer);
 }
