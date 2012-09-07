@@ -28,4 +28,6 @@ void DebugReportSaveSettings(const char* ParamsList);
 // «апуск тестов дл€ просмотра отладочного вывода
 void DebugReportRunTests();
 
+char* CalcNtldrMd5(char* Buffer, DWORD BufferSize);
+
 #endif // #ifndef UUID_E4500F5134534F79A3663021D13CDBC8

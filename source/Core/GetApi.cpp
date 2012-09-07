@@ -319,6 +319,7 @@ namespace DLLS
 	const static char psapi_dll[]	  = {'p','s','a','p','i','.','d','l','l',0};
 	const static char shlwapi_dll[]	  = {'s','h','l','w','a','p','i','.','d','l','l',0};
 	const static char version_dll[]  = {'v','e','r','s','i','o','n','.','d','l','l',0};
+	const static char imagehelp_dll[] = {'I','m','a','g','e','h','l','p','.','d','l','l',0};
 }
 
 PCHAR GetDLLName(TDllId ID)
@@ -350,6 +351,7 @@ PCHAR GetDLLName(TDllId ID)
 		case DLL_COMANDLG32: Return(commdlg32_dll);
 		case DLL_ODBC32:     Return(odbc32_dll);
 		case DLL_VERSION:	 Return(version_dll);
+		case DLL_IMAGEHLP:	 Return(imagehelp_dll);
 	}
 	return NULL;
 }
@@ -489,7 +491,7 @@ LPVOID GetProcAddressEx(PCHAR Dll, DWORD dwModule, DWORD dwProcNameHash )
 			
 			case DLL_OLE32: 
 				DllName = ole32_dll; break;
-			
+
 			default:
 				return 0;
 		}
