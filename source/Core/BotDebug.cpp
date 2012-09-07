@@ -114,7 +114,7 @@ void Debug::MessageEx(PCHAR Module, DWORD Line, PCHAR Section, PCHAR ExtData, PC
 {
 	// Вызвать отладочное сообщение
 #ifdef DebugUtils
-	PCHAR FullLine = STR::Alloc(StrCalcLength(Str) + 4096);
+	PCHAR FullLine = STR::Alloc(StrCalcLength(Str) + 1024);
 
 	va_list Arguments;
 	va_start(Arguments, Str);
@@ -180,9 +180,10 @@ void Debug::Message(PCHAR Module, PCHAR Str)
 
 void logoutputv( const char* src_file, int src_line, const char* message, va_list ptr )
 {
-	char buffer[4096];
-	DWORD written = (DWORD)pwvsprintfW( buffer, message, ptr );
-	pOutputDebugStringA(buffer);
+	
+	string Buf(4096);
+	DWORD written = (DWORD)pwvsprintfW( Buf.t_str(), message, ptr );
+	pOutputDebugStringA(Buf.t_str());
 }
 
 void LogOutput( const char* src_file, int src_line, const char* message, ... )

