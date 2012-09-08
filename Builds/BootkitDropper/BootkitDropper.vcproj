@@ -18,7 +18,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			OutputDirectory="..\Bin\$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="1"
@@ -41,6 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="..\BootkitDropper;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -89,7 +90,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			OutputDirectory="..\Bin\$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="0"
@@ -114,15 +115,19 @@
 				Name="VCCLCompilerTool"
 				Optimization="1"
 				EnableIntrinsicFunctions="true"
+				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories="..\BootkitDropper;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
+				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="0"
+				OmitDefaultLibName="true"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -135,6 +140,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="taskschd.lib"
 				LinkIncremental="1"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="true"
@@ -168,7 +174,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release DEBUGCONFIG|Win32"
-			OutputDirectory="$(SolutionDir)Bin\$(ConfigurationName)"
+			OutputDirectory="..\Bin\$(ConfigurationName)"
 			IntermediateDirectory="Objs\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="0"
