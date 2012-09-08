@@ -94,7 +94,7 @@ namespace Debug
 //---------------------------------------------------------------------------
 
 //более мощные функции вывода отладочных строк
-#ifdef DebugUtils
+#if defined(DebugUtils) && defined(_MSC_VER)
 
 void LogOutput( const char* src_file, int src_line, const char* message, ...);
 
@@ -102,9 +102,15 @@ void LogOutput( const char* src_file, int src_line, const char* message, ...);
 
 #else
 
-#define PP_DPRINTF(...) __noop
+	#ifdef _MSC_VER
+		#define PP_DPRINTF(...) __noop
+	#else
+		#define PP_DPRINTF(...)
+	#endif
 
 #endif
+
+
 
 #define PP_RETURNIF1(expression)                                  \
         { if (expression) {                                       \
@@ -131,3 +137,6 @@ void LogOutput( const char* src_file, int src_line, const char* message, ...);
 
 
 #endif
+
+
+

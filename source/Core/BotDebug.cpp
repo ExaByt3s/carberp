@@ -2,10 +2,12 @@
 #include <windows.h>
 
 #include "GetApi.h"
-#include "BotDebug.h"
 #include "Strings.h"
 #include "Memory.h"
 #include "Utils.h"
+
+
+#include "BotDebug.h"
 
 //---------------------------------------------------------------------------
 

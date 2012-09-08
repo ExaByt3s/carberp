@@ -1301,8 +1301,6 @@ bool SearchFiles(PCHAR Path, PCHAR Mask, bool Recursive, DWORD FileAttributes,
 		if (Error != 5 /* Нет доступа */ && Recursive && DirExists(Path))
 		{
 
-			Debug::MessageEx("", 0, "", NULL, "Рекурсив %d", Error);
-
 			TRecursiveSearchData SD;
 			SD.Mask = Mask;
 			SD.Data = Data;
