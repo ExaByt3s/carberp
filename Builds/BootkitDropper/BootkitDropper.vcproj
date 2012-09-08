@@ -89,7 +89,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)Bin\$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="0"
@@ -114,12 +114,15 @@
 				Name="VCCLCompilerTool"
 				Optimization="1"
 				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="2"
+				AdditionalIncludeDirectories="..\BootkitDropper;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
+				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="0"
@@ -135,6 +138,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="taskschd.lib"
 				LinkIncremental="1"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="true"
@@ -192,11 +196,12 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="1"
-				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="2"
+				EnableIntrinsicFunctions="false"
+				FavorSizeOrSpeed="0"
+				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="..\BootkitDropper;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_DEBUG;DEBUGCONFIG"
-				StringPooling="true"
+				StringPooling="false"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -208,6 +213,7 @@
 				WarningLevel="3"
 				DebugInformationFormat="0"
 				CallingConvention="0"
+				OmitDefaultLibName="true"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"

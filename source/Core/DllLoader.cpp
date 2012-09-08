@@ -439,7 +439,6 @@ TMemoryDLL::TMemoryDLL(const void* DllBuf)
 
 	bool Encrypted = false;
 	LPBYTE Buf = (LPBYTE)DllBuf;
-
 	if (!IsExecutableFile((VOID*)DllBuf))
 	{
 		// Переданный буфер не является исполняемым файлом, расшифровываем его

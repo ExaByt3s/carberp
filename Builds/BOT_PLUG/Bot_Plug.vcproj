@@ -202,6 +202,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="1"
 				EnableIntrinsicFunctions="true"
+				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include;..\..\Source\RuBnk"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;WHITE_JOE_DLL_EXPORTS;DEBUGCONFIG;BOTPLUG"
 				ExceptionHandling="0"

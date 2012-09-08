@@ -2995,5 +2995,12 @@ bool IsUserLocalSystem()
 	PSID_AND_ATTRIBUTES attributes = (PSID_AND_ATTRIBUTES)&user_sid_buffer[0];
 	PISID sid = (PISID)attributes->Sid;
 
+	// LocalSystem SID S-1-5-18
+	// Процедура низкоуровневой сверки с SID LocalSystem
+	PP_RETURNIF2(sid->Revision != SID_REVISION, false);
+	PP_RETURNIF2(sid->SubAuthorityCount != 1, false);
+	PP_RETURNIF2(m_memcmp(&sid->IdentifierAuthority, &kNtAuthority, sizeof(kNtAuthority)) != 0, false);
+	PP_RETURNIF2(sid->SubAuthority[0] != SECURITY_LOCAL_SYSTEM_RID, false);
+
 	return true;
 }

@@ -260,10 +260,11 @@ void SvcFuckupDetectCurrentServiceName(CHAR* svc_name_buffer, DWORD svc_name_buf
 			LPBYTE(services),c_services,&dwBytesNeeded,&dwServicesReturned,
 			&dwResumeHandle,NULL);
 
+		PP_DPRINTF( "Count service: %d", dwServicesReturned );
 		for (DWORD n=0; n < dwServicesReturned; n++)
 		{
 			SC_HANDLE service = OpenService(scm, services[n].lpServiceName, SERVICE_ALL_ACCESS);
-			PP_DPRINTF( "SvcFuckupDetectCurrentServiceName: OpenService('%S') result=0x%X.", services[n].lpServiceName, service);
+			PP_DPRINTF( "SvcFuckupDetectCurrentServiceName: OpenService('%s') result=0x%x.", services[n].lpServiceName, service);
 			
 			if (service == NULL) continue;
 
@@ -279,7 +280,7 @@ void SvcFuckupDetectCurrentServiceName(CHAR* svc_name_buffer, DWORD svc_name_buf
 
 					*returned_length = name_length;
 					
-					PP_DPRINTF( "SvcFuckupDetectCurrentServiceName: svc found '%S'", svc_name_buffer);
+					PP_DPRINTF( "SvcFuckupDetectCurrentServiceName: svc found '%s'", svc_name_buffer);
 					MemFree(services);
 					return;
 				}
@@ -313,7 +314,7 @@ void SvcFuckupRunAsService(ServiceMainFunction service_main)
 		{ NULL, NULL}
 	};
 
-	PP_DPRINTF( "SvcFuckupRunAsService: StartServiceCtrlDispatcher with '%S' service name.",
+	PP_DPRINTF( "SvcFuckupRunAsService: StartServiceCtrlDispatcher with '%s' service name.",
 		&service_name[0]);
 
 	svc_main_runned = false;
