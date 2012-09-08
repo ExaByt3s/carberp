@@ -79,23 +79,19 @@ namespace CONFIGDEBUGSTRINGS
 
 	//  Хосты должны быть с двумя нулями в конце
 
-//	char BOT_HOSTS_ARRAY[MAX_HOSTS_BUF_SIZE]	  = "rus.gipa.in\0";
-//	PCHAR DebugPassword   = "bRS8yYQ0APq9xfzC";
-//	char DebugBotPrefix[] = "aaaaaaaaa";
-//	PCHAR DebugDelay      = "1";
 
+    // Для тестов буткита
+//	char BOT_MAINHOSTS_ARRAY[MAX_MAINHOSTS_BUF_SIZE] = "4lordfg.info\0";
+//	char MainPassword[MAX_PASSWORD_SIZE + 1] = "jCPSJ0vXgdBaD5kA";
 
 	char BOT_MAINHOSTS_ARRAY[MAX_MAINHOSTS_BUF_SIZE] = "rus.zika.in\0";
+	char MainPassword[MAX_PASSWORD_SIZE + 1] = "bRS8yYQ0APq9xfzC";
+	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = "test";
+	char Delay[MAX_DELAY_SIZE + 1]       = "1";
 
 	#ifdef USE_BANKING_HOSTS
 		char BOT_BANKHOSTS_ARRAY[MAX_BANKHOSTS_BUF_SIZE] = "rus.zika.in\0";
 	#endif
-
-	char MainPassword[MAX_PASSWORD_SIZE + 1] = "bRS8yYQ0APq9xfzC";
-
-
-	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = "bsuurgfswnbg";
-	char Delay[MAX_DELAY_SIZE + 1]       = "1";
 
 #endif
 

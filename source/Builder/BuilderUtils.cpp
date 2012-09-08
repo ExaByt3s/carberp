@@ -755,6 +755,15 @@ void __fastcall TBotBuilder::InitializeModules()
 	// Настройки анализатора истории навигации
 	Module = AddModule(Module_HistoryAnalyzer);
 	Module->AddParam(true, BOTPARAM_ENCRYPTED_HISANALIZERLINKS, BOTPARAM_HISANALIZERLINKS, BOTPARAM_SIZE_HISANALIZERLINKS, "Ссылки анализатора истории навигации");
+
+
+
+	// Настройки дропера буткита
+	Module = AddModule(Module_BootkitDroper);
+	Module->AddParam(true, false, Param_DroperNamePrefix, 0, "Превикс дропера буткита");
+	Module->AddParam(true, false, Param_TargetPlatform,   0, "Платформа назначения дропера буткита");
+	TBotParam* P = Module->AddParam(true, false, Param_SVCFuckupEnabled, 0, "Использовать SVC подмену дропером буткита");
+	P->AsAnsiString = "0";
 }
 
 
@@ -770,7 +779,7 @@ __fastcall TBotParam::TBotParam(TBotBuilder* AOwner, bool NotNull, bool Encrypte
 		throw Exception("Unknown param name!");
 
 	if (Size == 0)
-		throw Exception("Unknown param size!");
+		Size = STRA::Length(Name);
 
 	FEnabled = true;
 	FEncrypted = Encrypted;
@@ -915,6 +924,18 @@ void __fastcall TBotParam::SetAsLong(DWORD Value)
 	AnsiString S(Value);
 	SetValue(S.c_str(), S.Length());
 }
+
+bool __fastcall TBotParam::GetAsBool()
+{
+	return AsAnsiString == "1";
+}
+
+void __fastcall TBotParam::SetAsBool(bool Value)
+{
+	AsAnsiString = (Value) ? "1" : "0";
+}
+
+
 
 
 void __fastcall TBotParam::SaveToStream(TStream *Stream)

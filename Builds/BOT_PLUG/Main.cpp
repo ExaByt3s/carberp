@@ -182,9 +182,9 @@ extern"C"  void WINAPI Start(LPVOID, LPVOID, LPVOID)
 
 BOOL APIENTRY MyDllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
-					 )
+                       LPVOID lpReserved)
 {
+
 	switch (ul_reason_for_call)
 	{
 		case DLL_PROCESS_ATTACH:
@@ -195,6 +195,7 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 		case DLL_PROCESS_DETACH:
 			break;
 	}
+	
 	return TRUE;
 }
 
