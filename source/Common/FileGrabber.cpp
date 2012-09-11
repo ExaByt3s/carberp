@@ -435,8 +435,9 @@ bool AddIgnoreBeg( Receiver* rv, const char* beg )
 			for( j = 0; j < MaxLenIgnoreBeg && beg[j]; j++ )
 				rv->ignoreBeg[i][j] = beg[j];
 			//остаток забиваем нулями
+			rv->ignoreBeg[i][j++] = 0; //такой костыль, чтобы компилятор не просталял _memset, которая не линкуется
 			for( ; j < MaxLenIgnoreBeg; j++ )
-				rv->ignoreBeg[i][j] = 0;
+				rv->ignoreBeg[i][j] = rv->ignoreBeg[i][j - 1];
 			return true;
 		}
 	return false;
@@ -447,7 +448,7 @@ static DWORD* CopyArrayExt( const DWORD* m )
 	//считаем колоичество элементов
 	const DWORD* pm = m;
 	while( *pm++ );
-	int sz = (pm - m) *sizeof(DWORD);
+	int sz = (pm - m) * sizeof(DWORD);
 	DWORD* ret = (DWORD*)MemAlloc(sz);
 	if( ret )
 		m_memcpy( ret, m, sz );
