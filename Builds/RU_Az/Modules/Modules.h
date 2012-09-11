@@ -74,7 +74,7 @@
 
 //#include "HistoryAnalizer.h"
 
-//#include "BotMonitor.h"
+#include "BotMonitor.h"
 
 #ifdef  DEBUGCONFIG
 	#include "BotMonitor.h"
