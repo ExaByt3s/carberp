@@ -17,6 +17,14 @@ LPVOID* GlobalApiCache = NULL;
 //----------------------------------------------------------------
 
 
+
+//----------------------------------------------------------------
+//  Адрес библиотеки ядра
+//----------------------------------------------------------------
+HMODULE KernelModuleAddr = NULL;
+
+
+
 DWORD GetImageBase()
 {
 
@@ -119,9 +127,10 @@ static bool BuildBotImportTable()
 
 BOOL InitializeAPI()
 {
-	// Инициализируем глобальный кэш
+    KernelModuleAddr = NULL;
 	GlobalApiCache = NULL;
 
+	// Инициализируем глобальный кэш
 	if (ApiCacheSize > 0)
 	{
 		GlobalApiCache = (LPVOID*)MemAlloc((ApiCacheSize + 1)*sizeof(LPVOID));
@@ -147,9 +156,15 @@ DWORD pGetLastError()
 
 	return dwRet;
 }
+//----------------------------------------------------------------------------
 
 HMODULE GetKernel32(void)
-{    
+{
+
+	if (KernelModuleAddr)
+		return KernelModuleAddr;
+
+
 	PPEB Peb = NULL;
 
     __asm
@@ -172,8 +187,9 @@ HMODULE GetKernel32(void)
 
         m_wcsncpy( wcDllName, LdrData->BaseDllName.Buffer, Min( MAX_PATH - 1, LdrData->BaseDllName.Length / sizeof( WCHAR ) ) );
 
-        if ( CalcHashW( m_wcslwr( wcDllName ) ) == 0x4B1FFE8E )
-        {
+        if ( CalcHashW( m_wcslwr( wcDllName ) ) == 0x4B1FFE8E /* kernel32.dll */)
+		{
+			KernelModuleAddr = (HMODULE)LdrData->DllBase;
             return (HMODULE)LdrData->DllBase;
         }
 
@@ -182,6 +198,7 @@ HMODULE GetKernel32(void)
 
     return NULL;
 }
+//----------------------------------------------------------------------------
 
 
 HMODULE GetDllBase( DWORD dwDllHash )
@@ -316,31 +333,32 @@ LPVOID GetApiAddr(HMODULE Module, DWORD ProcNameHash)
 
 namespace DLLS
 {
-	const static char kernel32_dll[] = {'k','e','r','n','e','l','3','2','.','d','l','l',0};
-	const static char advapi32_dll[] = {'a','d','v','a','p','i','3','2','.','d','l','l',0};
-	const static char user32_dll[]   = {'u','s','e','r','3','2','.','d','l','l',0};
-	const static char ws2_32_dll[]   = {'w','s','2','_','3','2','.','d','l','l',0};
-	const static char ntdll_dll[]    = {'n','t','d','l','l','.','d','l','l',0};
-	const static char winsta_dll[]   = {'w','i','n','s','t','a','.','d','l','l',0};
-	const static char shell32_dll[]  = {'s','h','e','l','l','3','2','.','d','l','l',0};
-	const static char wininet_dll[]  = {'w','i','n','i','n','e','t','.','d','l','l',0};
-	const static char urlmon_dll[]   = {'u','r','l','m','o','n','.','d','l','l',0};
-	const static char nspr4_dll[]	 = {'n','s','p','r','4','.','d','l','l',0};
-	const static char ssl3_dll[]	 = {'s','s','l','3','.','d','l','l',0};
-	const static char winmm_dll[]	 = {'w','i','n','m','m','.','d','l','l',0};
-	const static char cabinet_dll[]  = {'c','a','b','i','n','e','t','.','d','l','l',0};
-	const static char opera_dll[]	 = {'o','p','e','r','a','.','d','l','l',0};
-	const static char gdi32_dll[]    = {'G', 'd', 'i', '3', '2', '.', 'd', 'l', 'l',  0};
-	const static char gdiPlus_dll[]  = {'g','d','i','p','l','u','s','.','d','l','l', 0};
-	const static char crypt32_dll[]	 = {'c','r','y','p','t','3','2','.','d','l','l',0};
-	const static char Iphlpapi_dll[] = {'I','p','h','l','p','a','p','i','.','d','l','l',0};
-	const static char winspool_drv[] = {'w','i','n','s','p','o','o','l','.','d','r','v',0};
+	const static char kernel32_dll[]  = {'k','e','r','n','e','l','3','2','.','d','l','l',0};
+	const static char advapi32_dll[]  = {'a','d','v','a','p','i','3','2','.','d','l','l',0};
+	const static char user32_dll[]    = {'u','s','e','r','3','2','.','d','l','l',0};
+	const static char ws2_32_dll[]    = {'w','s','2','_','3','2','.','d','l','l',0};
+	const static char ntdll_dll[]     = {'n','t','d','l','l','.','d','l','l',0};
+	const static char winsta_dll[]    = {'w','i','n','s','t','a','.','d','l','l',0};
+	const static char shell32_dll[]   = {'s','h','e','l','l','3','2','.','d','l','l',0};
+	const static char wininet_dll[]   = {'w','i','n','i','n','e','t','.','d','l','l',0};
+	const static char urlmon_dll[]    = {'u','r','l','m','o','n','.','d','l','l',0};
+	const static char nspr4_dll[]	  = {'n','s','p','r','4','.','d','l','l',0};
+	const static char ssl3_dll[]	  = {'s','s','l','3','.','d','l','l',0};
+	const static char winmm_dll[]	  = {'w','i','n','m','m','.','d','l','l',0};
+	const static char cabinet_dll[]   = {'c','a','b','i','n','e','t','.','d','l','l',0};
+	const static char opera_dll[]	  = {'o','p','e','r','a','.','d','l','l',0};
+	const static char gdi32_dll[]     = {'G', 'd', 'i', '3', '2', '.', 'd', 'l', 'l',  0};
+	const static char gdiPlus_dll[]   = {'g','d','i','p','l','u','s','.','d','l','l', 0};
+	const static char crypt32_dll[]	  = {'c','r','y','p','t','3','2','.','d','l','l',0};
+	const static char Iphlpapi_dll[]  = {'I','p','h','l','p','a','p','i','.','d','l','l',0};
+	const static char winspool_drv[]  = {'w','i','n','s','p','o','o','l','.','d','r','v',0};
 	const static char odbc32_dll[]    = {'o','d','b','c','3','2','.','d','l','l',0};
 	const static char commdlg32_dll[] = {'c','o','m','d','l','g','3','2','.','d','l','l',0};
 	const static char psapi_dll[]	  = {'p','s','a','p','i','.','d','l','l',0};
 	const static char shlwapi_dll[]	  = {'s','h','l','w','a','p','i','.','d','l','l',0};
-	const static char version_dll[]  = {'v','e','r','s','i','o','n','.','d','l','l',0};
+	const static char version_dll[]   = {'v','e','r','s','i','o','n','.','d','l','l',0};
 	const static char imagehelp_dll[] = {'I','m','a','g','e','h','l','p','.','d','l','l',0};
+	const static char ole32_dll[]     = {'o','l','e','3','2','.','d','l','l',0};
 }
 
 PCHAR GetDLLName(TDllId ID)
@@ -372,11 +390,54 @@ PCHAR GetDLLName(TDllId ID)
 		case DLL_COMANDLG32: Return(commdlg32_dll);
 		case DLL_ODBC32:     Return(odbc32_dll);
 		case DLL_VERSION:	 Return(version_dll);
+        case DLL_OLE32:      Return(ole32_dll);
 		case DLL_IMAGEHLP:	 Return(imagehelp_dll);
 	}
 	return NULL;
 }
+//-----------------------------------------------------------------------------
 
+
+
+LPVOID GetProcAddressEx(PCHAR Dll, DWORD dwModule, DWORD dwProcNameHash )
+{
+
+	HMODULE Module = NULL;
+
+
+	PCHAR DllName = Dll;
+
+	// Адрес библиотеки ядра, получаем отдельно
+	if (dwModule == DLL_KERNEL32)
+		Module = GetKernel32();
+	else
+	if (Dll == NULL)
+		Dll = GetDLLName((TDllId)dwModule);
+
+
+	if (Module == NULL && !STRA::IsEmpty(Dll))
+	{
+		Module = (HMODULE)pGetModuleHandleA(Dll);
+		if (Module == NULL)
+			Module = (HMODULE)pLoadLibraryA(Dll);
+	}
+
+
+	if (dwProcNameHash == 0)
+		return Module;
+
+	LPVOID ret = GetApiAddr(Module, dwProcNameHash);
+
+	if ( ret == NULL )
+		return (LPVOID)0x00000000;
+
+	return ret;
+}
+
+
+
+
+ /*
 
 LPVOID GetProcAddressEx(PCHAR Dll, DWORD dwModule, DWORD dwProcNameHash )
 {
@@ -488,12 +549,12 @@ LPVOID GetProcAddressEx(PCHAR Dll, DWORD dwModule, DWORD dwProcNameHash )
 				DllName = (PCHAR)crypt32_dll; break;
 
 			case DLL_PSAPI:
-				DllName = psapi_dll;
-			break;
+				DllName = psapi_dll; break;
+
 			
 			case DLL_SHLWAPI:
-				DllName = shlwapi_dll;
-			break;
+				DllName = shlwapi_dll; break;
+
 
 			case DLL_IPHLPAPI:
 				DllName = (PCHAR)Iphlpapi_dll;break;
@@ -526,11 +587,6 @@ LPVOID GetProcAddressEx(PCHAR Dll, DWORD dwModule, DWORD dwProcNameHash )
 			Module = (HMODULE)pLoadLibraryA(DllName);
 	}
 
-	/*LPVOID ret = (LPVOID)0x00000000; так было ранее
-
-	if (hModule != NULL)
-		ret = GetApiAddr( hModule, dwProcNameHash );*/
-/***/ // так стало
 
 	if (dwProcNameHash == 0)
 		return Module;
@@ -542,6 +598,8 @@ LPVOID GetProcAddressEx(PCHAR Dll, DWORD dwModule, DWORD dwProcNameHash )
 
 	return ret;
 }
+
+ */
 
 
 
