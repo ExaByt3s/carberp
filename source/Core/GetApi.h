@@ -212,7 +212,7 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 //
 // Значение автоматически устанавливается утилитой
 //
-// Не переименовывать, не изменять!!!!!!!
+// Не переименовывать, не изменять значение!!!!!!!
 //
 //**************************************************
 const static int ApiCacheSize = 534;
@@ -750,7 +750,6 @@ const static int ApiCacheSize = 534;
 #define pEnumProcessModules			pushargEx< DLL_PSAPI, 0x189F16C9, 493 >
 #define pGetModuleBaseNameA			pushargEx< DLL_PSAPI, 0x7353EFE8, 494 >
 #define pGetModuleFileNameExA		pushargEx< DLL_PSAPI, 0xE4FB2191, 495 >
-
 #define pGetProcessImageFileNameA	pushargEx<DLL_PSAPI, 0x2741105, 496 >
 
 
