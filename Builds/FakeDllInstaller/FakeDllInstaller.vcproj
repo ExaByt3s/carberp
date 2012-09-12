@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="9,00"
 	Name="FakeDllInstaller"
 	ProjectGUID="{AB3EE774-F225-48E4-ACB0-54A509C21973}"
 	RootNamespace="FakeDllInstaller"
@@ -123,6 +123,7 @@
 				Optimization="1"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="2"
+				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core;..\..\Source\Common;..\..\Source\Misc;..\..\Source"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;"
 				StringPooling="false"
@@ -204,9 +205,10 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="2"
+				Optimization="1"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core;..\..\Source\Common"
+				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories="Source;Modules;..\..\Source\Core;..\..\Source\Common;..\..\Source\Misc"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;DEBUGCONFIG;"
 				StringPooling="false"
 				MinimalRebuild="true"
@@ -328,6 +330,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\FakeDll.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\FakeDllInstaller.def"
 				>
 			</File>
@@ -353,6 +359,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\Plugins.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\StrConsts.cpp"
 				>
 			</File>
 			<File
@@ -467,6 +477,10 @@
 			</File>
 			<File
 				RelativePath=".\stdafx.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\StrConsts.h"
 				>
 			</File>
 			<File

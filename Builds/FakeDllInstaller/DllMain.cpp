@@ -25,6 +25,7 @@ namespace LDRDEBGTEMPLATES
 
 #define FAKEDLLDBG LDRDEBGTEMPLATES::DBGOutMessage<>
 
+extern unsigned char fakeDllData[]; //fake.dll
 
 // Простое шифрование путем XOR. 
 // Сделана отдельно, чтобы скопировать в FakeDll и гарантировано 

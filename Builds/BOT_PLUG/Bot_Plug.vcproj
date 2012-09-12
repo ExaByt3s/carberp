@@ -458,6 +458,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\JavaConfig.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Common\KeepAlive.cpp"
 				>
 			</File>
@@ -801,10 +805,6 @@
 			</File>
 			<File
 				RelativePath="..\..\source\RuBnk\Javaclient2015Saver.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\RuBnk\JavaConfig.cpp"
 				>
 			</File>
 			<File
