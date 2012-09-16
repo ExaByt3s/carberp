@@ -77,7 +77,28 @@ int m_memcmp( const void *buf1, const void *buf2, size_t count )
 	return rc;
 }
 
-
+void* m_memmem( const void* mem1, int szMem1, const void* mem2, int szMem2 )
+{
+	const char* p1 = (const char*)mem1;
+	const char* p2 = (const char*)mem2;
+	while( szMem1 >= szMem2 )
+	{
+		if( *p1 == *p2 )
+		{
+			int i = 1;
+			while( i < szMem2 )
+				if( p1[i] != p2[i] )
+					break;
+				else
+					i++;
+			if( i >= szMem2 ) //совпало
+				return (void*)p1;
+		}
+		p1++;
+		szMem1--;
+	}
+	return 0;
+}
 
 DWORD GetMemSize( LPVOID lpAddr )
 {

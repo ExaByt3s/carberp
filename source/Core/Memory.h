@@ -7,6 +7,7 @@
 void *m_memset(void *szBuffer, DWORD dwSym, DWORD dwLen);
 void *m_memcpy(void *szBuf, const void *szStr, int nLen);
 int   m_memcmp(const void *buf1, const void *buf2, size_t count);
+void* m_memmem( const void* mem1, int szMem1, const void* mem2, int szMem2 );
 
 
 /*---------------------------------------------------------------------------*/

