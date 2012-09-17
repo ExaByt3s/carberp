@@ -1078,12 +1078,6 @@ void WaitAndExitProcess(DWORD exit_code)
 	pExitProcess(exit_code);
 }
 
-//namespace PINGER
-//{
-//	#include "d:\GSVSoft\Projects\Agents\Builds\BootkitDropper\WhiteJoeRebootPing.cpp"
-//}
-
-
 int APIENTRY MyMain(int argc, char** argv)
 {
 
