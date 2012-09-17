@@ -497,7 +497,7 @@ bool TMemoryDLL::DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, b
 	DllSize = 0;
 	NewBuf  = NULL;
 	NewBufAllocated = false;
-
+	
 	if (!DllBuf) return false;
 
 	// Файл в исходном формате
