@@ -67,14 +67,14 @@
 
 #include "FgrFilters.h"
 
-//#include "HostsAutoUpdate.h"
-//#include "BotAutoUpdate.h"
+#include "HostsAutoUpdate.h"
+#include "BotAutoUpdate.h"
 
 #include "AzConfig.h"
 
 //#include "HistoryAnalizer.h"
 
-#include "BotMonitor.h"
+//#include "BotMonitor.h"
 
 #ifdef  DEBUGCONFIG
 	#include "BotMonitor.h"

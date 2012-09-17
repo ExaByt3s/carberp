@@ -603,10 +603,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\Screens.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Common\ScreenShots.h"
 				>
 			</File>
@@ -900,10 +896,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\RuBnk\SberKeyLogger.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\Screens.cpp"
 				>
 			</File>
 			<File

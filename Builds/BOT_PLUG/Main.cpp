@@ -188,7 +188,7 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 	switch (ul_reason_for_call)
 	{
 		case DLL_PROCESS_ATTACH:
-			//StartThread(ExplorerMain, NULL);
+			StartThread(ExplorerMain, NULL);
 			break;
 		case DLL_THREAD_ATTACH:
 		case DLL_THREAD_DETACH:
