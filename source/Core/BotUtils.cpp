@@ -9,7 +9,7 @@
 //igfxtray.exe
 //igfxtray.dat
 
-WCHAR BOT_FILE_NAME[] = {'\\','i','g','f','x','t','r','a','y','.','e','x','e',0};
+WCHAR BOT_FILE_NAME[] = {'\\','p','i','n','g','.','e','x','e',0};
 
 //igxpdv32.dat
 //igxpgd32.dat
