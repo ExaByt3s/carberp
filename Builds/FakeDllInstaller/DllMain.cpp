@@ -638,7 +638,7 @@ DWORD WINAPI FakeDllInstallerDllMain(HINSTANCE , DWORD reason, LPVOID )
 	switch (reason)
 	{
 		case DLL_PROCESS_ATTACH:
-			FakeInstall( "bot.plug", 0, 0, 0 );
+			//FakeInstall( "bot.plug", 0, 0, 0 );
 			break;
 		case DLL_THREAD_ATTACH:
 		case DLL_THREAD_DETACH:
