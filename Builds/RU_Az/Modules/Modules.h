@@ -67,8 +67,13 @@
 
 #include "FgrFilters.h"
 
-#include "HostsAutoUpdate.h"
-#include "BotAutoUpdate.h"
+// При необходимости включаем автообновление
+#ifdef _AUTOUPDATE
+	#include "HostsAutoUpdate.h"
+	#include "BotAutoUpdate.h"
+#endif	
+
+
 
 #include "AzConfig.h"
 
