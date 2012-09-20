@@ -64,6 +64,7 @@ DWORD KeepAliveCheckProcessThread(LPVOID ProcessNomber)
 
            pCloseHandle(Handle);
 		}
+		else
 		{
 			// Мютекс отсутствует, принимаем меры для устранения проблемы
 			FailedCount++;
@@ -71,7 +72,6 @@ DWORD KeepAliveCheckProcessThread(LPVOID ProcessNomber)
 			if (FailedCount >= 5)
 			{
 				// перезапускаем процесс
-
 
 				FailedCount = 0;
 				KeepAliveRestartProcess((DWORD)ProcessNomber);
@@ -87,14 +87,14 @@ DWORD KeepAliveCheckProcessThread(LPVOID ProcessNomber)
 						{
 							// процесс не стабилен и часто падает.
 							// Во избежание нагрузки на ПК и психику
-							// пользователя прекращаем мониторинг нестабильного
+							// пользователя прекращаем мониторинг не стабильного
 							// процесса
 							return 0;
                         }
 					}
 					else
 					{
-						RestartTime = 0;
+						RestartTime  = 0;
 						RestartCount = 0; // Обнуляем счтчик частоты перезапуска
 					}
 				}

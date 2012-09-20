@@ -560,3 +560,15 @@ HANDLE BOT::TryCreateBotInstance()
 }
 
 
+//----------------------------------------------------
+//  IsRunning - Функция возвращает истину если в
+//  системе уже запущен экземпляр бота
+//----------------------------------------------------
+bool BOT::IsRunning()
+{
+	HANDLE H = TryCreateBotInstance();
+	bool Result = (H == 0);
+	if (H) pCloseHandle(H);
+	return Result;
+}
+

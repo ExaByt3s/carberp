@@ -2840,21 +2840,15 @@ HANDLE TryCreateSingleInstance(const char* MutexPrefix)
 	// Создаем мьютекс с нулевым DACL
 	HANDLE MutexHandle = (HANDLE)pCreateMutexA(&sa, FALSE, MutexName);
 	if (MutexHandle == NULL) return NULL;
-	HANDLE ret = 0;
+
 	int err = pGetLastError();
 	if( err == ERROR_ALREADY_EXISTS )
+	{
 		pCloseHandle(MutexHandle);
-	else
-		ret = MutexHandle;
-/*
-	// При помощи WaitForSingleObject захватываем владение мьютексом.
-	DWORD WaitResult = (DWORD)pWaitForSingleObject(MutexHandle, 1000);
-	if (WaitResult == WAIT_OBJECT_0) return MutexHandle;
+		MutexHandle = 0;
+	}
 
-	// Все коды возврата, которые отличаются от WAIT_OBJECT_0 - считать неудачей.
-*/
-
-	return ret;
+	return MutexHandle;
 }
 
 
