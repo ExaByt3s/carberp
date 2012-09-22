@@ -1399,6 +1399,16 @@ TBJBConfigReader::TBJBConfigReader(LPVOID Buf, DWORD BufSize)
     FSize = BufSize;
 	FBuf = XORCrypt::DecodeBuffer((PCHAR)ConfigSignature, Buf, FSize);
 
+	if (!FBuf)
+	{
+		// Не удалось расшифровать файл, возможно он зашифровани алгоритмом RC2
+		bool Decoded = RC2Crypt::Decode(GetMainPassword(), (PCHAR)Buf, FSize);
+		if (Decoded)
+		{
+			FBuf = XORCrypt::DecodeBuffer((PCHAR)ConfigSignature, Buf, FSize);
+        }
+    }
+
 }
 
 
