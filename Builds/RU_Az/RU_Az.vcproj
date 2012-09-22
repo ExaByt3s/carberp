@@ -465,10 +465,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\AvBlock.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\source\RuBnk\AzConfig.h"
 				>
 			</File>
