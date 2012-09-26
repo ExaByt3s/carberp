@@ -180,6 +180,7 @@ extern"C"  void WINAPI Start(LPVOID, LPVOID, LPVOID)
 	StartThread(ExplorerMain, NULL);
 }
 
+
 BOOL APIENTRY MyDllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved)
