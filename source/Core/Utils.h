@@ -178,8 +178,10 @@ bool SearchFiles(PCHAR Path, PCHAR Mask, bool Recursive, DWORD FileAttributes,
 //     возвращает корректное значение для дочерних процессов
 //******************************************************************
 DWORD GetUniquePID();
+
 //возвращает PID родительского процесса
 DWORD GetParentPID();
+
 //возращает true, если процесс pid существует
 bool IsProcessLeave(int pid);
 
@@ -221,7 +223,7 @@ namespace Registry
 	// SetPrivilege(SE_BACKUP_NAME,TRUE); 
 	bool SetPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege);
 	
-	// проверяет есть ли ключь 
+	// проверяет есть ли ключ
 	//первый элемент это ключь: HKEY_CLASSES_ROOT, HKEY_CURRENT_CONFIG,  HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, HKEY_USERS 
 	//второй путь к самому ключу
 	//	Вернет  TRUE если да, иначе FALSE
@@ -368,6 +370,7 @@ char* GetAllUsersProfile( char* to, int maxSz );
 char* GetAllUsersProfile( char* to, int maxSz, const char* addPath );
 //вычисление CRC32
 unsigned long GetCRC32( char* data, int size );
+
 //возвращает хеш процесса по его пид
 DWORD GetHashForPid( int pid );
 

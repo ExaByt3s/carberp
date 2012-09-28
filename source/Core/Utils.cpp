@@ -649,6 +649,8 @@ DWORD GetCurrentSessionId()
 	return Peb->SessionId;
 }
 
+
+
 DWORD GetProcessIdByHash( DWORD dwHash )
 {
 	LPVOID Buf = GetInfoTable( SystemProcessInformation );

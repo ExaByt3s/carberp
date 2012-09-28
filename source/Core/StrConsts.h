@@ -29,6 +29,10 @@ string GetStr(const char* EncryptedStr);
 
 //=====================================================
 //  Публичное объявление строковых данных
+//
+//
+//  Названия к наинаются с приставки EStr -
+//  Encrypted String
 //=====================================================
 
 // Префикс глобального мьютекса сигнализирующего, что бот запущен
@@ -78,9 +82,10 @@ extern CSSTR AzConfigParamUserName[];
 extern CSSTR BSSLogTemplate[];
 
 
-// Строки модуля HistoryAnalyzer
-extern CSSTR StrHistoryAnalizerCommandParams[];
-
+// Строки модуля FakeDllInstaller
+extern CSSTR EStrFakeDllInstallerCommandParams[];
+extern CSSTR EStrIBankRegistryPath[];
+extern CSSTR EStrSberRegistryKey[];
 
 
 
