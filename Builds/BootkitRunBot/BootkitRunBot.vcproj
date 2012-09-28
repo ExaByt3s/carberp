@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="BootkitDropper"
-	ProjectGUID="{2BB9AD38-0FE9-4E97-B13C-4ADD91022F69}"
-	RootNamespace="BootkitDropper"
+	Name="BootkitRunBot"
+	ProjectGUID="{C5FA669D-DDC3-45E6-A721-0DA1587E0045}"
+	RootNamespace="BootkitRunBot"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -18,10 +18,10 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\Bin\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1"
-			CharacterSet="1"
+			ConfigurationType="2"
+			CharacterSet="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -41,7 +41,6 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\BootkitDropper;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -62,6 +61,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="2"
+				ModuleDefinitionFile="def.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -92,7 +92,7 @@
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)Bin\$(ConfigurationName)"
 			IntermediateDirectory="Objs\$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="2"
 			CharacterSet="0"
 			WholeProgramOptimization="1"
 			>
@@ -115,11 +115,10 @@
 				Name="VCCLCompilerTool"
 				Optimization="1"
 				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="2"
+				FavorSizeOrSpeed="0"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="..\BootkitDropper;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include"
+				AdditionalIncludeDirectories="..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include;..\BootkitDropper"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
-				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -127,8 +126,7 @@
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				DebugInformationFormat="0"
-				OmitDefaultLibName="true"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -141,10 +139,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="taskschd.lib"
+				AdditionalDependencies="..\..\source\lib\ntdll.lib shlwapi.lib Ws2_32.lib urlmon.lib Crypt32.lib ..\..\source\lib\winsta.lib Wininet.lib gdiplus.lib Iphlpapi.lib"
 				LinkIncremental="1"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="true"
+				ModuleDefinitionFile="def.def"
 				GenerateDebugInformation="false"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -175,97 +174,9 @@
 		</Configuration>
 		<Configuration
 			Name="Release DEBUGCONFIG|Win32"
-			OutputDirectory="..\Bin\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)Bin\$(ConfigurationName)"
 			IntermediateDirectory="Objs\$(ConfigurationName)"
-			ConfigurationType="1"
-			CharacterSet="0"
-			WholeProgramOptimization="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="1"
-				EnableIntrinsicFunctions="false"
-				FavorSizeOrSpeed="0"
-				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="..\BootkitDropper;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_DEBUG;DEBUGCONFIG"
-				StringPooling="false"
-				ExceptionHandling="0"
-				RuntimeLibrary="2"
-				BufferSecurityCheck="false"
-				EnableFunctionLevelLinking="true"
-				RuntimeTypeInfo="false"
-				UsePrecompiledHeader="0"
-				AssemblerOutput="0"
-				AssemblerListingLocation=""
-				WarningLevel="3"
-				DebugInformationFormat="0"
-				CallingConvention="0"
-				OmitDefaultLibName="true"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="taskschd.lib"
-				LinkIncremental="1"
-				GenerateManifest="false"
-				IgnoreAllDefaultLibraries="true"
-				GenerateDebugInformation="false"
-				SubSystem="2"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
-				TargetMachine="1"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Relese AUTOUPDATE|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="2"
 			CharacterSet="0"
 			WholeProgramOptimization="1"
 			>
@@ -288,11 +199,10 @@
 				Name="VCCLCompilerTool"
 				Optimization="1"
 				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="2"
+				FavorSizeOrSpeed="0"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="..\BootkitDropper;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
-				StringPooling="true"
+				AdditionalIncludeDirectories="..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include;..\BootkitDropper"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;DEBUGCONFIG"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -300,8 +210,7 @@
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				DebugInformationFormat="0"
-				OmitDefaultLibName="true"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -314,10 +223,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="taskschd.lib"
+				AdditionalDependencies="..\..\source\lib\ntdll.lib shlwapi.lib Ws2_32.lib urlmon.lib Crypt32.lib ..\..\source\lib\winsta.lib Wininet.lib gdiplus.lib Iphlpapi.lib"
 				LinkIncremental="1"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="true"
+				ModuleDefinitionFile="def.def"
 				GenerateDebugInformation="false"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -356,7 +266,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\BootkitCrypt.cpp"
+				RelativePath="..\BootkitDropper\BootkitCrypt.cpp"
 				>
 			</File>
 			<File
@@ -365,10 +275,6 @@
 			</File>
 			<File
 				RelativePath="..\..\source\Core\BotCore.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\Core\BotCryptHTTP.cpp"
 				>
 			</File>
 			<File
@@ -408,7 +314,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\DbgRptBootkit.cpp"
+				RelativePath=".\def.def"
 				>
 			</File>
 			<File
@@ -417,10 +323,6 @@
 			</File>
 			<File
 				RelativePath="..\..\source\Core\GetApi.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\Core\Inject.cpp"
 				>
 			</File>
 			<File
@@ -440,15 +342,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Common\PEFile.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\source\Core\Plugins.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\Common\Reboot.cpp"
 				>
 			</File>
 			<File
@@ -460,65 +354,9 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Common\svc_fuckup.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\Common\Unhook.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\source\Core\Utils.cpp"
 				>
 			</File>
-			<File
-				RelativePath="..\..\source\Core\zdisasm.cpp"
-				>
-			</File>
-			<Filter
-				Name="Exploit"
-				>
-				<File
-					RelativePath="..\..\source\exploit\Exploit.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\source\exploit\exploit_utils.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\source\exploit\kernelshell.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\source\exploit\spooler.cpp"
-					>
-				</File>
-				<Filter
-					Name="com"
-					>
-					<File
-						RelativePath="..\..\source\exploit\com\com_elevation.cpp"
-						>
-					</File>
-				</Filter>
-				<Filter
-					Name="ms10_073"
-					>
-					<File
-						RelativePath="..\..\source\exploit\ms10_073\ms10_073.cpp"
-						>
-					</File>
-				</Filter>
-				<Filter
-					Name="ms10_092"
-					>
-					<File
-						RelativePath="..\..\source\exploit\ms10_092\ms10_092.cpp"
-						>
-					</File>
-				</Filter>
-			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -526,7 +364,7 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\BootkitCrypt.h"
+				RelativePath="..\BootkitDropper\BootkitCrypt.h"
 				>
 			</File>
 			<File
@@ -535,10 +373,6 @@
 			</File>
 			<File
 				RelativePath="..\..\source\Core\BotCore.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\Core\BotCryptHTTP.h"
 				>
 			</File>
 			<File
@@ -578,19 +412,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\DbgRptBootkit.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\source\Core\DllLoader.h"
 				>
 			</File>
 			<File
 				RelativePath="..\..\source\Core\GetApi.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\Core\Inject.h"
 				>
 			</File>
 			<File
@@ -610,19 +436,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Core\ntdll.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\Common\PEFile.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\source\Core\Plugins.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\Common\Reboot.h"
 				>
 			</File>
 			<File
@@ -634,69 +448,9 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Common\svc_fuckup.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\Common\Unhook.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\source\Core\Utils.h"
 				>
 			</File>
-			<File
-				RelativePath="..\..\source\Core\zdisasm.h"
-				>
-			</File>
-			<Filter
-				Name="Exploit"
-				>
-				<File
-					RelativePath="..\..\source\exploit\Exploit.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\source\exploit\exploit_utils.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\source\exploit\kernelshell.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\source\exploit\ntoskrnl.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\source\exploit\spooler.h"
-					>
-				</File>
-				<Filter
-					Name="com"
-					>
-					<File
-						RelativePath="..\..\source\exploit\com\com_elevation.h"
-						>
-					</File>
-				</Filter>
-				<Filter
-					Name="ms10_073"
-					>
-					<File
-						RelativePath="..\..\source\exploit\ms10_073\ms10_073.h"
-						>
-					</File>
-				</Filter>
-				<Filter
-					Name="ms10_092"
-					>
-					<File
-						RelativePath="..\..\source\exploit\ms10_092\ms10_092.h"
-						>
-					</File>
-				</Filter>
-			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"

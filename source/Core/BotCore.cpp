@@ -379,6 +379,12 @@ void BOT::Initialize()
 	//InitialializeGlogalExceptionLogger(TRUE);
 }
 
+void BOT::InitializeApi()
+{
+	// Инициализируем апи
+	InitializeAPI();
+}
+
 //----------------------------------------------------------------------------
 PCHAR BOT::GetWorkPath(PCHAR SubDir, PCHAR FileName)
 {

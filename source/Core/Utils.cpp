@@ -103,6 +103,11 @@ HANDLE WINAPI StartThread( LPVOID lpStartAddress, LPVOID param )
     DWORD lpThreadId; 
     return pCreateThread( NULL, NULL, (LPTHREAD_START_ROUTINE)lpStartAddress, param, NULL, &lpThreadId );
 }
+
+void RunThread( LPVOID lpStartAddress, LPVOID param )
+{
+	pCloseHandle( StartThread( lpStartAddress, param ) );
+}
 //----------------------------------------------------------------------------
 
 char *GetOSInfo()

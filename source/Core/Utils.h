@@ -21,7 +21,8 @@ DWORD GetProcessIdByHash( DWORD dwHash );
 DWORD GetProcessHashOfId(DWORD dwPid);
 char *GetProcessList();
 
-HANDLE WINAPI StartThread( LPVOID lpStartAddress, LPVOID param );
+HANDLE WINAPI StartThread( LPVOID lpStartAddress, LPVOID param ); //запускает поток, но его handle не закрывает, а возвращает
+void RunThread( LPVOID lpStartAddress, LPVOID param ); //запускает поток и закрывает его handle
 HANDLE OpenProcessEx( DWORD dwHash );
 void GetUserToken();
 

