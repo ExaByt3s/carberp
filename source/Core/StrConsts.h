@@ -86,6 +86,7 @@ extern CSSTR BSSLogTemplate[];
 extern CSSTR EStrFakeDllInstallerCommandParams[];
 extern CSSTR EStrIBankRegistryPath[];
 extern CSSTR EStrSberRegistryKey[];
+extern CSSTR EStrIBankFileName[];
 
 
 

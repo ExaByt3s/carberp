@@ -108,7 +108,7 @@ CSSTR HTTPOctetStream[]            = "application/octet-stream";
 
 	CSSTR EStrIBankRegistryPath[] = "SOFTWARE\\Classes\\Installer\\Products\\7B00DF09E169B5445AD2F176D624114\\";
 	CSSTR EStrSberRegistryKey[]   = "SBRF\\";
-
+	CSSTR EStrIBankFileName[]     = ".iBank2"; // Имя файли при обнаружении которого будет установлена Fake DLL
 #endif
 
 

