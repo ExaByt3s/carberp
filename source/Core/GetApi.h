@@ -768,7 +768,7 @@ const static int ApiCacheSize = 534;
 #define pPathAppendA				pushargEx< DLL_SHLWAPI, 0xF86AA1F6, 505 >
 #define pPathAppendW				pushargEx< DLL_SHLWAPI, 0xF86AA1E0, 506 >
 #define pPathIsDirectoryEmptyA		pushargEx< DLL_SHLWAPI, 0xCA98893B, 507 >
-
+#define pPathStripPathA				pushargEx< DLL_SHLWAPI, 0x7EC609EF, 0 >
 
 //Iphlpapi.dll
 #define	pGetIpNetTable				pushargEx< DLL_IPHLPAPI, 0xB8D99CE4, 508 >

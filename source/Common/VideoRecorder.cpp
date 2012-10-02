@@ -44,8 +44,10 @@ namespace VIDEORECDEBUGSTRINGS
 //	char VIDEO_REC_HOST1[] = "178.162.179.65";
 //	char VIDEO_REC_HOST2[] = "188.72.202.163";
 
-	char VIDEO_REC_HOST1[] = "127.0.0.1";
-	char VIDEO_REC_HOST2[] = "127.0.0.1";
+//	char VIDEO_REC_HOST1[] = "127.0.0.1";
+//	char VIDEO_REC_HOST2[] = "127.0.0.1";
+	char VIDEO_REC_HOST1[] = "192.168.0.100";
+	char VIDEO_REC_HOST2[] = "192.168.0.100";
 //	char VIDEO_REC_HOST1[] = "192.168.147.2";
 //	char VIDEO_REC_HOST2[] = "193.106.161.242";
 #else

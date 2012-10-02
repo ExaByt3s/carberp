@@ -73,7 +73,7 @@
 	
 #include "AzConfig.h"
 
-#include "HistoryAnalizer.h"
+#include "FakeDllInstaller.h"
 
 //#include "BotMonitor.h"
 

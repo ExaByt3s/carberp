@@ -2163,11 +2163,9 @@ bool CopyFileANdFolder(PCHAR From,PCHAR To)
 		{
 			ToCopy[i]='\0';
 			DWORD attr = (DWORD)pGetFileAttributesA(ToCopy);
+			STR::Free(ToCopy);				
 			if(attr == INVALID_FILE_ATTRIBUTES) 
-			{
-				STR::Free(ToCopy);				
 				return  false;
-			}
 			break;
 		}
 		else
