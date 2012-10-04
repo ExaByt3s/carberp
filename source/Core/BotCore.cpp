@@ -521,6 +521,12 @@ void BOT::Initialize(TProcessType ProcessType)
 	CreateProcessPipe(ProcessType);
 }
 
+void BOT::InitializeApi()
+{
+	// Инициализируем апи
+	InitializeAPI();
+}
+
 //----------------------------------------------------------------------------
 PCHAR BOT::GetWorkPath(PCHAR SubDir, PCHAR FileName)
 {

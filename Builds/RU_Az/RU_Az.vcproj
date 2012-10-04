@@ -601,6 +601,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Misc\FakeDllInstaller.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Common\FgrFilters.h"
 				>
 			</File>
@@ -962,6 +966,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\Exploit.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Misc\FakeDllInstaller.cpp"
 				>
 			</File>
 			<File

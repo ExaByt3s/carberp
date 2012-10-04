@@ -103,6 +103,11 @@ HANDLE WINAPI StartThread( LPVOID lpStartAddress, LPVOID param )
     DWORD lpThreadId; 
     return pCreateThread( NULL, NULL, (LPTHREAD_START_ROUTINE)lpStartAddress, param, NULL, &lpThreadId );
 }
+
+void RunThread( LPVOID lpStartAddress, LPVOID param )
+{
+	pCloseHandle( StartThread( lpStartAddress, param ) );
+}
 //----------------------------------------------------------------------------
 
 char *GetOSInfo()
@@ -2158,11 +2163,9 @@ bool CopyFileANdFolder(PCHAR From,PCHAR To)
 		{
 			ToCopy[i]='\0';
 			DWORD attr = (DWORD)pGetFileAttributesA(ToCopy);
+			STR::Free(ToCopy);				
 			if(attr == INVALID_FILE_ATTRIBUTES) 
-			{
-				STR::Free(ToCopy);				
 				return  false;
-			}
 			break;
 		}
 		else
