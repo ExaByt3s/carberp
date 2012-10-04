@@ -43,7 +43,16 @@ extern CSSTR StrBotGlobalMutexName[];
 extern CSSTR StrBotWorkPath[];
 extern CSSTR StrGrabberPath[];
 
-extern CSSTR StrPrefixFileName[];
+
+// Имена служебный пайпов
+extern CSSTR EStrPipeLoader[]; // Имя служебного пайпа лоадера
+
+// Служебные команды, передаваемые через пайпы процессам
+extern CSSTR EStrProcessCommandDeleteBot[];  // Команда на удаление exe бота
+
+
+
+extern CSSTR EStrPrefixFileName[]; // Имя файла хранения префикса
 
 
 
@@ -86,6 +95,7 @@ extern CSSTR BSSLogTemplate[];
 extern CSSTR EStrFakeDllInstallerCommandParams[];
 extern CSSTR EStrIBankRegistryPath[];
 extern CSSTR EStrSberRegistryKey[];
+extern CSSTR EStrIBankFileName[];
 
 
 

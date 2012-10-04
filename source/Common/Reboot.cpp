@@ -8,7 +8,7 @@
 
 #include "Reboot.h"
 
-#include "BotDebug.h"
+//#include "BotDebug.h"
 #include "DbgRptBootkit.h"
 
 /*

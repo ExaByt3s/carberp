@@ -35,7 +35,7 @@ bool ExecuteGrabber(PTaskManager Manager, PCHAR Command, PCHAR Args)
 DWORD WINAPI GrabberThread( LPVOID lpData )
 	
 {
-	BOT::Initialize();
+	BOT::Initialize(ProcessUnknown);
 	
 	/*
 	

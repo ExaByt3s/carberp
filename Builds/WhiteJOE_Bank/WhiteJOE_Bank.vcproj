@@ -92,7 +92,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="Bin\"
+			OutputDirectory="Bin\$(ConfigurationName)"
 			IntermediateDirectory="Objs\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="2"
@@ -420,11 +420,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\CabPacker.h"
+				RelativePath="..\..\Source\Common\CabPacker.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\CabPacker.h"
+				RelativePath="..\..\Source\RuBnk\CabPacker.h"
 				>
 			</File>
 			<File
@@ -497,10 +497,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Grabber.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\HistoryAnalizer.h"
 				>
 			</File>
 			<File
@@ -825,10 +821,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Grabber.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\HistoryAnalizer.cpp"
 				>
 			</File>
 			<File

@@ -25,7 +25,7 @@ typedef struct TProcessPipe
 	HANDLE Handle;              // Идентификатор канала
 	PList  Handlers;            // Список зарегистрированных обработчиков сообщений
 	RTL_CRITICAL_SECTION Lock;  // Структура блокировки канала
-	HANDLE Event;        // Для внутреннего использования
+	HANDLE Event;               // Для внутреннего использования
     bool Terminated;            // Признак того, что прервана работа канала
 }*PProcessPipe;
 
@@ -89,7 +89,8 @@ namespace PIPE
 	//  Результат: В случае успеха ункция возвращает указатель
 	//			   на структуру канала
 	//-----------------------------------------------------------
-	PProcessPipe CreateProcessPipe(const PCHAR PipeName, bool StartPipe);
+	PProcessPipe        CreateProcessPipe(const PCHAR PipeName, bool StartPipe);
+	PProcessPipe inline CreateProcessPipe(const string &PipeName, bool StartPipe) { return CreateProcessPipe(PipeName.t_str(), StartPipe); }
 
 	//-----------------------------------------------------------
 	//  StartProcessPipe - Функция стартует работу канада
@@ -119,8 +120,9 @@ namespace PIPE
 	//  SendMessage - Функция отправляет указанному каналу
 	//				 сообщение
 	//-----------------------------------------------------------
-	bool SendMessage(PCHAR PipeName, PCHAR Msg, PCHAR Data, DWORD DataSize, PPipeMessage Received);
-	bool SendMessage(PCHAR PipeName, PCHAR Msg);
+	bool        SendMessage(PCHAR PipeName, PCHAR Msg, PCHAR Data, DWORD DataSize, PPipeMessage Received);
+	bool        SendMessage(PCHAR PipeName, PCHAR Msg);
+	bool inline SendMessage(const string &PipeName, const string &Msg) { return SendMessage(PipeName.t_str(), Msg.t_str());}
 
 	//-----------------------------------------------------------
 	//  Ping - Функция процеряет существование канала PipeName

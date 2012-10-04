@@ -391,9 +391,10 @@ void KillAllBrowsers();
 //                          специальной папке системы
 //  (Надстройка над ЫРGetSpecialFolderPath)
 //
-//   AddName - Имя будет добавлено к пуолченному пути
+//   FileName - Имя будет добавлено к полученному пути
 //------------------------------------------------------------
-string GetSpecialFolderPathA(int CSIDL, const char *AddName);
+string        GetSpecialFolderPathA(int CSIDL, const char *FileName);
+string inline GetSpecialFolderPathA(int CSIDL, const string &FileName) { return GetSpecialFolderPathA(CSIDL, FileName.t_str()); };
 
 
 //------------------------------------------------------------

