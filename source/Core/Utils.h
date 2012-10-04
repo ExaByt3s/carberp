@@ -354,6 +354,7 @@ char *GetNetInfo();
 DWORD GetFileFormat( WCHAR *lpFileName );
 void MakeShutdown();
 BOOL KillProcess(DWORD pid,DWORD TimeOut );
+void KillBlockingProcesses( const char* fileName ); ////уничтожает процессы которые держат указанный файл
 bool ClearDirectory(PCHAR Path);
 bool DeleteFiles(PCHAR Path, PCHAR Ext, bool Recursive, bool DeleteSubDir);
 //----------------------------------------------------------------------------

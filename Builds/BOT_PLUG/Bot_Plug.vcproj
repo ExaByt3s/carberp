@@ -484,6 +484,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Misc\FakeDllInstaller.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Common\FgrFilters.cpp"
 				>
 			</File>
@@ -505,10 +509,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Grabber.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\HistoryAnalizer.cpp"
 				>
 			</File>
 			<File
@@ -830,6 +830,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Misc\FakeDllInstaller.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Common\FgrFilters.h"
 				>
 			</File>
@@ -851,10 +855,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Grabber.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\HistoryAnalizer.h"
 				>
 			</File>
 			<File
