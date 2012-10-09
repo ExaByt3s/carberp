@@ -439,6 +439,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\Pipes.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\Plugins.cpp"
 				>
 			</File>
@@ -546,6 +550,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\ntstatus.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\Pipes.h"
 				>
 			</File>
 			<File
