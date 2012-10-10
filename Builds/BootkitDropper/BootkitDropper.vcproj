@@ -408,10 +408,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\DbgRptBootkit.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\source\Core\DllLoader.cpp"
 				>
 			</File>
@@ -441,6 +437,10 @@
 			</File>
 			<File
 				RelativePath="..\..\source\Common\PEFile.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\Pipes.cpp"
 				>
 			</File>
 			<File
@@ -578,10 +578,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\DbgRptBootkit.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\source\Core\DllLoader.h"
 				>
 			</File>
@@ -615,6 +611,10 @@
 			</File>
 			<File
 				RelativePath="..\..\source\Common\PEFile.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\Pipes.h"
 				>
 			</File>
 			<File

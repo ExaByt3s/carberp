@@ -342,6 +342,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\Pipes.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\source\Core\Plugins.cpp"
 				>
 			</File>
@@ -433,6 +437,10 @@
 			</File>
 			<File
 				RelativePath=".\Modules\Modules.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\Pipes.h"
 				>
 			</File>
 			<File
