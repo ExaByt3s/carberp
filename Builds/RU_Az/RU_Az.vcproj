@@ -529,6 +529,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Core\BotService.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotUtils.h"
 				>
 			</File>
@@ -894,6 +898,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\BotMonitor.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\BotService.cpp"
 				>
 			</File>
 			<File

