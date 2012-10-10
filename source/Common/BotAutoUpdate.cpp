@@ -154,7 +154,7 @@ void TBotUpdater::DownloadAndSetup(const string &FileURL, const string &MD5)
 			BAUDBG("АвтоОбновление", "Новая версия бота успешно загружена. Запускаем установку.");
 
 			// Сохраняем текущие настройки
-			Bot->SaveSettings();
+			BOT::SaveSettings(true, true, true);
 
 			// Устанавливаем новую версию
 			if (MakeUpdate(Name))

