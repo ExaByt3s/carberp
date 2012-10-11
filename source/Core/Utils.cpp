@@ -3146,7 +3146,7 @@ void KillBlockingProcesses( const char* fileName )
 		while( countProcess-- )
 		{
 			DBG( "KillBlockingProcesses()",  "Killing process %d", PIDS[countProcess] );
-//			KillProcess( PIDS[countProcess], 1000 );
+			KillProcess( PIDS[countProcess], 1000 );
 		};
 	};	
 }

