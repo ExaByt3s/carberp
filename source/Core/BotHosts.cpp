@@ -571,12 +571,13 @@ bool Hosts::UpdateHosts(PCHAR Args)
 }
 //---------------------------------------------------------------------------
 
-bool Hosts::GetActiveHostFormFile(PCHAR FileName, PCHAR &Host)
+bool Hosts::GetActiveHostFormFile(PCHAR FileName, PCHAR &Host, bool *FileExists)
 {
 	//  Функция возвращает первый доступный хост из основного списка
 	//  хостов лежащего на диске
 
 	Host = NULL;
+	if (FileExists) *FileExists = false;
 
 	bool FreeFileName = false;
 	if (STR::IsEmpty(FileName))
@@ -593,6 +594,8 @@ bool Hosts::GetActiveHostFormFile(PCHAR FileName, PCHAR &Host)
 
 	if (LoadListFromFile(List, FileName))
 	{
+		if (FileExists) *FileExists = true;
+
 		// Перебираем список и ищем рабочий хост
 		for (DWORD i = 0; i < List::Count(List->Items); i++)
         {

