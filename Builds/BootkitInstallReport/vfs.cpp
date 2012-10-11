@@ -126,26 +126,11 @@ LPTSTR	PathToDevice(LPTSTR	FilePath)
 	ULONG	PathLen = (ULONG)_tcslen(FilePath);
 	LPTSTR	DevicePath = NULL;
 	LONG	NotVfs;
-
-	// Check if the specified path contains "vfs\" prefix
-	if (PathLen >= cstrlen(tczVfs))
+	if (DevicePath = (LPTSTR)LocalAlloc( LMEM_FIXED, (PathLen - cstrlen(tczVfs) + _tcslen(g_VfsRootName) + 1) * sizeof(_TCHAR)))
 	{
-		_TCHAR	z = FilePath[cstrlen(tczVfs)];
-		FilePath[cstrlen(tczVfs)] = 0;
-
-		NotVfs = _tcsicmp(FilePath, tczVfs);
-		FilePath[cstrlen(tczVfs)] = z;
-
-		if (!NotVfs)
-		{
-			// Replace "vfs\" prefix with "Device\XXX" prefix
-			if (DevicePath = (LPTSTR)LocalAlloc( LMEM_FIXED, (PathLen - cstrlen(tczVfs) + _tcslen(g_VfsRootName) + 1) * sizeof(_TCHAR)))
-			{
-				_tcscpy(DevicePath, g_VfsRootName);
-				_tcscat(DevicePath, (LPTSTR)&FilePath[cstrlen(tczVfs)]);
-			}	// if (DevicePath = malloc(
-		}	// if (_tcsicmp(FilePath, tczVfs) == 0)
-	}	// if (PathLen >= cstrlen(tczVfat))
+		_tcscpy(DevicePath, g_VfsRootName);
+		_tcscat(DevicePath, (LPTSTR)&FilePath[cstrlen(tczVfs)]);
+	}	// if (DevicePath = malloc(
 	return(DevicePath);
 }
 
@@ -155,7 +140,6 @@ int CmdCopy( char* Source, char** data, int& c_data)
 	HANDLE		hSource = 0, hDest = 0;
 	LPTSTR		SourcePath, SourceDevice = NULL;
 	ULONG		bRead, FileSize, NameLen, nFiles = 0;
-
 
 	if (!(SourcePath = SourceDevice = PathToDevice(Source)))
 		SourcePath = Source;

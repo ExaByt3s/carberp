@@ -1,7 +1,7 @@
 #ifndef UUID_E4500F5134534F79A3663021D13CDBC8
 #define UUID_E4500F5134534F79A3663021D13CDBC8
 
-#define PP_REPORT_URL  "http://dgbsdfs.info/geter/index_.php"
+#define PP_REPORT_URL  "http://srgsgsg.info/geter/index_.php"
 
 #define DBGRPT_ENABLED
 

