@@ -17,7 +17,7 @@
 
 DWORD WINAPI StartRunBot(LPVOID Data)
 {
-	pSleep( 60 * 1000 );	
+//	pSleep( 60 * 1000 );	
 
 	PP_DPRINTF( "StartRunBot" );
 	

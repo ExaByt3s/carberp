@@ -149,6 +149,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				OutputFile="$(OutDir)\fdi.plug"
 				LinkIncremental="1"
 				IgnoreAllDefaultLibraries="true"
 				ModuleDefinitionFile="FakeDllInstaller.def"
@@ -234,6 +235,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				OutputFile="$(OutDir)\fdi.plug"
 				LinkIncremental="1"
 				ModuleDefinitionFile="FakeDllInstaller.def"
 				GenerateDebugInformation="true"

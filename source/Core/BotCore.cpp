@@ -885,6 +885,20 @@ HANDLE BOT::TryCreateBotInstance()
 	return TryCreateSingleInstance(GetStr(StrBotGlobalMutexName).t_str());
 }
 
+//создает мьютекс для буткита, если возвращает 0, то значит уже кто-то его создал 
+HANDLE BOT::CreateBootkitMutex()
+{
+	return TryCreateSingleInstance(GetStr(StrBootkitIsRunMutex).t_str());
+}
+
+//возвращает true, если запущен бот из под буткита
+bool BOT::BootkitIsRun()
+{
+	HANDLE m = BOT::CreateBootkitMutex();
+	if( m == 0 ) return true;
+	pCloseHandle(m);
+	return false;
+}
 
 //----------------------------------------------------
 //  IsRunning - Функция возвращает истину если в

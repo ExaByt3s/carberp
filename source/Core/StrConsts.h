@@ -37,6 +37,8 @@ string GetStr(const char* EncryptedStr);
 
 // Префикс глобального мьютекса сигнализирующего, что бот запущен
 extern CSSTR StrBotGlobalMutexName[];
+//мьютекс сигнализирующий, что запущен бот из под буткита
+extern CSSTR StrBootkitIsRunMutex[]; 
 
 
 // Оригинальное имя ехе файла бота
