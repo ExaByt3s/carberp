@@ -253,7 +253,8 @@ namespace BOT
 
 	//удал€ет тело (файл) бота
 	void DeleteBotFile( const char* FileName );
-
+	//удал€ет бота из автозагрузки
+	void DeleteAutorunBot();
 
 
 	//----------------------------------------------------
@@ -276,13 +277,6 @@ namespace BOT
 
 
 	#ifdef BOTPLUG
-		// ‘унк€ии лежат в модуле main.cpp bot.plug
-		//обновление тела бота, запускаемого буткитом
-		extern bool UpdateBotBootkit( BYTE* data, int c_data );
-		//обновление тела бота запускаемого через fake.dll
-		extern bool UpdateBotFakeDll( BYTE* data, int c_data );
-
-
 		// ‘ункци€ обновл€ет тело bot.plug
 		bool UpdateBotPlug(BYTE* data, int c_data);
 	#endif

