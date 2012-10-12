@@ -262,6 +262,12 @@ namespace BOT
 	//----------------------------------------------------
 	void     SetBotType(TBotType Type);
 	TBotType GetBotType();
+
+
+	//----------------------------------------------------
+	//  MakeUpdate - функция обновляет бота
+	//----------------------------------------------------
+	bool MakeUpdate(const char *FileName, bool ResetSettings);
 }
 
 //уид бота, инициализируется в функции BOT::Initialize(), также меняется если будет изменен префикс 

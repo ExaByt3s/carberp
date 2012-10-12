@@ -31,8 +31,6 @@ bool RunFileA(PCHAR FileName);
 
 
 bool RunFileEx( WCHAR *Path, DWORD dwFlags, PHANDLE hProcess, PHANDLE hThread );
-bool MakeUpdate(PCHAR FileName);
-
 
 char * FileToMD5(char *URL);
 

