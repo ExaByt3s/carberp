@@ -42,6 +42,13 @@
 
 
 //--------------------------------------------
+// Максимальное количество фалов которые будет
+// прятать бот
+//--------------------------------------------
+#define MAX_HIDDEN_FILES 15
+
+
+//--------------------------------------------
 // Тип бота
 //--------------------------------------------
 enum TBotType { BotRing3   = 0,
@@ -276,10 +283,22 @@ namespace BOT
 	bool MakeUpdate(const char *FileName, bool ResetSettings);
 
 
+
 	#ifdef BOTPLUG
 		// Функция обновляет тело bot.plug
 		bool UpdateBotPlug(BYTE* data, int c_data);
 	#endif
+
+   //----------------------------------------------------
+   //  Функции для обеспечения сокрытия служебных файлов
+   //----------------------------------------------------
+   void AddHiddenFile(DWORD FileHash);
+   void AddHiddenFile(const char* FileName);
+
+   bool IsHiddenFile(DWORD FileHash);
+   bool IsHiddenFile(const char* FileName);
+
+
 }
 
 //уид бота, инициализируется в функции BOT::Initialize(), также меняется если будет изменен префикс 

