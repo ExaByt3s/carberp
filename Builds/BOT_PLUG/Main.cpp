@@ -342,6 +342,6 @@ DWORD GetHashFileNameBotPlug()
 			break;
 	}
 	if( nameFile )
-		return File::GetNameHashA( nameFile, true );
+		return File::GetNameHashA( nameFile, false );
 	return 0;
 }
