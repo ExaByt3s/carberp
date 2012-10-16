@@ -638,7 +638,6 @@ PCHAR BOT::GetBotExeName()
 
 		// ƒобавл€ем им€ в список скрываемых фалов
 		AddHiddenFile(BotExeNameHash);
-
 	}
 
 
