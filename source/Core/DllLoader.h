@@ -29,6 +29,7 @@ HMEMORYMODULE MemoryLoadLibrary(const void *);
 //                     функции зугруженной в память DLL
 //-------------------------------------------------------
 FARPROC MemoryGetProcAddress(HMEMORYMODULE Dll, const char* Name);
+FARPROC MemoryGetProcAddress(HMEMORYMODULE Dll, DWORD NameHash);
 
 //-------------------------------------------------------
 //  MemoryFreeLibrary - Функция освобождает ресурсы
@@ -91,13 +92,17 @@ public:
 	TMemoryDLL(const void* DllBuf);
 	~TMemoryDLL();
 
+	bool Load(const void* DllBuf);
+
 	HMEMORYMODULE inline Handle() { return FHandle; }
 	bool		  IsTrue()        { return FHandle != NULL; } //true если dll инициализирована
 
 	LPVOID        GetProcAddress(const char*   Name);
 	LPVOID inline GetProcAddress(const string& Name) { return GetProcAddress(Name.t_str()); }
+	LPVOID        GetProcAddress(DWORD   NameHash);
 	bool          GetProcAddress(const char*   Name, LPVOID &Addr);
 	bool   inline GetProcAddress(const string& Name, LPVOID &Addr) { return GetProcAddress(Name.t_str(), Addr); }
+	bool          GetProcAddress(DWORD NameHash, LPVOID &Addr);
 
 	//---------------------------------------------------------
 	//  Функция расшифровывает длл

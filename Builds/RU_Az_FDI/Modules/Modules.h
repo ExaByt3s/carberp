@@ -77,11 +77,14 @@
 	
 #include "AzConfig.h"
 
-#include "FakeDllInstaller.h"
-
 //#include "BotMonitor.h"
 
 #ifdef  DEBUGCONFIG
 	#include "BotMonitor.h"
 #endif
+
+
+
+
+#include "FakeDllInstaller.h"
 

