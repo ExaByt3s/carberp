@@ -1101,7 +1101,7 @@ DWORD WINAPI InstallBotPlug(const string *InstallerName)
 	if (!Intaller.Download(true) || !Bot.Download(false))
 		return FALSE;
 
-	TASKDBG("BotPlugInstaller", "Плагины спешно загруженыБ начинаем инсталцию");
+	TASKDBG("BotPlugInstaller", "Плагины успешно загружены, начинаем инсталцию");
 
 	// Запускаем инсталяцию
 	typedef BOOL (WINAPI *TInstall)(BYTE* DllBody, DWORD DllSize);

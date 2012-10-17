@@ -92,7 +92,7 @@ CSSTR EStrBotPlug[] = "bot.plug";
 CSSTR EStrBootkitInstaller[] = "bki.plug";
 
 // Имя инсталятора фэкедлл
-CSSTR EStrFakeDllInstaller[] = "bki.plug";
+CSSTR EStrFakeDllInstaller[] = "fdi.plug";
 
 
 

