@@ -702,21 +702,21 @@ PCHAR UIDCrypt::Crypt(LPVOID Data, DWORD DataSize, PCHAR Vector)
 }
 //-----------------------------------------------------------------------------
 
-PCHAR UIDCrypt::CryptFileName(PCHAR FileName, bool CryptExt)
+PCHAR UIDCrypt::CryptFileName(const char* FileName, bool CryptExt)
 {
 	//  Функция криптует имя файла делая его уникальным для данного
 	//  компьютера. Путь к файлу не шифруется
 
-	if (STR::IsEmpty(FileName))
+	if (STRA::IsEmpty(FileName))
     	return NULL;
 
 	// Получаем имя файла
-	PCHAR File = File::ExtractFileNameA(FileName, true);
+	PCHAR File = File::ExtractFileNameA((PCHAR)FileName, true);
 	if (File == NULL)
-    	return STR::New(FileName);
+    	return STR::New((PCHAR)FileName);
 
 	// Сохраняем исхоный путь
-	PCHAR Path = File::ExtractFilePathA(FileName);
+	PCHAR Path = File::ExtractFilePathA((PCHAR)FileName);
 
 	// Отделяем расширение файла
 	PCHAR Ext = STR::ScanEnd(File, '.');

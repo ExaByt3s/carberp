@@ -176,7 +176,7 @@ namespace UIDCrypt
 	//
 	//  CryptExt - Признак необходимости шифровать расширение файла
 	//------------------------------------------------------------------
-	PCHAR CryptFileName(PCHAR FileName, bool CryptExt);
+	PCHAR CryptFileName(const char* FileName, bool CryptExt);
 
 	//------------------------------------------------------------------
 	// ConvertFileNameChars - Функция преобразует недопустимые символы

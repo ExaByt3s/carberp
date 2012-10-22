@@ -510,7 +510,8 @@ public:
 	bool operator !=(const TChar* Str);
 	TChar operator [](const DWORD Index) const;
 	TChar& operator [](const DWORD Index);
-	inline operator TChar* () { return t_str(); }
+
+	//inline operator TChar* () const { return t_str() }
 
 
 private:
