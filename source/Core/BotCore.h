@@ -298,6 +298,8 @@ namespace BOT
    bool IsHiddenFile(DWORD FileHash);
    bool IsHiddenFile(const char* FileName);
 
+   //возвращает true, если фейкдлл установлена
+   bool FakeDllIsInstall();
 
 }
 

