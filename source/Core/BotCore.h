@@ -299,7 +299,7 @@ namespace BOT
    bool IsHiddenFile(const char* FileName);
 
    //возвращает true, если фейкдлл установлена
-   bool FakeDllIsInstall();
+   bool FakeDllInstalled();
 
 }
 
