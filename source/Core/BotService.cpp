@@ -4,10 +4,8 @@
 
 #include "BotService.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 
-
-
+ 
 TService::TService()
 {
 	FManager  = (SC_HANDLE)pOpenSCManagerA(NULL, NULL, SC_MANAGER_ALL_ACCESS);

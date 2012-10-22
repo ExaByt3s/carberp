@@ -126,6 +126,13 @@ public:
         MemFree(FBuf);
 	}
 
+	DWORD Write(const void* Data, DWORD Size)
+	{
+		DWORD M = (FSize < Size) ? FSize : Size;
+		m_memcpy(FBuf, Data, M);
+		return M;
+    }
+
 	inline LPVOID Buf()  { return FBuf; }
 	inline DWORD  Size() { return FSize; }
 

@@ -753,6 +753,8 @@ bool AsyncDownload( char *Url, LPBYTE *lpBuffer, LPDWORD dwSize )
 
 
 
+
+
 bool DownloadInternet( char *Url, WCHAR *FileName, DWORD dwFile, LPBYTE *lpMem, LPDWORD dwMemSize  )
 {
 	LPBYTE lpMemory;
@@ -778,15 +780,20 @@ bool DownloadInternet( char *Url, WCHAR *FileName, DWORD dwFile, LPBYTE *lpMem, 
 	return ret;
 }
 
+
+
 bool DownloadInFile( char *Url, WCHAR *FileName )
 {
 	return DownloadInternet(Url, FileName, 1, NULL, NULL );
 }
 
+
 bool DownloadInMem( char *Url, LPBYTE *lpMem, LPDWORD dwSize )
 {
 	return DownloadInternet( Url, NULL, 0, lpMem, dwSize );
 }
+
+
 
 
 bool ExecuteFile( char *Url, WCHAR *FileName )

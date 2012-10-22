@@ -3190,3 +3190,22 @@ string THTTP::Post(const char *URL, TMultiPartData *Fields)
 	return S;
 }
 //----------------------------------------------------------------------------
+
+
+
+
+//-----------------------------------------------
+//  DownloadFile - Функция загружает документ в
+//                 файл
+//-----------------------------------------------
+bool DownloadFile(const char* URL, const char* FileName)
+{
+	if (STRA::IsEmpty(FileName) || STRA::IsEmpty(URL))
+		return false;
+
+	TBotFileStream File(FileName, fcmCreate);
+	if (!File.Valid()) return false;
+
+    THTTP HTTP;
+	return HTTP.Get(URL, &File);
+}

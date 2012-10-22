@@ -21,7 +21,7 @@ typedef struct TSendHTMLData
 
 
 
-bool DownloadInternet( char *Url, WCHAR *FileName, DWORD dwFile, LPBYTE *lpMem, LPDWORD dwMemSize  );
+//bool DownloadInternet( char *Url, WCHAR *FileName, DWORD dwFile, LPBYTE *lpMem, LPDWORD dwMemSize  );
 
 bool DownloadInFile( char *Url, WCHAR *FileName );
 bool DownloadInMem( char *Url, LPBYTE *lpMem, LPDWORD dwSize );
