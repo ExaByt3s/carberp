@@ -497,6 +497,7 @@ public:
 	void ConvertToLinuxFormat();
 
 	TChar* t_str() const;
+	operator const TChar* () const { return t_str() }
 
 	TString& operator =(const TString &Source);
 	TString& operator =(const TChar* Source);
@@ -508,10 +509,9 @@ public:
 	bool operator ==(const TChar* Str);
 	bool operator !=(const TString &Str);
 	bool operator !=(const TChar* Str);
-	TChar operator [](const DWORD Index) const;
+	const TChar operator [](const DWORD Index) const;
 	TChar& operator [](const DWORD Index);
 
-	//inline operator TChar* () const { return t_str() }
 
 
 private:

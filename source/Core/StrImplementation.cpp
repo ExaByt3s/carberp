@@ -936,7 +936,7 @@ STRFUNC(bool)::operator !=(const TChar* Str)
 	return !STRUTILS<TChar>::Equal(Data, Str);
 }
 
-STRFUNC(TChar)::operator[](const DWORD Index) const
+STRFUNC(const TChar)::operator[](const DWORD Index) const
 {
 	if (Index < Length())
 		return Data[Index];
