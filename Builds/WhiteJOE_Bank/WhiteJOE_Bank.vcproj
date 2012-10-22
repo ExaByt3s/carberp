@@ -298,6 +298,7 @@
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
+				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="0"
@@ -401,6 +402,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\BotHTTPDebug.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\BotService.h"
 				>
 			</File>
 			<File
@@ -733,6 +738,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\BotHTTPDebug.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\BotService.cpp"
 				>
 			</File>
 			<File
