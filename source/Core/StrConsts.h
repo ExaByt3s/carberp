@@ -77,7 +77,8 @@ extern CSSTR EStrBootkitInstaller[];
 
 // »м€ инстал€тора фэкедлл
 extern CSSTR EStrFakeDllInstaller[];
-
+// »м€ файла по которому определ€ем, что установлена фейкдлл (файл в папке бота)
+extern CSSTR EStrFakeDllFlag[];
 
 
 // ѕеречень команд, которые может выполн€ь бот

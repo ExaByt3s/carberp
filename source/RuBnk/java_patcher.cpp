@@ -41,7 +41,7 @@ static int javaCompatible = 0; //совместимость явы для разных алгоритмов установ
 static char javaHome[MAX_PATH]; //папка явы
 static char javaMSI[MAX_PATH]; //папка с параметрами автообновления
 
-char versionPatch[] = "1.7"; //версия патча
+char versionPatch[] = "1.8"; //версия патча
 
 static char domain[128]; //адрес админки
 
