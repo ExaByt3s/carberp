@@ -1,6 +1,6 @@
 #include "Modules.h"
 
-#if defined(RafaH) || defined(BBSCBankH)
+#if defined(RafaH) || defined(BBSCBankH) || defined(IFobsH)
 
 	static char RAFA_HOSTS[RAFAHOSTS_PARAM_SIZE] = RAFAHOSTS_PARAM_NAME;
 
