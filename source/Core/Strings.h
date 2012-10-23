@@ -508,7 +508,7 @@ public:
 	bool operator ==(const TChar* Str);
 	bool operator !=(const TString &Str);
 	bool operator !=(const TChar* Str);
-	const TChar operator [](const DWORD Index) const;
+	TChar operator [](const DWORD Index) const;
 	TChar& operator [](const DWORD Index);
 
 //	operator const TChar* () const { return t_str() }
