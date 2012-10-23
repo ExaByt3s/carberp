@@ -1941,10 +1941,18 @@ string TURL::URL()
 }
 //----------------------------------------------------------------------------
 
+// Функция собирвет строку для добавлени данных в тело запроса
 string TURL::GetPathAndDocument()
 {
-    NormalizePath();
-	return Path + Document;
+	NormalizePath();
+	string Result = Path + Document;
+	// Добавляем параметры
+	if (!Params.IsEmpty())
+	{
+		Result += HTTPParamsDelimeter;
+		Result += Params;
+	}
+	return Result;
 }
 //----------------------------------------------------------------------------
 
