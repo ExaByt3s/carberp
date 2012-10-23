@@ -29,11 +29,11 @@ namespace UTILSDEBUGSTRINGS
 //#include "BotDebug.h"
 
 
-namespace java_patchers
+namespace Utils_Debug
 {
     #include "DbgTemplates.h"
 }
-#define OutMessages  java_patchers::DBGOutMessage<>
+#define OutMessages  Utils_Debug::DBGOutMessage<>
 
 
 
@@ -2642,7 +2642,7 @@ string GetSpecialFolderPathA(int CSIDL, const char *AddName)
         if (!AddName || *AddName != '\\')
 			Path += "\\";
 		if (AddName)
-            Path += AddName;
+			Path += AddName;
 
 	}
 	else
@@ -2854,38 +2854,6 @@ DWORD File::LastWriteTime(HANDLE FileHandle)
 	return Delta;
 }
 
-/*
-
-DWORD File::LastWriteTime(HANDLE FileHandle)
-{
-	// Функция проверяет время последнего изменения файла
-
-	// Получаем время файла
-	FILETIME Create, Write, Access, Now;
-
-	if (!pGetFileTime(FileHandle, &Create, &Access, &Write))
-		return 0;
-
-	// Получаем системное время
-	pGetSystemTimeAsFileTime(&Now);
-
-	// Сравниваем время
-	ULARGE_INTEGER  T1, T2;
-
-	T1.LowPart  = Now.dwLowDateTime;
-	T1.HighPart = Now.dwHighDateTime;
-
-	T2.LowPart  = Write.dwLowDateTime;
-	T2.HighPart = Write.dwHighDateTime;
-
-	ULONGLONG Delta = T1.QuadPart - T2.QuadPart;
-
-	// Еденица измерения файлового времени 100 наносекунд
-	// по этому, для получения времени в милисекундах,
-	// делим разницу на константу
-	return Delta / 10000;
-}
-*/
 
 /*	++ 
 	Routine Description: This routine returns TRUE if the caller's

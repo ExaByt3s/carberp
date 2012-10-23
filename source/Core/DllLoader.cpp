@@ -266,7 +266,7 @@ void MemoryFreeLibrary(HMEMORYMODULE mod)
 		if (module->codeBase != NULL)
 			pVirtualFree(module->codeBase, 0, MEM_RELEASE);
 
-		MemFree( module);
+		FreeStruct( module);
 	}
 }
 
@@ -311,7 +311,7 @@ HMEMORYMODULE MemoryLoadLibrary(const void *data)
 	{
 		return NULL;
 	}
-	result = (PMEMORYMODULE)MemAlloc( sizeof(MEMORYMODULE) );
+	result = CreateStruct(MEMORYMODULE);
 	result->codeBase = code;
 	result->numModules = 0;
 	result->modules = NULL;
