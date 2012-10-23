@@ -536,6 +536,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\ifobs.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\imbicili.cpp"
 				>
 			</File>
@@ -895,6 +899,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\RuBnk\IBankSystem.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\ifobs.h"
 				>
 			</File>
 			<File

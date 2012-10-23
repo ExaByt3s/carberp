@@ -5,7 +5,7 @@
 namespace IFobs
 {
 
-bool Init();
+bool Init( const char* appName );
 
 };
 

