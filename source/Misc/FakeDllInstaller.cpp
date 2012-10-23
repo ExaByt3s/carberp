@@ -851,6 +851,8 @@ void FDI::Execute()
 {
 	if (!BOT::FakeDllInstalled())
 		StartThread(DoExecute, 0);
+	else
+		FKIDBG("FakeDLLInstaller", "Fake DLL уже установлена");
 }
 
 
