@@ -511,7 +511,7 @@ public:
 	TChar operator [](const DWORD Index) const;
 	TChar& operator [](const DWORD Index);
 
-	//inline operator TChar* () const { return t_str() }
+//	operator const TChar* () const { return t_str() }
 
 
 private:

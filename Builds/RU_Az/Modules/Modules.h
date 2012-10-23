@@ -64,6 +64,7 @@
 
 #include "IBankSystem.h"
 #include "avangard.h"
+#include "ifobs.h"
 
 #include "FgrFilters.h"
 

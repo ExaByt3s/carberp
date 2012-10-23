@@ -492,7 +492,7 @@ TMemoryDLL::TMemoryDLL(const void* DllBuf)
 
 TMemoryDLL::~TMemoryDLL()
 {
-	if (FHandle)
+	if (FHandle && !FNotFree)
 		MemoryFreeLibrary(FHandle);
 }
 //----------------------------------------------------------------------------
