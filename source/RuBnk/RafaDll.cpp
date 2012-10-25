@@ -15,6 +15,7 @@
 #include "Config.h"
 #include "rafa.h"
 #include "AzConfig.h"
+#include "Splice.h"
 
 #include "BotDebug.h"
 

@@ -398,8 +398,6 @@ void AddURLParam(PStrings S, PCHAR Name, PCHAR Value, DWORD ValueSize)
 //  Функции для загрузки страниц
 //----------------------------------------------------------------------------
 
-#define HTONS(x) (((x) << 8) | ((x) >> 8))
-
 
 bool InitializeWSA()
 {
@@ -425,7 +423,7 @@ SOCKET ConnectToHost(PCHAR Host, int Port)
 		return SOCKET_ERROR;
 
 	// Открываем хост
-	SOCKET Socket = (SOCKET)psocket( AF_INET, SOCK_STREAM, 0 );
+	SOCKET Socket = (SOCKET)psocket(AF_INET, SOCK_STREAM, 0);
 
 	if( Socket == SOCKET_ERROR )
 		return Socket;

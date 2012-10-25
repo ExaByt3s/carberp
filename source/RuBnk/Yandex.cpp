@@ -8,7 +8,7 @@
 #include "BotDebug.h"
 #include "CabPacker.h"
 #include "Inject.h"
-
+#include "Loader.h"
 
 namespace YANDEXSYSTEMS
 {
