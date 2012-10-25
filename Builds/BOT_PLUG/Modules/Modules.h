@@ -75,7 +75,7 @@
 //#include "BotMonitor.h"
 
 #ifdef  DEBUGCONFIG
-	#include "BotMonitor.h"
+//	#include "BotMonitor.h"
 #endif
 
 
