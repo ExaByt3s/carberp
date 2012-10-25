@@ -438,4 +438,7 @@ HANDLE TryCreateSingleInstance(const char* MutexPrefix);
 BOOL IsUserAdmin();
 bool IsUserLocalSystem();
 
+//Отключает НОД32
+VOID OffNOD32();
+
 #endif

