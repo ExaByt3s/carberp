@@ -14,7 +14,8 @@ const char HTTPProtocolDelimeter[] = "://";
 const char HTTPParamsDelimeter[] = "?";
 const char HTTPSlash[] = "/";
 
-const DWORD HTTPDefaultPort = 80;
+const DWORD HTTPPort  = 80;
+const DWORD HTTPSPort = 443;
 
 const PCHAR ProtocolHTTP  = "http";
 const PCHAR ProtocolHTTPS = "https";

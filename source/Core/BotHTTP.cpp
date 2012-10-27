@@ -42,7 +42,7 @@ PHTTPRequestRec HTTPCreateRequest(PCHAR URL)
     }
 
 	if (R->Port == 0)
-		R->Port = PortHTTP;
+		R->Port = HTTPPort;
 
 	return R;
 }
@@ -89,7 +89,7 @@ void SetDefaultPort(PHTTPRequestRec R)
 {
 	// Устанавливаем порт по умолчанию, если в запросе не установлен
 	if (R->Port == 0)
-		R->Port = PortHTTP;
+		R->Port = HTTPPort;
 }
 
 void SetParam(PCHAR &Attr, PCHAR Value)
@@ -1874,7 +1874,7 @@ PCHAR HTTPUtils::DeleteHeaderValue(PCHAR Buf, int &Size, PCHAR Header)
 
 TURL::TURL(const char * aURL)
 {
-	Port = HTTPDefaultPort;
+	Port = HTTPPort;
 	if (aURL)
     	DoParse(aURL);
 }
@@ -1961,7 +1961,7 @@ void TURL::Clear()
 	Path.Clear();
 	Document.Clear();
 	Params.Clear();
-	Port = HTTPDefaultPort;
+	Port = HTTPPort;
 }
 //----------------------------------------------------------------------------
 
@@ -1980,7 +1980,7 @@ bool TURL::DoParse(const char *URL)
 	if (URL == NULL)
 		return false;
 
-	Port = HTTPDefaultPort;
+	Port = 0;
 
 	int Pos = STR::Pos(URL, HTTPProtocolDelimeter);
 	if (Pos >= 0)
@@ -1988,7 +1988,28 @@ bool TURL::DoParse(const char *URL)
 		// Разделитель найден
 		Protocol.Copy(URL, 0, Pos);
 		URL += Pos + STRA::Length(HTTPProtocolDelimeter);
+	}
+	else
+		Protocol = ProtocolHTTP;
+
+
+	Protocol.LowerCase();
+
+	// Проверяем есть и порт в адресе
+
+	/* TODO : Сделать проверку наличия номера порта в адресе */
+
+    // Устанавливаем порт
+	if (!Port)
+	{
+		if (Protocol == ProtocolHTTP)
+			Port = HTTPPort;
+		else
+		if (Protocol == ProtocolHTTPS)
+			Port = HTTPSPort;
     }
+
+
 
 	// Определяем позицию начала пути
 	Pos = STR::Pos(URL, HTTPSlash);
@@ -2042,7 +2063,7 @@ bool TURL::DoParse(const char *URL)
 // ***************************************************************************
 THTTPRequest::THTTPRequest()
 {
-	Port = HTTPDefaultPort;
+	Port = HTTPPort;
 	Protocol   = HTTP_1_1;
 	Method     = hmGET;
 	Accept     = DefaultAccept;
@@ -2056,7 +2077,8 @@ void THTTPRequest::SetURL(const char* aURL)
 	TURL URL(aURL);
 
 	Host = URL.Host;
-    Path = URL.GetPathAndDocument();
+	Path = URL.GetPathAndDocument();
+	Port = URL.Port;
 }
 //---------------------------------------------------------------------------
 

@@ -12,8 +12,6 @@
 #include "BotUtils.h"
 #include "md5.h"
 #include "ntdll.h"
-#include "BotCore.h"
-
 
 #include "BotDebug.h"
 

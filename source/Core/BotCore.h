@@ -292,8 +292,9 @@ namespace BOT
    //----------------------------------------------------
    //  Функции для обеспечения сокрытия служебных файлов
    //----------------------------------------------------
-   void AddHiddenFile(DWORD FileHash);
-   void AddHiddenFile(const char* FileName);
+   void        AddHiddenFile(DWORD FileHash);
+   void        AddHiddenFile(const char* FileName);
+   void inline AddHiddenFile(const string& FileName) { AddHiddenFile(FileName.t_str()); }
 
    bool IsHiddenFile(DWORD FileHash);
    bool IsHiddenFile(const char* FileName);

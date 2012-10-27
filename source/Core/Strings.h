@@ -487,7 +487,10 @@ public:
 
 	TString& Format(const TChar *FormatLine, ...); // return this
 
-    TString& LongToStr(DWORD num); // return this
+	TString& LongToStr(DWORD num); // return this
+
+	TString& LowerCase();
+	TString& UpperCase();
 
 	DWORD Hash();
 	DWORD Hash(DWORD Len, bool LowerChar);

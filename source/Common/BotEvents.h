@@ -19,8 +19,14 @@ typedef struct TEventData
 } *PEventData;
 
 
-//reserved
-//typedef void (*TBotEvent)(PEventData);
+
+//-----------------------------------------------------------
+//  InitializeHiddenFiles - Функция инициализирует массив
+//                          файлов имена которых бот будет
+//                          прятать
+//-----------------------------------------------------------
+void InitializeHiddenFiles();
+
 
 
 // Первый запуск бота в проводнике

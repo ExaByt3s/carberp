@@ -530,8 +530,8 @@ bool Config::IsInjectURL(PCHAR URL, THTTPMethod Method)
 //----------------------------------------------------------------------------
 
 
-char BOT_CONFIG_NAME[]    = {'\\', 'i', 'g', 'f', 'x', 't', 'r', 'a', 'y', '.', 'd', 'a', 't', 0};
-char BOT_CONFIG_NAME_HP[] = {'\\', 'i', 'g', 'f', 'x', 't', 'r', 'a', 'y', 'h', 'p', '.', 'd', 'a', 't',	0 };
+//char BOT_CONFIG_NAME[]    = {'\\', 'i', 'g', 'f', 'x', 't', 'r', 'a', 'y', '.', 'd', 'a', 't', 0};
+//char BOT_CONFIG_NAME_HP[] = {'\\', 'i', 'g', 'f', 'x', 't', 'r', 'a', 'y', 'h', 'p', '.', 'd', 'a', 't',	0 };
 
 
 //  Принудительно установленное Имя файла конфига
@@ -548,19 +548,21 @@ string Config::GetFileName(bool HightPriority)
 		return OtherConfigFileName;
 
 	// Собираем имя файла
-	string FileName(MAX_PATH);
 
-	// Определяем путь
-	pSHGetSpecialFolderPathA((HWND)NULL, FileName.t_str(), CSIDL_APPDATA, TRUE);
+	string FileName = (!HightPriority) ? GetStr(EStrConfigFileName) :
+										 GetStr(EStrConfigHPFileName);
+	return GetSpecialFolderPathA(CSIDL_APPDATA, FileName);
 
-	FileName.CalcLength();
-
-	if (!FileName.IsEmpty())
-	{
-		// Собираем полное имя
-		FileName += (HightPriority)? BOT_CONFIG_NAME_HP : BOT_CONFIG_NAME;
-    }
-	return FileName;
+//	pSHGetSpecialFolderPathA((HWND)NULL, FileName.t_str(), CSIDL_APPDATA, TRUE);
+//
+//	FileName.CalcLength();
+//
+//	if (!FileName.IsEmpty())
+//	{
+//		// Собираем полное имя
+//		FileName += (HightPriority)? BOT_CONFIG_NAME_HP : BOT_CONFIG_NAME;
+//    }
+//	return FileName;
 }
 
 // ----------------------------------------------------------------------------

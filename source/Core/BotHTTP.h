@@ -82,10 +82,6 @@ const static PCHAR FileNameHeader = "; filename=\"";
 #define HTTP_CODE_OK 200
 
 
-// Стандартные порты
-const WORD PortHTTP  = 80;
-const WORD PortHTTPS = 443;
-
 // Базовые значения параметров
 const PCHAR DefaultPath = "/";
 const PCHAR DefaultAccept = "*/*";
