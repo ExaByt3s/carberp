@@ -173,7 +173,7 @@ namespace BOT
 	//  GetBotFullExeName - Функция возвращает полное имя
 	//						файла бота
 	//----------------------------------------------------
-	PCHAR GetBotFullExeName();
+	string GetBotFullExeName();
 
 	//----------------------------------------------------
 	//  GetServiceFullExeName - Функция возвращает полное
@@ -271,7 +271,7 @@ namespace BOT
 	void DeleteSettings();
 
 	void SavePrefixToTemporaryFile();
-	void SavePrefixFromTemporaryFile(bool IgnoreIfExists);
+	void SavePrefixFromTemporaryFile();
 
 	//----------------------------------------------------
 	//  Функция установки/получения типа бота

