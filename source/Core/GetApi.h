@@ -655,7 +655,7 @@ const static int ApiCacheSize = 541;
 #define pZwShutdownSystem			pushargEx< DLL_NTDLL, 0x6F1C809E, 423 >
 #define pRtlComputeCrc32			pushargEx< DLL_NTDLL,0x687B7023, 424 >
 #define pNtQuerySystemInformation	pushargEx< DLL_NTDLL,0xB044A119, 0 >
-
+#define pNtDeviceIoControlFile		pushargEx< DLL_NTDLL,0x385C70F2, 0 >
 
 //winsta
 #define pWinStationTerminateProcess	pushargEx< DLL_WINSTA, 0xA60C5F05, 425 >

