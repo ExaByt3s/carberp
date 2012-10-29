@@ -270,6 +270,9 @@ namespace BOT
 	void SaveSettings(bool SavePrefix, bool SaveHosts, bool IgnoreIfExists);
 	void DeleteSettings();
 
+	void SavePrefixToTemporaryFile();
+	void SavePrefixFromTemporaryFile(bool IgnoreIfExists);
+
 	//----------------------------------------------------
 	//  Функция установки/получения типа бота
 	//----------------------------------------------------

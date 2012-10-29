@@ -82,7 +82,6 @@ DWORD WINAPI DDOSProces(LPVOID)
 		}
 	}
 
-
     // Освобождаем данные
 	STR::Free(Host);
 	STR::Free(StrThreads);

