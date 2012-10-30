@@ -107,6 +107,9 @@ extern CSSTR VideRecFuncStop[];
 extern CSSTR VideRecFuncResetTimer[];
 extern CSSTR VideRecFuncSendData[];
 extern CSSTR VideRecFuncRunPortForward[];
+extern CSSTR VideRecFuncInitSendLog[];
+extern CSSTR VideRecFuncReleaseSendLog[];
+extern CSSTR VideRecFuncSendLog[];
 
 
 // Константы модуля HTTP

