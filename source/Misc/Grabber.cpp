@@ -100,6 +100,7 @@ DWORD WINAPI GrabberThread( LPVOID lpData )
 	MemFree(Buffer);
 	MemFree(Module);
 
+	pExitProcess(0);
 
 	return 0;
 }
