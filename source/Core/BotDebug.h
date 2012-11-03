@@ -47,11 +47,17 @@
 //  строк в файл
 //*************************************************************
 
-//#define OUTPUT_LINES_IN_F+ILE
+#define OUTPUT_LINES_IN_FILE
 
 
 #ifdef OUTPUT_LINES_IN_FILE
-	const char DebugLinesFileName[] = "c:\\BotDbgLines.log";
+	// Директива включает разделение лога по модулям.
+	// Логи модулей будут записаны в отдельные, одноимённые, файлы
+
+	//#define SPLIT_LOG_ON_MODULES
+
+	// Имя папки либо файла лога
+	const char BotDebugPath[] = "c:\\BotDbgLines";
 #endif
 
 

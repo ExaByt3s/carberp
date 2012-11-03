@@ -84,10 +84,21 @@ bool StartInDebugingMode(bool ShMSG)
 	}
 
 
-	void OutputDebugStringInFileA(PCHAR Line)
+	void OutputDebugStringInFileA(PCHAR Section, PCHAR Line)
 	{
 		// Функция выводит отладочную строку в файл
-		HANDLE File = OpenDebugFile((PCHAR)DebugLinesFileName);
+		string FileName = BotDebugPath;
+
+		#ifdef SPLIT_LOG_ON_MODULES
+			if (!DirExists((PCHAR)BotDebugPath))
+				pCreateDirectoryA(BotDebugPath, NULL);
+			FileName += "\\";
+			FileName += (!STRA::IsEmpty(Section)) ? Section : "Default";
+		#endif
+
+		FileName += ".log";
+
+		HANDLE File = OpenDebugFile(FileName.t_str());
 		if (File == NULL)
 			return;
 
@@ -164,7 +175,7 @@ void Debug::MessageEx(PCHAR Module, DWORD Line, PCHAR Section, PCHAR ExtData, PC
 	STR::Free(LineStr);
 
 	#ifdef OUTPUT_LINES_IN_FILE
-		OutputDebugStringInFileA(ExtLine);
+		OutputDebugStringInFileA(Module, ExtLine);
 	#else
 		pOutputDebugStringA(ExtLine);
 	#endif
