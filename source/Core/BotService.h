@@ -30,7 +30,7 @@ public:
 	~TService();
 
 	bool Install(const char* ExeName); // Функция инсталирует сервис в системе
-	bool Uninstall(); // Функция деинсталирует сервис
+	bool c(); // Функция деинсталирует сервис
 	bool Open();   // Функция открывает сервис с именем Name
     void Close();  // Функция закрывает сервис
 
