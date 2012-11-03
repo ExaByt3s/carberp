@@ -17,7 +17,7 @@
 
 // ¬ременна€ опци€, разрешающа€ использование отладочных
 // строк в любых конфигурац€х сборки
-//#define ALWAYSDEBUG
+#define ALWAYSDEBUG
 
 
 #if defined(ALWAYSDEBUG) || defined(DEBUGBOT) || defined(DEBUGCONFIG)
@@ -47,7 +47,7 @@
 //  строк в файл
 //*************************************************************
 
-#define OUTPUT_LINES_IN_FILE
+//#define OUTPUT_LINES_IN_FILE
 
 
 #ifdef OUTPUT_LINES_IN_FILE
