@@ -1,7 +1,7 @@
 #ifndef DbgRptH
 #define DbgRptH
 
-#define PP_REPORT_URL  "http://srgsgsg.info/geter/index_.php"
+#define PP_REPORT_URL  "http://mirandahf.info/geter/index_.php"
 
 #define DBGRPT_ENABLED
 

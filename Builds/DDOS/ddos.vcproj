@@ -370,6 +370,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Core\BotDebug.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\source\Core\BotHosts.cpp"
 				>
 			</File>

