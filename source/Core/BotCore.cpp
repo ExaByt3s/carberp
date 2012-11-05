@@ -1052,7 +1052,7 @@ void BOT::SavePrefixFromTemporaryFile()
 		string PrefixFile = Bot->PrefixFileName();
 		string Prefix = LoadPrefixFromFile(TempName.t_str());
 		if (!Prefix.IsEmpty())
-			SavePrefixToFile(PrefixFile.t_str());
+			File::WriteBufferA(PrefixFile.t_str(), Prefix.t_str(), Prefix.Length());
 		pDeleteFileA(TempName.t_str());
     }
 }
