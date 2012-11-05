@@ -185,7 +185,8 @@ __fastcall TBotBuilder::TBotBuilder(TComponent* AOwner)
 	FActiveModules = new TList();
 
 	// Инициализируем классы для шифрования строк
-    FStringsEncryptor = new TBotStringsEncryptor(this);
+	FStringsEncryptor = new TBotStringsEncryptor(this);
+
 	FStringsPassword  = new TStringsPasswordParam(this, false, false, BOTPARAM_SESSION_PASSW, MAX_SESSION_PASSW_SIZE + 1, "Пароль шифрования строк");
 	FStringsPassword->AsAnsiString = "----";
 
@@ -255,7 +256,7 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
     Message(Status_StartBuild);
 
 	// Создаём случайый пароль шифрования строк
-	PCHAR StrPass = Random::RandomString(MAX_SESSION_PASSW_SIZE, 32, 255);
+	PCHAR StrPass = Random::RandomString(MAX_SESSION_PASSW_SIZE - 1, 32, 255);
 	FStringsPassword->AsAnsiString = StrPass;
 
 	// Проверяем параметры
