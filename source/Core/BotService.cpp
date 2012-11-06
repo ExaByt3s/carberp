@@ -60,7 +60,7 @@ bool TService::Uninstall()
 
 		if (FService)
 		{
-			Stop(5000);
+			Stop(15000);
 			Result = (BOOL)pDeleteService(FService) != FALSE;
 			Close();
 		}
