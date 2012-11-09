@@ -548,6 +548,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Core\Installer.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Common\InternetExplorer.cpp"
 				>
 			</File>
