@@ -69,7 +69,7 @@ bool GenerateRandomPlugPath(wstring& Path)
 
 	// Получаем путь к "Documents and Settings\username\Application Data"
 	m_memset(PathBuffer, 0, sizeof(PathBuffer));
-	DirectoryObtained = (BOOL)pSHGetSpecialFolderPathW(NULL, PathBuffer, CSIDL_APPDATA, false);
+	DirectoryObtained = (BOOL)pSHGetSpecialFolderPathW(NULL, PathBuffer, CSIDL_COMMON_APPDATA, false);
 	if (DirectoryObtained == FALSE) return false;
 
 	Path += PathBuffer;
