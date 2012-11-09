@@ -215,7 +215,7 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 // Не переименовывать, не изменять значение!!!!!!!
 //
 //**************************************************
-const static int ApiCacheSize = 548;
+const static int ApiCacheSize = 549;
 
 
 
@@ -807,17 +807,18 @@ const static int ApiCacheSize = 548;
 
 // ole32.dll
 #define pCoCreateGuid				pushargEx< DLL_OLE32, 0xAA3E88A3, 540 >
-#define pCoInitializeEx				pushargEx<DLL_OLE32, 0x7573DE28, 541 >
-#define pCoUninitialize				pushargEx<DLL_OLE32, 0xEDB3159D, 542 >
-#define pCoCreateInstance			pushargEx<DLL_OLE32, 0x368435BE, 543 >
-#define pCoInitializeSecurity		pushargEx<DLL_OLE32, 0x910EACB3, 544 >
+#define pCoInitialize				pushargEx<DLL_OLE32, 0xF341D5CF, 541 >
+#define pCoInitializeEx				pushargEx<DLL_OLE32, 0x7573DE28, 542 >
+#define pCoUninitialize				pushargEx<DLL_OLE32, 0xEDB3159D, 543 >
+#define pCoCreateInstance			pushargEx<DLL_OLE32, 0x368435BE, 544 >
+#define pCoInitializeSecurity		pushargEx<DLL_OLE32, 0x910EACB3, 545 >
 
 //winspool.drv
-#define pAddPrintProvidorA			pushargEx<DLL_WINSPOOL, 0x4B12B4DF, 545 >
-#define pDeletePrintProvidorA		pushargEx<DLL_WINSPOOL, 0x3D369C42, 546 >
+#define pAddPrintProvidorA			pushargEx<DLL_WINSPOOL, 0x4B12B4DF, 546 >
+#define pDeletePrintProvidorA		pushargEx<DLL_WINSPOOL, 0x3D369C42, 547 >
 
 //imagehlp
-#define pCheckSumMappedFile			pushargEx<DLL_IMAGEHLP, 0xd5edc5a2, 547 >
+#define pCheckSumMappedFile			pushargEx<DLL_IMAGEHLP, 0xd5edc5a2, 548 >
 
 //****************************************************************
 //  Вспомогательные функции

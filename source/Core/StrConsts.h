@@ -43,6 +43,7 @@ extern CSSTR StrBootkitIsRunMutex[];
 
 // ќригинальное им€ ехе файла бота
 extern CSSTR EStrOriginalBotExeName[];
+extern CSSTR EStrBotStartupLinkName[];  // »м€ €рлыка в автозагрузке
 
 
 // »м€ сервиса
