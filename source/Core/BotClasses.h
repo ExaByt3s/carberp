@@ -109,6 +109,8 @@ public:
 	int    Count();
 	void   Clear();
 	void   Delete(int Index);
+	int    IndexOf(const char* Str);
+	int    IndexOf(const string &Str);
 	string GetItem(int Index);
 	void   SetItem(int Index, const char* Item);
 	void   SetItem(int Index, const string &Item);

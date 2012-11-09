@@ -122,6 +122,25 @@ void TBotStrings::Delete(int Index)
 }
 //---------------------------------------------------
 
+int TBotStrings::IndexOf(const char* Str)
+{
+	int Count = FItems.Count();
+	for (int i = 0; i < Count; i++)
+	{
+		string &S = *(string*)FItems[i];
+		if (S == Str)
+			return i;
+	}
+	return -1;
+}
+//---------------------------------------------------
+
+int TBotStrings::IndexOf(const string &Str)
+{
+	return IndexOf(Str.t_str());
+}
+//---------------------------------------------------
+
 string TBotStrings::GetItem(int Index)
 {
 	string Item;
