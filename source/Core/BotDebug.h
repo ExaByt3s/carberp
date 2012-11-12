@@ -47,8 +47,9 @@
 //  Имя OUTPUT_LINES_IN_FILE включает опцию вывода отладочных
 //  строк в файл
 //*************************************************************
-//#define OUTPUT_LINES_IN_FILE
-
+#ifdef DebugUtils
+	//#define OUTPUT_LINES_IN_FILE
+#endif
 
 
 #ifdef OUTPUT_LINES_IN_FILE

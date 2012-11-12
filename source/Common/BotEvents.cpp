@@ -26,7 +26,7 @@
 void InitializeHiddenFiles()
 {
 	BOT::AddHiddenFile(GetStr(EStrConfigFileName));
-	BOT::AddHiddenFile(GetStr(EStrConfigHPFileName));
+	//BOT::AddHiddenFile(GetStr(EStrConfigHPFileName));
 }
 
 //---------------------------------------------------------------------------

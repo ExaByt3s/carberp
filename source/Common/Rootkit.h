@@ -12,7 +12,7 @@ void HookZwCreateFile();
 DWORD WINAPI RootkitThread(LPVOID);
 
 
-void ProtectPage( LPVOID lpAddr, DWORD dwParams );
+BOOL ProtectPage( LPVOID lpAddr, DWORD dwParams );
 
 //----------------------------------------------------------------------------
 #endif
