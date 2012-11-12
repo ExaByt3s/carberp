@@ -306,8 +306,8 @@ bool SelectTargetIeDll(
 	const WCHAR * Ie8Files[] = 
 	{
 		L"sqmapi.dll",
-		L"xpshims.dll",
-		L"ieproxy.dll"
+		L"xpshims.dll"
+		//L"ieproxy.dll"
 	};
 
 	const WCHAR * Ie7Files[] = 
