@@ -121,7 +121,7 @@
 				FavorSizeOrSpeed="0"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Core;..\..\Source;..\..\Include;Modules;..\..\Source\Misc;..\..\Source\Common"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOTRELEASE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOTRELEASE;#ifdef INSTALL_BOT_AS_SERVICE"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -293,7 +293,7 @@
 				FavorSizeOrSpeed="0"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Core;..\..\Source;..\..\Include;Modules;..\..\Source\Misc;..\..\Source\Common"
-				PreprocessorDefinitions="NDEBUG;DEBUGCONFIG"
+				PreprocessorDefinitions="NDEBUG;DEBUGCONFIG;INSTALL_BOT_AS_SERVICE"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -850,6 +850,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\Inject.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\Installer.cpp"
 				>
 			</File>
 			<File

