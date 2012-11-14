@@ -265,15 +265,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\AvBlock.cpp"
+				RelativePath="..\..\source\RuBnk\AzConfig.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\BackConnect.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\RuBnk\BBSCBank.cpp"
 				>
 			</File>
 			<File
@@ -318,6 +314,14 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\BotHTTP.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\BotService.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\BotSocket.cpp"
 				>
 			</File>
 			<File
@@ -401,10 +405,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\HistoryAnalizer.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Misc\Hunter.cpp"
 				>
 			</File>
@@ -421,11 +421,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\InternetExplorer.cpp"
+				RelativePath="..\..\source\Core\Installer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\java_patcher.cpp"
+				RelativePath="..\..\Source\Common\InternetExplorer.cpp"
 				>
 			</File>
 			<File
@@ -497,10 +497,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\Screens.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Common\ScreenShots.cpp"
 				>
 			</File>
@@ -518,6 +514,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\StealthBrowser.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\StrConsts.cpp"
 				>
 			</File>
 			<File
@@ -571,7 +571,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\AvBlock.h"
+				RelativePath="..\..\source\RuBnk\AzConfig.h"
 				>
 			</File>
 			<File
@@ -619,6 +619,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Core\BotService.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\BotSocket.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotUtils.h"
 				>
 			</File>
@@ -627,11 +635,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\CabPacker.h"
+				RelativePath="..\..\Source\Common\CabPacker.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\CabPacker.h"
+				RelativePath="..\..\Source\RuBnk\CabPacker.h"
 				>
 			</File>
 			<File
@@ -704,10 +712,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Grabber.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\HistoryAnalizer.h"
 				>
 			</File>
 			<File
@@ -835,10 +839,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\Screens.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Common\ScreenShots.h"
 				>
 			</File>
@@ -852,6 +852,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\StealthBrowser.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\StrConsts.h"
 				>
 			</File>
 			<File
