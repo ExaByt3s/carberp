@@ -13,10 +13,6 @@
 #define INSTALL_BOT_AS_SERVICE
 
 
-
-
-
-
 // подключаем модуль для работы с WINAPI в боте
 #include "GetApi.h"
 

