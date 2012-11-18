@@ -121,7 +121,7 @@
 				FavorSizeOrSpeed="0"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Core;..\..\Source;..\..\Include;Modules;..\..\Source\Misc;..\..\Source\Common"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOTRELEASE;#ifdef INSTALL_BOT_AS_SERVICE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOTRELEASE"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -365,6 +365,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\AzConfig.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\BackConnect.h"
 				>
 			</File>
@@ -425,11 +429,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\CabPacker.h"
+				RelativePath="..\..\Source\Common\CabPacker.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\CabPacker.h"
+				RelativePath="..\..\Source\RuBnk\CabPacker.h"
 				>
 			</File>
 			<File
@@ -698,6 +702,10 @@
 			>
 			<File
 				RelativePath="..\..\Source\Misc\antirapport.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\AzConfig.cpp"
 				>
 			</File>
 			<File

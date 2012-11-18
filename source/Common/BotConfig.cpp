@@ -726,7 +726,6 @@ bool SubstitudeText2(PCHAR Buffer, PCHAR &NewBuffer, PCHAR Before,
 	//DWORD BufferLen = StrCalcLength(Buffer);
 
 	PCHAR AfterPtr = NULL;
-
 	// »щем блок Before
 	if (B)
 	{

