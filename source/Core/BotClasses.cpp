@@ -1560,6 +1560,7 @@ DWORD TBotMemoryStream::Size()
     return FSize;
 }
 
+
 DWORD TBotMemoryStream::Seek(int Count, DWORD SeekMethod)
 {
 	if (FMemory)
