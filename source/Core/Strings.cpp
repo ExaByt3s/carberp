@@ -785,6 +785,21 @@ bool CompareUrl(const char *MaskUrl, const char *Url )
 	return false;
 }
 
+char* SafeCopyStr( char* dst, int szDst, const char* src )
+{
+	if( dst == 0 || szDst <= 0 ) return 0;
+	if( src == 0 ) 
+	{
+		dst[0] = 0;
+		return dst;
+	}
+	int len = m_lstrlen(src);
+	if( len > szDst - 1 ) len = szDst - 1;
+	m_memcpy( dst, src, len );
+	dst[len] = 0;
+	return dst;
+}
+
 //----------------------------------------------------------------------------
 PCHAR GetTextBetween(PCHAR &Buffer, PCHAR Before, PCHAR After )
 {

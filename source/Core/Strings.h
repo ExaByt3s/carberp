@@ -47,6 +47,9 @@ bool CompareUrl(const char *MaskUrl, const char *Url );
 WCHAR*   AnsiToUnicode( char *AnsiString, DWORD dwStrLen );
 wchar_t* UTF8ToUnicode( const char* utf8String );
 char*    UTF8ToAnsi( const char* utf8String );
+//безопасное копирование строки, dst - куда копируем, szDst - размер памяти в dst, src - исходная строка
+//возвращает dst
+char* SafeCopyStr( char* dst, int szDst, const char* src );
 
 
 
