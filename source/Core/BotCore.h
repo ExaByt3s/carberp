@@ -316,7 +316,7 @@ namespace BOT
 	void DeleteSettings();
 
 	void SavePrefixToTemporaryFile();
-	void SavePrefixFromTemporaryFile();
+	void SavePrefixFromTemporaryFile(bool IgnoreIfExists);
 
 	//----------------------------------------------------
 	//  Функция установки/получения типа бота
