@@ -116,6 +116,7 @@ CSSTR StrLogFileNetInfo[]     = "NetInfo.txt";
 // Имена функций библиотеки видеозаписи.
 CSSTR VideoRecFuncInit[]			= "Init";
 CSSTR VideoRecFuncRelease[]			= "Release";
+CSSTR VideoRecFuncAddIPServer[]		= "AddIPServer";
 CSSTR VideoRecFuncRecordProcess[]	= "StartRecPid";
 CSSTR VideoRecFuncRecordWnd[]		= "StartRecHwnd";
 CSSTR VideoRecFuncStop[]			= "StopRec";

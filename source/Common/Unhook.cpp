@@ -40,16 +40,21 @@ void WINAPI UnhookFunc( LPVOID hMap, WCHAR *Dll, DWORD dwProcNameHash )
 		{
 			if ( CalcHash( (char*)RVATOVA( hMap, *pdwNamePtr ) ) == dwProcNameHash )
 			{
-				ULONG entryVA = dwImageBase + functionEntryPoints[i];
-				ULONG entryMA =	( (ULONG)hMap  + functionEntryPoints[i] );
+				ULONG entryVA = dwImageBase + functionEntryPoints[*pwOrdinalPtr];
+				ULONG entryMA =	( (ULONG)hMap  + functionEntryPoints[*pwOrdinalPtr] );
 
 				m_memcpy( originalBytes, (PVOID)entryMA, 10 );
 				m_memcpy( entryPointBytes, (LPVOID)entryVA, 10 );
 
-		    	if ( m_memcmp( entryPointBytes, originalBytes, 10 ) )
+		    	if ( m_memcmp( entryPointBytes, originalBytes, 5 ) )
 				{
 					DWORD dwOldProtect;
-
+//					char buf[128];
+//					wsprintfA( buf, "c:\\text\\%08x_%08x_%08x_1", dwProcNameHash, functionEntryPoints[*pwOrdinalPtr], functionEntryPoints[i] );
+//					pOutputDebugStringA(buf);
+//					File::WriteBufferA(buf,(PVOID)entryVA,10);
+//					buf[m_lstrlen(buf) - 1] = '2';
+//					File::WriteBufferA(buf,(PVOID)entryMA,10);
 					if ( (BOOL)pVirtualProtectEx( (HANDLE)-1, (LPVOID)entryVA, 10, PAGE_EXECUTE_READWRITE, &dwOldProtect ) )
 					{
 						m_memcpy( (LPVOID)entryVA, (LPCVOID)originalBytes, 10 );

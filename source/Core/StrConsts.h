@@ -104,6 +104,7 @@ extern CSSTR StrLogFileNetInfo[];
 // Имена функций библиотеки видеозаписи.
 extern CSSTR VideoRecFuncInit[];
 extern CSSTR VideoRecFuncRelease[];
+extern CSSTR VideoRecFuncAddIPServer[];
 extern CSSTR VideoRecFuncRecordProcess[];
 extern CSSTR VideoRecFuncRecordWnd[];
 extern CSSTR VideoRecFuncStop[];
