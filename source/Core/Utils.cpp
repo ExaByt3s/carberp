@@ -2817,6 +2817,35 @@ HANDLE TryCreateSingleInstance(const char* MutexPrefix)
 
 	return MutexHandle;
 }
+//ждет пока кто-то захватит мьютекс, wait - сколько ждать в миллисекундах
+bool WaitCaptureMutex( const char* name, int wait )
+{
+	int time = 0;
+	while( time < wait )
+	{
+		HANDLE mutex = TryCreateSingleInstance(name);
+		if( mutex == 0 ) return true;
+		pCloseHandle(mutex);
+		pSleep(50);
+		time += 50;
+	}
+	return false;
+}
+
+//захват мьютекса, wait - сколько ждать в миллисекундах
+HANDLE CaptureMutex( const char* name, int wait )
+{
+	int time = 0;
+	while( time < wait )
+	{
+		HANDLE mutex = TryCreateSingleInstance(name);
+		if( mutex ) return mutex;
+		pSleep(10);
+		time += 10;
+	}
+	return 0;
+}
+
 
 
 //------------------------------------------------------

