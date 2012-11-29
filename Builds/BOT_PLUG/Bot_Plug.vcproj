@@ -520,6 +520,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\GETDataGrabber.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\Grabber.cpp"
 				>
 			</File>
@@ -569,6 +573,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\KeepAlive.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\KeyLogger.cpp"
 				>
 			</File>
 			<File
@@ -886,6 +894,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\GETDataGrabber.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\Grabber.h"
 				>
 			</File>
@@ -939,6 +951,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\KeyLogger.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\KeyLogger.h"
 				>
 			</File>
 			<File

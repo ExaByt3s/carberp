@@ -437,6 +437,11 @@ string GetCommandParamByIndex(const char* CommandParamList, DWORD ParamIndex);
 //*****************************************************************
 
 HANDLE TryCreateSingleInstance(const char* MutexPrefix);
+//захват мьютекса, wait - сколько ждать в миллисекундах
+HANDLE CaptureMutex( const char* name, int wait );
+//ждет пока кто-то захватит мьютекс, wait - сколько ждать в миллисекундах
+bool WaitCaptureMutex( const char* name, int wait );
+
 
 BOOL IsUserAdmin();
 bool IsUserLocalSystem();

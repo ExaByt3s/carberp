@@ -120,7 +120,7 @@ namespace PIPE
 	//  SendMessage - Функция отправляет указанному каналу
 	//				 сообщение
 	//-----------------------------------------------------------
-	bool        SendMessage(PCHAR PipeName, PCHAR Msg, PCHAR Data, DWORD DataSize, PPipeMessage Received);
+	bool        SendMessage(PCHAR PipeName, PCHAR Msg, PCHAR Data, DWORD DataSize, void* Answer );
 	bool        SendMessage(PCHAR PipeName, PCHAR Msg);
 	bool inline SendMessage(const string &PipeName, const string &Msg) { return SendMessage(PipeName.t_str(), Msg.t_str());}
 
