@@ -1775,7 +1775,7 @@ void TBotCollection::Clear()
 	TLock Lock(FLock);
     //--------------------------------
 
-	for (DWORD i = 0; i < FItems.Count(); i++)
+	for (int i = 0; i < FItems.Count(); i++)
 	{
 	   TBotCollectionItem* Item = (TBotCollectionItem*)FItems.GetItem(i);
 	   Item->FOwner = NULL;

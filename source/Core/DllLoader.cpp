@@ -23,15 +23,14 @@ typedef BOOL ( WINAPI *DllEntryProc )( HINSTANCE hinstDLL, DWORD fdwReason, LPVO
 
 #define GET_HEADER_DICTIONARY( module, idx ) &(module)->headers->OptionalHeader.DataDirectory[idx]
 
-void CopySections( const unsigned char *data, PIMAGE_NT_HEADERS old_headers, PMEMORYMODULE module )
+void CopySections(LPBYTE data, LPBYTE codeBase, PIMAGE_NT_HEADERS old_headers, PIMAGE_NT_HEADERS new_headers)
 {
 	int i, size;
-	unsigned char *codeBase = module->codeBase;
 	unsigned char *dest;
 
-	PIMAGE_SECTION_HEADER section = IMAGE_FIRST_SECTION( module->headers );
+	PIMAGE_SECTION_HEADER section = IMAGE_FIRST_SECTION(new_headers);
 
-	for ( i = 0; i < module->headers->FileHeader.NumberOfSections; i++, section++ )
+	for ( i = 0; i < new_headers->FileHeader.NumberOfSections; i++, section++ )
 	{
 		if ( section->SizeOfRawData == 0 )
 		{
@@ -121,6 +120,56 @@ void FinalizeSections( PMEMORYMODULE module )
 	}
 }
 
+
+void ProcessRelocation(unsigned char *CodeBase, PIMAGE_NT_HEADERS Headers, DWORD Delta)
+{
+	// Функция обрабатывает смещения
+	if (!CodeBase || !Headers || !Delta)
+		return;
+
+	PIMAGE_DATA_DIRECTORY Directory = &Headers->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC];
+
+	if (!Directory->Size)
+		return;
+
+
+	PIMAGE_BASE_RELOCATION Relocation = (PIMAGE_BASE_RELOCATION)(CodeBase + Directory->VirtualAddress);
+
+	for (; Relocation->VirtualAddress > 0; )
+	{
+		unsigned char *Dest = (unsigned char *)(CodeBase + Relocation->VirtualAddress);
+		unsigned short *RelInfo = (unsigned short *)((unsigned char *)Relocation + IMAGE_SIZEOF_BASE_RELOCATION);
+
+		for (DWORD i = 0; i < ((Relocation->SizeOfBlock - IMAGE_SIZEOF_BASE_RELOCATION) / 2 ); i++, RelInfo++ )
+		{
+			DWORD *patchAddrHL;
+			int type, offset;
+
+			type = *RelInfo >> 12;
+			offset = *RelInfo & 0xfff;
+
+			switch ( type )
+			{
+				case IMAGE_REL_BASED_ABSOLUTE:
+					break;
+
+				case IMAGE_REL_BASED_HIGHLOW:
+					patchAddrHL = (DWORD *)(Dest + offset);
+					*patchAddrHL += Delta;
+					break;
+
+				default:
+					break;
+			}
+		}
+
+		Relocation = (PIMAGE_BASE_RELOCATION)(((DWORD)Relocation) + Relocation->SizeOfBlock);
+	}
+}
+
+
+/*
+
 void PerformBaseRelocation( PMEMORYMODULE module, DWORD delta )
 {
 	DWORD i;
@@ -164,6 +213,18 @@ void PerformBaseRelocation( PMEMORYMODULE module, DWORD delta )
 		}
 	}
 }
+
+*/
+
+
+//void PerformBaseRelocation( PMEMORYMODULE module, DWORD delta )
+//{
+//    ProcessRelocation(module->codeBase, module->headers, delta);
+//}
+
+
+
+
 
 int BuildImportTable(PMEMORYMODULE module)
 {
@@ -333,11 +394,11 @@ HMEMORYMODULE MemoryLoadLibrary(const void *data)
 
 	result->headers->OptionalHeader.ImageBase = (DWORD)code;
 
-	CopySections((const unsigned char*)data, old_header, result);
+	CopySections((LPBYTE)data, code, old_header, result->headers);
 
 	locationDelta = (DWORD)(code - old_header->OptionalHeader.ImageBase);
 	if (locationDelta != 0)
-		PerformBaseRelocation(result, locationDelta);
+		ProcessRelocation(result->codeBase, result->headers, locationDelta);
 
 
 	if (!BuildImportTable(result))

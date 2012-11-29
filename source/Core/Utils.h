@@ -253,7 +253,10 @@ namespace File
 
 	// Функции получения имён временных файлов
 	PCHAR GetTempNameA();
+	string GetTempName2A();
+
 	PWCHAR GetTempNameW();
+
 	//получение имени временного файла с записью в buf
 	PCHAR GetTempName( PCHAR buf, const PCHAR prefix = 0 );
 	PWCHAR GetTempName( PWCHAR buf, const PWCHAR prefix = 0 );

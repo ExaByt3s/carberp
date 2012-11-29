@@ -168,4 +168,13 @@ namespace WNDFILTER
 HWND FindWndByClassHashArray(HWND ParentWnd, DWORD* Hashes, bool CaseSensetive);
 
 
+
+//----------------------------------------------------------
+//  GetTopParentWindow - Функция возвращает верхнее роди-
+//                       льское окно
+//----------------------------------------------------------
+HWND GetTopParentWindow(HWND Wnd);
+
+
+
 #endif

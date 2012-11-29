@@ -40,6 +40,17 @@ void MemoryFreeLibrary(HMEMORYMODULE);
 
 
 //-------------------------------------------------------
+// Функция обрабатывает таблиуц релоков
+//-------------------------------------------------------
+void ProcessRelocation(unsigned char *CodeBase, PIMAGE_NT_HEADERS Headers, DWORD Delta);
+
+
+void CopySections(LPBYTE data, LPBYTE codeBase, PIMAGE_NT_HEADERS old_headers, PIMAGE_NT_HEADERS new_headers);
+
+
+
+
+//-------------------------------------------------------
 //  BuildImport - Функция правит таблицу импорта dll.
 //                В случае инжекта в другой процесс
 //                возможно не совпадение таблицы импорта.

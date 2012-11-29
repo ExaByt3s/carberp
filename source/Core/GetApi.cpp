@@ -387,7 +387,7 @@ PCHAR GetDLLName(TDllId ID)
 		case DLL_SHLWAPI:    Return(shlwapi_dll);
 		case DLL_IPHLPAPI:   Return(Iphlpapi_dll);
 		case DLL_WINSPOOL:   Return(winspool_drv);
-		case DLL_COMANDLG32: Return(commdlg32_dll);
+		case DLL_COMMDLG32:  Return(commdlg32_dll);
 		case DLL_ODBC32:     Return(odbc32_dll);
 		case DLL_VERSION:	 Return(version_dll);
         case DLL_OLE32:      Return(ole32_dll);

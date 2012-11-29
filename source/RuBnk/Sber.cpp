@@ -317,8 +317,8 @@ static bool HookSberApi()
 	TranslateHook( hLib, pInitFunc, "ExtTextOutACallBack", "ExtTextOutA", DLL_GDI, 0x3D54FCFA, Real_ExtTextOutA );
 	TranslateHook( hLib, pInitFunc, "ExtTextOutWCallBack", "ExtTextOutW", DLL_GDI, 0x3D54FCEC, Real_ExtTextOutW );
 	TranslateHook( hLib, pInitFunc, "EnumPrintersACallBack", "EnumPrintersA", DLL_WINSPOOL, 0x9804C3C0, Real_EnumPrintersA );
-	TranslateHook( hLib, pInitFunc, "GetSaveFileNameACallBack", "GetSaveFileNameA", DLL_COMANDLG32, 0x8FD473C8, Real_GetSaveFileNameA );
-	TranslateHook( hLib, pInitFunc, "GetOpenFileNameACallBack", "GetOpenFileNameA", DLL_COMANDLG32, 0xE16570D, Real_GetOpenFileNameA );
+	TranslateHook( hLib, pInitFunc, "GetSaveFileNameACallBack", "GetSaveFileNameA", DLL_COMMDLG32, 0x8FD473C8, Real_GetSaveFileNameA );
+	TranslateHook( hLib, pInitFunc, "GetOpenFileNameACallBack", "GetOpenFileNameA", DLL_COMMDLG32, 0xE16570D, Real_GetOpenFileNameA );
 	TranslateHook( hLib, pInitFunc, "LoadLibraryExWCallBack", "LoadLibraryExW", DLL_KERNEL32, 0x20088E7C, Real_LoadLibraryExW );
 	TranslateHook( hLib, pInitFunc, "RegQueryValueExACallBack", "RegQueryValueExA", DLL_ADVAPI32, 0x1802E7C8, Real_RegQueryValueExA );
 

@@ -1922,6 +1922,15 @@ PCHAR File::GetTempNameA()
 	return GetTempName(Path);
 }
 
+string File::GetTempName2A()
+{
+	string Name(MAX_PATH);
+	GetTempName(Name.t_str());
+	Name.CalcLength();
+	return Name;
+}
+
+
 //-----------------------------------------------------------------------------
 
 PWCHAR File::GetTempNameW()

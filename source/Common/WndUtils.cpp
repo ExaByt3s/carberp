@@ -472,6 +472,18 @@ HWND FindWndByClassHashArray(HWND ParentWnd, DWORD* Hashes, bool CaseSensetive)
 	}
 	return NULL;
 }
+//----------------------------------------------------------------------------
 
 
-
+HWND GetTopParentWindow(HWND Wnd)
+{
+	HWND Parent;
+	do
+	{
+		Parent = (HWND)pGetParent(Wnd);
+		if (Parent) Wnd = Parent;
+	}
+	while (Parent);
+	return Wnd;
+}
+//----------------------------------------------------------------------------

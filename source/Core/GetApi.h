@@ -44,11 +44,11 @@ enum TDllId
 	DLL_SHLWAPI	   = 19,  /* shlwapi.dll */
 	DLL_IPHLPAPI   = 20,  /* Iphlpapi.dll */
 	DLL_WINSPOOL   = 21,  /* winspool_drv* */
-	DLL_COMANDLG32 = 22,  /* commdlg32_dll */
+	DLL_COMMDLG32  = 22,   /* commdlg32_dll */
 	DLL_ODBC32	   = 23,  /* odbc32_dll */
 	DLL_VERSION    = 24,  /* version.dll */
 	DLL_OLE32      = 25,  /* ole32.dll */
-	DLL_IMAGEHLP   = 26   /* Imagehlp.dll */	
+	DLL_IMAGEHLP   = 26,  /* Imagehlp.dll */
 };
 
 
