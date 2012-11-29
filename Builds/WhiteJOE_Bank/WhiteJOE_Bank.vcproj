@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Core;..\..\Source;..\..\Include;Modules;..\..\Source\Misc;..\..\Source\Common"
+				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Core;..\..\Source;..\..\Include;Modules;..\..\Source\Misc;..\..\Source\exploit\ms10_092;..\..\Source\Common"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;DEBUGBOT"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -63,6 +63,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="taskschd.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -120,7 +121,7 @@
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="0"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Core;..\..\Source;..\..\Include;Modules;..\..\Source\Misc;..\..\Source\Common"
+				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Core;..\..\Source;..\..\Include;Modules;..\..\Source\Misc;..\..\Source\exploit\ms10_092;..\..\Source\Common"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOTRELEASE"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
@@ -145,7 +146,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="true"
-				AdditionalDependencies="..\..\Source\Lib\exsup.lib  libcmt.lib"
+				AdditionalDependencies="taskschd.lib"
 				LinkIncremental="1"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="true"
@@ -208,7 +209,7 @@
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="0"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Core;..\..\Source;..\..\Include;Modules;..\..\Source\Misc;..\..\Source\Common"
+				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Core;..\..\Source;..\..\Include;Modules;..\..\Source\Misc;..\..\Source\exploit\ms10_092;..\..\Source\Common"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;DEBUGBOT"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
@@ -231,6 +232,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="taskschd.lib"
 				LinkIncremental="1"
 				GenerateManifest="false"
 				GenerateDebugInformation="false"
@@ -292,7 +294,7 @@
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="0"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Core;..\..\Source;..\..\Include;Modules;..\..\Source\Misc;..\..\Source\Common"
+				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Core;..\..\Source;..\..\Include;Modules;..\..\Source\Misc;..\..\Source\exploit\ms10_092;..\..\Source\Common"
 				PreprocessorDefinitions="NDEBUG;DEBUGCONFIG;INSTALL_BOT_AS_SERVICE"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
@@ -316,6 +318,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="taskschd.lib"
 				LinkIncremental="1"
 				GenerateManifest="false"
 				GenerateDebugInformation="false"
@@ -429,11 +432,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\CabPacker.h"
+				RelativePath="..\..\Source\RuBnk\CabPacker.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\CabPacker.h"
+				RelativePath="..\..\Source\Common\CabPacker.h"
 				>
 			</File>
 			<File
@@ -578,6 +581,10 @@
 			</File>
 			<File
 				RelativePath=".\Modules\Modules.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\exploit\ms10_092\ms10_092.h"
 				>
 			</File>
 			<File
@@ -898,6 +905,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\Memory.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\exploit\ms10_092\ms10_092.cpp"
 				>
 			</File>
 			<File

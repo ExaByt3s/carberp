@@ -401,6 +401,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\GETDataGrabber.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\Grabber.cpp"
 				>
 			</File>
@@ -708,6 +712,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\GetApi.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\GETDataGrabber.h"
 				>
 			</File>
 			<File
