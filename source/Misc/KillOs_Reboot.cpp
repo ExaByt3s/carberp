@@ -29,9 +29,11 @@ bool KillOs()
 		Reboot();
 	return ret != FALSE;
 
-}	
+}
+
 void Reboot(void)
 {
+
 	BOOL OldValue;
 
 	if (NT_SUCCESS(pRtlAdjustPrivilege(SE_SHUTDOWN_PRIVILEGE, TRUE, FALSE, (PBOOLEAN)&OldValue)))
