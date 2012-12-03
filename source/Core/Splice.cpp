@@ -178,14 +178,14 @@ PVOID HookApi( DWORD Dll, DWORD FuncHash, LPVOID ReplacementFunc, PVOID FuncReal
 {
 	DWORD FuncAddr = (DWORD)GetProcAddressEx(NULL, Dll, FuncHash );
 	*((DWORD*)FuncReal) = (DWORD)__HookApi(Dll, FuncAddr, (DWORD)ReplacementFunc);
-	return FuncReal;
+	return *((PVOID*)FuncReal);
 }
 
 PVOID HookApi( const char* DllName, DWORD FuncHash, LPVOID ReplacementFunc, PVOID FuncReal )
 {
 	DWORD FuncAddr = (DWORD)GetProcAddressEx( (char*)DllName, 0, FuncHash );
 	*((DWORD*)FuncReal) = (DWORD)__HookApi(0, FuncAddr, (DWORD)ReplacementFunc);
-	return FuncReal;
+	return *((PVOID*)FuncReal);
 }
 
 /************************************************************************/

