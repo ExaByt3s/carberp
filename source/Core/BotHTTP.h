@@ -58,6 +58,7 @@ const PCHAR ParamConnection = "Connection";
 const PCHAR ParamLocation = "Location";
 const PCHAR ParamAcceptRanges = "Accept-Ranges";
 const PCHAR ParamContentRange = "Content-Range";
+const PCHAR ParamLastModified = "Last-Modified";
 const PCHAR ParamIfModifiedSince = "If-Modified-Since";
 const PCHAR ParamIfNoneMatch = "If-None-Match";
 const PCHAR ParamCacheControl = "Cache-Control";
