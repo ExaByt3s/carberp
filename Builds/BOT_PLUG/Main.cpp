@@ -152,7 +152,7 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 	DLLDBG("====>Bot DLL", "Запускаем бот. Префикс [%s]", GetPrefix().t_str());
 	
 	//копируем префикс из временного файла, который был сохранен инсталером буткита
-	BOT::SavePrefixFromTemporaryFile(true);
+	BOT::SavePrefixFromTemporaryFile(false);
 	//UnhookDlls();
 
 	// Отключаем отображение ошибок при крахе процесса

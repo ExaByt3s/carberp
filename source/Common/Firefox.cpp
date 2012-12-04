@@ -320,6 +320,8 @@ namespace FFUtils
 
 		// Отключаем кеширование документа
 		HTTPParser::SetHeaderValue(Head, 0, MaxHeadSize, ParamCacheControl, ValueNoCacheDocument, &HeadSize);
+		HTTPParser::DeleteHeader(ParamLastModified, Head, 0);
+
 
 		STR::Free(LenValue);
 

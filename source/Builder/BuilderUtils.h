@@ -192,6 +192,7 @@ private:
 	friend class TBotModule;
 protected:
 	UnicodeString __fastcall GetDisplayName(void);
+	void __fastcall SetSize(DWORD Value);
 	void __fastcall virtual DoChanged();
 	bool __fastcall virtual Write(PCHAR Buf, DWORD BufSize);
     bool __fastcall virtual WriteEmptyData(PCHAR Buf, DWORD BufSize);

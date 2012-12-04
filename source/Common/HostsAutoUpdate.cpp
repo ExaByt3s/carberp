@@ -6,6 +6,7 @@
 #include "Config.h"
 #include "BotHosts.h"
 #include "BotHTTP.h"
+#include "Utils.h"
 #include "Modules.h"
 //---------------------------------------------------------------------------
 

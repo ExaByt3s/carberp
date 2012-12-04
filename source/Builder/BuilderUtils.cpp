@@ -187,7 +187,7 @@ __fastcall TBotBuilder::TBotBuilder(TComponent* AOwner)
 	// Инициализируем классы для шифрования строк
 	FStringsEncryptor = new TBotStringsEncryptor(this);
 
-	FStringsPassword  = new TStringsPasswordParam(this, false, false, BOTPARAM_SESSION_PASSW, MAX_SESSION_PASSW_SIZE + 1, "Пароль шифрования строк");
+	FStringsPassword  = new TStringsPasswordParam(this, false, false, BOTPARAM_SESSION_PASSW, MAX_SESSION_PASSW_SIZE, "Пароль шифрования строк");
 	FStringsPassword->AsAnsiString = "----";
 
 	// Добавляем основные параметры
@@ -793,13 +793,13 @@ __fastcall TBotParam::TBotParam(TBotBuilder* AOwner, bool NotNull, bool Encrypte
 	// размер буфера устанавливаем с учётом завершающего нуля
 	FSize = Size - 1;
 	FDataSize = 0;
-	FDataSize = 0;
-	FData = (PCHAR)malloc(FSize);
+	FData = (PCHAR)malloc(FSize + 1);
 	if (!FData)
 		throw Exception(Error_MemAlloc);
 
-    m_memset(FData, 0, FSize);
+    Clear();
 }
+//-----------------------------------------------------------------------------
 
 
 __fastcall TBotParam::~TBotParam()
@@ -808,11 +808,19 @@ __fastcall TBotParam::~TBotParam()
 	if (FModule)
 		FModule->FParams->Remove(this);
 }
+//-----------------------------------------------------------------------------
+
+void __fastcall TBotParam::SetSize(DWORD Value)
+{
+	FSize = Value;
+}
+//-----------------------------------------------------------------------------
 
 bool __fastcall TBotParam::GetActive()
 {
 	return FModule == NULL || FModule->Active;
 }
+//-----------------------------------------------------------------------------
 
 // Функция возвращает состояние парметра
 TBotParamStatus __fastcall TBotParam::Status()
@@ -829,6 +837,7 @@ TBotParamStatus __fastcall TBotParam::Status()
 	}
 	return psOk;
 }
+//-----------------------------------------------------------------------------
 
 
 // Функция возвращает отображаемое имя параметра
@@ -839,19 +848,22 @@ UnicodeString __fastcall TBotParam::GetDisplayName(void)
 	else
 		return FTitle;
 }
+//-----------------------------------------------------------------------------
 
 // Функция возвращает истину если параметр пустой
 bool __fastcall TBotParam::IsEmpty()
 {
 	return FDataSize == 0;
 }
+//-----------------------------------------------------------------------------
 
 // Функция очищает параметр
 void __fastcall TBotParam::Clear()
 {
 	FDataSize = 0;
-	m_memset(FData, 0, FSize);
+	m_memset(FData, 0, FSize + 1);
 }
+//-----------------------------------------------------------------------------
 
 
 // Функция устанавливает значение параметра
@@ -875,18 +887,21 @@ void __fastcall TBotParam::SetValue(PCHAR Value, DWORD ValueSize)
 
 	Changed();
 }
+//-----------------------------------------------------------------------------
 
 
 void __fastcall TBotParam::DoChanged()
 {
 
 }
+//-----------------------------------------------------------------------------
 
 void __fastcall TBotParam::Changed()
 {
 	DoChanged();
 	FOwner->ParamValueChanged(this);
 }
+//-----------------------------------------------------------------------------
 
 
 AnsiString __fastcall TBotParam::GetAsAnsiString()
@@ -896,22 +911,26 @@ AnsiString __fastcall TBotParam::GetAsAnsiString()
 		Decrypt(S.c_str(), S.c_str());
 	return S;
 }
+//-----------------------------------------------------------------------------
 
 void __fastcall TBotParam::SetAsAnsiString(const AnsiString &Value)
 {
     SetValue(Value.c_str(), Value.Length());
 }
+//-----------------------------------------------------------------------------
 
 
 UnicodeString __fastcall TBotParam::GetAsUnicodeString()
 {
 	return AsAnsiString;
 }
+//-----------------------------------------------------------------------------
 
 void __fastcall TBotParam::SetAsUnicodeString(const UnicodeString &Value)
 {
 	AsAnsiString = Value;
 }
+//-----------------------------------------------------------------------------
 
 DWORD __fastcall TBotParam::GetAsLong()
 {
@@ -920,25 +939,26 @@ DWORD __fastcall TBotParam::GetAsLong()
 		TryStrToInt(AsUnicodeString, Result);
 	return Result;
 }
+//-----------------------------------------------------------------------------
 
 void __fastcall TBotParam::SetAsLong(DWORD Value)
 {
 	AnsiString S(Value);
 	SetValue(S.c_str(), S.Length());
 }
+//-----------------------------------------------------------------------------
 
 bool __fastcall TBotParam::GetAsBool()
 {
 	return AsAnsiString == "1";
 }
+//-----------------------------------------------------------------------------
 
 void __fastcall TBotParam::SetAsBool(bool Value)
 {
 	AsAnsiString = (Value) ? "1" : "0";
 }
-
-
-
+//-----------------------------------------------------------------------------
 
 void __fastcall TBotParam::SaveToStream(TStream *Stream)
 {
@@ -948,6 +968,7 @@ void __fastcall TBotParam::SaveToStream(TStream *Stream)
 		Stream->Write(FData, FDataSize);
 
 }
+//-----------------------------------------------------------------------------
 
 void __fastcall TBotParam::LoadFromStream(TStream *Stream)
 {
@@ -965,7 +986,7 @@ void __fastcall TBotParam::LoadFromStream(TStream *Stream)
 		Stream->Read(FData, Size);
     }
 }
-
+//-----------------------------------------------------------------------------
 
 UnicodeString __fastcall TBotParam::GetAsStrings()
 {
@@ -982,7 +1003,7 @@ UnicodeString __fastcall TBotParam::GetAsStrings()
 	return R;
 
 }
-
+//-----------------------------------------------------------------------------
 
 void __fastcall TBotParam::SetAsStrings(const UnicodeString &Value)
 {
@@ -999,6 +1020,7 @@ void __fastcall TBotParam::SetAsStrings(const UnicodeString &Value)
 
 	delete S;
 }
+//-----------------------------------------------------------------------------
 
 void __fastcall TBotParam::SaveToStrings(TStrings *Strings)
 {
@@ -1023,6 +1045,7 @@ void __fastcall TBotParam::SaveToStrings(TStrings *Strings)
 	}
 
 }
+//-----------------------------------------------------------------------------
 
 void __fastcall TBotParam::LoadFromStrings(TStrings *Strings)
 {
@@ -1057,13 +1080,14 @@ void __fastcall TBotParam::LoadFromStrings(TStrings *Strings)
 		FDataSize += Len;
 	}
 }
-
+//-----------------------------------------------------------------------------
 
 bool __fastcall TBotParam::Write(PCHAR Buf, DWORD BufSize)
 {
 	// Функция записывает своё значение в буфер
 	return DoWrite(Buf, BufSize, FData, FSize);
 }
+//-----------------------------------------------------------------------------
 
 bool __fastcall TBotParam::WriteEmptyData(PCHAR Buf, DWORD BufSize)
 {
@@ -1071,9 +1095,10 @@ bool __fastcall TBotParam::WriteEmptyData(PCHAR Buf, DWORD BufSize)
 	int Pos = Position(Buf, BufSize);
 	if (Pos < 0) return false;
 
-	m_memset(Buf + Pos, 0, FSize);
+	m_memset(Buf + Pos, 0, FSize + 1);
 	return true;
 }
+//-----------------------------------------------------------------------------
 
 
 int  __fastcall TBotParam::Position(PCHAR Buf, DWORD BufSize)
@@ -1081,6 +1106,7 @@ int  __fastcall TBotParam::Position(PCHAR Buf, DWORD BufSize)
 	// Функция возвращает позицию параметра в буфере
 	return STR::Pos(Buf, FName.c_str(), BufSize);
 }
+//-----------------------------------------------------------------------------
 
 
 bool __fastcall TBotParam::DoWrite(PCHAR Buf, DWORD BufSize, PCHAR AData, DWORD ADataSize)
@@ -1088,11 +1114,16 @@ bool __fastcall TBotParam::DoWrite(PCHAR Buf, DWORD BufSize, PCHAR AData, DWORD 
 	// Ищем позицию
 	int Pos = Position(Buf, BufSize);
 	if (Pos < 0) return false;
+	if (ADataSize > FSize)
+		throw Exception(Error_DataSizeError);
 
 	// записываем данные
-	m_memcpy(Buf + Pos, AData, ADataSize);
+	PCHAR Param = Buf + Pos;
+	m_memset(Param, 0, FSize + 1);
+	m_memcpy(Param, AData, ADataSize);
 	return true;
 }
+//-----------------------------------------------------------------------------
 
 
 //****************************************************************************
@@ -1136,7 +1167,16 @@ bool __fastcall TBotPassword::Write(PCHAR Buf, DWORD BufSize)
 			Decrypt(Key.c_str(), Key.c_str());
     }
 
-    DoWrite(Buf, BufSize, Key.c_str(), Key.Length());
+	DWORD OldSize = Size;
+	SetSize(FRealSize);
+	try
+	{
+		DoWrite(Buf, BufSize, Key.c_str(), Key.Length());
+        
+	} __finally
+	{
+	 	SetSize(OldSize);
+	}
 }
 
 
