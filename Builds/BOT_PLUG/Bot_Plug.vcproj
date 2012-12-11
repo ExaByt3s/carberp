@@ -532,6 +532,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\HTMLInjectsScriptAdapter.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\Hunter.cpp"
 				>
 			</File>
@@ -902,6 +906,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\HTMLInjectsScriptAdapter.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\Hunter.h"
 				>
 			</File>
@@ -950,11 +958,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\KeyLogger.h"
+				RelativePath="..\..\source\Common\KeyLogger.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Common\KeyLogger.h"
+				RelativePath="..\..\Source\Misc\KeyLogger.h"
 				>
 			</File>
 			<File
