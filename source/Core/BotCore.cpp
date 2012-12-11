@@ -9,11 +9,9 @@
 #include "StrConsts.h"
 #include "Pipes.h"
 
-#ifdef INSTALL_BOT_AS_SERVICE
+#include "BotService.h"
 
-	#include "BotService.h"
 
-#endif
 
 //#include "DbgRpt.h"
 
