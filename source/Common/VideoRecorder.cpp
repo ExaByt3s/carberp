@@ -418,7 +418,7 @@ static void WINAPI HandlerFilesIsSended( LPVOID Data, PPipeMessage Message, bool
 {
 	if( Message->DataSize != sizeof(MsgFilesIsSended) ) return;
 	MsgFilesIsSended* msg = (MsgFilesIsSended*)Message->Data;
-	VDRDBG( "Video", "HandlerFilesIsSended %08x", msg->id );
+//	VDRDBG( "Video", "HandlerFilesIsSended %08x", msg->id );
 	if( dll )
 		msg->res = dll->IsSendedAsync( msg->id );
 }
