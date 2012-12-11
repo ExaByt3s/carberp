@@ -1043,7 +1043,7 @@ bool HTMLInjects::SupportContentType(PCHAR CType)
 					  "application/javascript",
 					  "application/xml",
 					  "application/xhtml+xml",
-					  "application/octet-stream", 
+					  "application/octet-stream",
 						NULL};
 
 

