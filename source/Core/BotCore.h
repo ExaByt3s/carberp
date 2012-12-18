@@ -114,6 +114,7 @@ public:
 
 
 	string ApplicationName(); // Имя приложения в котором работает бот
+
 	string PrefixFileName();  // Функция возвращает имя файла для хранения префикса
 	string WorkPath();        // Путь к рабочему каталогу бота
 	string GrabberPath();     // Путь к рабочему каталогу грабера данных

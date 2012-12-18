@@ -124,6 +124,7 @@ TBotApplication::TBotApplication()
 	TMemory Buf(MAX_PATH);
 	pGetModuleFileNameA(NULL, Buf.Buf(), MAX_PATH);
 	FApplicationName = Buf.AsStr();
+	FApplicationName.LowerCase();
 
 	// Генерируем рабочие пути
 	FWorkPath = MakeWorkPath();
