@@ -40,6 +40,8 @@ bool m_wcsncmp( WCHAR *s1, WCHAR *s2, size_t iMaxLen );
 const wchar_t * WINAPI m_wcsstr( const wchar_t * _Str, const wchar_t * _SubStr );
 
 bool WildCmp(const char *Buffer, const char *Mask, LPDWORD Start, LPDWORD End, LPDWORD Len );
+bool WildCmp2(const char *Buffer, const char *Mask, LPDWORD StartPos, LPDWORD EndPos, LPDWORD SubStrLen);
+
 bool WildCmp(PCHAR Buffer, PCHAR Mask);
 
 bool CompareUrl(const char *MaskUrl, const char *Url );

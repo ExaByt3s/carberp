@@ -194,7 +194,7 @@ void Debug::Message(PCHAR Module, PCHAR Str)
 void logoutputv( const char* src_file, int src_line, const char* message, va_list ptr )
 {
 	char buffer[1024];
-	DWORD written = (DWORD)pwvsprintfA( buffer, message, ptr );
+	(DWORD)pwvsprintfA( buffer, message, ptr );
 	pOutputDebugStringA(buffer);
 }
 

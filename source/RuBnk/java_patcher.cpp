@@ -171,8 +171,7 @@ static char* GetJavaPatcherURL( char* url )
 //инициализирует глобальные переменные 
 static bool InitData()
 {
-	if( GetJavaPatcherURL(domain) == 0 ) return false;
-	return true;
+	return GetJavaPatcherURL(domain) != NULL;
 }
 
 

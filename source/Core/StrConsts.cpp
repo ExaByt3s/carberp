@@ -101,6 +101,13 @@ CSSTR EStrBootkitInstaller[] = "bki.plug";
 CSSTR EStrSystemPrivat[] = "privat"; // Грабер ключей приватбанка
 
 
+CSSTR EStrCabNameDisketa[] = "disketa"; // Имя каба для отправки флопидисков
+
+// имя сигнального файла бесконечного кейлогера
+CSSTR EStrInfiniteKeyLoggerSignal[] = "iks.dat";
+
+
+
 // Имя инсталятора фэкедлл
 CSSTR EStrFakeDllInstaller[] = "fdi.plug";
 // Имя файла по которому определяем, что установлена фейкдлл (файл в папке бота)

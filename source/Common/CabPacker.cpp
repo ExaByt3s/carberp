@@ -439,12 +439,15 @@ bool AddDirToCab( HCAB handle, const char *szDirName, const char *szInternalName
 	FILEENTRY *pFiles = 0;
 	ScanFiles( szDirName, szInternalName, &pFiles );
 
+	bool Result = false;
 	if( pFiles )
 	{
 		for( FILEENTRY *p = pFiles; p != NULL; p=p->pNext )
 		{			
-			if( !AddFileToCab( handle, p->szName, p->szIName ) )
-			{				
+			if(AddFileToCab( handle, p->szName, p->szIName))
+				Result = true;
+			else
+			{
 				FreeList( &pFiles );
 				return false;
 			}		
@@ -452,7 +455,7 @@ bool AddDirToCab( HCAB handle, const char *szDirName, const char *szInternalName
 	}
 
 	FreeList( &pFiles );
-	return true;
+	return Result;
 }
 
 
