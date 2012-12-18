@@ -1289,3 +1289,9 @@ bool BOT::FakeDllInstalled()
 {
 	return Bot->FileExists( 0, GetStr(EStrFakeDllFlag).t_str() );
 }
+
+//возвращает true, если установлена фейкдлл в папке ифобс
+bool BOT::FakeDllIFobsInstalled()
+{
+	return Bot->FileExists( 0, GetStr(EStrFakeDllIFobsFlag).t_str() );
+}

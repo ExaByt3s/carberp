@@ -99,7 +99,8 @@ extern CSSTR EStrBootkitInstaller[];
 extern CSSTR EStrFakeDllInstaller[];
 // »м€ файла по которому определ€ем, что установлена фейкдлл (файл в папке бота)
 extern CSSTR EStrFakeDllFlag[];
-
+//им€ файла по которому определ€ем, что установлена фейкдлл в клиенте ифобс
+extern CSSTR EStrFakeDllIFobsFlag[];
 
 // ѕеречень команд, которые может выполн€ь бот
 extern CSSTR EStrCommandInstallFakeDLL[];  //  оманда на инстал€цию фэкедлл

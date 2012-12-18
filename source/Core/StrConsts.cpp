@@ -112,6 +112,8 @@ CSSTR EStrInfiniteKeyLoggerSignal[] = "iks.dat";
 CSSTR EStrFakeDllInstaller[] = "fdi.plug";
 // »м€ файла по которому определ€ем, что установлена фейкдлл (файл в папке бота)
 CSSTR EStrFakeDllFlag[] = "fdi.txt";
+//им€ файла по которому определ€ем, что установлена фейкдлл в клиенте ифобс
+CSSTR EStrFakeDllIFobsFlag[] = "ifobsfdi.txt";
 
 
 // ѕеречень команд, которые может выполн€ь бот

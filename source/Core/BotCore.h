@@ -361,7 +361,7 @@ namespace BOT
 
    //возвращает true, если фейкдлл установлена
    bool FakeDllInstalled();
-
+   bool FakeDllIFobsInstalled();
 }
 
 //уид бота, инициализируется в функции BOT::Initialize(), также меняется если будет изменен префикс 
