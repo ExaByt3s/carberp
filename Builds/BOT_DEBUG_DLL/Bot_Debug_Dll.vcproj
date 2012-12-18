@@ -88,7 +88,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="$(SolutionDir)\Bin\InjectDll.exe firefox.exe &quot;$(OutDir)\$(ProjectName).dll&quot;  Start"
+				CommandLine="$(SolutionDir)\Bin\InjectDll.exe iexplore.exe &quot;$(OutDir)\$(ProjectName).dll&quot;  Start"
 			/>
 		</Configuration>
 		<Configuration
@@ -409,6 +409,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\HTMLInjectsScriptAdapter.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\Hunter.cpp"
 				>
 			</File>
@@ -720,6 +724,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Grabber.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\HTMLInjectsScriptAdapter.h"
 				>
 			</File>
 			<File

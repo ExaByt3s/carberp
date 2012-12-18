@@ -8,9 +8,11 @@
 
 
 
+/*
 #define WILD_CMP_POS_MAX  0xffffffffUL
 
 // поиск с помощью алгоритма Бойера-Мура-Хорспула
+
 
 const char* FindStr( const char* strSrc, int lenSrc, const char* strFind, int lenFind, int* skip, const char** end )
 {
@@ -106,6 +108,228 @@ bool WildCmp( const char *Buffer, const char *Mask, LPDWORD Start, LPDWORD End, 
 	return false;
 }
 //-----------------------------------------------------------------------------
+
+*/
+
+// Структура обеспечения сравнения строк
+typedef struct WILD_CMP_REC
+{
+	PCHAR Mask;            // Маска
+	PCHAR Buffer;          // Сравниваемая строка
+	PCHAR Start;           // Начало совпадения маски
+	PCHAR End;             // Окончание совпадения маски
+	bool  LastCharIsMask;  // Предыдущий символ был маской
+	int   Result;          // результат сравнения
+} TWCR;
+
+
+
+//----------------------------------------------------
+bool inline WC_IsMask(const char* Mask)
+{
+	// Функция возвращает истину если текущий символ является
+	// специфическим символом
+	return *Mask == '*';
+}
+//----------------------------------------------------
+
+void WC_ProcessMask(TWCR &WCR)
+{
+	// Функция обрабатывает символ маски
+	WCR.LastCharIsMask = true;
+
+	// Сохраняем позицию старта маски
+	if (!WCR.Start) WCR.Start = WCR.Buffer;
+
+	// Обнуляем позицию окончания маски, тем самым
+	// обрабатывая все маски, которые могут идти после
+	// "осмысленного" контента
+	// Например: "test_test*"
+	WCR.End = NULL;
+
+	// Если это последний символ маски, то помечаем строку как
+	// успешно сравнённую
+	if (*(WCR.Mask + 1) == 0)
+		WCR.Result = 1;
+
+	WCR.Mask++;
+}
+//----------------------------------------------------
+
+
+bool WC_IsLB(PCHAR S, BYTE &Size)
+{
+	Size = 0;
+	bool r = false;
+	bool n = false;
+
+	for (; *S != 0; S++)
+	{
+		if (*S == '\r')
+		{
+			if (r) break;
+			r = true;
+            Size++;
+		}
+		else
+		if (*S == '\n')
+		{
+			if (n) break;
+			n = true;
+			Size++;
+        }
+		else
+			break;
+	}
+
+	return Size != 0;
+}
+
+//--------------------------------------------
+//  Функция сравнивает символы строки
+//--------------------------------------------
+bool WC_CompareChars(PCHAR &S1, PCHAR &S2)
+{
+	// При сравнении символов нюансом является то,
+	// что символы перевода строк должны корректно
+	// обрабатываться как для Windows так и для
+	// Linux формата
+	// т.е. \r\n и \n должны восприниматься идентично в
+	// независимости от их положения и последовательности
+
+	bool Result = false;
+	BYTE CS1 = 0;
+	BYTE CS2 = 0;
+
+	if (WC_IsLB(S1, CS1))
+		Result = WC_IsLB(S2, CS2); // Сравниваются переводы строк
+	else
+		Result = *S1 == *S2;       // Сравниваем другие символы
+
+	if (Result)
+	{
+		S1 += (CS1) ? CS1 : 1;
+		S2 += (CS2) ? CS2 : 1;
+    }
+
+	return Result;
+}
+//----------------------------------------------------
+
+
+void WC_CompareLine(TWCR &WCR)
+{
+	// Функция сравнивает текущую строку маски с буфером
+
+	// Устанавливаем режим сравнения строки.
+	// Если предыдущий символ был маской то переключаем
+	// сравнение в режим поиска строки, в противном случае сравниваем
+	// строку в текущей позиции
+	bool SM = true;//WCR.LastCharIsMask;
+
+	WCR.LastCharIsMask = false;
+
+	bool EOL  = false;
+
+	while(*WCR.Buffer)
+	{
+		// Сравниваем текущую маску
+		PCHAR M = WCR.Mask;
+		PCHAR B = WCR.Buffer;
+
+		while (1)
+		{
+			// Определяем конец сравниваемой строки
+			EOL = (*M == 0 || WC_IsMask(M));
+
+			// Проверку конца строки в этой части сделали потому, что
+			// возможна ситуация когда конец строки совпадёт с концом
+			// маски
+			if (*B == 0 || EOL || !WC_CompareChars(B, M))
+				break;
+		}
+
+		// Успешное сравнение считаем только в том случае есл
+		// дошли до конца текущей строки в маске
+		if (EOL)
+		{
+			// Сохраняем конец буфера и маски
+			if(!WCR.Start) WCR.Start = WCR.Buffer;
+			WCR.Buffer = B;
+			WCR.End    = B;
+			WCR.Mask   = M;
+			break;
+        }
+
+		// Вслучае окончания строки или в режиме сравнения с текущей
+		// позиции, прекращаем работу
+		if (!SM || *B == 0) break;
+
+		// Переходим к следующей позиции буфера
+		WCR.Buffer++;
+    }
+
+	// Проверяем резудьтат. нас удовлет только итуация
+	// когда мы дошли до конца текущей строки в маске
+	if (!EOL)
+		WCR.Result = -1;
+}
+//----------------------------------------------------
+
+
+
+bool WildCmp( const char *Buffer, const char *Mask, LPDWORD StartPos, LPDWORD EndPos, LPDWORD SubStrLen)
+{
+	// Проверем переданные параметры
+	if (StartPos)  *StartPos  = 0;
+	if (EndPos)    *EndPos    = 0;
+	if (SubStrLen) *SubStrLen = 0;
+
+	if(STRA::IsEmpty(Mask))
+		return STRA::IsEmpty(Buffer);
+
+	if(STRA::IsEmpty(Buffer))
+		return false;
+
+
+	// Инициализируем структуру
+	TWCR WCR;
+	ClearStruct(WCR);
+
+	WCR.Mask   = (PCHAR)Mask;
+    WCR.Buffer = (PCHAR)Buffer;
+
+
+	// Перебираем всю маску
+	while (*WCR.Mask != 0 && WCR.Result == 0)
+	{
+		// Сравниваем текущий символ
+		if (WC_IsMask(WCR.Mask))
+			WC_ProcessMask(WCR);
+		else
+			WC_CompareLine(WCR);
+	}
+
+	// Если дошли до конца маски, то
+	// завершаем поиск удачей
+	if (*WCR.Mask == 0)
+		WCR.Result = 1;
+
+	// сравнение успешно завершено
+	if (WCR.Result == 1)
+	{
+		if (!WCR.End && (EndPos || SubStrLen))
+			WCR.End = STRA::End(Buffer);
+
+		if (StartPos)  *StartPos  = WCR.Start - Buffer;
+		if (EndPos)    *EndPos    = WCR.End - Buffer;
+		if (SubStrLen) *SubStrLen = WCR.End - WCR.Start;
+	}
+
+	return WCR.Result == 1;
+}
+//----------------------------------------------------------------------------
+
 
 bool WildCmp(PCHAR Buffer, PCHAR Mask)
 {
