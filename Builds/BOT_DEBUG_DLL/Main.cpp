@@ -16,6 +16,8 @@
 #include "Loader.h"
 #include "Config.h"
 #include "BotCore.h"
+#include "BotConfig.h"
+#include "IfobsOnline.h"
 
 
 #include "Crypt.h"
@@ -189,15 +191,18 @@ extern"C"  void WINAPI Start()
 {
 	BOT::Initialize();
 	string Msg;
-	Msg.Format("Присоедините среду к процессу [PID:%d] %s", Bot->PID(), Bot->ApplicationName().t_str()); 
-
+	Msg.Format("1+Присоедините среду к процессу [PID:%d] %s", Bot->PID(), Bot->ApplicationName().t_str()); 
 
 	MessageBoxA(NULL, Msg.t_str(), NULL, 0); 
-	
-//	string DLLPath(MAX_PATH);
-//	HMODULE Module = LoadLibraryA("kernel32.dll");
-//	GetModuleFileNameA(Module, DLLPath.t_str(), MAX_PATH); 
-//	MessageBoxA(NULL, DLLPath.t_str(), NULL, 0);
+
+
+	TIfobsOnline Ifobs;
+
+	Ifobs.BindData();
+
+	return;
+
+
 	 
 	Config::SetFileName("c:\\config\\config.bin"); 
 	    
