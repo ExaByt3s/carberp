@@ -10,6 +10,7 @@
 #include "StrConsts.h"
 #include "plugins.h"
 #include "BackConnect.h"
+#include "Task.h"
 
 //----------------------------------------------------------------------------
 #include "BotDebug.h"

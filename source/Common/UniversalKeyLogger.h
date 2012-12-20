@@ -88,7 +88,7 @@
 #endif
 
 // Структура логера данных
-typedef struct TKeyLogger
+typedef struct TKeyLoggerRec
 {
 	DWORD Process; // Идентификатор процесса в котором работает кейлогер
 	PCHAR ProcessName; // Полное имя процесса

