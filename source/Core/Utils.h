@@ -290,7 +290,9 @@ namespace File
 	//
 	// LowerCase - Приводить символы к нижнему регистру
 	//------------------------------------------------------
-	DWORD GetNameHashA(PCHAR FileName, bool LowerCase);
+	DWORD        GetNameHashA(PCHAR FileName, bool LowerCase);
+	DWORD inline GetNameHashA(const string& FileName, bool LowerCase) { return File::GetNameHashA(FileName.t_str(), LowerCase); }
+
 	DWORD GetNameHashW(PWCHAR FileName, bool LowerCase);
 
 	inline bool IsExists( const PCHAR FileName )
