@@ -303,6 +303,58 @@ PCHAR URLEncode(PCHAR URL, DWORD URLSize)
     STR::Free(Buf);
 	return Res;
 }
+//-----------------------------------------------------------------------------
+
+
+
+DWORD DoURLDecode(const char *URL, char* Buf)
+{
+	DWORD Len = 0;
+	if (!STRA::IsEmpty(URL))
+	{
+		char HEX[3];
+		HEX[2] = 0;
+		for (; *URL != 0; URL++, Len++)
+		{
+			char C = *URL;
+			if (C == '%')
+			{
+				URL++;
+				if (Buf)
+				{
+					// Расшифровываем символ
+					HEX[0] = URL[0];
+					HEX[1] = URL[1];
+					C = STR::HexToDWORD(HEX);
+				}
+				URL++;
+			}
+
+			// Записываем полученный символ
+			if (Buf)
+			{
+				*Buf = C;
+				Buf++;
+			}
+		}
+	}
+	if (Buf) *Buf = 0;
+	return Len;
+}
+
+
+//------------------------------------------------
+//  URLDecode - Функция декодирует URL
+//              кодированную строку
+//------------------------------------------------
+string URLDecode(const char *URL)
+{
+	DWORD BufSize = DoURLDecode(URL, NULL);
+	string Result(BufSize);
+	DoURLDecode(URL, Result.t_str());
+	return Result;
+}
+//-----------------------------------------------------------------------------
 
 // Функция ставит ноль на текущую позицию и смещает указатель за него
 #define IncStrEx(S) if(S != NULL){*S = 0; S++;}

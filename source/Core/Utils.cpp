@@ -719,7 +719,7 @@ DWORD GetProcessHashOfId(DWORD dwPid)
 
 		//0xa638ce5f	
 	
-		if( (NTSTATUS)pZwQueryInformationProcess (hProcess,ProcessImageFileName,puStr,len,&len) == STATUS_SUCCESS)
+		if( (NTSTATUS)pZwQueryInformationProcess(hProcess,ProcessImageFileName,puStr,len,&len) == STATUS_SUCCESS)
 		{
 			hash = GetNameHash(puStr->Buffer);
 		};

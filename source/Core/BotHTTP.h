@@ -260,11 +260,20 @@ namespace Chunks
 PCHAR GetMethodStr(THTTPMethod Kind); // получить строку метода по номеру
 THTTPMethod GetMethodFromStr(PCHAR Method);
 
-PCHAR URLEncode(PCHAR URL, DWORD URLSize = 0); // Кодировать URL строку
 void AddURLParam(PStrings S, PCHAR Name, PCHAR Value, DWORD ValueSize = 0); // кодирует значение и добавляет пару в список
 
 bool ParseURL(PCHAR URL, PURLREC Rec, bool FullPars = false); // Распарсить URL
 void ClearURL(PURLREC URL);
+
+
+PCHAR URLEncode(PCHAR URL, DWORD URLSize = 0); // Кодировать URL строку
+
+//------------------------------------------------
+//  URLDecode - Функция декодирует URL
+//              кодированную строку
+//------------------------------------------------
+string URLDecode(const char *URL);
+
 
 bool ParseRequestFirstLine(PCHAR Line, PCHAR *Method, PCHAR *Path, PCHAR *ProtVersion);
 PCHAR GetURLEncodedPostData(PCHAR Buf);

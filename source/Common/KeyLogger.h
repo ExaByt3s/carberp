@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------
 
-#ifndef KeyLoggerH
-#define KeyLoggerH
+#ifndef __KeyLoggerH
+#define __KeyLoggerH
 //---------------------------------------------------------------------------
 
 #include <Windows.h>

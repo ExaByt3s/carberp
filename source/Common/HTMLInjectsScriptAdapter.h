@@ -13,7 +13,7 @@
 //---------------------------------------------------------------------------
 
 
-
+void HTMLInjectsAdapterIntialize();
 
 
 //----------------------------------------------------------
@@ -27,7 +27,7 @@
 //                 если запрос обработан и дальше не стоит
 //                 его пропускать
 //----------------------------------------------------------
-bool ProcessHTMLInjectRequest(const char* URL, bool* CloseRequest);
+bool ProcessHTMLInjectRequest(const char* URL, bool DecodeParam, bool* CloseRequest);
 
 
 
