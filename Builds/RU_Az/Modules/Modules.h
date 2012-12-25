@@ -68,7 +68,11 @@
 #include "HostsAutoUpdate.h"
 #include "BotAutoUpdate.h"
 	
+
+
 #include "AzConfig.h"
+
+#include "IfobsOnline.h"
 
 //#include "BotMonitor.h"
 
