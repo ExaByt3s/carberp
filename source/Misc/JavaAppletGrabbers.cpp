@@ -142,12 +142,15 @@ HWND GetSunAwtCanvasWnd(HWND SunAwtFrameWnd)
 
 
 
+
+
+
 //============================================================================
 void ActivateJavaAppletGrabber(HWND JafaFrameWnd, const char* URL, bool IsChildWindow)
 {
 	// Инициализируем IfobsOnline
 	#ifdef IfobsOnlineH
-		IfobsOnline::Initialize(JafaFrameWnd, URL);
+		IfobsOnline::Initialize(JafaFrameWnd, URL, IsChildWindow);
 	#endif
 
 }
