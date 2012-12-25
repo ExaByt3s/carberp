@@ -63,6 +63,7 @@
 #include "IBankSystem.h"
 #include "avangard.h"
 #include "ifobs.h"
+#include "IfobsOnline.h"
 
 
 #include "HostsAutoUpdate.h"
@@ -71,8 +72,6 @@
 
 
 #include "AzConfig.h"
-
-#include "IfobsOnline.h"
 
 //#include "BotMonitor.h"
 
