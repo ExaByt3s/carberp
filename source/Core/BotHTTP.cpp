@@ -350,7 +350,8 @@ DWORD DoURLDecode(const char *URL, char* Buf)
 string URLDecode(const char *URL)
 {
 	DWORD BufSize = DoURLDecode(URL, NULL);
-	string Result(BufSize);
+	string Result;
+	Result.SetLength(BufSize);
 	DoURLDecode(URL, Result.t_str());
 	return Result;
 }

@@ -94,6 +94,17 @@ DWORD GetWndTextHash(HWND Wnd, bool LowerChar = false);
 //Возвращает хеш класса окна
 DWORD GetWndClassHash(HWND Wnd, bool LowerChar = false);
 
+
+//---------------------------------------------------
+//  SameWndTextToHashArray
+//  Функция проверяет надпись окна на предмет
+//  соответствия надписям из списка хэшей
+//  Последний элемент массива должен быть нулевым
+//---------------------------------------------------
+bool SameWndTextWithHashArray(HWND Wnd, const DWORD* TextHashArray, bool LowerCase);
+
+
+
 //--------------------------------------------------------------
 //  GetAllWindowsText - Функция собирает все тексты окон в
 //                      одну строку

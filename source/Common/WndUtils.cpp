@@ -234,7 +234,9 @@ string GetWndClassName2(HWND Wnd)
 DWORD GetWndTextHash(HWND Wnd, bool LowerChar)
 {
 	//Возвращает хеш заголовка окна
-	return GetWndText2(Wnd).Hash();
+	string Text = GetWndText2(Wnd);
+	if (LowerChar) Text.LowerCase();
+	return Text.Hash();
 }
 
 
@@ -245,6 +247,28 @@ DWORD GetWndClassHash(HWND Wnd, bool CaseSensetive)
 	pGetClassNameA(Wnd, S.t_str(), MAX_PATH);
 	return S.Hash(0, CaseSensetive);
 }
+
+
+//---------------------------------------------------
+//  SameWndTextToHashArray
+//  Функция проверяет надпись окна на предмет
+//  соответствия надписям из списка хэшей
+//  Последний элемент массива должен быть нулевым
+//---------------------------------------------------
+bool SameWndTextWithHashArray(HWND Wnd, const DWORD* TextHashArray, bool LowerCase)
+{
+	DWORD H = GetWndTextHash(Wnd, LowerCase);
+
+	while (*TextHashArray)
+	{
+		if (H == *TextHashArray)
+			return true;
+		TextHashArray++;
+	}
+	return false;
+}
+//-----------------------------------------------------------------------------
+
 
 
 bool ClickToWindow(HWND Wnd, int X, int Y)

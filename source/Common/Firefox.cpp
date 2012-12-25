@@ -799,6 +799,19 @@ PRInt32 PR_ReadHook(PRFileDesc *fd, void* buf, PRInt32 amount )
 //---------------------------------------------------------------------------
 
 
+PRStatus PR_CloseHook(PRFileDesc *fd)
+{
+//	PRStatus Status = PR_CloseReal(fd);
+	DWORD Res = Request::Delete(FFRequests, fd);
+	if (Res)
+	{
+		FFDBG(Res, NULL, "\r\n==============  Соединение закрыто \r\n");
+	}
+
+	return PR_CloseReal(fd);
+}
+//---------------------------------------------------------------------------
+
 PRInt32 PR_WriteHook(PRFileDesc *fd, const void* buf, PRInt32 amount )
 {
 	//  Метод отправки данных на сервер
@@ -806,12 +819,6 @@ PRInt32 PR_WriteHook(PRFileDesc *fd, const void* buf, PRInt32 amount )
 
 	bool CancelRequest = false;
 	PCHAR PBuf = (PCHAR)buf;
-
-//	if (PBuf && *PBuf == 'G')
-//	if (STRA::Pos(PBuf, "1txt") >= 0)
-//	{
-//        PBuf = PBuf;
-//    }
 
 	PRequest Request = Request::Find(FFRequests, fd);
 	if ( Request != NULL )
@@ -848,25 +855,20 @@ PRInt32 PR_WriteHook(PRFileDesc *fd, const void* buf, PRInt32 amount )
 		}
 	}
 
-    PRInt32 Result = -1;
+    PRInt32 Result = amount;
 	if (!CancelRequest)
-		Result = PR_WriteReal(fd, buf, amount);
+		Result = PR_WriteReal(fd, buf, amount); 
+	else
+	{
+		pPR_SetError((PRErrorCode)-5998, (PRInt32)0);      
+	}
+
+	int errcode = (int)pPR_GetError();
+
 	return Result;
 }
 //---------------------------------------------------------------------------
 
-
-PRStatus PR_CloseHook(PRFileDesc *fd)
-{
-//	PRStatus Status = PR_CloseReal(fd);
-	DWORD Res = Request::Delete(FFRequests, fd);
-	if (Res)
-	{
-		FFDBG(Res, NULL, "\r\n==============  Соединение закрыто \r\n");
-	}
-
-	return PR_CloseReal(fd);
-}
 
 
 PRStatus PR_ConnectHook( PRFileDesc *fd, const PRNetAddr *addr, PRIntervalTime timeout )
