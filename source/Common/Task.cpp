@@ -1102,15 +1102,7 @@ bool ExecuteIFobs(void* Manager, PCHAR Command, PCHAR Args)
 bool ExecuteLF(void* Manager, PCHAR Command, PCHAR Args)
 {
 	char name[MAX_PATH];
-	const char* bad = "\\/:'\" "; //символы которые заменяем на _
-	m_lstrcpy( name, Args );
-	char* p = name;
-	while( *p )
-	{
-		if( STR::Scan( bad, *p ) )
-			*p = '_';
-		p++;
-	}
+	PathToName( Args, name, sizeof(name) );
 	TASKDBG( "LF", "Загрузка папки '%s' под именем %s", Args, name );
 	VideoProcess::SendFiles( 0, name, Args, 0, true );
 	return true;

