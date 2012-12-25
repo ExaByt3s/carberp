@@ -325,7 +325,7 @@ DWORD DoURLDecode(const char *URL, char* Buf)
 					// ׀אסרטפנמגûגאול סטלגמכ
 					HEX[0] = URL[0];
 					HEX[1] = URL[1];
-					C = STR::HexToDWORD(HEX);
+					C = LOBYTE(STR::HexToDWORD(HEX));
 				}
 				URL++;
 			}

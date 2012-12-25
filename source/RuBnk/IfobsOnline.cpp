@@ -224,6 +224,7 @@ bool TIfobsOnlineGrabber::CheckScheme()
 	PasswordWnd    = GetEditByID(2);
 	KeyPasswordWnd = GetEditByID(3);
 	KeyPathWnd     = GetEditByID(4);
+	return true;
 }
 
 //---------------------------------------------------
