@@ -2583,7 +2583,7 @@ DWORD GetHashForPid( int pid )
 		if( ret > 0 )
 			return File::GetNameHashA(path, true);
 	}
-	return 0;
+	return 0;   
 }
 
 struct Param_SizeFolderLess

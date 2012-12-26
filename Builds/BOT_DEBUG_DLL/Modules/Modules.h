@@ -47,4 +47,5 @@
 */
 
 #include "KeyLogSystems.h" 
+#include "IbankSystem.h"
 #include "IfobsOnline.h"

