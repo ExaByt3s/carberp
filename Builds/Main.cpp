@@ -169,7 +169,7 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 		if( VideoProcess::Start() )
 			MDBG( "Main", "Запустили видео процесс" );
 		else
-			MDBG( "Main", "ERROR: не запустился видео процесс" );
+			MDBG( "Main", "ERROR: не запустился видео процесс" ); 
 	#endif
 
 	if (InitializeTaskManager(NULL, true))
