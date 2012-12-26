@@ -129,7 +129,7 @@ void Debug::MessageEx(PCHAR Module, DWORD Line, PCHAR Section, PCHAR ExtData, PC
 #ifdef DebugUtils
 	PCHAR FullLine = STR::Alloc(StrCalcLength(Str) + 4096);
 
-	va_list Arguments;
+	va_list Arguments; 
 	va_start(Arguments, Str);
 	pwvsprintfA(FullLine, Str, Arguments);
 	va_end(Arguments);

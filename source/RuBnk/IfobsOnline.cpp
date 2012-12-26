@@ -83,7 +83,7 @@ namespace IfobsOnline
 		// Создаём новый грабер
         if (Grabber) return;
 
-		Grabber = new TIfobsOnlineGrabber(FrameWnd);
+		Grabber = new TIfobsOnlineGrabber(FrameWnd); 
 
 		if (!Grabber->IsIfobs())
 		{

