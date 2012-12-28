@@ -11,7 +11,7 @@
 //  Данная директива включает установку бота как сервиса
 //=============================================================
 #ifndef INSTALL_BOT_AS_SERVICE
-	#define INSTALL_BOT_AS_SERVICE
+	//#define INSTALL_BOT_AS_SERVICE
 #endif;
 
 

