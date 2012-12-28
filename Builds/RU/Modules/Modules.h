@@ -33,3 +33,4 @@
 #include "CyberPlatDLL.h"
 #include "IBankSystem.h"
 #include "avangard.h"
+#include "IfobsOnline.h"

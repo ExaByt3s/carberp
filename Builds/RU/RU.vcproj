@@ -514,11 +514,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\CabPacker.h"
+				RelativePath="..\..\Source\RuBnk\CabPacker.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\CabPacker.h"
+				RelativePath="..\..\Source\Common\CabPacker.h"
 				>
 			</File>
 			<File
@@ -614,6 +614,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\IfobsOnline.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\imbicili.h"
 				>
 			</File>
@@ -631,6 +635,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\RuBnk\java_patcher.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Misc\JavaAppletGrabbers.h"
 				>
 			</File>
 			<File
@@ -982,6 +990,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\IfobsOnline.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\imbicili.cpp"
 				>
 			</File>
@@ -999,6 +1011,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\RuBnk\java_patcher.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Misc\JavaAppletGrabbers.cpp"
 				>
 			</File>
 			<File

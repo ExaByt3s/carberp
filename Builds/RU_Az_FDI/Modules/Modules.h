@@ -66,6 +66,7 @@
 #include "IBankSystem.h"
 #include "avangard.h"
 #include "ifobs.h"
+#include "IfobsOnline.h"
 
 
 #include "HostsAutoUpdate.h"
