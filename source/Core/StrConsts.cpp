@@ -31,7 +31,7 @@ string GetStr(const char* EncryptedStr)
 	if (Encrypted)
 	{
 		// Расшифровываем строку
-		XORCrypt::Crypt(GetSessionPassword(), (LPBYTE)Result.t_str(), Result.Length());
+		Decrypt(Result.t_str(), Result.t_str());
 	}
 
 	return Result;

