@@ -22,17 +22,18 @@ extern CSSTR EndCryptBlock[];
 //*****************************************************
 string GetStr(const char* EncryptedStr)
 {
-	string Result = EncryptedStr;
+	string Result;
 
-	bool Encrypted = !Result.IsEmpty() && EncryptedStr > BeginCryptBlock &&
-					 EncryptedStr < EndCryptBlock && EncryptedStr[0] != 'C' &&
-					 BeginCryptBlock[0] != 'C';
+	bool Encrypted = (EncryptedStr > BeginCryptBlock) && (EncryptedStr < EndCryptBlock) && 
+     				 (BeginCryptBlock[0] != 'C');
 
 	if (Encrypted)
 	{
 		// Расшифровываем строку
-		Decrypt(Result.t_str(), Result.t_str());
+		Result = XORCrypt::DecodeString(GetSessionPassword(), EncryptedStr);
 	}
+	else
+		Result = EncryptedStr;
 
 	return Result;
 }

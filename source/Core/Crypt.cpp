@@ -253,6 +253,64 @@ LPBYTE XORCrypt::DecodeBuffer(PCHAR  Signature, LPVOID Buffer, DWORD &Size)
     return (LPBYTE)Buf;
 }
 
+//---------------------------------------------------------
+//  EncodeString  Функция кодирует строку. Максимальный
+//                размер строки 255 байт
+//  Фактически длина строки должна равняться длине исходной
+//  строки. т.к вместо закрывающего нуля мы смещаем строку
+//  на один байт и первым байтом записываем размер
+//  исходной строки. Но для удобства размер результирующей
+//  строки удет на один байт больше!!!!
+//---------------------------------------------------------
+string XORCrypt::EncodeString(const char* Password, const char* Str)
+{
+	string Result;
+	DWORD Len = STRA::Length(Str);
+	if (Len > 0 && Len <= 255)
+	{
+		Result.SetLength(Len + 1);
+		PCHAR Buf = Result.t_str();
+
+		// Первым байтом пишем размер строки
+		*Buf = LOBYTE(Len);
+		Buf++;
+
+		// Копируем исходную строку в буыер и шифруем её
+		m_memcpy(Buf, Str, Len);
+		Crypt((PCHAR)Password, (LPBYTE)Buf, Len);
+    }
+
+	return Result;
+}
+
+
+//---------------------------------------------------------
+//  DecodeString Функция дешифрует строку , что была
+// зашифрована функцией EncodeString
+//---------------------------------------------------------
+string XORCrypt::DecodeString(const char* Password, const char* Str)
+{
+	string Result;
+	if (STRA::IsEmpty(Str))
+		return Result;
+
+	// Получаем размер строки
+	DWORD Len = *Str;
+	Str++;
+
+	// Копирем исходный буфер
+	Result.SetLength(Len);
+	m_memcpy(Result.t_str(), Str, Len);
+
+	// Расшифровываем данные
+	Crypt((PCHAR)Password, (LPBYTE)Result.t_str(), Len);
+
+
+	return Result;
+}
+
+
+
 
 
 //****************************************************************************

