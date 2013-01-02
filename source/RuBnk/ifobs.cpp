@@ -548,7 +548,7 @@ void Activeted1(LPVOID Sender)
 //	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
 //		MegaJump(SendIFobs);
 	VideoProcess::RecordPID( 0, "IFobs" );
-	VideoProcess::UpdateSettings( 0, 0, 0, 24 * 60 * 60 ); //бот не должен отключаться от видео сервера
+	VideoProcess::UpdateSettings( 0, 0, 0, 24 * 60 ); //бот не должен отключаться от видео сервера
 	typeActive = 1;
 }
 //активация при подписывании
