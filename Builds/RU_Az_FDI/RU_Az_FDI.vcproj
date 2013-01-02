@@ -817,6 +817,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\RuBnk\tiny.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\Trade.h"
 				>
 			</File>
@@ -1202,6 +1206,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\Task.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\RuBnk\tiny.cpp"
 				>
 			</File>
 			<File

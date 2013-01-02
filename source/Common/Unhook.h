@@ -1,6 +1,8 @@
 #include <windows.h>
 
 
+void WINAPI RestoreFuncs(TDllId Dll, DWORD *dwFuncMass);
+
 void UnhookDlls();
 void UnhookNtDll();
 void UnhookIE();

