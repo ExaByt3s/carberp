@@ -826,6 +826,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\exploit\UAC_bypass.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Common\Unhook.h"
 				>
 			</File>
@@ -1218,6 +1222,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\exploit\UAC_bypass.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Common\Unhook.cpp"
 				>
 			</File>
@@ -1231,10 +1239,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\VideoRecorder.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Common\VideoRecorderDll.cpp"
 				>
 			</File>
 			<File

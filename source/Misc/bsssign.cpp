@@ -169,7 +169,7 @@ namespace BSSSign
 			FWorkPath = Buf.AsStr();
 			FWorkPath += "sign\\";
 
-			CreateDirectoryA(FWorkPath.t_str(), NULL);
+			pCreateDirectoryA(FWorkPath.t_str(), NULL);
 
 			string FileName = FWorkPath + "bss.log";
 			FStream = new TBotFileStream(FileName.t_str(), fcmCreate);

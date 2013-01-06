@@ -2355,7 +2355,7 @@ bool KeyLogger::CloseSystem(BOOL ManualClosing)
 	if ((DWORD)pGetCurrentThreadId() != KLG.ThreadID)
 	{
 		// Отправляем сообщение активному окну
-		PostMessageA(KLG.InternalWnd, WM_CLOSEKEYLOGGERSESSION, ManualClosing, 0);
+		pPostMessageA(KLG.InternalWnd, WM_CLOSEKEYLOGGERSESSION, ManualClosing, 0);
 		KLGDBG("UnKLG", "Уведомляем активное окно о необходимости закрытия системы");
 		return true;
     }

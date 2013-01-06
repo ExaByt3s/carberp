@@ -240,7 +240,7 @@ namespace Registry
 namespace File
 {
 	// Записать данные из буфера в файл
-	DWORD WriteBufferA(PCHAR FileName, LPVOID Buffer, DWORD BufferSize);
+	DWORD WriteBufferA(const PCHAR FileName, const LPVOID Buffer, DWORD BufferSize);
 	DWORD WriteBufferW(PWCHAR FileName, LPVOID Buffer, DWORD BufferSize);
 
 	// Прочитать файл в буфер

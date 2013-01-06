@@ -470,7 +470,7 @@ bool PIPE::SendMessage(PCHAR PipeName, PCHAR Msg, PCHAR Data, DWORD DataSize, vo
 		}
 		else
 			if( pGetLastError() == ERROR_PIPE_BUSY )
-				Sleep(1);
+				pSleep(1);
 			else
 				break;
 			

@@ -325,7 +325,7 @@ void AddBSSFile(PCHAR aURL, LPVOID Data, DWORD DataSize)
 	Path.CalcLength();
 
 	Path += "\\BSS.V1\\";
-	CreateDirectoryA(Path.t_str(), NULL);
+	pCreateDirectoryA(Path.t_str(), NULL);
 
 	// Îןנוהוכÿול טלÿ פאיכא
 	string FileName = Path + URL.Document;
