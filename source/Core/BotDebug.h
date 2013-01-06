@@ -22,11 +22,7 @@
 // ¬ременна€ опци€, разрешающа€ использование отладочных
 // строк в любых конфигурац€х сборки
 //#define ALWAYSDEBUG
-<<<<<<< .mine
- 
-=======
 
->>>>>>> .theirs
 
 #if defined(ALWAYSDEBUG) || defined(DEBUGBOT) || defined(DEBUGCONFIG)
 
