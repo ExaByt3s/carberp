@@ -1207,31 +1207,11 @@ void TBotBuilder::SetEncryptStrings(bool Value)
 
 
 
-
-
-class TStringsPasswordParam : public TOldBotParam
-{
-public:
-	__fastcall TStringsPasswordParam(TOldBotBuilder* AOwner, bool NotNull, bool Encrypted, const char* Name, DWORD Size, const char* Title)
-		: TOldBotParam(AOwner, NotNull, Encrypted, Name, Size, Title)
-	{
-
-    }
-
-
-	TBotParamStatus __fastcall Status()
-	{
-    	return psOk;
-    }
-};
-
-
-
 //****************************************************************************
 //                             TOldBotBuilder
 //****************************************************************************
 
-
+/*
 __fastcall TOldBotBuilder::TOldBotBuilder(TComponent* AOwner)
 	: TComponent(AOwner)
 {
@@ -1281,6 +1261,7 @@ void __fastcall TOldBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 
 }
 
+
 //-----------------------------------------------------
 // Build - Функция собирает сборку
 //
@@ -1290,7 +1271,7 @@ void __fastcall TOldBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 //-----------------------------------------------------
  bool __fastcall TOldBotBuilder::Build(bool FullBuild)
 {
-/*	if (FFile->Size == 0)
+	if (FFile->Size == 0)
 		throw Exception(Error_NoSourceFile);
 
     Message(Status_StartBuild);
@@ -1392,7 +1373,7 @@ void __fastcall TOldBotBuilder::LoadSourceFile(const UnicodeString &FileName)
 	Message("");
     Message(Status_BuildCompleted);
 
-	return true;  */
+	return true;
 }
 //-----------------------------------------------------------------
 
@@ -1558,11 +1539,13 @@ void __fastcall TOldBotBuilder::InitializeModules()
 	P->AsAnsiString = "0";
 }
 
+*/
 
 
 //****************************************************************************
 //                             TOldBotParam
 //****************************************************************************
+/*
 __fastcall TOldBotParam::TOldBotParam(TOldBotBuilder* AOwner, bool NotNull, bool Encrypted,
 	const char* Name, DWORD Size, const char* Title)
 	: TCollectionItem((AOwner) ? AOwner->FParams : NULL)
@@ -1846,91 +1829,7 @@ bool __fastcall TOldBotParam::DoWrite(PCHAR Buf, DWORD BufSize, PCHAR AData, DWO
 //-----------------------------------------------------------------------------
 
 
-
-//****************************************************************************
-//                             TOldBotModule
-//****************************************************************************
-__fastcall TOldBotModule::TOldBotModule(TOldBotBuilder* AOwner, const char *Name)
-	: TCollectionItem(AOwner->FModules)
-{
-	if (STRA::IsEmpty(Name))
-		throw Exception(Error_UnknownMae);
-
-    FBuilder = AOwner;
-	FName = Name;
-	FParams = new TList();
-}
-
-
-__fastcall TOldBotModule::~TOldBotModule()
-{
-	delete FParams;
-}
-
-
-TOldBotParam* __fastcall TOldBotModule::AddParam(bool NotNull, bool Encrypted, const char* Name, DWORD Size, const char* Title)
-{
-	TOldBotParam* Param = new TOldBotParam(FBuilder, NotNull, Encrypted, Name, Size, Title);
-	FParams->Add(Param);
-	Param->FModule = this;
-    return Param;
-}
-
-bool __fastcall TOldBotModule::CanEdit()
-{
-	return FParams->Count && FEdit;
-}
-
-
-bool __fastcall TOldBotModule::Edit()
-{
-//	if (FEdit)
-//		return FEdit->Execute(this);
-}
-
-
-bool __fastcall TOldBotModule::Activate(PCHAR Buf, DWORD BufSize)
-{
-	// Функция активирует модуль
-	FActive = false;
-	for (int i = 0; i < ParamsCount; i++)
-	{
-		if (Params[i]->Position(Buf, BufSize) >= 0)
-		{
-			FActive = true;
-			return true;
-        }
-	}
-
-	return false;
-}
-
-
-int __fastcall TOldBotModule::GetParamsCount()
-{
-	return FParams->Count;
-}
-
-TOldBotParam* __fastcall TOldBotModule::GetParams(int Index)
-{
-	return (TOldBotParam*)FParams->Items[Index];
-}
-
-
-TOldBotParam* __fastcall TOldBotModule::ParamByName(const AnsiString &Name)
-{
-	// Функция возвращает параметр по его имени
-	for (int i = 0; i < ParamsCount; i++)
-	{
-		TOldBotParam *P = Params[i];
-		if (P->FName == Name)
-		{
-			return P;
-        }
-	}
-
-	return NULL;
-}
+*/
 
 
 //*****************************************************************************
@@ -2039,53 +1938,6 @@ bool TBotStringsEncryptor::Write(LPBYTE Buf, DWORD BufSize)
 	m_memset(EndAnchor,   0, STRA::Length(EndAnchor));
 
 	return true;
-}
-
-
-bool TBotStringsEncryptor::Encrypt(PCHAR Buf, DWORD BufSize, PCHAR Password)
-{
-	// Шифруем строковые данные бота
-	if (Buf == NULL || BufSize == 0 || STRA::IsEmpty(Password))
-		return false;
-
-	PCHAR StartAnchor = ENCRYPTED_STRINGS_BEGIN;
-	PCHAR EndAnchor   = ENCRYPTED_STRINGS_END;
-
-	// Определяем позиции блока шифрованных строк
-	int Start = STR::Pos(Buf, StartAnchor, BufSize, true);
-	if (Start < 0) return false;
-
-	PCHAR StartPtr = Buf + Start;
-
-	Start += STRA::Length(StartAnchor);
-
-	int End = STR::Pos(Buf + Start, EndAnchor, BufSize - Start, true);
-	if (End < 0)
-		throw Exception("Нарушение целостности блока шифрованных строк! \r\nОбратитесь к разработчикам.");
-
-    PCHAR EndPtr = Buf + Start + End;
-	// Проверяем данные. Цель проверки не допустить повреждения целосности
-	// бота. Считаем, что строки не могут содержать символы с кодом менее 9.
-
-	PCHAR Line = Buf + Start;
-
-	// Шифруем данные
-	while (Line < EndPtr)
-	{
-
-		// Определяем конец строки
-		PCHAR End = Line;
-		while (*End) End++;
-
-		if (End >= EndPtr)
-			throw Exception("Нарушение целостности блока шифрованных строк! \r\nОбратитесь к разработчикам.");
-
-
-		// Переходим к следующей строке
-		Line = End;
-    }
-
-
 }
 //---------------------------------------------------------------------------
 

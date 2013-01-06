@@ -9,9 +9,6 @@
 #include "StrConsts.h"
 #include "Pipes.h"
 
-#include "BotService.h"
-
-
 
 //#include "DbgRpt.h"
 
@@ -973,12 +970,16 @@ bool BOT::UpdateService(const char* FileName)
 
 bool BOT::UninstallService()
 {
+	bool Result = false;
+
+#ifdef BotServiceH
+
 	COREDBG("BotCore", "Деинсталируем сервис");
 
 	TService Service;
 	Service.Name = GetStr(EStrServiceName);
 
-	bool Result = Service.Uninstall();
+	Result = Service.Uninstall();
 	if (Result)
 	{
 		// Удалем файл
@@ -991,7 +992,7 @@ bool BOT::UninstallService()
 		COREDBG("BotCore", "Сервис успешно деинсталирован");
 	else
 		COREDBG("BotCore", "Ошибка деинсталяции сервиса. Ошибка %d", pGetLastError());
-
+#endif
 	return Result;
 }
 

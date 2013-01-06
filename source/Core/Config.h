@@ -52,6 +52,7 @@
 #define SCRIPT_REMOTE_LOG    12 /* Скрипт удалённого логирования */
 #define SCRIPT_UPDATE_HOSTS  13 /* Скрипт обновления списка хостов */
 #define SCRIPT_UPDATE_BOT    14 /* Скрипт  автоматического обновления ботов */
+#define SCRIPT_IBANK_LOG     15 /* Скрипт приёма логов ибанка */
 
 
 

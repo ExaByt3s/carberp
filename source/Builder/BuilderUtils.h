@@ -162,8 +162,8 @@ public:
 	__property bool       Encrypted = {read=FEncrypted};
 	__property AnsiString AsString    = {read=GetAsString, write=SetAsString};
 	__property AnsiString AsMultiLine = {read=GetAsMultiLine, write=SetAsMultiLine};
-	__property DWORD      AsLong = {read = GetAsLong, write = SetAsLong};
-	__property bool       AsBool = {read = GetAsBool, write = SetAsBool};
+	__property DWORD      AsLong = {read=GetAsLong, write=SetAsLong};
+	__property bool       AsBool = {read=GetAsBool, write=SetAsBool};
     __property int        Position = {read=FPosition};
 };
 
@@ -341,14 +341,29 @@ public:
 };
 
 
+//*************************************************************
+//  TCustomBotDataEncryptor  - Базовый Класс шифрования
+//							   данных бота
+//*************************************************************
+class TCustomBotDataEncryptor : public TBotParam
+{
+private:
+	TBotParam* FPassord;
+public:
+
+	void SaveToStream(TStream *Stream) {};
+	void LoadFromStream(TStream *Stream) {};
+
+	__property TBotParam* Password = {read=FPassord, write=FPassord};
+};
+
 
 //*************************************************************
 //   TBotStringsEncryptor  - Класс шифрования строк бота
 //*************************************************************
-class TBotStringsEncryptor : public TBotParam
+class TBotStringsEncryptor : public TCustomBotDataEncryptor
 {
 private:
-	TBotParam* FPassord;
 	DWORD FEndAnchorPos;
 protected:
 	bool UpdateStatus(LPBYTE Buf, DWORD BufSize);
@@ -356,164 +371,162 @@ protected:
 public:
 	__fastcall TBotStringsEncryptor(TCustomBotModule* AOwner);
 
-	void SaveToStream(TStream *Stream) {};
-	void LoadFromStream(TStream *Stream) {};
-
-	bool Encrypt(PCHAR Buf, DWORD BufSize, PCHAR Password);
-
-	__property TBotParam* Password = {read=FPassord, write=FPassord};
 };
 
 
-
-
-
-
+//*************************************************************
+//   TBotDLLEncryptor  - Класс шифрования интегрированных
+//                       DLL бота
+//*************************************************************
+class TBotDLLEncryptor : public TCustomBotDataEncryptor
+{
+public:
+};
 
 
 //*************************************************************
 //  TOldBotBuilder - Класс, сборщик бота
 //*************************************************************
-class TOldBotBuilder : public TComponent
-{
-private:
-	UnicodeString FSourceFileName;
-	UnicodeString FResultFileName;
-	bool FResultFileNameChanged;
-	TCollection* FParams;
-	TCollection* FModules;
-	TList*       FActiveModules;
-	TMemoryStream* FFile;   // Загруженный файл
-	TOldBotParam* FPrefix;     // Префикс бота
-	TOldBotParam* FPassword;   // Пароль бота
-	TOldBotParam* FDelay;      // Период отстука
-	TOldBotParam* FHosts;      // Основные хосты
-	TBotStringsEncryptor *FStringsEncryptor; // Объяект шифрования строк бота
-	TBuilderMessage FOnMessage;
-	friend class TOldBotModule;
-	friend class TOldBotParam;
-	void __fastcall WriteParametr(PCHAR Buf, DWORD BufSize, TOldBotParam* Param);
-	void __fastcall EncryptDllData(PCHAR Buf, DWORD BufSize, PCHAR Passw);
-protected:
-	void __fastcall virtual ParamValueChanged(TOldBotParam* Sender);
-	void __fastcall Message(const UnicodeString &Message);
-	void __fastcall Message(TStrings *Messages);
-    void __fastcall InitializeModules();
-public:
-	__fastcall TOldBotBuilder(TComponent* AOwner);
-	__fastcall ~TOldBotBuilder();
-
-    TOldBotModule*     __fastcall AddModule(const char *Name);
-	void            __fastcall LoadSourceFile(const UnicodeString &FileName);
-	bool            __fastcall Build(bool FullBuild);
-	void            __fastcall ClearParams();
-
-
-	__property UnicodeString SourceFileName = {read=FSourceFileName};
-	__property UnicodeString ResultFileName = {read=FResultFileName};
-
-	// События
-    __property TBuilderMessage OnMessage  = {read=FOnMessage, write=FOnMessage};
-};
-
-
-//*************************************************************
-//  TOldBotModule - Класс настроек отдельного модуля
-//*************************************************************
-class TOldBotParam : public TCollectionItem
-{
-private:
-	TOldBotBuilder* FOwner;
-	TOldBotModule*  FModule;
-	AnsiString FName;
-	bool  FEnabled;
-	bool  FNotNull;   // Обязательный параметр
-	bool  FEncrypted; // Параметр должен быть шифрованным
-	DWORD FSize;      // Размер буфера параметра
-	PCHAR FData;      // Данные
-	DWORD FDataSize;  // Размер данных
-	UnicodeString FTitle;
-	void __fastcall Changed();
-	AnsiString __fastcall GetAsAnsiString();
-	void __fastcall SetAsAnsiString(const AnsiString &Value);
-	UnicodeString __fastcall GetAsUnicodeString();
-	void __fastcall SetAsUnicodeString(const UnicodeString &Value);
-	UnicodeString __fastcall GetAsStrings();
-	void __fastcall SetAsStrings(const UnicodeString &Value);
-	bool __fastcall GetActive();
-
-	friend class TOldBotBuilder;
-	friend class TOldBotModule;
-protected:
-	UnicodeString __fastcall GetDisplayName(void);
-	void __fastcall SetSize(DWORD Value);
-	void __fastcall virtual DoChanged();
-	bool __fastcall virtual Write(PCHAR Buf, DWORD BufSize);
-    bool __fastcall virtual WriteEmptyData(PCHAR Buf, DWORD BufSize);
-	bool __fastcall DoWrite(PCHAR Buf, DWORD BufSize, PCHAR AData, DWORD ADataSize);
-	__property PCHAR Data = {read = FData};
-public:
-	__fastcall TOldBotParam(TOldBotBuilder* AOwner, bool NotNull, bool Encrypted, const char* Name, DWORD Size, const char* Title);
-	__fastcall ~TOldBotParam();
-
-	bool __fastcall IsEmpty();
-	void __fastcall Clear();
-	void __fastcall SetValue(PCHAR Value, DWORD ValueSize);
-    int  __fastcall Position(PCHAR Buf, DWORD BufSize);
-	TBotParamStatus __fastcall virtual Status();
-
-
-	void __fastcall SaveToStrings(TStrings *Strings);
-	void __fastcall LoadFromStrings(TStrings *Strings);
-
-	__property bool Enabled = {read = FEnabled, write = FEnabled};
-	__property bool Active  = {read=GetActive};
-	__property TOldBotModule*  Module = {read=FModule};
-	__property DWORD Size = {read=FSize};
-	__property bool Encrypted = {read = FEncrypted};
-	__property UnicodeString Title = {read = FTitle, write = FTitle};
-	__property UnicodeString AsStrings = {read = GetAsStrings, write = SetAsStrings};
-	__property AnsiString    AsAnsiString = {read = GetAsAnsiString, write = SetAsAnsiString};
-	__property UnicodeString AsUnicodeString = {read = GetAsUnicodeString, write = SetAsUnicodeString};
-
-
-};
-
-
+//class TOldBotBuilder : public TComponent
+//{
+//private:
+//	UnicodeString FSourceFileName;
+//	UnicodeString FResultFileName;
+//	bool FResultFileNameChanged;
+//	TCollection* FParams;
+//	TCollection* FModules;
+//	TList*       FActiveModules;
+//	TMemoryStream* FFile;   // Загруженный файл
+//	TOldBotParam* FPrefix;     // Префикс бота
+//	TOldBotParam* FPassword;   // Пароль бота
+//	TOldBotParam* FDelay;      // Период отстука
+//	TOldBotParam* FHosts;      // Основные хосты
+//	TBotStringsEncryptor *FStringsEncryptor; // Объяект шифрования строк бота
+//	TBuilderMessage FOnMessage;
+//	friend class TOldBotModule;
+//	friend class TOldBotParam;
+//	void __fastcall WriteParametr(PCHAR Buf, DWORD BufSize, TOldBotParam* Param);
+//	void __fastcall EncryptDllData(PCHAR Buf, DWORD BufSize, PCHAR Passw);
+//protected:
+//	void __fastcall virtual ParamValueChanged(TOldBotParam* Sender);
+//	void __fastcall Message(const UnicodeString &Message);
+//	void __fastcall Message(TStrings *Messages);
+//    void __fastcall InitializeModules();
+//public:
+//	__fastcall TOldBotBuilder(TComponent* AOwner);
+//	__fastcall ~TOldBotBuilder();
+//
+//    TOldBotModule*     __fastcall AddModule(const char *Name);
+//	void            __fastcall LoadSourceFile(const UnicodeString &FileName);
+//	bool            __fastcall Build(bool FullBuild);
+//	void            __fastcall ClearParams();
+//
+//
+//	__property UnicodeString SourceFileName = {read=FSourceFileName};
+//	__property UnicodeString ResultFileName = {read=FResultFileName};
+//
+//	// События
+//    __property TBuilderMessage OnMessage  = {read=FOnMessage, write=FOnMessage};
+//};
 
 
 //*************************************************************
 //  TOldBotModule - Класс настроек отдельного модуля
 //*************************************************************
-class TOldBotModule : public TCollectionItem
-{
-private:
-	TOldBotBuilder* FBuilder;
-	UnicodeString FName;
-	TList *FParams;
-	TBotModuleEdit* FEdit;
-	bool FActive;
-	friend class TOldBotBuilder;
-	friend class TOldBotParam;
-	int __fastcall GetParamsCount();
-	TOldBotParam* __fastcall GetParams(int Index);
-	bool __fastcall Activate(PCHAR Buf, DWORD BufSize);
-public:
-	__fastcall TOldBotModule(TOldBotBuilder* AOwner, const char *Name);
-	__fastcall ~TOldBotModule();
+//class TOldBotParam : public TCollectionItem
+//{
+//private:
+//	TOldBotBuilder* FOwner;
+//	TOldBotModule*  FModule;
+//	AnsiString FName;
+//	bool  FEnabled;
+//	bool  FNotNull;   // Обязательный параметр
+//	bool  FEncrypted; // Параметр должен быть шифрованным
+//	DWORD FSize;      // Размер буфера параметра
+//	PCHAR FData;      // Данные
+//	DWORD FDataSize;  // Размер данных
+//	UnicodeString FTitle;
+//	void __fastcall Changed();
+//	AnsiString __fastcall GetAsAnsiString();
+//	void __fastcall SetAsAnsiString(const AnsiString &Value);
+//	UnicodeString __fastcall GetAsUnicodeString();
+//	void __fastcall SetAsUnicodeString(const UnicodeString &Value);
+//	UnicodeString __fastcall GetAsStrings();
+//	void __fastcall SetAsStrings(const UnicodeString &Value);
+//	bool __fastcall GetActive();
+//
+//	friend class TOldBotBuilder;
+//	friend class TOldBotModule;
+//protected:
+//	UnicodeString __fastcall GetDisplayName(void);
+//	void __fastcall SetSize(DWORD Value);
+//	void __fastcall virtual DoChanged();
+//	bool __fastcall virtual Write(PCHAR Buf, DWORD BufSize);
+//    bool __fastcall virtual WriteEmptyData(PCHAR Buf, DWORD BufSize);
+//	bool __fastcall DoWrite(PCHAR Buf, DWORD BufSize, PCHAR AData, DWORD ADataSize);
+//	__property PCHAR Data = {read = FData};
+//public:
+//	__fastcall TOldBotParam(TOldBotBuilder* AOwner, bool NotNull, bool Encrypted, const char* Name, DWORD Size, const char* Title);
+//	__fastcall ~TOldBotParam();
+//
+//	bool __fastcall IsEmpty();
+//	void __fastcall Clear();
+//	void __fastcall SetValue(PCHAR Value, DWORD ValueSize);
+//    int  __fastcall Position(PCHAR Buf, DWORD BufSize);
+//	TBotParamStatus __fastcall virtual Status();
+//
+//
+//	void __fastcall SaveToStrings(TStrings *Strings);
+//	void __fastcall LoadFromStrings(TStrings *Strings);
+//
+//	__property bool Enabled = {read = FEnabled, write = FEnabled};
+//	__property bool Active  = {read=GetActive};
+//	__property TOldBotModule*  Module = {read=FModule};
+//	__property DWORD Size = {read=FSize};
+//	__property bool Encrypted = {read = FEncrypted};
+//	__property UnicodeString Title = {read = FTitle, write = FTitle};
+//	__property UnicodeString AsStrings = {read = GetAsStrings, write = SetAsStrings};
+//	__property AnsiString    AsAnsiString = {read = GetAsAnsiString, write = SetAsAnsiString};
+//	__property UnicodeString AsUnicodeString = {read = GetAsUnicodeString, write = SetAsUnicodeString};
+//
+//
+//};
 
-	TOldBotParam* __fastcall AddParam(bool NotNull, bool Encrypted, const char* Name, DWORD Size, const char* Title);
 
-    TOldBotParam* __fastcall ParamByName(const AnsiString &Name);
-	bool __fastcall CanEdit();
-    bool __fastcall Edit();
 
-	__property bool Active = {read=FActive};
-	__property TOldBotBuilder* Builder = {read = FBuilder};
-	__property UnicodeString Name = {read=FName};
-	__property int ParamsCount = {read=GetParamsCount};
-	__property TOldBotParam* Params[int Index] = {read=GetParams};
-};
+
+//*************************************************************
+//  TOldBotModule - Класс настроек отдельного модуля
+//*************************************************************
+//class TOldBotModule : public TCollectionItem
+//{
+//private:
+//	TOldBotBuilder* FBuilder;
+//	UnicodeString FName;
+//	TList *FParams;
+//	TBotModuleEdit* FEdit;
+//	bool FActive;
+//	friend class TOldBotBuilder;
+//	friend class TOldBotParam;
+//	int __fastcall GetParamsCount();
+//	TOldBotParam* __fastcall GetParams(int Index);
+//	bool __fastcall Activate(PCHAR Buf, DWORD BufSize);
+//public:
+//	__fastcall TOldBotModule(TOldBotBuilder* AOwner, const char *Name);
+//	__fastcall ~TOldBotModule();
+//
+//	TOldBotParam* __fastcall AddParam(bool NotNull, bool Encrypted, const char* Name, DWORD Size, const char* Title);
+//
+//    TOldBotParam* __fastcall ParamByName(const AnsiString &Name);
+//	bool __fastcall CanEdit();
+//    bool __fastcall Edit();
+//
+//	__property bool Active = {read=FActive};
+//	__property TOldBotBuilder* Builder = {read = FBuilder};
+//	__property UnicodeString Name = {read=FName};
+//	__property int ParamsCount = {read=GetParamsCount};
+//	__property TOldBotParam* Params[int Index] = {read=GetParams};
+//};
 
 
 
