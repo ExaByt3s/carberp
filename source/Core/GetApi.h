@@ -215,7 +215,7 @@ inline LPVOID pushargEx(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8,
 // Не переименовывать, не изменять значение!!!!!!!
 //
 //**************************************************
-const static int ApiCacheSize = 550;
+const static int ApiCacheSize = 552;
 
 
 
@@ -413,415 +413,415 @@ const static int ApiCacheSize = 550;
 #define pFlushViewOfFile			pushargEx< DLL_KERNEL32, 0x664FD32B, 192 >
 #define pGetExitCodeProcess			pushargEx< DLL_KERNEL32, 0xFDC94385, 193 >
 #define pFlushFileBuffers			pushargEx< DLL_KERNEL32, 0x2f2feeda, 194 >	
-#define pGetStartupInfoA			pushargEx< DLL_KERNEL32, 0x407A1C6A, 0 >
+#define pGetStartupInfoA			pushargEx< DLL_KERNEL32, 0x407A1C6A, 195 >
 
 //advapi32
-#define pCreateProcessAsUserA		pushargEx< DLL_ADVAPI32, 0x985267C4, 195 >
-#define pSetThreadToken				pushargEx< DLL_ADVAPI32, 0xA16FE0FD, 196 >
-#define pOpenProcessToken 			pushargEx< DLL_ADVAPI32, 0x80DBBE07, 197 >
-#define pLookupPrivilegeValueA 		pushargEx< DLL_ADVAPI32, 0x1B3D12B9, 198 >
-#define pLookupPrivilegeValueW 		pushargEx< DLL_ADVAPI32, 0x1B3D12AF, 199 >
-#define pAdjustTokenPrivileges 		pushargEx< DLL_ADVAPI32, 0x7A2167DC, 200 >
-#define pRegOpenKeyExA 				pushargEx< DLL_ADVAPI32, 0xAAD67FF8, 201 >
-#define pRegOpenKeyExW 				pushargEx< DLL_ADVAPI32, 0xAAD67FEE, 202 >
-#define pRegQueryInfoKeyA 			pushargEx< DLL_ADVAPI32, 0xBDF4DB19, 203 >
-#define pRegQueryInfoKeyW 			pushargEx< DLL_ADVAPI32, 0xBDF4DB0F, 204 >
-#define pRegEnumKeyExA 				pushargEx< DLL_ADVAPI32, 0xB4F673FD, 205 >
-#define pRegEnumKeyExW 				pushargEx< DLL_ADVAPI32, 0xB4F673EB, 206 >
-#define pRegEnumValueA 				pushargEx< DLL_ADVAPI32, 0xF65A7D95, 207 >
-#define pRegEnumValueW 				pushargEx< DLL_ADVAPI32, 0xF65A7D83, 208 >
-#define pRegQueryValueExA 			pushargEx< DLL_ADVAPI32, 0x1802E7C8, 209 >
-#define pRegQueryValueExW 			pushargEx< DLL_ADVAPI32, 0x1802E7DE, 210 >
-#define pRegCloseKey 				pushargEx< DLL_ADVAPI32, 0xDB355534, 211 >
-#define pRegDeleteKeyA 				pushargEx< DLL_ADVAPI32, 0x398C5285, 212 >
-#define pRegDeleteKeyW 				pushargEx< DLL_ADVAPI32, 0x398C5293, 213 >
-#define pRegSetValueExA 			pushargEx< DLL_ADVAPI32, 0x3E400FD6, 214 >
-#define pRegSetValueExW 			pushargEx< DLL_ADVAPI32, 0x3E400FC0, 215 >
-#define pGetUserNameA 				pushargEx< DLL_ADVAPI32, 0xB9D41C2F, 216 >
-#define pGetUserNameW 				pushargEx< DLL_ADVAPI32, 0xB9D41C39, 217 >
-#define pCreateServiceA 			pushargEx< DLL_ADVAPI32, 0x17B3DD2E, 218 >
-#define pOpenServiceA 				pushargEx< DLL_ADVAPI32, 0x83969964, 219 >
-#define pDeleteService 				pushargEx< DLL_ADVAPI32, 0xDE5D85F8, 220 >
-#define pStartServiceA 				pushargEx< DLL_ADVAPI32, 0x1CA1FD2F, 221 >
-#define pGetKernelObjectSecurity 	pushargEx< DLL_ADVAPI32, 0xB29136DD, 222 >
-#define pOpenSCManagerA 			pushargEx< DLL_ADVAPI32, 0xA06E459C, 223 >
-#define pGetCurrentHwProfileA		pushargEx< DLL_ADVAPI32, 0xF684C7A9, 224 >
-#define pGetTokenInformation		pushargEx< DLL_ADVAPI32, 0xD4ECC759, 225 >
-#define pInitializeSecurityDescriptor	pushargEx< DLL_ADVAPI32, 0xB8538A52, 226 >
-#define pSetSecurityDescriptorOwner	pushargEx< DLL_ADVAPI32, 0xDADD5994, 227 >
-#define pSetSecurityDescriptorDacl	pushargEx< DLL_ADVAPI32,0xCCD03C3A, 228 >
-#define pSetFileSecurityW			pushargEx< DLL_ADVAPI32, 0x5A9B2FDD, 229 >
-#define pRegCreateKeyW				pushargEx< DLL_ADVAPI32, 0xAE9E4290, 230 >
-#define pRegCreateKeyA				pushargEx< DLL_ADVAPI32, 0xAE9E4286, 231 >
-#define pRegCreateKeyExW			pushargEx< DLL_ADVAPI32, 0x90A097F0, 232 >
-#define pRegCreateKeyExA			pushargEx< DLL_ADVAPI32, 0x90A097E6, 233 >
-#define pRegSaveKeyA				pushargEx< DLL_ADVAPI32, 0xBEDEEFC5, 234 >
-#define pRegSaveKeyW				pushargEx< DLL_ADVAPI32, 0xBEDEEFD3, 235 >
-#define pRegSaveKeyExA				pushargEx< DLL_ADVAPI32, 0xBBF053F6, 236 >
-#define pRegSaveKeyExW				pushargEx< DLL_ADVAPI32, 0xBBF053E0, 237 >
-#define pCryptAcquireContextA		pushargEx< DLL_ADVAPI32, 0x8AD7DE34, 238 >
-#define pCryptReleaseContext		pushargEx< DLL_ADVAPI32, 0x72760BB8, 239 >
-#define pCryptImportKey     		pushargEx< DLL_ADVAPI32, 0x78660DBE, 240 >
-#define pCryptEncrypt    	    	pushargEx< DLL_ADVAPI32, 0xCEBF13BE, 241 >
-#define pCryptDecrypt    	    	pushargEx< DLL_ADVAPI32, 0xCEBF17E6, 242 >
-#define pCryptSetKeyParam   		pushargEx< DLL_ADVAPI32, 0x37A53419, 243 >
-#define pCryptDestroyKey    		pushargEx< DLL_ADVAPI32, 0xD4B3D42, 244 >
-#define pControlService				pushargEx< DLL_ADVAPI32, 0x5FFEE3F1, 245 >
-#define pQueryServiceStatus		    pushargEx< DLL_ADVAPI32, 0xC033DB1C, 246 >
-#define pSetServiceStatus		    pushargEx< DLL_ADVAPI32, 0x80C6B740, 247 >
-#define pRegisterServiceCtrlHandlerA   pushargEx< DLL_ADVAPI32, 0x16B6D72E, 248 >
-#define pStartServiceCtrlDispatcherA   pushargEx< DLL_ADVAPI32, 0x1B529B64, 249 >
-#define pQueryServiceStatusEx		pushargEx< DLL_ADVAPI32, 0xF6C712F4, 250 >
-#define pRegDeleteValueA			pushargEx< DLL_ADVAPI32, 0x560c7c4a, 251 >
-#define pCloseServiceHandle			pushargEx< DLL_ADVAPI32, 0x78CEC357, 252 >
-#define pAllocateAndInitializeSid	pushargEx< DLL_ADVAPI32, 0x28E9E291, 253 >
-#define pCheckTokenMembership		pushargEx< DLL_ADVAPI32, 0x87FEDB50, 254 >
-#define pFreeSid					pushargEx< DLL_ADVAPI32, 0x5CB5EF72, 255 >
+#define pCreateProcessAsUserA		pushargEx< DLL_ADVAPI32, 0x985267C4, 196 >
+#define pSetThreadToken				pushargEx< DLL_ADVAPI32, 0xA16FE0FD, 197 >
+#define pOpenProcessToken 			pushargEx< DLL_ADVAPI32, 0x80DBBE07, 198 >
+#define pLookupPrivilegeValueA 		pushargEx< DLL_ADVAPI32, 0x1B3D12B9, 199 >
+#define pLookupPrivilegeValueW 		pushargEx< DLL_ADVAPI32, 0x1B3D12AF, 200 >
+#define pAdjustTokenPrivileges 		pushargEx< DLL_ADVAPI32, 0x7A2167DC, 201 >
+#define pRegOpenKeyExA 				pushargEx< DLL_ADVAPI32, 0xAAD67FF8, 202 >
+#define pRegOpenKeyExW 				pushargEx< DLL_ADVAPI32, 0xAAD67FEE, 203 >
+#define pRegQueryInfoKeyA 			pushargEx< DLL_ADVAPI32, 0xBDF4DB19, 204 >
+#define pRegQueryInfoKeyW 			pushargEx< DLL_ADVAPI32, 0xBDF4DB0F, 205 >
+#define pRegEnumKeyExA 				pushargEx< DLL_ADVAPI32, 0xB4F673FD, 206 >
+#define pRegEnumKeyExW 				pushargEx< DLL_ADVAPI32, 0xB4F673EB, 207 >
+#define pRegEnumValueA 				pushargEx< DLL_ADVAPI32, 0xF65A7D95, 208 >
+#define pRegEnumValueW 				pushargEx< DLL_ADVAPI32, 0xF65A7D83, 209 >
+#define pRegQueryValueExA 			pushargEx< DLL_ADVAPI32, 0x1802E7C8, 210 >
+#define pRegQueryValueExW 			pushargEx< DLL_ADVAPI32, 0x1802E7DE, 211 >
+#define pRegCloseKey 				pushargEx< DLL_ADVAPI32, 0xDB355534, 212 >
+#define pRegDeleteKeyA 				pushargEx< DLL_ADVAPI32, 0x398C5285, 213 >
+#define pRegDeleteKeyW 				pushargEx< DLL_ADVAPI32, 0x398C5293, 214 >
+#define pRegSetValueExA 			pushargEx< DLL_ADVAPI32, 0x3E400FD6, 215 >
+#define pRegSetValueExW 			pushargEx< DLL_ADVAPI32, 0x3E400FC0, 216 >
+#define pGetUserNameA 				pushargEx< DLL_ADVAPI32, 0xB9D41C2F, 217 >
+#define pGetUserNameW 				pushargEx< DLL_ADVAPI32, 0xB9D41C39, 218 >
+#define pCreateServiceA 			pushargEx< DLL_ADVAPI32, 0x17B3DD2E, 219 >
+#define pOpenServiceA 				pushargEx< DLL_ADVAPI32, 0x83969964, 220 >
+#define pDeleteService 				pushargEx< DLL_ADVAPI32, 0xDE5D85F8, 221 >
+#define pStartServiceA 				pushargEx< DLL_ADVAPI32, 0x1CA1FD2F, 222 >
+#define pGetKernelObjectSecurity 	pushargEx< DLL_ADVAPI32, 0xB29136DD, 223 >
+#define pOpenSCManagerA 			pushargEx< DLL_ADVAPI32, 0xA06E459C, 224 >
+#define pGetCurrentHwProfileA		pushargEx< DLL_ADVAPI32, 0xF684C7A9, 225 >
+#define pGetTokenInformation		pushargEx< DLL_ADVAPI32, 0xD4ECC759, 226 >
+#define pInitializeSecurityDescriptor	pushargEx< DLL_ADVAPI32, 0xB8538A52, 227 >
+#define pSetSecurityDescriptorOwner	pushargEx< DLL_ADVAPI32, 0xDADD5994, 228 >
+#define pSetSecurityDescriptorDacl	pushargEx< DLL_ADVAPI32,0xCCD03C3A, 229 >
+#define pSetFileSecurityW			pushargEx< DLL_ADVAPI32, 0x5A9B2FDD, 230 >
+#define pRegCreateKeyW				pushargEx< DLL_ADVAPI32, 0xAE9E4290, 231 >
+#define pRegCreateKeyA				pushargEx< DLL_ADVAPI32, 0xAE9E4286, 232 >
+#define pRegCreateKeyExW			pushargEx< DLL_ADVAPI32, 0x90A097F0, 233 >
+#define pRegCreateKeyExA			pushargEx< DLL_ADVAPI32, 0x90A097E6, 234 >
+#define pRegSaveKeyA				pushargEx< DLL_ADVAPI32, 0xBEDEEFC5, 235 >
+#define pRegSaveKeyW				pushargEx< DLL_ADVAPI32, 0xBEDEEFD3, 236 >
+#define pRegSaveKeyExA				pushargEx< DLL_ADVAPI32, 0xBBF053F6, 237 >
+#define pRegSaveKeyExW				pushargEx< DLL_ADVAPI32, 0xBBF053E0, 238 >
+#define pCryptAcquireContextA		pushargEx< DLL_ADVAPI32, 0x8AD7DE34, 239 >
+#define pCryptReleaseContext		pushargEx< DLL_ADVAPI32, 0x72760BB8, 240 >
+#define pCryptImportKey     		pushargEx< DLL_ADVAPI32, 0x78660DBE, 241 >
+#define pCryptEncrypt    	    	pushargEx< DLL_ADVAPI32, 0xCEBF13BE, 242 >
+#define pCryptDecrypt    	    	pushargEx< DLL_ADVAPI32, 0xCEBF17E6, 243 >
+#define pCryptSetKeyParam   		pushargEx< DLL_ADVAPI32, 0x37A53419, 244 >
+#define pCryptDestroyKey    		pushargEx< DLL_ADVAPI32, 0xD4B3D42, 245 >
+#define pControlService				pushargEx< DLL_ADVAPI32, 0x5FFEE3F1, 246 >
+#define pQueryServiceStatus		    pushargEx< DLL_ADVAPI32, 0xC033DB1C, 247 >
+#define pSetServiceStatus		    pushargEx< DLL_ADVAPI32, 0x80C6B740, 248 >
+#define pRegisterServiceCtrlHandlerA   pushargEx< DLL_ADVAPI32, 0x16B6D72E, 249 >
+#define pStartServiceCtrlDispatcherA   pushargEx< DLL_ADVAPI32, 0x1B529B64, 250 >
+#define pQueryServiceStatusEx		pushargEx< DLL_ADVAPI32, 0xF6C712F4, 251 >
+#define pRegDeleteValueA			pushargEx< DLL_ADVAPI32, 0x560c7c4a, 252 >
+#define pCloseServiceHandle			pushargEx< DLL_ADVAPI32, 0x78CEC357, 253 >
+#define pAllocateAndInitializeSid	pushargEx< DLL_ADVAPI32, 0x28E9E291, 254 >
+#define pCheckTokenMembership		pushargEx< DLL_ADVAPI32, 0x87FEDB50, 255 >
+#define pFreeSid					pushargEx< DLL_ADVAPI32, 0x5CB5EF72, 256 >
 
 //user32
-#define pExitWindowsEx 				pushargEx< DLL_USER32, 0xAD7043A4, 256 >
-#define pPeekMessageW 				pushargEx< DLL_USER32, 0xD7A87C3A, 257 >
-#define pDispatchMessageW 			pushargEx< DLL_USER32, 0x4BAED1DE, 258 >
-#define pMsgWaitForMultipleObjects 	pushargEx< DLL_USER32, 0xD36CEAF0, 259 >
-#define pWaitForInputIdle			pushargEx< DLL_USER32, 0x4FAC81B4, 260 >
-#define pGetWindowThreadProcessId	pushargEx< DLL_USER32, 0x6C7F716F, 261 >
-#define pFindWindowA				pushargEx< DLL_USER32, 0x252B53B, 262 >
-#define pGetSystemMetrics			pushargEx< DLL_USER32, 0x8EBEF5B1, 263 >
-#define pGetActiveWindow			pushargEx< DLL_USER32, 0xDB7C98AC, 264 >
-#define pGetKeyboardLayoutNameA		pushargEx< DLL_USER32, 0xEA0FAD78, 265 >
-#define pOpenClipboard				pushargEx< DLL_USER32, 0x6ADFC795, 266 >
-#define pGetClipboardData			pushargEx< DLL_USER32, 0x8E7AE818, 267 >
-#define pCloseClipboard				pushargEx< DLL_USER32, 0xF0EC2212, 268 >
-#define pGetWindowTextA				pushargEx< DLL_USER32, 0x9C29100A, 269 >
-#define pGetWindowTextW				pushargEx< DLL_USER32, 0x9C29101C, 270 >
-#define pGetForegroundWindow		pushargEx< DLL_USER32, 0xCACD450, 271 >
-#define pGetWindowLongPtrA			pushargEx< DLL_USER32, 0x1D6C998B, 272 >
-#define pGetWindowLongPtrW			pushargEx< DLL_USER32, 0x1D6C999D, 273 >
-#define pEnumChildWindows			pushargEx< DLL_USER32, 0xAE8A5532, 274 >
-#define pGetParent					pushargEx< DLL_USER32, 0x5992A5F2, 275 >
-#define pGetDesktopWindow			pushargEx< DLL_USER32, 0xCD4AC62B, 276 >
-#define pIsWindowVisible			pushargEx< DLL_USER32, 0xCFAAD7BF, 277 >
-#define pIsWindowUnicode            pushargEx< DLL_USER32, 0x6EE99F86, 278 >
-#define pSetWindowLongA				pushargEx< DLL_USER32, 0xBD6C998B, 279 >
-#define pSetWindowLongW				pushargEx< DLL_USER32, 0xBD6C999D, 280 >
-#define pGetWindowLongA				pushargEx< DLL_USER32, 0x1D6C998B, 281 >
-#define pGetWindowLongW				pushargEx< DLL_USER32, 0x1D6C999D, 282 >
-#define pSetLayeredWindowAttributes	pushargEx< DLL_USER32, 0x2DDBD2AF, 283 >
-#define pSetWindowPos				pushargEx< DLL_USER32, 0xA92DF5AF, 284 >
-#define pMessageBoxA				pushargEx< DLL_USER32, 0xABBC680D, 285 >
-#define pMessageBoxW				pushargEx< DLL_USER32, 0xABBC681B, 286 >
-#define pGetClassNameW				pushargEx< DLL_USER32, 0x484006A, 287 >
-#define pGetClassNameA				pushargEx< DLL_USER32, 0x484007C, 288 >
-#define pShowWindow					pushargEx< DLL_USER32, 0x7506E960, 289 >
-#define pSendMessageW				pushargEx< DLL_USER32, 0x58A81C3F, 290 >
-#define pSendMessageA				pushargEx< DLL_USER32, 0x58A81C29, 291 >
-#define pEnumWindows				pushargEx< DLL_USER32, 0x9940B5CA, 292 >
-#define pIsWindow					pushargEx< DLL_USER32, 0x9D4AF949, 293 >
-#define pGetWindow					pushargEx< DLL_USER32, 0xDA12E549, 294 >
-#define pCreateDesktopW				pushargEx< DLL_USER32, 0xC43ED7B1, 295 >
-#define pCreateDesktopA				pushargEx< DLL_USER32, 0xC43ED7A7, 296 >
-#define pGetThreadDesktop			pushargEx< DLL_USER32, 0x79F9B7FA, 297 >
-#define pSwitchDesktop				pushargEx< DLL_USER32, 0x5B92DEA5, 298 >
-#define pSetThreadDesktop			pushargEx< DLL_USER32, 0x79F99FFA, 299 >
-#define pGetTopWindow				pushargEx< DLL_USER32, 0xC90E0C33, 300 >
-#define pMoveWindow					pushargEx< DLL_USER32, 0x7234A16F, 301 >
-#define pFindWindowExA				pushargEx< DLL_USER32, 0xAD4FFCD5, 302 >
-#define pGetMessageA				pushargEx< DLL_USER32, 0xC8A274AC, 303 >
-#define pSendMessageTimeoutW		pushargEx< DLL_USER32, 0x65846C69, 304 >
-#define pSendMessageTimeoutA 		pushargEx< DLL_USER32, 0x65846C7F, 305 >
-#define pSetClipboardViewer			pushargEx< DLL_USER32, 0x322391FC, 306 >
-#define pIsClipboardFormatAvailable	pushargEx< DLL_USER32, 0xB161BF96, 307 >
-#define pChangeClipboardChain   	pushargEx< DLL_USER32, 0x7CF84417, 308 >
-#define pPostMessageA				pushargEx< DLL_USER32, 0xC8A87EA7, 309 >
-#define pGetMessagePos 				pushargEx< DLL_USER32, 0x9D2F45DB, 310 >
-#define pClientToScreen 			pushargEx< DLL_USER32, 0x543DF505, 311 >
-#define pGetWindowRect  			pushargEx< DLL_USER32, 0x97F85FA0, 312 >
-#define pDefWindowProcA 			pushargEx< DLL_USER32, 0xC6CE9B8A, 313 >
-#define pCallWindowProcA 			pushargEx< DLL_USER32, 0xEE5FDA87, 314 >
-#define pGetKeyNameTextW 			pushargEx< DLL_USER32, 0xAD34F519, 315 >
-#define pGetKeyboardState			pushargEx< DLL_USER32, 0xF5E780A6, 316 >
-#define pGetKeyboardLayout			pushargEx< DLL_USER32, 0xA0C69BF7, 317 >
-#define pToUnicodeEx    			pushargEx< DLL_USER32, 0x2944D0D1, 318 >
-#define pLoadCursorW    			pushargEx< DLL_USER32, 0xCFB2E5CF, 319 >
-#define pLoadCursorA    			pushargEx< DLL_USER32, 0xCFB2E5D9, 320 >
-#define pRegisterClassA    			pushargEx< DLL_USER32, 0xAEABC9A4, 321 >
-#define pCreateWindowExA   			pushargEx< DLL_USER32, 0xBF7EFB5A, 322 >
-#define pTranslateMessage   		pushargEx< DLL_USER32, 0xC45D9631, 323 >
-#define pDispatchMessageA   		pushargEx< DLL_USER32, 0x4BAED1C8, 324 >
-#define pGetWindowDC   				pushargEx< DLL_USER32, 0xB95254C7, 325 >
-#define pReleaseDC					pushargEx< DLL_USER32, 0x4CB2D16D, 326 >
-#define pFillRect					pushargEx< DLL_USER32, 0xCAD4D692, 327 >
-#define pCallWindowProcW			pushargEx< DLL_USER32, 0xEE5FDA91, 328 >
-#define pSetTimer       			pushargEx< DLL_USER32, 0x4D9CE557, 329 >
-#define pDestroyWindow      		pushargEx< DLL_USER32, 0xEB4A6DB3, 330 >
-#define pGetFocus           		pushargEx< DLL_USER32, 0x6D776D57, 331 >
-#define pCharLowerBuffA        		pushargEx< DLL_USER32, 0x5FDA1871, 332 >
-#define pCharLowerBuffW        		pushargEx< DLL_USER32, 0x5FDA1867, 333 >
-#define pCharUpperBuffA        		pushargEx< DLL_USER32, 0xC0D4187D, 334 >
-#define pCharUpperBuffW        		pushargEx< DLL_USER32, 0xC0D4186B, 335 >
-#define pwvsprintfA 				pushargEx< DLL_USER32, 0x6B3AF0EC, 336 >
-#define pwvsprintfW 				pushargEx< DLL_USER32, 0x6B3AF0FA, 337 >
-#define pSetWindowsHookExA 			pushargEx< DLL_USER32, 0xB4584DDA, 338 >
-#define pSetWindowsHookExW 			pushargEx< DLL_USER32, 0xB4584DCC, 339 >
-#define pUnhookWindowsHookEx 		pushargEx< DLL_USER32, 0xB800C8A6, 340 >
-#define pSetWindowTextA 			pushargEx< DLL_USER32, 0x3C29100A, 341 >
-#define pSetWindowTextW 			pushargEx< DLL_USER32, 0x3C29101C, 342 >
-#define pSetWindowLongPtrA			pushargEx< DLL_USER32, 0x334A94D2, 343 >
-#define pSetWindowLongPtrW			pushargEx< DLL_USER32, 0x334A94C4, 344 >
-#define pScreenToClient				pushargEx< DLL_USER32, 0xBDAE901A, 345 >
-#define pGetClientRect				pushargEx< DLL_USER32, 0xA2F65BA2, 346 >
-#define pGetDlgItem					pushargEx< DLL_USER32, 0x9CD421A8, 347 >
-#define pCallNextHookEx				pushargEx< DLL_USER32, 0x8616AB9B, 348 >
-#define pGetCursor					pushargEx< DLL_USER32, 0x199725ED, 349 >
-#define pSetCursor					pushargEx< DLL_USER32, 0xD9725ED, 350 >
-#define pGetAncestor			 	pushargEx< DLL_USER32, 0xAAFE9D1E, 351 >
-#define pRegisterWindowMessageA	 	pushargEx< DLL_USER32, 0xE5D2B59, 352 >
-#define pGetDC			        	pushargEx< DLL_USER32, 0x7CBD2247, 353 >
-#define pGetClassLongA	        	pushargEx< DLL_USER32, 0x2544C17C, 354 >
-#define pPrintWindow	        	pushargEx< DLL_USER32, 0xF404F170, 355 >
-#define pGetWindowPlacement	       	pushargEx< DLL_USER32, 0xE06982CE, 356 >
-#define pIsIconic			       	pushargEx< DLL_USER32, 0x3D687AAD, 357 >
-#define pSetFocus			       	pushargEx< DLL_USER32, 0x6D5F6D57, 358 >
-#define pSetActiveWindow			pushargEx< DLL_USER32, 0xDB7C98FC, 359 >
-#define pSetCursorPos				pushargEx< DLL_USER32, 0xBDB58517, 360 >
-#define pAttachThreadInput			pushargEx< DLL_USER32, 0xE16B4137, 361 >
-#define pUpdateWindow				pushargEx< DLL_USER32, 0xFC3A1D7B, 362 >
-#define pDestroyMenu				pushargEx< DLL_USER32, 0x6A50AD38, 363 >
-#define pmouse_event				pushargEx< DLL_USER32, 0xAB3EFAFD, 364 >
-#define pSetCapture					pushargEx< DLL_USER32, 0xEB747643, 365 >
-#define pReleaseCapture				pushargEx< DLL_USER32, 0x6B0BEF18, 366 >
-#define pBlockInput					pushargEx< DLL_USER32, 0xF103B589, 367 >
-#define pSendInput					pushargEx< DLL_USER32, 0xce1781d0, 368 >
-#define pEnumThreadWindows          pushargEx< DLL_USER32, 0x605A65D8, 369 >
-#define pIsWindowEnabled			pushargEx< DLL_USER32, 0xEEC91F07, 369 >
+#define pExitWindowsEx 				pushargEx< DLL_USER32, 0xAD7043A4, 257 >
+#define pPeekMessageW 				pushargEx< DLL_USER32, 0xD7A87C3A, 258 >
+#define pDispatchMessageW 			pushargEx< DLL_USER32, 0x4BAED1DE, 259 >
+#define pMsgWaitForMultipleObjects 	pushargEx< DLL_USER32, 0xD36CEAF0, 260 >
+#define pWaitForInputIdle			pushargEx< DLL_USER32, 0x4FAC81B4, 261 >
+#define pGetWindowThreadProcessId	pushargEx< DLL_USER32, 0x6C7F716F, 262 >
+#define pFindWindowA				pushargEx< DLL_USER32, 0x252B53B, 263 >
+#define pGetSystemMetrics			pushargEx< DLL_USER32, 0x8EBEF5B1, 264 >
+#define pGetActiveWindow			pushargEx< DLL_USER32, 0xDB7C98AC, 265 >
+#define pGetKeyboardLayoutNameA		pushargEx< DLL_USER32, 0xEA0FAD78, 266 >
+#define pOpenClipboard				pushargEx< DLL_USER32, 0x6ADFC795, 267 >
+#define pGetClipboardData			pushargEx< DLL_USER32, 0x8E7AE818, 268 >
+#define pCloseClipboard				pushargEx< DLL_USER32, 0xF0EC2212, 269 >
+#define pGetWindowTextA				pushargEx< DLL_USER32, 0x9C29100A, 270 >
+#define pGetWindowTextW				pushargEx< DLL_USER32, 0x9C29101C, 271 >
+#define pGetForegroundWindow		pushargEx< DLL_USER32, 0xCACD450, 272 >
+#define pGetWindowLongPtrA			pushargEx< DLL_USER32, 0x1D6C998B, 273 >
+#define pGetWindowLongPtrW			pushargEx< DLL_USER32, 0x1D6C999D, 274 >
+#define pEnumChildWindows			pushargEx< DLL_USER32, 0xAE8A5532, 275 >
+#define pGetParent					pushargEx< DLL_USER32, 0x5992A5F2, 276 >
+#define pGetDesktopWindow			pushargEx< DLL_USER32, 0xCD4AC62B, 277 >
+#define pIsWindowVisible			pushargEx< DLL_USER32, 0xCFAAD7BF, 278 >
+#define pIsWindowUnicode            pushargEx< DLL_USER32, 0x6EE99F86, 279 >
+#define pSetWindowLongA				pushargEx< DLL_USER32, 0xBD6C998B, 280 >
+#define pSetWindowLongW				pushargEx< DLL_USER32, 0xBD6C999D, 281 >
+#define pGetWindowLongA				pushargEx< DLL_USER32, 0x1D6C998B, 282 >
+#define pGetWindowLongW				pushargEx< DLL_USER32, 0x1D6C999D, 283 >
+#define pSetLayeredWindowAttributes	pushargEx< DLL_USER32, 0x2DDBD2AF, 284 >
+#define pSetWindowPos				pushargEx< DLL_USER32, 0xA92DF5AF, 285 >
+#define pMessageBoxA				pushargEx< DLL_USER32, 0xABBC680D, 286 >
+#define pMessageBoxW				pushargEx< DLL_USER32, 0xABBC681B, 287 >
+#define pGetClassNameW				pushargEx< DLL_USER32, 0x484006A, 288 >
+#define pGetClassNameA				pushargEx< DLL_USER32, 0x484007C, 289 >
+#define pShowWindow					pushargEx< DLL_USER32, 0x7506E960, 290 >
+#define pSendMessageW				pushargEx< DLL_USER32, 0x58A81C3F, 291 >
+#define pSendMessageA				pushargEx< DLL_USER32, 0x58A81C29, 292 >
+#define pEnumWindows				pushargEx< DLL_USER32, 0x9940B5CA, 293 >
+#define pIsWindow					pushargEx< DLL_USER32, 0x9D4AF949, 294 >
+#define pGetWindow					pushargEx< DLL_USER32, 0xDA12E549, 295 >
+#define pCreateDesktopW				pushargEx< DLL_USER32, 0xC43ED7B1, 296 >
+#define pCreateDesktopA				pushargEx< DLL_USER32, 0xC43ED7A7, 297 >
+#define pGetThreadDesktop			pushargEx< DLL_USER32, 0x79F9B7FA, 298 >
+#define pSwitchDesktop				pushargEx< DLL_USER32, 0x5B92DEA5, 299 >
+#define pSetThreadDesktop			pushargEx< DLL_USER32, 0x79F99FFA, 300 >
+#define pGetTopWindow				pushargEx< DLL_USER32, 0xC90E0C33, 301 >
+#define pMoveWindow					pushargEx< DLL_USER32, 0x7234A16F, 302 >
+#define pFindWindowExA				pushargEx< DLL_USER32, 0xAD4FFCD5, 303 >
+#define pGetMessageA				pushargEx< DLL_USER32, 0xC8A274AC, 304 >
+#define pSendMessageTimeoutW		pushargEx< DLL_USER32, 0x65846C69, 305 >
+#define pSendMessageTimeoutA 		pushargEx< DLL_USER32, 0x65846C7F, 306 >
+#define pSetClipboardViewer			pushargEx< DLL_USER32, 0x322391FC, 307 >
+#define pIsClipboardFormatAvailable	pushargEx< DLL_USER32, 0xB161BF96, 308 >
+#define pChangeClipboardChain   	pushargEx< DLL_USER32, 0x7CF84417, 309 >
+#define pPostMessageA				pushargEx< DLL_USER32, 0xC8A87EA7, 310 >
+#define pGetMessagePos 				pushargEx< DLL_USER32, 0x9D2F45DB, 311 >
+#define pClientToScreen 			pushargEx< DLL_USER32, 0x543DF505, 312 >
+#define pGetWindowRect  			pushargEx< DLL_USER32, 0x97F85FA0, 313 >
+#define pDefWindowProcA 			pushargEx< DLL_USER32, 0xC6CE9B8A, 314 >
+#define pCallWindowProcA 			pushargEx< DLL_USER32, 0xEE5FDA87, 315 >
+#define pGetKeyNameTextW 			pushargEx< DLL_USER32, 0xAD34F519, 316 >
+#define pGetKeyboardState			pushargEx< DLL_USER32, 0xF5E780A6, 317 >
+#define pGetKeyboardLayout			pushargEx< DLL_USER32, 0xA0C69BF7, 318 >
+#define pToUnicodeEx    			pushargEx< DLL_USER32, 0x2944D0D1, 319 >
+#define pLoadCursorW    			pushargEx< DLL_USER32, 0xCFB2E5CF, 320 >
+#define pLoadCursorA    			pushargEx< DLL_USER32, 0xCFB2E5D9, 321 >
+#define pRegisterClassA    			pushargEx< DLL_USER32, 0xAEABC9A4, 322 >
+#define pCreateWindowExA   			pushargEx< DLL_USER32, 0xBF7EFB5A, 323 >
+#define pTranslateMessage   		pushargEx< DLL_USER32, 0xC45D9631, 324 >
+#define pDispatchMessageA   		pushargEx< DLL_USER32, 0x4BAED1C8, 325 >
+#define pGetWindowDC   				pushargEx< DLL_USER32, 0xB95254C7, 326 >
+#define pReleaseDC					pushargEx< DLL_USER32, 0x4CB2D16D, 327 >
+#define pFillRect					pushargEx< DLL_USER32, 0xCAD4D692, 328 >
+#define pCallWindowProcW			pushargEx< DLL_USER32, 0xEE5FDA91, 329 >
+#define pSetTimer       			pushargEx< DLL_USER32, 0x4D9CE557, 330 >
+#define pDestroyWindow      		pushargEx< DLL_USER32, 0xEB4A6DB3, 331 >
+#define pGetFocus           		pushargEx< DLL_USER32, 0x6D776D57, 332 >
+#define pCharLowerBuffA        		pushargEx< DLL_USER32, 0x5FDA1871, 333 >
+#define pCharLowerBuffW        		pushargEx< DLL_USER32, 0x5FDA1867, 334 >
+#define pCharUpperBuffA        		pushargEx< DLL_USER32, 0xC0D4187D, 335 >
+#define pCharUpperBuffW        		pushargEx< DLL_USER32, 0xC0D4186B, 336 >
+#define pwvsprintfA 				pushargEx< DLL_USER32, 0x6B3AF0EC, 337 >
+#define pwvsprintfW 				pushargEx< DLL_USER32, 0x6B3AF0FA, 338 >
+#define pSetWindowsHookExA 			pushargEx< DLL_USER32, 0xB4584DDA, 339 >
+#define pSetWindowsHookExW 			pushargEx< DLL_USER32, 0xB4584DCC, 340 >
+#define pUnhookWindowsHookEx 		pushargEx< DLL_USER32, 0xB800C8A6, 341 >
+#define pSetWindowTextA 			pushargEx< DLL_USER32, 0x3C29100A, 342 >
+#define pSetWindowTextW 			pushargEx< DLL_USER32, 0x3C29101C, 343 >
+#define pSetWindowLongPtrA			pushargEx< DLL_USER32, 0x334A94D2, 344 >
+#define pSetWindowLongPtrW			pushargEx< DLL_USER32, 0x334A94C4, 345 >
+#define pScreenToClient				pushargEx< DLL_USER32, 0xBDAE901A, 346 >
+#define pGetClientRect				pushargEx< DLL_USER32, 0xA2F65BA2, 347 >
+#define pGetDlgItem					pushargEx< DLL_USER32, 0x9CD421A8, 348 >
+#define pCallNextHookEx				pushargEx< DLL_USER32, 0x8616AB9B, 349 >
+#define pGetCursor					pushargEx< DLL_USER32, 0x199725ED, 350 >
+#define pSetCursor					pushargEx< DLL_USER32, 0xD9725ED, 351 >
+#define pGetAncestor			 	pushargEx< DLL_USER32, 0xAAFE9D1E, 352 >
+#define pRegisterWindowMessageA	 	pushargEx< DLL_USER32, 0xE5D2B59, 353 >
+#define pGetDC			        	pushargEx< DLL_USER32, 0x7CBD2247, 354 >
+#define pGetClassLongA	        	pushargEx< DLL_USER32, 0x2544C17C, 355 >
+#define pPrintWindow	        	pushargEx< DLL_USER32, 0xF404F170, 356 >
+#define pGetWindowPlacement	       	pushargEx< DLL_USER32, 0xE06982CE, 357 >
+#define pIsIconic			       	pushargEx< DLL_USER32, 0x3D687AAD, 358 >
+#define pSetFocus			       	pushargEx< DLL_USER32, 0x6D5F6D57, 359 >
+#define pSetActiveWindow			pushargEx< DLL_USER32, 0xDB7C98FC, 360 >
+#define pSetCursorPos				pushargEx< DLL_USER32, 0xBDB58517, 361 >
+#define pAttachThreadInput			pushargEx< DLL_USER32, 0xE16B4137, 362 >
+#define pUpdateWindow				pushargEx< DLL_USER32, 0xFC3A1D7B, 363 >
+#define pDestroyMenu				pushargEx< DLL_USER32, 0x6A50AD38, 364 >
+#define pmouse_event				pushargEx< DLL_USER32, 0xAB3EFAFD, 365 >
+#define pSetCapture					pushargEx< DLL_USER32, 0xEB747643, 366 >
+#define pReleaseCapture				pushargEx< DLL_USER32, 0x6B0BEF18, 367 >
+#define pBlockInput					pushargEx< DLL_USER32, 0xF103B589, 368 >
+#define pSendInput					pushargEx< DLL_USER32, 0xce1781d0, 369 >
+#define pEnumThreadWindows          pushargEx< DLL_USER32, 0x605A65D8, 370 >
+#define pIsWindowEnabled			pushargEx< DLL_USER32, 0xEEC91F07, 371 >
 
 //winsock
-#define pWSACleanup 				pushargEx< DLL_WINSOCK, 0x8FB8B5BD, 370 >
-#define pWSAStartup 				pushargEx< DLL_WINSOCK, 0xCDDE757D, 371 >
-#define psocket 					pushargEx< DLL_WINSOCK, 0xFC7AF16A, 372 >
-#define pclosesocket 				pushargEx< DLL_WINSOCK, 0x939D7D9C, 373 >
-#define paccept 					pushargEx< DLL_WINSOCK, 0x3C797B7A, 374 >
-#define pbind 						pushargEx< DLL_WINSOCK, 0xC5A7764, 375 >
-#define phtons 						pushargEx< DLL_WINSOCK, 0x8E9BF775, 376 >
-#define plisten 					pushargEx< DLL_WINSOCK, 0x9E7D3188, 377 >
-#define precv 						pushargEx< DLL_WINSOCK, 0xE5971F6, 378 >
-#define psend 						pushargEx< DLL_WINSOCK, 0xE797764, 379 >
-#define pconnect 					pushargEx< DLL_WINSOCK, 0xEDD8FE8A, 380 >
-#define pshutdown 					pushargEx< DLL_WINSOCK, 0x4C7C5841, 381 >
-#define pgethostbyname 				pushargEx< DLL_WINSOCK, 0xF44318C6, 382 >
-#define pgethostbyaddr 				pushargEx< DLL_WINSOCK, 0xF5A25C51, 383 >
-#define pinet_addr 					pushargEx< DLL_WINSOCK, 0x95E4A5D7, 384 >
-#define pinet_ntoa 					pushargEx< DLL_WINSOCK, 0x9400A044, 385 >
-#define pgetaddrinfo				pushargEx< DLL_WINSOCK, 0xD9F839BA, 386 >
-#define pgetpeername				pushargEx< DLL_WINSOCK, 0xD939F838, 387 >
-#define pselect						pushargEx< DLL_WINSOCK, 0x5D99726A, 388 >
-#define psetsockopt					pushargEx< DLL_WINSOCK, 0xD8923733, 389 >
-#define pWSAGetLastError			pushargEx< DLL_WINSOCK, 0x8E878072, 390 >
-#define pWSASetLastError			pushargEx< DLL_WINSOCK, 0x8E850072, 391 >
-#define pioctlsocket		     	pushargEx< DLL_WINSOCK, 0x1F935B1D, 392 >
-#define pWSAFDIsSet   		     	pushargEx< DLL_WINSOCK, 0x4DFC1F3B, 393 >
+#define pWSACleanup 				pushargEx< DLL_WINSOCK, 0x8FB8B5BD, 372 >
+#define pWSAStartup 				pushargEx< DLL_WINSOCK, 0xCDDE757D, 373 >
+#define psocket 					pushargEx< DLL_WINSOCK, 0xFC7AF16A, 374 >
+#define pclosesocket 				pushargEx< DLL_WINSOCK, 0x939D7D9C, 375 >
+#define paccept 					pushargEx< DLL_WINSOCK, 0x3C797B7A, 376 >
+#define pbind 						pushargEx< DLL_WINSOCK, 0xC5A7764, 377 >
+#define phtons 						pushargEx< DLL_WINSOCK, 0x8E9BF775, 378 >
+#define plisten 					pushargEx< DLL_WINSOCK, 0x9E7D3188, 379 >
+#define precv 						pushargEx< DLL_WINSOCK, 0xE5971F6, 380 >
+#define psend 						pushargEx< DLL_WINSOCK, 0xE797764, 381 >
+#define pconnect 					pushargEx< DLL_WINSOCK, 0xEDD8FE8A, 382 >
+#define pshutdown 					pushargEx< DLL_WINSOCK, 0x4C7C5841, 383 >
+#define pgethostbyname 				pushargEx< DLL_WINSOCK, 0xF44318C6, 384 >
+#define pgethostbyaddr 				pushargEx< DLL_WINSOCK, 0xF5A25C51, 385 >
+#define pinet_addr 					pushargEx< DLL_WINSOCK, 0x95E4A5D7, 386 >
+#define pinet_ntoa 					pushargEx< DLL_WINSOCK, 0x9400A044, 387 >
+#define pgetaddrinfo				pushargEx< DLL_WINSOCK, 0xD9F839BA, 388 >
+#define pgetpeername				pushargEx< DLL_WINSOCK, 0xD939F838, 389 >
+#define pselect						pushargEx< DLL_WINSOCK, 0x5D99726A, 390 >
+#define psetsockopt					pushargEx< DLL_WINSOCK, 0xD8923733, 391 >
+#define pWSAGetLastError			pushargEx< DLL_WINSOCK, 0x8E878072, 392 >
+#define pWSASetLastError			pushargEx< DLL_WINSOCK, 0x8E850072, 393 >
+#define pioctlsocket		     	pushargEx< DLL_WINSOCK, 0x1F935B1D, 394 >
+#define pWSAFDIsSet   		     	pushargEx< DLL_WINSOCK, 0x4DFC1F3B, 395 >
 
 //ntdll
-#define pRtlInitUnicodeString 		pushargEx< DLL_NTDLL, 0x3287EC73, 394 >
-#define pRtlInitAnsiString			pushargEx< DLL_NTDLL, 0xEE02056A, 395 >
-#define pNtOpenFile 				pushargEx< DLL_NTDLL, 0x9C45B56C, 396 >
-#define pNtOpenDirectoryObject 		pushargEx< DLL_NTDLL, 0xF5F11CF0, 397 >
-#define pNtCreateSection 			pushargEx< DLL_NTDLL, 0x6E6F608B, 398 >
-#define pNtOpenSection 				pushargEx< DLL_NTDLL, 0x5FA9AB38, 399 >
-#define pZwLoadDriver 				pushargEx< DLL_NTDLL, 0x42F57D33, 400 >
-#define pZwUnloadDriver 			pushargEx< DLL_NTDLL, 0x95849B61, 401 >
-#define pRtlAdjustPrivilege 		pushargEx< DLL_NTDLL, 0xC2A6B1AE, 402 >
-#define pZwMakeTemporaryObject 		pushargEx< DLL_NTDLL, 0x128CE9D3, 403 >
-#define pNtClose 					pushargEx< DLL_NTDLL, 0x3D9AC241, 404 >
-#define pRtlImageNtHeader			pushargEx< DLL_NTDLL, 0xDD39FD14, 405 >
-#define pZwQuerySystemInformation	pushargEx< DLL_NTDLL, 0xBC44A131, 406 >
-#define pZwUnmapViewOfSection		pushargEx< DLL_NTDLL, 0x9ED4D161, 407 >
-#define pZwMapViewOfSection			pushargEx< DLL_NTDLL, 0x594D9A3C, 408 >
-#define pZwQueueApcThread			pushargEx< DLL_NTDLL, 0xC0E4F6EE, 409 >
-#define pZwResumeThread				pushargEx< DLL_NTDLL, 0xACF8BF39, 410 >
-#define pZwTestAlert				pushargEx< DLL_NTDLL, 0xC952A06B, 411 >
-#define pZwQueryInformationThread	pushargEx< DLL_NTDLL, 0xFAEDF3AA, 412 >
-#define pZwOpenProcess				pushargEx< DLL_NTDLL, 0x9C0AC99D, 413 >
-#define pZwOpenProcessToken			pushargEx< DLL_NTDLL, 0xADACBE07, 414 >
-#define pZwClose					pushargEx< DLL_NTDLL, 0x3D9A9259, 415 >
-#define pZwAllocateVirtualMemory	pushargEx< DLL_NTDLL, 0x594AA9E4, 416 >
-#define pZwFreeVirtualMemory		pushargEx< DLL_NTDLL, 0xBED3922C, 417 >
-#define pZwWriteVirtualMemory		pushargEx< DLL_NTDLL, 0xEEE7AF23, 418 >
-#define pZwProtectVirtualMemory		pushargEx< DLL_NTDLL, 0x3836C63E, 419 >
-#define pRtlCreateUserThread		pushargEx< DLL_NTDLL, 0xE9E0A4F7, 420 >
-#define pLdrLoadDll					pushargEx< DLL_NTDLL, 0x78740534, 421 >
-#define pLdrGetDllHandle			pushargEx< DLL_NTDLL, 0x7E287C6A, 422 >
-#define pLdrGetProcedureAddress		pushargEx< DLL_NTDLL, 0x323C2875, 423 >
-#define pZwSetContextThread			pushargEx< DLL_NTDLL, 0x62E2FE6F, 424 >
-#define pZwSetInformationProcess	pushargEx< DLL_NTDLL, 0xCA2BF652, 425 >
-#define pZwQueryInformationProcess	pushargEx< DLL_NTDLL, 0xA638CE5F, 426 >
-#define pRtlImageDirectoryEntryToData pushargEx< DLL_NTDLL, 0x503f7b28, 427 >
-#define pZwQueryInformationFile		pushargEx< DLL_NTDLL, 0x0f7ba4b7, 428 >
-#define pZwShutdownSystem			pushargEx< DLL_NTDLL, 0x6F1C809E, 429 >
-#define pRtlComputeCrc32			pushargEx< DLL_NTDLL,0x687B7023, 430 >
-#define pNtQuerySystemInformation	pushargEx< DLL_NTDLL,0xB044A119, 431 >
-#define pNtDeviceIoControlFile		pushargEx< DLL_NTDLL,0x385C70F2, 432 >
+#define pRtlInitUnicodeString 		pushargEx< DLL_NTDLL, 0x3287EC73, 396 >
+#define pRtlInitAnsiString			pushargEx< DLL_NTDLL, 0xEE02056A, 397 >
+#define pNtOpenFile 				pushargEx< DLL_NTDLL, 0x9C45B56C, 398 >
+#define pNtOpenDirectoryObject 		pushargEx< DLL_NTDLL, 0xF5F11CF0, 399 >
+#define pNtCreateSection 			pushargEx< DLL_NTDLL, 0x6E6F608B, 400 >
+#define pNtOpenSection 				pushargEx< DLL_NTDLL, 0x5FA9AB38, 401 >
+#define pZwLoadDriver 				pushargEx< DLL_NTDLL, 0x42F57D33, 402 >
+#define pZwUnloadDriver 			pushargEx< DLL_NTDLL, 0x95849B61, 403 >
+#define pRtlAdjustPrivilege 		pushargEx< DLL_NTDLL, 0xC2A6B1AE, 404 >
+#define pZwMakeTemporaryObject 		pushargEx< DLL_NTDLL, 0x128CE9D3, 405 >
+#define pNtClose 					pushargEx< DLL_NTDLL, 0x3D9AC241, 406 >
+#define pRtlImageNtHeader			pushargEx< DLL_NTDLL, 0xDD39FD14, 407 >
+#define pZwQuerySystemInformation	pushargEx< DLL_NTDLL, 0xBC44A131, 408 >
+#define pZwUnmapViewOfSection		pushargEx< DLL_NTDLL, 0x9ED4D161, 409 >
+#define pZwMapViewOfSection			pushargEx< DLL_NTDLL, 0x594D9A3C, 410 >
+#define pZwQueueApcThread			pushargEx< DLL_NTDLL, 0xC0E4F6EE, 411 >
+#define pZwResumeThread				pushargEx< DLL_NTDLL, 0xACF8BF39, 412 >
+#define pZwTestAlert				pushargEx< DLL_NTDLL, 0xC952A06B, 413 >
+#define pZwQueryInformationThread	pushargEx< DLL_NTDLL, 0xFAEDF3AA, 414 >
+#define pZwOpenProcess				pushargEx< DLL_NTDLL, 0x9C0AC99D, 415 >
+#define pZwOpenProcessToken			pushargEx< DLL_NTDLL, 0xADACBE07, 416 >
+#define pZwClose					pushargEx< DLL_NTDLL, 0x3D9A9259, 417 >
+#define pZwAllocateVirtualMemory	pushargEx< DLL_NTDLL, 0x594AA9E4, 418 >
+#define pZwFreeVirtualMemory		pushargEx< DLL_NTDLL, 0xBED3922C, 419 >
+#define pZwWriteVirtualMemory		pushargEx< DLL_NTDLL, 0xEEE7AF23, 420 >
+#define pZwProtectVirtualMemory		pushargEx< DLL_NTDLL, 0x3836C63E, 421 >
+#define pRtlCreateUserThread		pushargEx< DLL_NTDLL, 0xE9E0A4F7, 422 >
+#define pLdrLoadDll					pushargEx< DLL_NTDLL, 0x78740534, 423 >
+#define pLdrGetDllHandle			pushargEx< DLL_NTDLL, 0x7E287C6A, 424 >
+#define pLdrGetProcedureAddress		pushargEx< DLL_NTDLL, 0x323C2875, 425 >
+#define pZwSetContextThread			pushargEx< DLL_NTDLL, 0x62E2FE6F, 426 >
+#define pZwSetInformationProcess	pushargEx< DLL_NTDLL, 0xCA2BF652, 427 >
+#define pZwQueryInformationProcess	pushargEx< DLL_NTDLL, 0xA638CE5F, 428 >
+#define pRtlImageDirectoryEntryToData pushargEx< DLL_NTDLL, 0x503f7b28, 429 >
+#define pZwQueryInformationFile		pushargEx< DLL_NTDLL, 0x0f7ba4b7, 430 >
+#define pZwShutdownSystem			pushargEx< DLL_NTDLL, 0x6F1C809E, 431 >
+#define pRtlComputeCrc32			pushargEx< DLL_NTDLL,0x687B7023, 432 >
+#define pNtQuerySystemInformation	pushargEx< DLL_NTDLL,0xB044A119, 433 >
+#define pNtDeviceIoControlFile		pushargEx< DLL_NTDLL,0x385C70F2, 434 >
 
 
 //winsta
-#define pWinStationTerminateProcess	pushargEx< DLL_WINSTA, 0xA60C5F05, 433 >
+#define pWinStationTerminateProcess	pushargEx< DLL_WINSTA, 0xA60C5F05, 435 >
 
 //shell32
-#define pSHGetSpecialFolderPathA 	pushargEx< DLL_SHELL32, 0xC95D8550, 434 >
-#define pSHGetSpecialFolderPathW 	pushargEx< DLL_SHELL32, 0xC95D8546, 435 >
-#define pFindExecutableA			pushargEx< DLL_SHELL32, 0x37707500, 436 >
-#define pFindExecutableW			pushargEx< DLL_SHELL32, 0x37707516, 437 >
-#define pSHGetFolderPathA			pushargEx< DLL_SHELL32, 0xDEAA9541, 438 >
-#define pSHGetFolderPathW			pushargEx< DLL_SHELL32, 0xDEAA9557, 439 >
-#define pShellExecuteW				pushargEx< DLL_SHELL32, 0x570BC88F, 440 >
-#define pShellExecuteA				pushargEx< DLL_SHELL32, 0x570BC899, 441 >
-#define pStrStrIW 					pushargEx< DLL_SHELL32, 0x3E3B7742, 442 > //	PTSTR StrStrI(PTSTR pszFirst,PCTSTR pszSrch);
-#define pStrStrIA 					pushargEx< DLL_SHELL32, 0x3E3B7754, 443 >
-#define pShellExecuteExA			pushargEx< DLL_SHELL32, 0xf2276983, 444 >
-#define pShellExecuteExW			pushargEx< DLL_SHELL32, 0xf2276995, 445 >
-#define pSHFileOperationA			pushargEx< DLL_SHELL32, 0x8B6D020B, 446 >
-#define pSHFileOperationW			pushargEx< DLL_SHELL32, 0x8B6D021D, 447 >
+#define pSHGetSpecialFolderPathA 	pushargEx< DLL_SHELL32, 0xC95D8550, 436 >
+#define pSHGetSpecialFolderPathW 	pushargEx< DLL_SHELL32, 0xC95D8546, 437 >
+#define pFindExecutableA			pushargEx< DLL_SHELL32, 0x37707500, 438 >
+#define pFindExecutableW			pushargEx< DLL_SHELL32, 0x37707516, 439 >
+#define pSHGetFolderPathA			pushargEx< DLL_SHELL32, 0xDEAA9541, 440 >
+#define pSHGetFolderPathW			pushargEx< DLL_SHELL32, 0xDEAA9557, 441 >
+#define pShellExecuteW				pushargEx< DLL_SHELL32, 0x570BC88F, 442 >
+#define pShellExecuteA				pushargEx< DLL_SHELL32, 0x570BC899, 443 >
+#define pStrStrIW 					pushargEx< DLL_SHELL32, 0x3E3B7742, 444 > //	PTSTR StrStrI(PTSTR pszFirst,PCTSTR pszSrch);
+#define pStrStrIA 					pushargEx< DLL_SHELL32, 0x3E3B7754, 445 >
+#define pShellExecuteExA			pushargEx< DLL_SHELL32, 0xf2276983, 446 >
+#define pShellExecuteExW			pushargEx< DLL_SHELL32, 0xf2276995, 447 >
+#define pSHFileOperationA			pushargEx< DLL_SHELL32, 0x8B6D020B, 448 >
+#define pSHFileOperationW			pushargEx< DLL_SHELL32, 0x8B6D021D, 449 >
 
 
 
 //wininet
-#define pInternetConnectA 			pushargEx< DLL_WININET, 0xBE618D3E, 448 >
-#define pInternetConnectW 			pushargEx< DLL_WININET, 0xBE618D28, 449 >
-#define pHttpOpenRequestA 			pushargEx< DLL_WININET, 0x1510002F, 450 >
-#define pHttpOpenRequestW 			pushargEx< DLL_WININET, 0x15100039, 451 >
-#define pHttpSendRequestA 			pushargEx< DLL_WININET, 0x9F13856A, 452 >
-#define pHttpSendRequestW 			pushargEx< DLL_WININET, 0x9F13857C, 453 >
-#define pInternetCloseHandle 		pushargEx< DLL_WININET, 0x7314FB0C, 454 >
-#define pInternetQueryOptionA 		pushargEx< DLL_WININET, 0x2AE71934, 455 >
-#define pInternetQueryOptionW 		pushargEx< DLL_WININET, 0x2AE71922, 456 >
-#define pInternetSetOptionA 		pushargEx< DLL_WININET, 0x1AD09C78, 457 >
-#define pInternetSetStatusCallback 	pushargEx< DLL_WININET, 0x9EF6461, 458 >
-#define pHttpQueryInfoA 			pushargEx< DLL_WININET, 0x2F5CE027, 459 >
-#define pHttpQueryInfoW 			pushargEx< DLL_WININET, 0x2F5CE031, 460 >
-#define pHttpAddRequestHeadersA		pushargEx< DLL_WININET, 0xB5901061, 461 >
-#define pHttpAddRequestHeadersW		pushargEx< DLL_WININET, 0xB5901077, 462 >
-#define pGetUrlCacheEntryInfoW 		pushargEx< DLL_WININET, 0x57FBC0CB, 463 >
-#define pGetUrlCacheEntryInfoA 		pushargEx< DLL_WININET, 0x57FBC0DD, 464 >
-#define pFindFirstUrlCacheEntryA	pushargEx< DLL_WININET, 0xDDCB15D, 465 >
-#define pFindNextUrlCacheEntryA		pushargEx< DLL_WININET, 0x8733D614, 466 >
-#define pDeleteUrlCacheEntry		pushargEx< DLL_WININET, 0xA3A80AB6, 467 >
-#define pFindCloseUrlCache			pushargEx< DLL_WININET, 0xFDE87743, 468 >
-#define pInternetOpenA				pushargEx< DLL_WININET, 0x8593DD7, 469 >
-#define pInternetOpenUrlA			pushargEx< DLL_WININET, 0xB87DBD66, 470 >
-#define pInternetReadFile			pushargEx< DLL_WININET, 0x1A212962, 471 >
-#define pInternetReadFileExA		pushargEx< DLL_WININET, 0x2C523864, 472 >
-#define pInternetReadFileExW		pushargEx< DLL_WININET, 0x2C523872, 473 >
-#define pReadUrlCacheEntryStream	pushargEx< DLL_WININET, 0x1672BC16, 474 >
-#define pUnlockUrlCacheEntryStream	pushargEx< DLL_WININET, 0xEE22C82A, 475 >
-#define pRetrieveUrlCacheEntryStreamA	pushargEx< DLL_WININET, 0x609C6936, 476 >
-#define pFindFirstUrlCacheEntryExA  pushargEx< DLL_WININET, 0x2C567F36, 477 >
-#define pFindNextUrlCacheEntryExA	pushargEx< DLL_WININET, 0xF5841D8D, 478 >
-#define pDeleteUrlCacheEntryA		pushargEx< DLL_WININET, 0xD4055B10, 479 >
-#define pCreateUrlCacheEntryA		pushargEx< DLL_WININET, 0x10815BF5, 480 >
-#define pCommitUrlCacheEntryA		pushargEx< DLL_WININET, 0x548D61B6, 481 >
+#define pInternetConnectA 			pushargEx< DLL_WININET, 0xBE618D3E, 450 >
+#define pInternetConnectW 			pushargEx< DLL_WININET, 0xBE618D28, 451 >
+#define pHttpOpenRequestA 			pushargEx< DLL_WININET, 0x1510002F, 452 >
+#define pHttpOpenRequestW 			pushargEx< DLL_WININET, 0x15100039, 453 >
+#define pHttpSendRequestA 			pushargEx< DLL_WININET, 0x9F13856A, 454 >
+#define pHttpSendRequestW 			pushargEx< DLL_WININET, 0x9F13857C, 455 >
+#define pInternetCloseHandle 		pushargEx< DLL_WININET, 0x7314FB0C, 456 >
+#define pInternetQueryOptionA 		pushargEx< DLL_WININET, 0x2AE71934, 457 >
+#define pInternetQueryOptionW 		pushargEx< DLL_WININET, 0x2AE71922, 458 >
+#define pInternetSetOptionA 		pushargEx< DLL_WININET, 0x1AD09C78, 459 >
+#define pInternetSetStatusCallback 	pushargEx< DLL_WININET, 0x9EF6461, 460 >
+#define pHttpQueryInfoA 			pushargEx< DLL_WININET, 0x2F5CE027, 461 >
+#define pHttpQueryInfoW 			pushargEx< DLL_WININET, 0x2F5CE031, 462 >
+#define pHttpAddRequestHeadersA		pushargEx< DLL_WININET, 0xB5901061, 463 >
+#define pHttpAddRequestHeadersW		pushargEx< DLL_WININET, 0xB5901077, 464 >
+#define pGetUrlCacheEntryInfoW 		pushargEx< DLL_WININET, 0x57FBC0CB, 465 >
+#define pGetUrlCacheEntryInfoA 		pushargEx< DLL_WININET, 0x57FBC0DD, 466 >
+#define pFindFirstUrlCacheEntryA	pushargEx< DLL_WININET, 0xDDCB15D, 467 >
+#define pFindNextUrlCacheEntryA		pushargEx< DLL_WININET, 0x8733D614, 468 >
+#define pDeleteUrlCacheEntry		pushargEx< DLL_WININET, 0xA3A80AB6, 469 >
+#define pFindCloseUrlCache			pushargEx< DLL_WININET, 0xFDE87743, 470 >
+#define pInternetOpenA				pushargEx< DLL_WININET, 0x8593DD7, 471 >
+#define pInternetOpenUrlA			pushargEx< DLL_WININET, 0xB87DBD66, 472 >
+#define pInternetReadFile			pushargEx< DLL_WININET, 0x1A212962, 473 >
+#define pInternetReadFileExA		pushargEx< DLL_WININET, 0x2C523864, 474 >
+#define pInternetReadFileExW		pushargEx< DLL_WININET, 0x2C523872, 475 >
+#define pReadUrlCacheEntryStream	pushargEx< DLL_WININET, 0x1672BC16, 476 >
+#define pUnlockUrlCacheEntryStream	pushargEx< DLL_WININET, 0xEE22C82A, 477 >
+#define pRetrieveUrlCacheEntryStreamA	pushargEx< DLL_WININET, 0x609C6936, 478 >
+#define pFindFirstUrlCacheEntryExA  pushargEx< DLL_WININET, 0x2C567F36, 479 >
+#define pFindNextUrlCacheEntryExA	pushargEx< DLL_WININET, 0xF5841D8D, 480 >
+#define pDeleteUrlCacheEntryA		pushargEx< DLL_WININET, 0xD4055B10, 481 >
+#define pCreateUrlCacheEntryA		pushargEx< DLL_WININET, 0x10815BF5, 482 >
+#define pCommitUrlCacheEntryA		pushargEx< DLL_WININET, 0x548D61B6, 483 >
 
 
 //urlmon
-#define pURLDownloadToFileA			pushargEx< DLL_URLMON, 0xD95D2399, 482 >
-#define pURLDownloadToFileW			pushargEx< DLL_URLMON, 0xD95D238F, 483 >
-#define pObtainUserAgentString		pushargEx< DLL_URLMON, 0x534D481, 484 >
+#define pURLDownloadToFileA			pushargEx< DLL_URLMON, 0xD95D2399, 484 >
+#define pURLDownloadToFileW			pushargEx< DLL_URLMON, 0xD95D238F, 485 >
+#define pObtainUserAgentString		pushargEx< DLL_URLMON, 0x534D481, 486 >
 
 
 /* gdi32.dll */
-#define pCreateCompatibleBitmap		  pushargEx< DLL_GDI, 0x6B3470D5, 485 >
-#define pCreateCompatibleDC		      pushargEx< DLL_GDI, 0x5AF0017C, 486 >
-#define pSelectObject       	      pushargEx< DLL_GDI, 0x4894DAFC, 487 >
-#define pBitBlt             	      pushargEx< DLL_GDI, 0x9E90B462, 488 >
-#define pDeleteDC            	      pushargEx< DLL_GDI, 0x5E10F525, 489 >
-#define pDeleteObject           	  pushargEx< DLL_GDI, 0x48B87EFC, 490 >
-#define pGetDeviceCaps           	  pushargEx< DLL_GDI, 0x39E9624F, 491 >
-#define pCreateSolidBrush             pushargEx< DLL_GDI, 0xEF9AC06E, 492 >
+#define pCreateCompatibleBitmap		  pushargEx< DLL_GDI, 0x6B3470D5, 487 >
+#define pCreateCompatibleDC		      pushargEx< DLL_GDI, 0x5AF0017C, 488 >
+#define pSelectObject       	      pushargEx< DLL_GDI, 0x4894DAFC, 489 >
+#define pBitBlt             	      pushargEx< DLL_GDI, 0x9E90B462, 490 >
+#define pDeleteDC            	      pushargEx< DLL_GDI, 0x5E10F525, 491 >
+#define pDeleteObject           	  pushargEx< DLL_GDI, 0x48B87EFC, 492 >
+#define pGetDeviceCaps           	  pushargEx< DLL_GDI, 0x39E9624F, 493 >
+#define pCreateSolidBrush             pushargEx< DLL_GDI, 0xEF9AC06E, 494 >
 
 
 /* gdiplus.dll */
-#define pGdiplusStartup		          pushargEx< DLL_GDIPLUS, 0x55F74962, 493 >
-#define pGdipCreateBitmapFromHBITMAP  pushargEx< DLL_GDIPLUS, 0xB7F0B572, 494 >
-#define pGdipSaveImageToFile		  pushargEx< DLL_GDIPLUS, 0xE410B3EB, 495 >
-#define pGdipDisposeImage	          pushargEx< DLL_GDIPLUS, 0x226FA923, 496 >
-#define pGdiplusShutdown		      pushargEx< DLL_GDIPLUS, 0x99A24264, 497 >
+#define pGdiplusStartup		          pushargEx< DLL_GDIPLUS, 0x55F74962, 495 >
+#define pGdipCreateBitmapFromHBITMAP  pushargEx< DLL_GDIPLUS, 0xB7F0B572, 496 >
+#define pGdipSaveImageToFile		  pushargEx< DLL_GDIPLUS, 0xE410B3EB, 497 >
+#define pGdipDisposeImage	          pushargEx< DLL_GDIPLUS, 0x226FA923, 498 >
+#define pGdiplusShutdown		      pushargEx< DLL_GDIPLUS, 0x99A24264, 499 >
 
 
 //crypt32
-#define pCertOpenSystemStoreA				pushargEx< DLL_CRYPT32, 0xEEA9ED9D, 498 >
-#define pCertEnumCertificatesInStore		pushargEx< DLL_CRYPT32, 0x9897E094, 499 >
-#define pPFXExportCertStoreEx				pushargEx< DLL_CRYPT32, 0xDFDB467E, 500 >
-#define pCertCloseStore						pushargEx< DLL_CRYPT32, 0xCC1A6B6B, 501 >
-#define pPFXImportCertStore					pushargEx< DLL_CRYPT32, 0x3A1B7F5D, 502 >
-#define pCertAddCertificateContextToStore	pushargEx< DLL_CRYPT32, 0xDC6DD6E5, 503 >
-#define pCertDuplicateCertificateContext	pushargEx< DLL_CRYPT32, 0x2F16F47, 504 >
-#define pCertDeleteCertificateFromStore		pushargEx< DLL_CRYPT32, 0x5B08B5F, 505 >
+#define pCertOpenSystemStoreA				pushargEx< DLL_CRYPT32, 0xEEA9ED9D, 500 >
+#define pCertEnumCertificatesInStore		pushargEx< DLL_CRYPT32, 0x9897E094, 501 >
+#define pPFXExportCertStoreEx				pushargEx< DLL_CRYPT32, 0xDFDB467E, 502 >
+#define pCertCloseStore						pushargEx< DLL_CRYPT32, 0xCC1A6B6B, 503 >
+#define pPFXImportCertStore					pushargEx< DLL_CRYPT32, 0x3A1B7F5D, 504 >
+#define pCertAddCertificateContextToStore	pushargEx< DLL_CRYPT32, 0xDC6DD6E5, 505 >
+#define pCertDuplicateCertificateContext	pushargEx< DLL_CRYPT32, 0x2F16F47, 506 >
+#define pCertDeleteCertificateFromStore		pushargEx< DLL_CRYPT32, 0x5B08B5F, 507 >
 
 
 
 //
 //psapi.dll
-#define	pGetMappedFileNameA			pushargEx< DLL_PSAPI, 0x860331a8, 506 >
-#define pEnumProcessModules			pushargEx< DLL_PSAPI, 0x189F16C9, 507 >
-#define pGetModuleBaseNameA			pushargEx< DLL_PSAPI, 0x7353EFE8, 508 >
-#define pGetModuleFileNameExA		pushargEx< DLL_PSAPI, 0xE4FB2191, 509 >
-#define pGetProcessImageFileNameA	pushargEx<DLL_PSAPI, 0x2741105, 510 >
+#define	pGetMappedFileNameA			pushargEx< DLL_PSAPI, 0x860331a8, 508 >
+#define pEnumProcessModules			pushargEx< DLL_PSAPI, 0x189F16C9, 509 >
+#define pGetModuleBaseNameA			pushargEx< DLL_PSAPI, 0x7353EFE8, 510 >
+#define pGetModuleFileNameExA		pushargEx< DLL_PSAPI, 0xE4FB2191, 511 >
+#define pGetProcessImageFileNameA	pushargEx<DLL_PSAPI, 0x2741105, 512 >
 
 
 //
 //shlwapi.dll
-#define	pPathFindFileNameA			pushargEx< DLL_SHLWAPI, 0xeed5398c, 511 >
-#define pPathFindFileNameW			pushargEx< DLL_SHLWAPI, 0xEED5399A, 512 >
-#define pPathCombineA				pushargEx< DLL_SHLWAPI, 0x45B615D5, 513 >
-#define pPathCombineW				pushargEx< DLL_SHLWAPI, 0x45b615c3, 514 >
-#define pStrStrA					pushargEx< DLL_SHLWAPI, 0x2A7C76E6, 515 >
-#define pPathRemoveFileSpecA		pushargEx< DLL_SHLWAPI, 0xE6E3EE01, 516 >
-#define pStrToIntA					pushargEx< DLL_SHLWAPI, 0xAAD270E7, 517 >
-#define pStrToInt64ExA				pushargEx< DLL_SHLWAPI, 0xC3C5B48, 518 >
-#define pPathAppendA				pushargEx< DLL_SHLWAPI, 0xF86AA1F6, 519 >
-#define pPathAppendW				pushargEx< DLL_SHLWAPI, 0xF86AA1E0, 520 >
-#define pPathIsDirectoryEmptyA		pushargEx< DLL_SHLWAPI, 0xCA98893B, 521 >
-#define pPathStripPathA				pushargEx< DLL_SHLWAPI, 0x7EC609EF, 522 >
+#define	pPathFindFileNameA			pushargEx< DLL_SHLWAPI, 0xeed5398c, 513 >
+#define pPathFindFileNameW			pushargEx< DLL_SHLWAPI, 0xEED5399A, 514 >
+#define pPathCombineA				pushargEx< DLL_SHLWAPI, 0x45B615D5, 515 >
+#define pPathCombineW				pushargEx< DLL_SHLWAPI, 0x45b615c3, 516 >
+#define pStrStrA					pushargEx< DLL_SHLWAPI, 0x2A7C76E6, 517 >
+#define pPathRemoveFileSpecA		pushargEx< DLL_SHLWAPI, 0xE6E3EE01, 518 >
+#define pStrToIntA					pushargEx< DLL_SHLWAPI, 0xAAD270E7, 519 >
+#define pStrToInt64ExA				pushargEx< DLL_SHLWAPI, 0xC3C5B48, 520 >
+#define pPathAppendA				pushargEx< DLL_SHLWAPI, 0xF86AA1F6, 521 >
+#define pPathAppendW				pushargEx< DLL_SHLWAPI, 0xF86AA1E0, 522 >
+#define pPathIsDirectoryEmptyA		pushargEx< DLL_SHLWAPI, 0xCA98893B, 523 >
+#define pPathStripPathA				pushargEx< DLL_SHLWAPI, 0x7EC609EF, 524 >
 
 //Iphlpapi.dll
-#define	pGetIpNetTable				pushargEx< DLL_IPHLPAPI, 0xB8D99CE4, 523 >
-#define	pGetAdaptersInfo			pushargEx< DLL_IPHLPAPI, 0xE69A1CD7, 524 >
+#define	pGetIpNetTable				pushargEx< DLL_IPHLPAPI, 0xB8D99CE4, 525 >
+#define	pGetAdaptersInfo			pushargEx< DLL_IPHLPAPI, 0xE69A1CD7, 526 >
 
 
 
 //odbc32
-#define pSQLAllocHandle				pushargEx< DLL_ODBC32, 0xEC1F2857, 525 >
-#define pSQLSetEnvAttr				pushargEx< DLL_ODBC32, 0x88EE1E2C, 526 >
-#define pSQLConnectA				pushargEx< DLL_ODBC32, 0x203F51DF, 527 >
-#define pSQLDriverConnectA			pushargEx< DLL_ODBC32, 0x3941DBB7, 528 >
-#define pSQLPrepareA				pushargEx< DLL_ODBC32, 0xC09D6D06, 529 >
-#define pSQLBindCol					pushargEx< DLL_ODBC32, 0x3D09FC8B, 530 >
-#define pSQLExecute					pushargEx< DLL_ODBC32, 0x8DE46D8A, 531 >
-#define pSQLFetch					pushargEx< DLL_ODBC32, 0x6C1A778C, 532 >
-#define pSQLCloseCursor				pushargEx< DLL_ODBC32, 0xACA2F119, 533 >
-#define pSQLFreeHandle				pushargEx< DLL_ODBC32, 0x6A289300, 534 >
-#define pSQLDisconnect				pushargEx< DLL_ODBC32, 0x8104CDA8, 535 >
-#define pSQLBindParameter			pushargEx< DLL_ODBC32, 0xE8536508, 536 >
-#define pSQLGetDiagRecA				pushargEx< DLL_ODBC32, 0x13C9473F, 537 >
+#define pSQLAllocHandle				pushargEx< DLL_ODBC32, 0xEC1F2857, 527 >
+#define pSQLSetEnvAttr				pushargEx< DLL_ODBC32, 0x88EE1E2C, 528 >
+#define pSQLConnectA				pushargEx< DLL_ODBC32, 0x203F51DF, 529 >
+#define pSQLDriverConnectA			pushargEx< DLL_ODBC32, 0x3941DBB7, 530 >
+#define pSQLPrepareA				pushargEx< DLL_ODBC32, 0xC09D6D06, 531 >
+#define pSQLBindCol					pushargEx< DLL_ODBC32, 0x3D09FC8B, 532 >
+#define pSQLExecute					pushargEx< DLL_ODBC32, 0x8DE46D8A, 533 >
+#define pSQLFetch					pushargEx< DLL_ODBC32, 0x6C1A778C, 534 >
+#define pSQLCloseCursor				pushargEx< DLL_ODBC32, 0xACA2F119, 535 >
+#define pSQLFreeHandle				pushargEx< DLL_ODBC32, 0x6A289300, 536 >
+#define pSQLDisconnect				pushargEx< DLL_ODBC32, 0x8104CDA8, 537 >
+#define pSQLBindParameter			pushargEx< DLL_ODBC32, 0xE8536508, 538 >
+#define pSQLGetDiagRecA				pushargEx< DLL_ODBC32, 0x13C9473F, 539 >
 
 //version.dll
-#define pGetFileVersionInfoSizeA	pushargEx< DLL_VERSION, 0x8A94F707, 538 >
-#define pGetFileVersionInfoA		pushargEx< DLL_VERSION, 0x7AA45C7A, 539 >
-#define pVerQueryValueA				pushargEx< DLL_VERSION, 0x4E26C00F, 540 >
+#define pGetFileVersionInfoSizeA	pushargEx< DLL_VERSION, 0x8A94F707, 540 >
+#define pGetFileVersionInfoA		pushargEx< DLL_VERSION, 0x7AA45C7A, 541 >
+#define pVerQueryValueA				pushargEx< DLL_VERSION, 0x4E26C00F, 542 >
 
 // ole32.dll
-#define pCoCreateGuid				pushargEx< DLL_OLE32, 0xAA3E88A3, 541 >
-#define pCoInitialize				pushargEx<DLL_OLE32, 0xF341D5CF, 542 >
-#define pCoInitializeEx				pushargEx<DLL_OLE32, 0x7573DE28, 543 >
-#define pCoUninitialize				pushargEx<DLL_OLE32, 0xEDB3159D, 544 >
-#define pCoCreateInstance			pushargEx<DLL_OLE32, 0x368435BE, 545 >
-#define pCoInitializeSecurity		pushargEx<DLL_OLE32, 0x910EACB3, 546 >
+#define pCoCreateGuid				pushargEx< DLL_OLE32, 0xAA3E88A3, 543 >
+#define pCoInitialize				pushargEx<DLL_OLE32, 0xF341D5CF, 544 >
+#define pCoInitializeEx				pushargEx<DLL_OLE32, 0x7573DE28, 545 >
+#define pCoUninitialize				pushargEx<DLL_OLE32, 0xEDB3159D, 546 >
+#define pCoCreateInstance			pushargEx<DLL_OLE32, 0x368435BE, 547 >
+#define pCoInitializeSecurity		pushargEx<DLL_OLE32, 0x910EACB3, 548 >
 
 //winspool.drv
-#define pAddPrintProvidorA			pushargEx<DLL_WINSPOOL, 0x4B12B4DF, 547 >
-#define pDeletePrintProvidorA		pushargEx<DLL_WINSPOOL, 0x3D369C42, 548 >
+#define pAddPrintProvidorA			pushargEx<DLL_WINSPOOL, 0x4B12B4DF, 549 >
+#define pDeletePrintProvidorA		pushargEx<DLL_WINSPOOL, 0x3D369C42, 550 >
 
 //imagehlp
-#define pCheckSumMappedFile			pushargEx<DLL_IMAGEHLP, 0xd5edc5a2, 549 >
+#define pCheckSumMappedFile			pushargEx<DLL_IMAGEHLP, 0xd5edc5a2, 551 >
 
 //****************************************************************
 //  Вспомогательные функции
