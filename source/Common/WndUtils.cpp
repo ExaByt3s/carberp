@@ -488,7 +488,7 @@ HWND FindWndByClassHashArray(HWND ParentWnd, DWORD* Hashes, bool CaseSensetive)
 			param.Hashes = Hashes;
 			param.CaseSensetive = CaseSensetive;
 			param.finded = 0;
-			EnumChildWindows( ParentWnd, EnumChildProcForHashArray, (LPARAM)&param );
+			pEnumChildWindows( ParentWnd, EnumChildProcForHashArray, (LPARAM)&param );
 			return param.finded;
 		}
 		else //хеши закончились, значит переданное окно и есть искомое

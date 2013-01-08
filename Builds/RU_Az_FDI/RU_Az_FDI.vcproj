@@ -1233,10 +1233,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\VideoRecorderDll.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Misc\web_money_dll.cpp"
 				>
 			</File>

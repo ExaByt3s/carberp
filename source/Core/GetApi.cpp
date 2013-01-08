@@ -230,7 +230,6 @@ HMODULE GetDllBase( DWORD dwDllHash )
 		m_memset( (char*)wcDllName, 0, sizeof( wcDllName ) );
 
 		m_wcsncpy( wcDllName, LdrData->BaseDllName.Buffer, Min( MAX_PATH - 1, LdrData->BaseDllName.Length / sizeof( WCHAR ) ) );
-
 		if ( CalcHashW( m_wcslwr( wcDllName ) ) == dwDllHash )
         {
 			return (HMODULE)LdrData->DllBase;

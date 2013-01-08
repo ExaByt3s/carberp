@@ -503,9 +503,9 @@ BOOL WINAPI HttpSendRequestHandler(BOOL bType, HINTERNET hRequest,
 										dwOptionalLength);
 	}
 	else
-		SetLastError(2);
+		pSetLastError(2);
 
-    DWORD Err = GetLastError();
+    DWORD Err = pGetLastError();
 	return ret;
 }
 

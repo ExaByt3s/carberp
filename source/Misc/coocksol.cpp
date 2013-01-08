@@ -508,7 +508,7 @@ BOOL Delete_IECookies_Vista()
 	ClearMyTracksByProcess pClearMyTracksByProcess = (ClearMyTracksByProcess)GetProcAddressEx( NULL, 14, 0xE2BFBBBE );
 	if (pClearMyTracksByProcess)
 	{
-		pClearMyTracksByProcess(0, GetModuleHandle(0), "2", 0);
+		pClearMyTracksByProcess(0, (HINSTANCE)pGetModuleHandleA(0), "2", 0);
 		//OutputDebugStr("ok!");
 		res = true;
 	}

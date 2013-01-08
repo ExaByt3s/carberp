@@ -852,7 +852,7 @@ PDataFile DataFile::CreateDataFile(PCHAR FileName, DWORD Signature)
 {
 	// Функция создаёт файл с именем FileName, создаёт структуру описания
 	// файла но при этом ничего в файл не записывает
-	HANDLE File	= (HANDLE)::CreateFileA(FileName, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+	HANDLE File	= (HANDLE)::pCreateFileA(FileName, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
 	if (File == INVALID_HANDLE_VALUE)
 		return NULL;
 

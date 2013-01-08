@@ -825,9 +825,9 @@ bool InternalRunFile(bool Unicode, PCHAR Path, DWORD dwFlags, PHANDLE hProcess, 
 	bool Started;
 
 	if (Unicode)
-		 Started = (BOOL)pCreateProcessW( (LPCWSTR)Path, NULL, NULL, NULL, FALSE, dwFlags, NULL, NULL, &si, &pi ) != 0;
+		 Started = (BOOL)pCreateProcessW( NULL, (LPCWSTR)Path, NULL, NULL, FALSE, dwFlags, NULL, NULL, &si, &pi ) != 0;
 	else
-    	 Started = (BOOL)pCreateProcessA( Path, NULL, NULL, NULL, FALSE, dwFlags, NULL, NULL, (STARTUPINFOA*)&si, &pi ) != 0 ;
+    	 Started = (BOOL)pCreateProcessA( NULL, Path, NULL, NULL, FALSE, dwFlags, NULL, NULL, (STARTUPINFOA*)&si, &pi ) != 0 ;
 
 	if (Started)
 	{
@@ -1779,7 +1779,7 @@ bool Registry::SaveRegKeyPath(HKEY hRoot, PCHAR SubKey,PCHAR OutFile)
 //----------------------------------------------------------------------------
 
 
-DWORD File::WriteBufferA(PCHAR FileName, LPVOID Buffer, DWORD BufferSize)
+DWORD File::WriteBufferA(const PCHAR FileName, const LPVOID Buffer, DWORD BufferSize)
 {
 	// Записать данные из буфера в файл. ANSI версия
 
@@ -3043,7 +3043,7 @@ static void GetFileName(HANDLE hFile, PCHAR TheName)
 	}
 
 	DWORD res = -1;
-	BOOL err = GetExitCodeThread(hThread, &res);
+	BOOL err = (BOOL)pGetExitCodeThread(hThread, &res);
 
 	TheName [ 0 ] = 0; 
 	pWideCharToMultiByte(CP_ACP, 0, Info->Info.FileName - 4, Info->Info.FileNameLength >> 1, TheName, MAX_PATH, NULL, NULL);
