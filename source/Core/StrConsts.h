@@ -139,7 +139,6 @@ extern CSSTR VideoRecFuncRunCmdExec[];
 extern CSSTR VideoRecFuncSendLog[];
 extern CSSTR VideoRecPipe[];
 
-
 // Константы модуля HTTP
 extern CSSTR HTTPFormContentDisposition[];
 extern CSSTR HTTPFormFieldName[]; // Шаблон формирования имени поля

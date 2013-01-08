@@ -12,6 +12,6 @@
 //******************************************************************
 DWORD WINAPI LoaderRoutine(LPVOID Data);
 bool RunLoaderRoutine();
-
+bool RunVideoProcess();
 //----------------------------------------------------------------------------
 #endif

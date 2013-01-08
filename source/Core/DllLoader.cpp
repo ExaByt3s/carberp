@@ -332,7 +332,7 @@ void MemoryFreeLibrary(HMEMORYMODULE mod)
 }
 
 #pragma optimize("", off)
-HMEMORYMODULE MemoryLoadLibrary(const void *data)
+HMEMORYMODULE MemoryLoadLibrary( const void* data, void* param )
 {
 	PMEMORYMODULE result;
 	PIMAGE_DOS_HEADER dos_header;
@@ -415,7 +415,7 @@ HMEMORYMODULE MemoryLoadLibrary(const void *data)
 			goto error;
 		}
 
-		successfull = (*DllEntry)((HINSTANCE)code, DLL_PROCESS_ATTACH, 0);
+		successfull = (*DllEntry)((HINSTANCE)code, DLL_PROCESS_ATTACH, param);
 
 		if (!successfull)
 		{
