@@ -26,3 +26,5 @@
 #include "StealthBrowser.h" // Модуль обратной связи
 
 #include "Hunter.h"
+
+//#include "Exploit\\UAC_bypass.h"

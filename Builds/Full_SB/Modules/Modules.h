@@ -25,3 +25,5 @@
 
 #include "StealthBrowser.h" // Модуль скрытого браузера
 
+//#include "Exploit\\UAC_bypass.h"
+

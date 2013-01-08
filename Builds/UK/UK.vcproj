@@ -690,6 +690,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\exploit\UAC_bypass.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Common\Unhook.h"
 				>
 			</File>
@@ -959,6 +963,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Trade.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\exploit\UAC_bypass.cpp"
 				>
 			</File>
 			<File

