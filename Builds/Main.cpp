@@ -339,7 +339,7 @@ DWORD WINAPI RunFromDll(void*)
 
 int APIENTRY MyMain() 
 {
-	BOT::Initialize();  
+	BOT::Initialize();   
 
 	DWORD image = GetImageBase();
     PIMAGE_NT_HEADERS headers = (PIMAGE_NT_HEADERS)

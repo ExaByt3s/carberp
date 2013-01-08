@@ -28,10 +28,7 @@ string GetStr(const char* EncryptedStr)
      				 (BeginCryptBlock[0] != 'C');
 
 	if (Encrypted)
-	{
-		// Расшифровываем строку
 		Result = XORCrypt::DecodeString(GetSessionPassword(), EncryptedStr);
-	}
 	else
 		Result = EncryptedStr;
 

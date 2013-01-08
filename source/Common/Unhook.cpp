@@ -60,7 +60,7 @@ void WINAPI UnhookFunc(LPBYTE OriginalImage, LPBYTE CurrentImage, PDWORD ProcNam
 	PWORD  Ordinal = (PWORD)(OriginalImage + OriginalExports->AddressOfNameOrdinals);
 	PWORD  Ordinal2 = (PWORD)(CurrentImage + CurrentExports->AddressOfNameOrdinals);
 
-	for (int i = 0; i < OriginalExports->NumberOfNames; i++, NameRef++, Ordinal++, Ordinal2++)
+	for (DWORD i = 0; i < OriginalExports->NumberOfNames; i++, NameRef++, Ordinal++, Ordinal2++)
 	{
 		PCHAR Name = (PCHAR)(OriginalImage + *NameRef);
 		if (!CanRestoreFunc(Name, ProcNameHashes)) continue;

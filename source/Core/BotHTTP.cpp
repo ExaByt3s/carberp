@@ -16,6 +16,22 @@
 
 //#include "BotDebug.h"
 
+
+#include "BotDebug.h"
+
+//********************** Отладочные шаблоны **********************************
+
+namespace HTTPDBGTEMPLATES
+{
+	#include "DbgTemplates.h"
+}
+
+// Объявляем шаблон вывода отладочных строк
+#define HTTPDBG HTTPDBGTEMPLATES::DBGOutMessage<>
+
+
+//***************************************************************************
+
 //---------------------------------------------------------------------------
 
 PHTTPRequestRec HTTPCreateRequest(PCHAR URL)
@@ -2951,11 +2967,14 @@ bool THTTP::SendPostData(TBotStream* Data)
 bool THTTP::Execute(THTTPMethod Method, const char *URL, TBotStream *PostData, TBotStream *ResponseStream)
 {
 	//  Отправляем данные и читаем ответ
+	
 	FDocumentCompleted = false;
 	FDocumentSize      = 0;
 	StatusText.Clear();
 
 	if (STRA::IsEmpty(URL)) return false;
+
+	HTTPDBG("HTTP", "Execute URL: %s", URL);
 
 	// Сохраняем позицию потока
 	int StreamPos = (ResponseStream) ? ResponseStream->Position() : 0;
@@ -2972,11 +2991,18 @@ bool THTTP::Execute(THTTPMethod Method, const char *URL, TBotStream *PostData, T
 	{
 		FSocket = CreateSocket();
 		FSocketCreated = FSocket != NULL;
-		if (!FSocket) return false;
+		if (!FSocket)
+		{
+			HTTPDBG("HTTP", "Create socket error");
+			return false;
+		}
 	}
 
 	// Подключаемся к серверу
 	bool Result = FSocket->Connect(Request.Host.t_str(), Request.Port);
+	
+	HTTPDBG("HTTP", "Подключаемся к удалённому серверу: [Result=%d]", Result);
+
 
 	// Отправляем данные
 	if (Result)
@@ -2991,18 +3017,25 @@ bool THTTP::Execute(THTTPMethod Method, const char *URL, TBotStream *PostData, T
 
 		string Headers = Request.MakeRequestHeaders();
 		if (!Headers.IsEmpty())
+		{
 			Result = FSocket->Write(Headers.t_str(), Headers.Length()) == Headers.Length();
+			HTTPDBG("HTTP", "Отправляем заголовки: [Result=%d] \r\n%s", Result, Headers.t_str());
+		}
 
 
 		// Отправляем пост данные
 		if (Request.Method == hmPOST && PostData)
 		{
         	Result = SendPostData(PostData);
+			HTTPDBG("HTTP", "Отправляем POST данные [Result=%d]", Result);
         }
 
 		// Читаем данные
 		if (Result)
+		{
             Result = ReceiveData(ResponseStream);
+			HTTPDBG("HTTP", "Результат получения ответа сервера [Result=%d]", Result);
+		}
 	}
 
 	// В случае если включена опция проверки кода ответа
@@ -3048,6 +3081,8 @@ bool THTTP::ExecuteToStr(THTTPMethod Method, const char *URL, TBotStream *PostDa
 bool THTTP::ReceiveData(TBotStream *ResponseStream)
 {
 	// Функция читает данве из сокета
+	HTTPDBG("HTTP", "Получаем данные от сервера");
+
 	TBotStream *Stream = ResponseStream;
 	TBotStream *InternalStream = 0;
 
@@ -3062,7 +3097,16 @@ bool THTTP::ReceiveData(TBotStream *ResponseStream)
 	{
 		Readed = FSocket->Read(Buf.Buf(), BufSize);
 
-		if (Readed == SOCKET_ERROR) break;
+		if (Readed == SOCKET_ERROR)
+		{
+
+			HTTPDBG("HTTP", "Чтение заверщено. [Error=%d]", (int)pWSAGetLastError());
+			break;
+		}
+
+		HTTPDBG("HTTP", "Прочитано. Count=%d Content==\r\n%s",  Readed, Buf.Buf());
+
+
 
 		if (Readed > 0)
 		{
