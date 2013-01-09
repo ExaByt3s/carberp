@@ -450,10 +450,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\KeepAlive.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\source\Common\KeyLogger.cpp"
 				>
 			</File>

