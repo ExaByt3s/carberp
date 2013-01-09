@@ -118,6 +118,7 @@ bool ProcessHTMLInjectRequest(const char* URL, bool DecodeParam, bool* CloseRequ
 //		string F;
 //		F.Format("Выполняется команда инжекта: %s; Параметры: %s", CmdStr.t_str(), Params);
 //		pMessageBoxA(0, F.t_str(), 0, 0);
+//		pOutputDebugStringA(F.t_str());
 
 		Command(CmdStr.t_str(), P);
 	}
