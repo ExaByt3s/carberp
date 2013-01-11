@@ -1153,13 +1153,27 @@ bool DataFile::CryptBlocks(PMemBlockList Blocks, LPVOID Key, TCryptMethod Method
 //                        TEventContainer
 //*****************************************************************************
 
+ TEventContainer::TEventContainer()
+ {
+	FEvents = NULL;
+    pInitializeCriticalSection(&FLock);
+ }
 
+TEventContainer::~TEventContainer()
+{
+	if (FEvents) delete FEvents;
+	pDeleteCriticalSection(&FLock);
+}
+
+
+
+// Информация о событии
 struct TEventItem
 {
 	int ID;
 	TBotEvent Event;
+	LPVOID    Data;
 };
-
 
 void FreeEventItem(TBotList*, LPVOID Item)
 {
@@ -1167,61 +1181,64 @@ void FreeEventItem(TBotList*, LPVOID Item)
 }
 
 
-TEventContainer::~TEventContainer()
-{
-	if (FEvents)
-        delete FEvents;
-}
-
-int TEventContainer::AttachEvent(int EventId, TBotEvent Event)
+//-----------------------------------------------------
+//  AttachEvent - Функция подключает событие к
+//                контейнеру событий
+//-----------------------------------------------------
+int TEventContainer::AttachEvent(int EventId, TBotEvent Event, LPVOID EventData)
 {
 	// Подключаем событие
-	if (Event == NULL)
-		return -1;
+	if (Event == NULL) return NULL;
+
 
 	if (FEvents == NULL)
 	{
 		FEvents = new TBotList();
 		FEvents->OnDelete = FreeEventItem;
 	}
-	else
+
+	// Проверяем  наличие такого события в списке
+	for (int i = 0; i < FEvents->Count(); i++)
 	{
-		// Проверяем  наличие такого события в списке
-		for (int i = 0; i < FEvents->Count(); i++)
-		{
-			TEventItem* Item = (TEventItem*)FEvents->GetItem(i);
-			if (Item->ID == EventId && Item->Event == Event)
-				return i;
-		}
-    }
+		TEventItem* Item = (TEventItem*)FEvents->GetItem(i);
+		if (Item->ID == EventId && Item->Event == Event)
+			return i;
+	}
 
-    int Index = -1;
-
+	int Index = -1;
 	TEventItem* Item = CreateStruct(TEventItem);
 	if (Item)
 	{
-		Item->ID = EventId;
+		Item->ID    = EventId;
 		Item->Event = Event;
+		Item->Data  = EventData;
 		Index = FEvents->Add(Item);
 	}
 	return Index;
 }
 
-void TEventContainer::DetachEvent(int Index)
+//-----------------------------------------------------
+//  DetachEvent - Функция отключает событие от
+//                контейнера событий
+//-----------------------------------------------------
+void TEventContainer::DetachEvent(int EventIndex)
 {
 	// Отключаем событие
-	if (FEvents && Index >= 0 && Index < FEvents->Count())
+	if (FEvents && EventIndex >= 0 && EventIndex < FEvents->Count())
 	{
-		TEventItem* Item = (TEventItem*)FEvents->GetItem(Index);
+		TEventItem* Item = (TEventItem*)FEvents->GetItem(EventIndex);
 		if (Item)
 		{
-			FEvents->SetItem(Index, NULL);
-			FreeEventItem(NULL, Item);
-        }
+			FEvents->SetItem(EventIndex, NULL);
+			FreeStruct(Item);
+		}
     }
 }
 
-void TEventContainer::CallEvent(int EventId, DWORD WParam, DWORD LParam)
+//-----------------------------------------------------
+//  CallEvent - Функция вызывает указанное событие
+//-----------------------------------------------------
+void TEventContainer::CallEvent(int EventId, LPVOID Param)
 {
 	// Вызываем событие
 	if (FEvents)
@@ -1229,9 +1246,9 @@ void TEventContainer::CallEvent(int EventId, DWORD WParam, DWORD LParam)
 		for (int i = 0; i < FEvents->Count(); i++)
 		{
 			TEventItem *Item = (TEventItem*)FEvents->GetItem(i);
-			if (Item && (Item->ID == 0 || Item->ID == EventId))
+			if (Item->ID == 0 || Item->ID == EventId)
 			{
-            	Item->Event(this, EventId, WParam, LParam);
+            	Item->Event(this, EventId, Item->Data, Param);
             }
 		}
     }
@@ -1240,7 +1257,7 @@ void TEventContainer::CallEvent(int EventId, DWORD WParam, DWORD LParam)
 
 void TEventContainer::CallEvent(int EventId)
 {
-	CallEvent(EventId, 0, 0);
+	CallEvent(EventId, NULL);
 }
 
 //*****************************************************************************

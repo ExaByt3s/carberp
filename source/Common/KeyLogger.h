@@ -8,6 +8,7 @@
 
 #include "GetApi.h"
 #include "Strings.h"
+#include "BotClasses.h"
 
 
 

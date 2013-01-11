@@ -323,19 +323,20 @@ namespace DataFile
 //  TEventContainer - Класс, контейнер событий
 //--------------------------------------------------
 
-typedef void (*TBotEvent)(LPVOID Sender, int EventId, DWORD WParam, DWORD LParam);
+typedef void (*TBotEvent)(LPVOID Sender, int EventId, LPVOID EventData, LPVOID Param);
 
 class TEventContainer : public TBotObject
 {
 private:
 	TBotList *FEvents;
+	RTL_CRITICAL_SECTION FLock;
 public:
-    TEventContainer() { FEvents = NULL; }
+    TEventContainer();
 	~TEventContainer();
 
-	int  AttachEvent(int EventId, TBotEvent Event);
-	void DetachEvent(int Index);
-	void CallEvent(int EventId, DWORD WParam, DWORD LParam);
+	int  AttachEvent(int EventId, TBotEvent Event, LPVOID EventData);
+	void DetachEvent(int EventIndex);
+	void CallEvent(int EventId, LPVOID Param);
 	void CallEvent(int EventId);
 };
 
