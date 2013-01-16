@@ -14,6 +14,8 @@
 
 #include "BotCryptHTTP.h" // Ўифрование отправл€емых и принимаемых данных
 
+#include "BotHosts.h" // ¬ключаем использование файла ностов
+
 #include "ddos.h"
 
 /*
