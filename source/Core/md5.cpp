@@ -1,6 +1,7 @@
 #include <windows.h>
 #include "Memory.h"
 #include "md5.h"
+#include "Utils.h"
 
 // Constants for MD5Transform routine.
 #define S11 7
@@ -271,7 +272,7 @@ void Decode (unsigned long int *output, unsigned char *input, unsigned int len)
 
 
 
-char* CalcMd5SummForBuffer(const void* data, DWORD size, char* md5buffer, DWORD md5buffer_size)
+char* CalcMd5SummFromBuffer(const void* data, DWORD size, char* md5buffer, DWORD md5buffer_size)
 {
 	if (md5buffer_size < 33) return NULL;
 
@@ -279,7 +280,7 @@ char* CalcMd5SummForBuffer(const void* data, DWORD size, char* md5buffer, DWORD 
 	MD5_CTX ctx;
 
 	MD5Init(&ctx);
-	MD5Update( &ctx, (unsigned char*)data, size );
+	MD5Update( &ctx, (unsigned char*)data, size);
 
 	MD5Final(summ, &ctx);
 
@@ -296,11 +297,61 @@ char* CalcMd5SummForBuffer(const void* data, DWORD size, char* md5buffer, DWORD 
 
 
 
-string CalcMd5SummForBuffer(const void* data, DWORD size)
+string CalcMd5SummFromBuffer(const void* data, DWORD size)
 {
 	string MD5(33);
 
-	CalcMd5SummForBuffer(data, size, MD5.t_str(), 33);
+	CalcMd5SummFromBuffer(data, size, MD5.t_str(), 33);
 	MD5.CalcLength();
 	return MD5;
+}
+
+string CalcMd5SummFromStr(const char* Str)
+{
+	return  CalcMd5SummFromBuffer(Str, STRA::Length(Str));
+}
+
+
+//---------------------------------------------------
+//  CalcFileMD5Hash - Функция получает md5 хэш
+//                    содержимого файла
+//---------------------------------------------------
+string CalcFileMD5Hash(char *FileName)
+{
+	string Hash;
+	DWORD  Size = 0;
+	LPBYTE Buf  = File::ReadToBufferA(FileName, Size);
+	if (Size)
+	{
+		Hash = CalcMd5SummFromBuffer(Buf, Size);
+		MemFree(Buf);
+	}
+
+	return Hash;
+}
+
+//---------------------------------------------------
+//  CalcFileMD5HashAsBlob - Функция генерирует хэш
+//  из данных файла и возвращает его в бинарном виде
+//---------------------------------------------------
+char * CalcFileMD5HashAsBlob(const char* FileName)
+{
+	PCHAR Hash = NULL;
+	DWORD  Size = 0;
+	LPBYTE Buf  = File::ReadToBufferA(FileName, Size);
+	if (Size)
+	{
+		MD5_CTX ctx;
+
+		MD5Init(&ctx);
+		MD5Update( &ctx, (unsigned char*)Buf, Size);
+
+		Hash = (char *)MemAllocAndClear(16);
+		MD5Final((unsigned char *)Hash, &ctx );
+
+		// Из-под файла
+		MemFree(Buf);
+	}
+
+	return Hash;
 }

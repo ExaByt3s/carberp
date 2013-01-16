@@ -662,6 +662,275 @@ void List::CopyFrom(PList Destination, PList Source)
 }
 
 
+// ----------------------------------------------------------------------------
+//
+//  Набор функция для работы со списками строк Strings
+//
+// ----------------------------------------------------------------------------
+
+typedef struct TStringsRec
+{
+	PList Items;
+	PCHAR LineDelimeter;
+	PCHAR ValueDelimeter;
+
+} *PStringsRec;
+
+
+PStrings Strings::Create()
+{
+	// Создать набор строк
+	PStringsRec Rec = CreateStruct(TStringsRec);
+
+	Rec->Items = List::Create();
+	List::SetFreeItemMehod(Rec->Items, (TFreeItemMethod)STR::Free);
+
+	Rec->LineDelimeter = STR::New("\r\n");
+	Rec->ValueDelimeter = STR::New("=");
+
+	return (PStrings)Rec;
+}
+// ----------------------------------------------------------------------------
+
+void Strings::Free(PStrings Strings)
+{
+	// Уничтожить набор строк
+	if (Strings == NULL)
+		return;
+
+	List::Free(PStringsRec(Strings)->Items);
+	STR::Free(PStringsRec(Strings)->LineDelimeter);
+	STR::Free(PStringsRec(Strings)->ValueDelimeter);
+
+	FreeStruct(Strings);
+}
+// ----------------------------------------------------------------------------
+
+void Strings::Clear(PStrings Strings)
+{
+	// Очистить набор строк
+	if (Strings != NULL)
+		List::Clear(PStringsRec(Strings)->Items);
+}
+// ----------------------------------------------------------------------------
+
+DWORD Strings::Count(PStrings Strings)
+{
+	// Получить количество строк
+	if (Strings == NULL)
+		return 0;
+	return List::Count(PStringsRec(Strings)->Items);
+}
+// ----------------------------------------------------------------------------
+
+int Strings::Add(PStrings Strings, PCHAR Str, bool Duplicate)
+{
+	// Добавить новую строку
+	if (Strings == NULL)
+		return -1;
+	PCHAR Tmp;
+	if (Duplicate)
+		Tmp = STR::New(Str);
+	else
+		Tmp = Str;
+	return List::Add(PStringsRec(Strings)->Items, (LPVOID)Tmp);
+}
+// ----------------------------------------------------------------------------
+
+void Strings::Delete(PStrings Strings, DWORD Index)
+{
+	// Удалить строку
+	if (Strings == NULL)
+		return;
+
+	List::Delete(PStringsRec(Strings)->Items, Index);
+}
+// ----------------------------------------------------------------------------
+
+int Strings::Remove(PStrings Strings, PCHAR Str)
+{
+	// Функция удаляет строку Str из списка
+	int Index = IndexOf(Strings, Str);
+	if (Index >= 0)
+		Delete(Strings, Index);
+	return Index;
+}
+// ----------------------------------------------------------------------------
+
+int Strings::IndexOf(PStrings Strings, PCHAR Str)
+{
+    // Функция возвращает позицию строки Str в списке
+	if (Strings == NULL) return -1;
+	PStringsRec R = (PStringsRec)Strings;
+
+	int Count = List::Count(R->Items);
+
+	for (int i = 0; i < Count; i++)
+	{
+		PCHAR S = (PCHAR)List::GetItem(R->Items, i);
+		if (StrSame(S, Str, true))
+        	return i;
+	}
+	return -1;
+}
+// ----------------------------------------------------------------------------
+
+PCHAR Strings::GetItem(PStrings Strings, DWORD Index, bool DuplicateStr)
+{
+	// Получит строку из позиции
+
+	if (Strings == NULL)
+		return NULL;
+	PCHAR Str = (PCHAR)List::GetItem(PStringsRec(Strings)->Items, Index);
+	if (DuplicateStr)
+		return STR::New(Str);
+	else
+		return Str;
+}
+// ----------------------------------------------------------------------------
+
+PCHAR Strings::GetText(PStrings Strings, PCHAR LineDelimeter)
+{
+	// Объеденяет все строки в одну. Если не указан
+	// разделитель то использован разделитель заданный в настройках
+	if (Strings == NULL)
+		return NULL;
+
+	PStringsRec SR = (PStringsRec)Strings;
+
+	DWORD Count = List::Count(SR->Items);
+	if (Count == 0)
+		return NULL;
+
+	// Инициализируем разделитель строк
+	PCHAR Del;
+	DWORD DelLen;
+
+	if (LineDelimeter != NULL)
+	{
+		Del = LineDelimeter;
+		DelLen = StrCalcLength(Del);
+	}
+	else
+	{
+		Del = SR->LineDelimeter;
+		DelLen = STR::Length(Del);
+	}
+
+	PCHAR S;
+	DWORD TotalLen = 0;
+	DWORD i;
+
+	// Рсчитываем длину строки
+	for (i = 0; i < Count; i++)
+	{
+		S = (PCHAR)List::GetItem(SR->Items, i);
+		TotalLen += STR::Length(S);
+		if (i < (Count - 1))
+			TotalLen += DelLen;
+	}
+
+	// Собираем строку
+	DWORD L;
+	PCHAR Result = STR::Alloc(TotalLen);
+
+	PCHAR Temp = Result;
+
+	for (i = 0; i < Count; i++)
+	{
+		S = (PCHAR)List::GetItem(SR->Items, i);
+		L = STR::Length(S);
+
+		m_memcpy(Temp, S, L);
+		Temp += L;
+
+		if (i < (Count - 1))
+		{
+			m_memcpy(Temp, Del, DelLen);
+			Temp += DelLen;
+		}
+	}
+
+	return Result;
+}
+
+//----------------------------------------------------------------------------
+
+void Strings::SetText(PStrings Strings, PCHAR Text)
+{
+	// Функция разбирает текст на строки разделённые символами новой
+	// строки и перевода каретки
+
+	if (Strings == NULL || Text == NULL)
+		return;
+	PStringsRec SR = (PStringsRec)Strings;
+	// очищаем список
+	List::Clear(SR->Items);
+
+	//Парсим текст
+	PCHAR Start = Text;
+	PCHAR End;
+	PCHAR Line;
+	BYTE Flag;
+	BYTE Ign;
+	DWORD StrLen;
+	while (*Start != 0)
+	{
+		// Ищем конец строки
+		End = Start;
+		while (*End != 0 && *End != 10 && *End != 13) End++;
+
+		// Создаём строку
+		StrLen = End - Start;
+		if (StrLen != 0)
+			Line = STR::New(Start, StrLen);
+		else
+			Line = NULL;
+		List::Add(SR->Items, Line);
+
+		// Переходим на следующую строку
+		Flag = 0;
+		while (*End != 0)
+		{
+			if (*End == 10)
+				Ign = 1;
+			else
+			if (*End == 13)
+				Ign = 2;
+			else
+				break;
+			if ((Flag & Ign) != 0)
+				break;
+
+			Flag = Flag | Ign;
+
+			End++;
+		}
+		Start = End;
+	}
+}
+//----------------------------------------------------------------------------
+
+int Strings::AddValue(PStrings Strings, PCHAR Name, PCHAR Value, PCHAR Delimeter)
+{
+	// Добавить в список пару Имя=Значение.
+	// Если не указан разделитель то будет взят из настроек списка (по умолчанию =)
+
+	if (Strings == NULL || Name == NULL)
+		return NULL;
+
+	PStringsRec SR = (PStringsRec)Strings;
+
+	PCHAR Del = Delimeter;
+	if (Del == NULL)
+		Del = SR->ValueDelimeter;
+
+	return List::Add(SR->Items, STR::New(3, Name, Del, Value));
+}
+
+
+
+
 //---------------------------------------------------------------------------
 //  MEMBLOCKS - Функции для работы с блоками памяти, списками блоков
 //---------------------------------------------------------------------------

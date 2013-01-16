@@ -269,60 +269,6 @@ namespace WSTR
 #define CalcHashW(Str) (WSTR::GetHash(Str, 0, false))
 
 
-// ----------------------------------------------------------------------------
-//  Strings - Набор функция для работы со списками строк
-// ----------------------------------------------------------------------------
-
-typedef LPVOID PStrings;
-
-namespace Strings
-{
-	// Создать набор строк
-	PStrings Create();
-
-	// Уничтожить набор строк
-	void Free(PStrings Strings);
-
-	// Очистить набор строк
-	void Clear(PStrings Strings);
-
-	// Получить количество строк
-	DWORD Count(PStrings Strings);
-
-	// Добавить новую строку/
-	// По умолчанию строка дублируется. Чтобы отключить эту опцию
-	// установите Duplicate = false. Строка Str должна быть создана
-	// функцциями StrNew либо StrAlloc
-	// В этом случае строка будет помещена в список
-	// и управление жьзнью строки будет передану списку строк!!!
-	int Add(PStrings Strings, PCHAR Str, bool Duplicate = true);
-
-	// Получит строку из позиции
-	PCHAR GetItem(PStrings Strings, DWORD Index, bool DuplicateStr = true);
-
-	// Объеденяет все строки в одну. Если не указан
-	// разделитель то использован разделитель заданный в настройках
-	PCHAR GetText(PStrings Strings, PCHAR LineDelimeter = NULL);
-
-	// Функция разбирает текст на строки разделённые символами новой
-	// строки и перевода каретки
-	void SetText(PStrings Strings, PCHAR Text);
-
-	// Удалить строку в позиции Index
-	void Delete(PStrings Strings, DWORD Index);
-
-	// Функция удаляет строку Str из списка
-	int Remove(PStrings Strings, PCHAR Str);
-
-	// Функция возвращает позицию строки Str в списке
-	int IndexOf(PStrings Strings, PCHAR Str);
-
-	// Добавить в список пару Имя=Значение.
-	// Если не указан разделитель то будет взят из настроек списка (по умолчанию =)
-	int AddValue(PStrings Strings, PCHAR Name, PCHAR Value, PCHAR Delimeter = NULL);
-}
-//----------------------------------------------------------------------------------------------------
-
 
 #define CharIsDigit(C)  ((C >= '0') && (C <= '9'))
 #define LowerChar(C) if (C >= 'A' && C <= 'Z') {C = C + ('a'-'A');}
@@ -569,6 +515,15 @@ string UnicodeToAnsi(const wchar_t *Str, DWORD Len = 0);
 
 
 
+//----------------------------------------------------------
+//  DecryptStr - Функция шифрует/расшифровывает строку
+//            Используя простейший алгоритм XOR шифрования
+//----------------------------------------------------------
+PCHAR WINAPI DecryptStr(PCHAR String, PCHAR OutString);
+
+
+
+
 
 //****************************************************
 //  Класс перебора массива строк следующих  друг за
@@ -601,6 +556,8 @@ public:
 	inline string& Line() { return FLine; }
 	bool IsEmpty();
 };
+
+
 
 
 //----------------------------------------------------------------------------

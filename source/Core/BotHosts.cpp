@@ -624,25 +624,6 @@ bool Hosts::GetActiveHostFormFile(PCHAR FileName, PCHAR &Host, bool *FileExists)
 //---------------------------------------------------------------------------
 
 
-bool Hosts::CheckHost(PCHAR Host )
-{
-   // Функция проверяет работоспособность хоста
-
-   if (STR::IsEmpty(Host))
-   	return false;
-
-	bool ret = false;
-
-	SOCKET Socket = ConnectToHost(Host, 80);
-
-	if (Socket != INVALID_SOCKET)
-		ret = true;
-
-	pclosesocket( Socket );
-	return ret;
-}
-//---------------------------------------------------------------------------
-
 DWORD WINAPI BankingModeApdateHostsThread(LPVOID Data)
 {
     Hosts::UpdateHosts(NULL);
@@ -764,7 +745,7 @@ void THostChecker::DoCheckHosts()
 	for (DWORD i = 0; i < Count; i++)
 	{
 		string *Host = (string*)List::GetItem(FHosts, i);
-		if (Hosts::CheckHost(Host->t_str()))
+		if (CheckHost(Host->t_str()))
 		{
 			FWorkHost = *Host;
             break;

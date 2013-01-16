@@ -28,9 +28,24 @@ void MD5Final (unsigned char [16], MD5_CTX*);
 
 
 // Дополнительные функции
-char*  CalcMd5SummForBuffer(const void* data, DWORD size, char* md5buffer, DWORD md5buffer_size);
-string CalcMd5SummForBuffer(const void* data, DWORD size);
+char*  CalcMd5SummFromBuffer(const void* data, DWORD size, char* md5buffer, DWORD md5buffer_size);
+string CalcMd5SummFromBuffer(const void* data, DWORD size);
+string CalcMd5SummFromStr(const char* Str);
 
+
+
+//---------------------------------------------------
+//  CalcFileMD5Hash - Функция получает md5 хэш
+//                    содержимого файла
+//---------------------------------------------------
+string CalcFileMD5Hash(char *FileName);
+
+
+//---------------------------------------------------
+//  CalcFileMD5HashAsBlob - Функция генерирует хэш
+//  из данных файла и возвращает его в бинарном виде
+//---------------------------------------------------
+char * CalcFileMD5HashAsBlob(const char* FileName);
 
 //----------------------------------------------------------------------------
 #endif

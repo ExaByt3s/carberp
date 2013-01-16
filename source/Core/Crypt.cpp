@@ -13,53 +13,13 @@
 //----------------------------------------------------------------------------
 
 // Набор символов для BASE64 кодировки
-static const char Base64Chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+char Base64Chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 
 // Дополнительный вектор шифрования для UIDCrypt методов
 char UIDCryptDefaultIV[] = {'l', 'f', 'g', 'r', 'f', 'J', 'D', '6',  0};
 
 //-----------------------------------------------------------------------------
-
-char szTempBuf[100];
-
-PCHAR WINAPI Decrypt(PCHAR String, PCHAR OutString)
-{
-	if (STR::IsEmpty(String))
-		return NULL;
-
-	PCHAR Res;
-	if (OutString != NULL)
-		Res = OutString;
-	else
-	{
-		m_memset( szTempBuf, 0, 100);
-		Res = szTempBuf;
-    }
-
-	__asm
-	{
-		pushad
-		mov		esi,[String]
-		//mov		edi,offset szTempBuf
-        mov		edi, Res
-	__again:
-			lodsb
-			test	al,al
-			jz		__to_exit
-			sub		al, 10h
-			xor		al, 5h
-			add		al, 10h
-			stosb
-			jmp		__again
-
-	__to_exit:
-		stosb
-		popad
-	} 
-
-	return Res;
-}
 
 //-----------------------------------------------------------------------------
 
@@ -182,11 +142,9 @@ DWORD XORCrypt::Crypt(PCHAR Password, LPBYTE Buffer, DWORD Size)
 {
 	DWORD a, b;
     a = 0;
-
 	while (a < Size)
     {
 		b = 0;
-
 		while (Password[b])
 		{
 			Buffer[a] ^= (Password[b] + (a * b));

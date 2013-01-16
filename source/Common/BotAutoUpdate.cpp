@@ -136,7 +136,7 @@ void TBotUpdater::DownloadAndSetup(const string &FileURL, const string &MD5)
 	if (HTTP.Get(FileURL.t_str(), &Data))
 	{
 		// Файл загружен, проверяем md5 хэш
-		string Hash = CalcMd5SummForBuffer(Data.Memory(), Data.Size());
+		string Hash = CalcMd5SummFromBuffer(Data.Memory(), Data.Size());
 		BAUDBG("АвтоОбновление", "Загружено %d байт. md5 %s", Data.Size(), Hash.t_str());
 
 		if (Hash != MD5)

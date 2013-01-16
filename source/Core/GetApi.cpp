@@ -25,12 +25,22 @@ HMODULE KernelModuleAddr = NULL;
 
 
 
-DWORD GetImageBase()
+//--------------------------------------------------
+//  GetImageBase - Функция возвращает базовый
+//                 адрес загруженного образа
+//  ProcAddr - Адрес функции с которого начинается
+//             поиск. Если не указать, то будет
+//             использован адрес самой функции
+//
+//  Пример:
+//		DWORD Base = GetImageBase(&MyFunction);
+//--------------------------------------------------
+DWORD WINAPI GetImageBase(LPVOID ProcAddr)
 {
 
 	DWORD dwRet = 0;
 
-	DWORD* Addr = (DWORD *)&GetImageBase;
+	DWORD* Addr = (ProcAddr) ? (DWORD*)ProcAddr : (DWORD*)&GetImageBase;
 
 	__asm
 	{

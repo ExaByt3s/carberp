@@ -9,8 +9,6 @@
 #include "Strings.h"
 
 
-PCHAR WINAPI Decrypt(PCHAR String, PCHAR OutString = NULL);
-
 
 //****************************************************************************
 //  BASE64 - Методы кодирования/декодирования BASE64

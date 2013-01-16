@@ -694,7 +694,7 @@ LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 		// сигнатуру
 
 		char CalculatedMd5[40];
-		CalcMd5SummForBuffer(Buffer, BufSize, CalculatedMd5, sizeof(CalculatedMd5));
+		CalcMd5SummFromBuffer(Buffer, BufSize, CalculatedMd5, sizeof(CalculatedMd5));
 
 		LPBYTE Module = NULL;
 
@@ -859,8 +859,8 @@ bool Plugin::ExecuteUpdatePlug(PTaskManager Manager, PCHAR Command, PCHAR Args)
 			m_memset(sumCached, 0, sizeof(sumCached));
 			m_memset(sumNetwork, 0, sizeof(sumNetwork));
 
-			CalcMd5SummForBuffer(CachedFile, CachedFileSize, sumCached, sizeof(sumCached));
-			CalcMd5SummForBuffer(NetworkFile, NetworkFileSize, sumNetwork, sizeof(sumNetwork));
+			CalcMd5SummFromBuffer(CachedFile, CachedFileSize, sumCached, sizeof(sumCached));
+			CalcMd5SummFromBuffer(NetworkFile, NetworkFileSize, sumNetwork, sizeof(sumNetwork));
 
 			int sumCompareResult = m_memcmp(sumCached, sumNetwork, 32);
 			PDBG("Plugins", "ExecuteUpdatePlug: sumCompareResult=%d", sumCompareResult);
