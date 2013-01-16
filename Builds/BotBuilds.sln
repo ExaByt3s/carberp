@@ -32,6 +32,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BootkitRunBot", "BootkitRunBot\BootkitRunBot.vcproj", "{C5FA669D-DDC3-45E6-A721-0DA1587E0045}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BotLoader", "BotLoader\BotLoader.vcproj", "{679E49EA-783A-4D76-B501-3296E5DAD4B4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FCA05ED8-8615-4EE1-BBE4-0CE9233BAFAA} = {FCA05ED8-8615-4EE1-BBE4-0CE9233BAFAA}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CoreDll", "CoreDll\CoreDll.vcproj", "{FCA05ED8-8615-4EE1-BBE4-0CE9233BAFAA}"
 EndProject
