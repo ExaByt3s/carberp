@@ -573,6 +573,26 @@ bool m_wcsncmp( WCHAR *s1, WCHAR *s2, size_t iMaxLen )
 	return false;
 }
 
+wchar_t *m_wcscpy( wchar_t *dest, int c_dest, wchar_t *src )
+{
+	if( src == 0 )
+	{
+		if( dest && c_dest > 0 ) dest[0] = 0;
+	}
+	else
+		if( dest )
+		{
+			int i = 0;
+			while( i < c_dest - 1 && src[i] )
+			{
+				dest[i] = src[i];
+				i++;
+			}
+			dest[i] = 0;
+		}
+	return dest;
+}
+
 wchar_t *m_wcslwr( wchar_t *Str )
 {
 	if ( !Str )

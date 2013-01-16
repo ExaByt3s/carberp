@@ -35,6 +35,7 @@ DWORD  WINAPI m_lstrlen(const char *szPointer );
 DWORD WINAPI m_wcslen(const wchar_t *String );
 
 wchar_t *m_wcsncpy( wchar_t *dest, wchar_t *src, unsigned long n );
+wchar_t *m_wcscpy( wchar_t *dest, int c_dest, wchar_t *src );
 wchar_t *m_wcslwr( wchar_t *Str );
 bool m_wcsncmp( WCHAR *s1, WCHAR *s2, size_t iMaxLen );
 const wchar_t * WINAPI m_wcsstr( const wchar_t * _Str, const wchar_t * _SubStr );
