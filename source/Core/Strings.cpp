@@ -500,7 +500,7 @@ char* UTF8ToAnsi( const char* utf8String )
 	//сначала преобразовываем utf8 в unicode
 	wchar_t* unicodeString = UTF8ToUnicode(utf8String);
 	if( unicodeString == 0 ) return 0;
-	char* res = 0;
+	char* res = 0;  
 	// тест на возможность преобразования
 	int resLen = (int)pWideCharToMultiByte( 1251, 0, unicodeString, -1, 0, 0, 0, 0 );
 	if( resLen == 0 ) return 0;

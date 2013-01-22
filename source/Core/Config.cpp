@@ -23,6 +23,11 @@ namespace CONFIGDEBUGSTRINGS
 
 
 
+//**********************************************
+char BOT_VERSION_BUF[] = BOT_VERSION_HEADER    BOT_VERSION;
+
+
+
 
 #ifndef DEBUGCONFIG
 //=============================================================================
@@ -161,6 +166,19 @@ const static PCHAR UpdateScriptsExts[] = {".pif", ".db", ".log", NULL};
 
 
 const static char HTTPProtocol[] = "http://";
+
+
+//--------------------------------------------
+//  GetBotVersion - Функция возвращает строку
+//                  с версией бота
+//--------------------------------------------
+PCHAR GetBotVersion()
+{
+	PCHAR Result = BOT_VERSION_BUF;
+    // пропускаем заголовок
+	Result += BOT_VERSION_HEADER_SIZE;
+	return Result;
+}
 
 
 //------------------------------------------------------------------

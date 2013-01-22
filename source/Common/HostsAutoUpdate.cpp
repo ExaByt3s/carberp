@@ -8,6 +8,7 @@
 #include "BotHTTP.h"
 #include "Utils.h"
 #include "Modules.h"
+#include "BotCore.h"
 //---------------------------------------------------------------------------
 
 
@@ -132,7 +133,7 @@ void THostsUpdater::SaveHosts(const string &Buf)
 
 	if (Added)
 	{
-		PCHAR FileName = Hosts::GetFileName();
+		PCHAR FileName = BOT::GetHostsFileName();
 
 		Hosts::SaveListToFile(List, FileName, true);
 

