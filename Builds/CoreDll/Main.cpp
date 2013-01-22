@@ -3,6 +3,7 @@
 #include <windows.h>
 
 #include "GetApi.h"
+#include "BotCore.h"
 
 
 #pragma comment(linker, "/ENTRY:MyDllMain" )
@@ -15,7 +16,7 @@
 //------------------------------------------------------------------------
 void InitializeDLL()
 {
-	InitializeAPI();
+	BOT::Initialize();
 }
 
 

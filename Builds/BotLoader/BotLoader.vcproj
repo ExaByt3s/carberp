@@ -40,8 +40,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="1"
-				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Misc;..\..\Source\Common;..\..\Source\CoreDll;..\..\Source\Core;..\..\Source;..\..\Include;Modules"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\..\Source\CoreDll;..\..\Source\Core;Modules"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;DEBUGBOT"
 				StringPooling="false"
 				MinimalRebuild="true"
@@ -49,8 +49,9 @@
 				RuntimeLibrary="3"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="0"
+				BrowseInformation="1"
 				WarningLevel="3"
-				DebugInformationFormat="0"
+				DebugInformationFormat="3"
 				OmitDefaultLibName="false"
 			/>
 			<Tool
@@ -122,7 +123,7 @@
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="0"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Misc;..\..\Source\Common;..\..\Source\CoreDll;..\..\Source\Core;..\..\Source;..\..\Include;Modules"
+				AdditionalIncludeDirectories="..\..\Source\CoreDll;Modules"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOTRELEASE"
 				StringPooling="true"
 				ExceptionHandling="0"
@@ -149,7 +150,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="true"
-				AdditionalDependencies="..\..\source\lib\ntdll.lib shlwapi.lib Ws2_32.lib urlmon.lib Crypt32.lib ..\..\source\lib\winsta.lib Wininet.lib gdiplus.lib Iphlpapi.lib"
+				AdditionalDependencies="..\..\source\lib\ntdll.lib shlwapi.lib Ws2_32.lib Crypt32.lib ..\..\source\lib\winsta.lib Wininet.lib Iphlpapi.lib"
 				LinkIncremental="1"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="true"
@@ -212,7 +213,7 @@
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="0"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Misc;..\..\Source\Common;..\..\Source\CoreDll;..\..\Source\Core;..\..\Source;..\..\Include;Modules"
+				AdditionalIncludeDirectories="..\..\Source\CoreDll;..\..\Source\Core;Modules"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;DEBUGBOT"
 				StringPooling="false"
 				ExceptionHandling="0"
@@ -299,7 +300,7 @@
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="0"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Misc;..\..\Source\Common;..\..\Source\CoreDll;..\..\Source\Core;..\..\Source;..\..\Include;Modules"
+				AdditionalIncludeDirectories="..\..\Source\CoreDll;..\..\Source\Core;Modules"
 				PreprocessorDefinitions="NDEBUG;DEBUGCONFIG"
 				StringPooling="false"
 				ExceptionHandling="0"
@@ -388,7 +389,7 @@
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="0"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="..\..\Source\RuBnk;..\..\Source\Misc;..\..\Source\Common;..\..\Source\CoreDll;..\..\Source\Core;..\..\Source;..\..\Include;Modules"
+				AdditionalIncludeDirectories="..\..\Source\CoreDll;..\..\Source\Core;Modules"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOTRELEASE;_AUTOUPDATE"
 				StringPooling="true"
 				ExceptionHandling="0"
@@ -458,19 +459,7 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\..\source\Core\Config.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\Core\Crypt.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\Core\DllLoader.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\Core\GetApi.h"
+				RelativePath=".\Source\LoaderUtils.h"
 				>
 			</File>
 			<File
@@ -478,15 +467,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Modules\Modules.h"
+				RelativePath=".\Source\MemoryDLL.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Core\Strings.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\Core\Utils.h"
+				RelativePath=".\Source\MemoryDllLoader.h"
 				>
 			</File>
 		</Filter>
@@ -502,23 +487,15 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\source\Core\DllLoader.cpp"
+				RelativePath=".\BotLoaderMain.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Core\GetApi.cpp"
+				RelativePath=".\Source\LoaderUtils.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\Main.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\Core\Memory.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\Core\Strings.cpp"
+				RelativePath=".\Source\Memory.cpp"
 				>
 			</File>
 		</Filter>

