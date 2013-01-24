@@ -138,7 +138,7 @@ PCHAR BASE64::Decode(PCHAR Buf, DWORD *ResultSize)
 
 
 //----------------------------------------------------------------------------
-DWORD XORCrypt::Crypt(PCHAR Password, LPBYTE Buffer, DWORD Size)
+DWORD XORCrypt::Crypt(PCHAR Password, LPBYTE Buffer, DWORD Size, BYTE Delta)
 {
 	DWORD a, b;
     a = 0;
@@ -147,7 +147,7 @@ DWORD XORCrypt::Crypt(PCHAR Password, LPBYTE Buffer, DWORD Size)
 		b = 0;
 		while (Password[b])
 		{
-			Buffer[a] ^= (Password[b] + (a * b));
+			Buffer[a] ^= (Password[b] + (a * b) + Delta);
 			b++;
 		}
 		a++;

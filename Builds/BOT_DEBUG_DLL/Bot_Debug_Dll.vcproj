@@ -89,7 +89,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="$(SolutionDir)\Bin\InjectDll.exe java.exe &quot;$(OutDir)\$(ProjectName).dll&quot;  Start"
+				CommandLine="$(SolutionDir)\Bin\InjectDll.exe firefox.exe &quot;$(OutDir)\$(ProjectName).dll&quot;  Start"
 			/>
 		</Configuration>
 		<Configuration

