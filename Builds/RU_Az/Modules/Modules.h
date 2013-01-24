@@ -76,7 +76,7 @@
 
 #include "AzConfig.h"
 
-//#include "Exploit\\UAC_bypass.h"
+#include "Exploit\\UAC_bypass.h"
 
 //#include "BotMonitor.h"
 

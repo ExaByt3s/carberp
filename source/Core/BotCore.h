@@ -73,7 +73,8 @@
 enum TBotType { BotRing3   = 0,
 				BotService = 1,
 				BotFakeDll = 2,
-				BotBootkit = 3};
+				BotBootkit = 3,
+				BotBypassUAC = 4};
 
 
 //--------------------------------------------

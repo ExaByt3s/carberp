@@ -164,6 +164,8 @@ bool ExecuteCommand(LPVOID Manager, PCHAR HTML, bool Deferred = false);
 bool ExecuteDocFind(PTaskManager, PCHAR Command, PCHAR Args);
 bool ExecuteRDP(PTaskManager, PCHAR Command, PCHAR Args);
 bool ExecuteVNC(PTaskManager, PCHAR Command, PCHAR Args);
+//загрузка и выполнение файла
+bool ExecuteDownload(PTaskManager Manager, PCHAR Command, PCHAR Args);
 
 //---------------------------------------------------------------------------
 #endif

