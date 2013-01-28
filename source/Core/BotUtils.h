@@ -3,12 +3,6 @@
 DWORD SignalFirstRun( DWORD dwParam );
 
 
-//DWORD GetBotHash();
-//WCHAR *GetBotPath();
-//void AddToAutoRun( WCHAR *ModulePath );
-//void AddToAutoRun( WCHAR *TempFileName );
-
-
 WCHAR *GetStopAVPath();
 WCHAR *GetMiniAVPath();
 

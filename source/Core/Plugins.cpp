@@ -62,7 +62,7 @@ namespace PLGLoader
 		// Функция возвращает имя файла списка плагинов
 		const static char PluginsListFileName[] = {'w', 'n', 'd', 's', 'k', 's', 'i', '.', 'i', 'n', 'f',  0};
 
-		return BOT::GetWorkPathInSysDrive(NULL, (PCHAR)PluginsListFileName);
+		return BOT::GetWorkPath(NULL, (PCHAR)PluginsListFileName);
 	}
 
 	//-------------------------------------------------------------------------
@@ -266,7 +266,7 @@ namespace PLGCACHE
 	PCHAR inline GetCachePath()
 	{
 		// Функция возвращает путь к хранилищу кеша
-		return BOT::GetWorkPathInSysDrive(CacheFolder, NULL);
+		return BOT::GetWorkPath(CacheFolder, NULL);
 	}
 	//-------------------------------------------------------------------------
 
