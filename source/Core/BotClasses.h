@@ -383,29 +383,6 @@ namespace DataFile
 }
 
 
-//--------------------------------------------------
-//  TEventContainer - Класс, контейнер событий
-//--------------------------------------------------
-
-typedef void (*TBotEvent)(LPVOID Sender, int EventId, LPVOID EventData, LPVOID Param);
-
-class TEventContainer : public TBotObject
-{
-private:
-	TBotList *FEvents;
-	RTL_CRITICAL_SECTION FLock;
-public:
-    TEventContainer();
-	~TEventContainer();
-
-	int  AttachEvent(int EventId, TBotEvent Event, LPVOID EventData);
-	void DetachEvent(int EventIndex);
-	void CallEvent(int EventId, LPVOID Param);
-	void CallEvent(int EventId);
-};
-
-
-
 
 
 //**********************************************************
@@ -429,6 +406,31 @@ public:
 
 	TLock operator=(const TLock &Locker);
 	TLock operator=(PRTL_CRITICAL_SECTION Section);
+};
+
+
+
+//--------------------------------------------------
+//  TEventContainer - Класс, контейнер событий
+//--------------------------------------------------
+
+typedef void (*TBotEvent)(LPVOID Sender, int EventId, LPVOID EventData, LPVOID Param);
+
+class TEventContainer : public TBotObject
+{
+private:
+	TBotList *FEvents;
+	RTL_CRITICAL_SECTION FLock;
+protected:
+	TLock inline GetLock() { return &FLock; }
+public:
+    TEventContainer();
+	~TEventContainer();
+
+	int  AttachEvent(int EventId, TBotEvent Event, LPVOID EventData);
+	void DetachEvent(int EventIndex);
+	void CallEvent(int EventId, LPVOID Param);
+	void CallEvent(int EventId);
 };
 
 

