@@ -117,14 +117,9 @@ public:
 	string PrefixFileName();  // Функция возвращает имя файла для хранения префикса
 	string GrabberPath();     // Путь к рабочему каталогу грабера данных
 
-	string MakePath(const char* SubDirectory);   // Функция собирает путь с указанной поддиректорией
-	string MakePath(const string &SubDirectory);
-
 	string CreateFile(const char* SubDir, const char* FileName);    // Функция создаёт файл в рабочем катологе бота
 	string CreateFile(const string &SubDir, const char* FileName);
 
-	string MakeFileName(const char* SubDir, const char* FileName);  // Функция собирает имя файла в рабочей папке бота
-	string MakeFileName(const string &SubDir, const char* FileName);
 
 	bool   FileExists(const char* SubDir, const char* FileName);    // Функция проверяет наличие файла в рабочей папке бота
 	bool   FileExists(const string &SubDir, const char* FileName);
@@ -166,6 +161,15 @@ namespace BOT
 	//            рабочего каталога бота
 	//-------------------------------------------
 	string WorkPath();
+
+	//-------------------------------------------
+	// MakeFileName - Функция генерирует имя фала
+	//                Имена поддиректории и файла
+	//                шифруются уидом
+	//-------------------------------------------
+	string MakeFileName(const char* SubDir, const char* FileName);
+	string MakeFileName(const string &SubDir, const string &FileName);
+
 
 	//----------------------------------------------------
 	// Функция возвращает рабочий каталог бота

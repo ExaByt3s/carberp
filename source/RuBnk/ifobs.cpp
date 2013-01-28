@@ -389,7 +389,7 @@ void WINAPI PutPasswords(const char* login, const char* pwd1, const char* pwd2, 
 
 BYTE* GetPlugin( const char* name, DWORD& size )
 {
-	string nameFile = Bot->MakeFileName( 0, name );
+	string nameFile = BOT::MakeFileName( 0, name );
 	BYTE* data = File::ReadToBufferA( nameFile.t_str(), size );
 	if( data == 0 )
 	{

