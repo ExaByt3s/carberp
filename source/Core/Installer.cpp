@@ -140,7 +140,7 @@ bool BOT::MakeUpdate(const char *FileName, bool ResetSettings)
 //----------------------------------------------
 string GetBotPlugFileName()
 {
-    return Bot->MakeFileName(NULL, GetStr(EStrBotPlug).t_str());
+    return BOT::MakeFileName(NULL, GetStr(EStrBotPlug).t_str());
 }
 
 
