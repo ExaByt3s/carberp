@@ -1429,7 +1429,7 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 	//-------------------------------------------------
 	// Команда Back Connect
 	#ifdef BackConnectH
-//        RegisterCommand(Manager, CommandBackConnect, ExecuteBackConnectCommand);
+        RegisterCommand(Manager, CommandBackConnect, ExecuteBackConnectCommand);
 	#endif
 
 	//-------------------------------------------------

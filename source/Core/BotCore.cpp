@@ -609,7 +609,8 @@ PCHAR BOT::GetWorkPath(PCHAR SubDir, PCHAR FileName)
 //	//  Главное от личие от неё в том, что пусть
 //	//   создаётся в корне системного диска
 //    return BOTDoGetWorkPath(true, SubDir, FileName);
-//}
+//}
+
 //----------------------------------------------------------------------------
 
 PCHAR BOT::GetBotExeName()
@@ -679,7 +680,8 @@ PCHAR BOT::GetBotExeName()
 //		STR::Free(Link);
 //    }
 //	return BotData->BotShortLinkName;
-//}
+//}
+
 //----------------------------------------------------------------------------
 
 DWORD BOT::GetBotExeNameHash()
