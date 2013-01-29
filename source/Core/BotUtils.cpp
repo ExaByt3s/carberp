@@ -3,6 +3,7 @@
 #include <shlobj.h>
 
 #include "BotCore.h"
+#include "BotUtils.h"
 #include "StrConsts.h"
 
 
