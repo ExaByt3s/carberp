@@ -637,45 +637,26 @@ LPVOID CryptFile::ReadToBuffer(PCHAR FileName, LPDWORD BufferSize, PCHAR Passwor
 //  Шифрование производится методами  RC2Crypt
 //****************************************************************************
 
-PCHAR UIDCrypt::GeneratePassword()
+string UIDCrypt::GeneratePassword()
 {
 	//Функция генерирует пароль на основе UID
 	PCHAR UID = MakeMachineID();
-	if (UID == NULL)
-		return NULL;
-
-	DWORD UIDSize = StrCalcLength(UID);
-
-	PCHAR Password = STR::Alloc(RC2_DEFAULT_PASSWORD_SIZE);
-
-	if (Password)
+	string Password;
+	if (UID)
 	{
-		// Формируем пароль
-		DWORD Size = Min(UIDSize, RC2_DEFAULT_PASSWORD_SIZE);
+		Password.SetLength(RC2_DEFAULT_PASSWORD_SIZE);
 
-		if (Size < RC2_DEFAULT_PASSWORD_SIZE)
-		{
-			// В случае если UID оказался меньше необходимого
-			// размера то заполняем массив до конца
+		// Копируем данные
+		DWORD CopySize = Min(STRA::Length(UID), RC2_DEFAULT_PASSWORD_SIZE);
+		STR::Copy(UID, Password.t_str(), 0, CopySize);
 
-			m_memset(Password, '-', RC2_DEFAULT_PASSWORD_SIZE);
-		}
+		// В случае если UID оказался меньше необходимого
+		// размера то заполняем массив до конца
+		if (CopySize < RC2_DEFAULT_PASSWORD_SIZE)
+			m_memset(Password.t_str(), '-', RC2_DEFAULT_PASSWORD_SIZE - CopySize);
 
-		// Копируем UID
-		DWORD CopySize = Min(RC2_DEFAULT_PASSWORD_SIZE, UIDSize);
-		STR::Copy(UID, Password, 0, CopySize);
-
-		// Для большей уникальности полученный пароль
-		// дополняем главным паролем бота
-//		PCHAR MPass = GetMainPassword(true);
-//
-//        XORCrypt::Crypt(MPass, (LPBYTE)Password, RC2_DEFAULT_PASSWORD_SIZE);
-//
-//		STR::Free(MPass);
+		STR::Free(UID);
     }
-
-
-	STR::Free(UID);
 
 	return Password;
 }
@@ -688,20 +669,16 @@ PCHAR UIDCrypt::Crypt(LPVOID Data, DWORD DataSize, PCHAR Vector)
 		return NULL;
 
     // Получаем пароль
-	PCHAR Password = GeneratePassword();
-	if (Password == NULL)
-		return NULL;
-
+	string Password = GeneratePassword();
+	if (Password.IsEmpty()) return NULL;
 
 	PCHAR Result = NULL;
 
-
 	// Шифруем данные
-
 	if (Vector == NULL)
     	Vector = UIDCryptDefaultIV;
 
-	LPBYTE Buf = RC2Crypt::WinEncode((LPBYTE)Data, DataSize, Password, Vector);
+	LPBYTE Buf = RC2Crypt::WinEncode((LPBYTE)Data, DataSize, Password.t_str(), Vector);
 
 	// Преобразовываем в BASE64
 	if (Buf != NULL)
@@ -710,10 +687,6 @@ PCHAR UIDCrypt::Crypt(LPVOID Data, DWORD DataSize, PCHAR Vector)
 
 		MemFree(Buf);
     }
-
-
-	STR::Free(Password);
-
 	return Result;
 }
 //-----------------------------------------------------------------------------

