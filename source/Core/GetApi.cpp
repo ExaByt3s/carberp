@@ -35,27 +35,25 @@ HMODULE KernelModuleAddr = NULL;
 //  Пример:
 //		DWORD Base = GetImageBase(&MyFunction);
 //--------------------------------------------------
-DWORD WINAPI GetImageBase(LPVOID ProcAddr)
+DWORD WINAPI GetImageBase( LPVOID procAddr )
 {
-
-	DWORD dwRet = 0;
-
-	DWORD* Addr = (ProcAddr) ? (DWORD*)ProcAddr : (DWORD*)&GetImageBase;
-
-	__asm
+	DWORD addr = (procAddr) ? (DWORD)procAddr : (DWORD)&GetImageBase;
+	addr &= 0xffff0000;
+	for(;;)
 	{
-			mov EAX, Addr
-			and eax, 0FFFF0000h
-		find:
-			cmp word ptr [ eax ], 0x5A4D
-			je end
-			sub eax, 00010000h
-			JMP find
-		end:
-			mov [dwRet], eax
+		PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)addr;
+		if( dosHeader->e_magic == IMAGE_DOS_SIGNATURE )
+		{
+			if( dosHeader->e_lfanew < 0x1000 )
+			{
+				PIMAGE_NT_HEADERS header = (PIMAGE_NT_HEADERS)&((unsigned char*)addr)[dosHeader->e_lfanew];
+				if( header->Signature == IMAGE_NT_SIGNATURE )
+					break;
+			}
+		}
+		addr -= 0x10000;
 	}
-
-	return dwRet;
+	return addr;
 }
 
 
