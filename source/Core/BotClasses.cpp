@@ -1583,7 +1583,7 @@ DWORD TBotStream::Position()
 
 void  TBotStream::SetPosition(DWORD NewPosition)
 {
-	Seek(0, SO_BEGIN);
+	Seek(NewPosition, SO_BEGIN);
 }
 
 DWORD TBotStream::Write(const void* Buf, DWORD Count)
@@ -1880,24 +1880,19 @@ LPVOID TBotMemoryStream::Memory()
 TBotFileStream::TBotFileStream(const char* FileName, WORD Mode)
 {
 	DWORD Access   = GENERIC_READ;
-	DWORD Creation = OPEN_EXISTING;
-
 
 	bool Create = (Mode & fcmCreate) != 0;
 
+	DWORD Creation = (Create) ? CREATE_ALWAYS : OPEN_EXISTING;
 	// Определяем режим записи\чтения
 
 	WORD AM = Mode & 0x0003;
 	if (AM == 0 && Create)
 	{
         Access   = GENERIC_WRITE;
-    	Creation = CREATE_ALWAYS;
 	}
 	else
 	{
-		if (Create)
-			Creation = OPEN_ALWAYS;
-
 		switch (AM)
 		{
 			case fcmWrite: Access   = GENERIC_WRITE; break;

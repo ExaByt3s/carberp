@@ -1558,26 +1558,9 @@ namespace DataSender
 PCHAR DataGrabber::GetRepositoryPath()
 {
 	 // Функция возвращает путь к директории хранения данных приложений
-	const static char StoragePath[] = {'\\', 'M', 'i', 'c', 'r', 'o', 'S', 'T', '\\',  0};
-
-//	PCHAR Path = STR::Alloc(MAX_PATH);
-
-
 	PCHAR Tmp = BOT::GetWorkPath("DSStor", NULL);
 	PCHAR Path = STR::New(2, Tmp, "\\");
 	STR::Free(Tmp);
-
-
-	/* if (!pSHGetSpecialFolderPathA(NULL, Path, CSIDL_APPDATA, TRUE))
-	{
-		STR::Free(Path);
-		return NULL;
-	}
-	StrConcat(Path, (PCHAR)StoragePath);
-	// Проверяем существование директории
-	// В случае отсутствия создаём
-	if (!DirExists(Path))
-		pCreateDirectoryA(Path, NULL);  */
 
 	return Path;
 }

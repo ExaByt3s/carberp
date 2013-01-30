@@ -130,7 +130,7 @@ CSSTR EStrCommandInstallBootkit[] = "installbk";  // Команда на инсталяцию бутки
 
 // Имена файлов, для добавления в лог
 CSSTR StrLogFileScreenShot[]  = "Screen.png";
-CSSTR StrLogFileInformation[] = "Info.txt";
+CSSTR StrLogFileTextData[]    = "Log.txt";
 CSSTR StrLogFileNetInfo[]     = "NetInfo.txt";
 CSSTR EStrLogKeyPath[]        = "Keys";
 

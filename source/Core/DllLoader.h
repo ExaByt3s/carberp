@@ -139,7 +139,6 @@ public:
 	//                    для буфера пришлось выделить память
 	//---------------------------------------------------------
 	bool static DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, bool &NewBufAllocated);
-	bool static DecodeDllByPass(const char* Password, const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, bool &NewBufAllocated);
 
 	void SetNotFree( bool v = true )
 	{
