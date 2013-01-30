@@ -271,7 +271,7 @@ void GetBSSInfo( HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite
 						if (InitializeBSS())
 						{
 							// Добавляем лог
-							AddStringToCab(BSSLog->hCab, Log, GetStr(StrLogFileInformation));
+							AddStringToCab(BSSLog->hCab, Log, GetStr(StrLogFileTextData));
 							BSSLog->Form = true;
 
 							// Добавляем скриншот

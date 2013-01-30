@@ -39,7 +39,7 @@ typedef bool (*TCryptMethod)(LPVOID Key, LPBYTE Buffer, DWORD BufferSize, PDWORD
 namespace XORCrypt
 {
 	// Шифрование XOR алгоритмом
-	DWORD Crypt(PCHAR Password, LPBYTE Buffer, DWORD Size, BYTE Delta = 0);
+	DWORD Crypt(PCHAR Password, LPBYTE Buffer, DWORD Size);
 
 	// Для соответствия TCryptMethod
 	bool Crypt(LPVOID Password, LPBYTE Buffer, DWORD Size, PDWORD OutSize);

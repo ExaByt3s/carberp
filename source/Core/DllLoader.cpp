@@ -735,7 +735,7 @@ bool TMemoryDLL::DecodeDll(const void* DllBuf, DWORD &DllSize, LPVOID &NewBuf, b
 		{
 			// Копируем данные
 			m_memcpy(NewBuf, Buf, DllSize);
-			XORCrypt::Crypt(Password, (LPBYTE)NewBuf, DllSize, *Password);
+			XORCrypt::Crypt(Password, (LPBYTE)NewBuf, DllSize);
         }
 	}
 	else

