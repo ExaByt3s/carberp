@@ -264,6 +264,7 @@ static int GetNameBank( char* bank, int szBank )
 				{
 					DB->CloseQuery(qr);
 					m_lstrcpy( bankClient, Name );
+					SafeCopyStr( bank, szBank, Name );
 					DBG( "Tiny", "name bank=%s", Name );
 					codeBankClient = ret = m_atoi(MyIdBank);
 				}
