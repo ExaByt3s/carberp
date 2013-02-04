@@ -181,6 +181,10 @@ extern CSSTR EStrPrivatBankKeyPasswordGrabber[];
 //строка параметров для запуска RDP
 extern CSSTR RDPRunParam[];
 
+//для BSS CBank оффлайн
+extern CSSTR CBankReplacement[]; //имя файла хранящий что подменять
+extern CSSTR CBankFlagUpdate[]; //флаг для запуска подмены (был создан файл подмены)
+extern CSSTR CBankRestFixed[]; //файл с данными о подмене
 
 //*********************************************************************
 //                            Не шифрованные строки и данные
