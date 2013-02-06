@@ -136,6 +136,21 @@ bool TKeyLogger::DisconnectGrabber(TGrabber* Grabber)
 }
 
 
+//-----------------------------------------
+//  CallEvent - Функция вызывает событие
+//-----------------------------------------
+void TKeyLogger::CallEvent(int EventId, LPVOID Param)
+{
+	//------  блокируем код --------
+	TLock L = GetLock();
+	//------------------------------
+
+	if (FGrabber) FGrabber->DoEvent(EventId, Param);
+
+	inherited::CallEvent(EventId, Param);
+}
+
+
 
 //****************************************************************************
 //                           TInfiniteKeyLogger

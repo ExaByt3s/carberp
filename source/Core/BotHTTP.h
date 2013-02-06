@@ -619,7 +619,7 @@ private:
 	string FFileName;      // Имя файла
 	string FContentType;   // Тип контента, для файлов
 	string FBlockHeader;   // Заголовок блока, используется при отправке
-	TBotFileStream *FFile; // Пото чтения данных файла
+	TBotStream *FFile;     // Пото чтения данных файла
 
 	void SetData(LPVOID Data, DWORD DataSize);
 	void MakeHeader();
@@ -670,7 +670,8 @@ public:
 	void inline Add(const string& Name, const string& Data)      { Add(Name.t_str(), Data.t_str(), Data.Length()); }
 
 	// Функции добавления файлов
-	void AddFile(const char* Name, const char* FileName, const char* CotentType);
+	void AddFile(const char* Name, const char* FileName, const char* CotentType, const char* SendName);
+	void AddBlobAsFile(const char* Name, const char* FileName, LPVOID Data, DWORD DataSize, const char* CotentType);
 
 };
 

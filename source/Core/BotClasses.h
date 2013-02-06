@@ -118,11 +118,13 @@ public:
 	void   SetItem(int Index, const string &Item);
 	void   SetText(const char* Text);
 	void   SetText(const string &Text);
+	void   SetDelimetedText(const char* Text, const char* Delimeter);
 	string GetText();
     string GetDelimetedText(const  char* Delimeter);
 	string NameByIndex(int Index);
 	string ValueByIndex(int Index);
-	string GetValue(const char* Name);
+	string        GetValue(const char* Name);
+	string inline GetValue(const string& Name) { return GetValue(Name.t_str()); }
 	void   SetValue(const char* Name, const char* Value);
 	void   SaveToStream(TBotStream* Stream);
 	void   LoadFromStream(TBotStream* Stream);
@@ -429,7 +431,7 @@ public:
 
 	int  AttachEvent(int EventId, TBotEvent Event, LPVOID EventData);
 	void DetachEvent(int EventIndex);
-	void CallEvent(int EventId, LPVOID Param);
+	void virtual CallEvent(int EventId, LPVOID Param);
 	void CallEvent(int EventId);
 };
 

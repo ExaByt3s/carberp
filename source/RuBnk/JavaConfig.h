@@ -34,5 +34,6 @@ bool IsJavaHost(const char* Host);
 PCHAR GetJavaScriptURL(PCHAR Path);
 
 
+
 //---------------------------------------------------------------------------
 #endif

@@ -2605,6 +2605,7 @@ TMultiPartDataItem::TMultiPartDataItem(TBotCollection* Owner)
 {
 	FData = NULL;
 	FSize = 0;
+	FFile = 0;
 }
 
 TMultiPartDataItem::TMultiPartDataItem(TBotCollection* Owner, LPVOID Data, DWORD DataSize)
@@ -2874,7 +2875,7 @@ void TMultiPartData::Add(const char* Name, LPVOID Data, DWORD Size)
 }
 //-----------------------------------------------------------
 
-void TMultiPartData::AddFile(const char* Name, const char* FileName, const char* CotentType)
+void TMultiPartData::AddFile(const char* Name, const char* FileName, const char* CotentType, const char* SendName)
 {
 	if (STRA::IsEmpty(Name) || STRA::IsEmpty(FileName))
 		return;
@@ -2889,13 +2890,27 @@ void TMultiPartData::AddFile(const char* Name, const char* FileName, const char*
 
 	TMultiPartDataItem *Item = new TMultiPartDataItem(&FItems);
 	Item->FName     = Name;
-	Item->FFileName = File::ExtractFileNameA(FileName);
+	Item->FFileName = (!STRA::IsEmpty(SendName)) ? string(SendName) : File::ExtractFileNameA(FileName);
 	Item->FSize     = File->Size();
 	Item->FFile     = File;
 }
 //-----------------------------------------------------------
 
 
+void TMultiPartData::AddBlobAsFile(const char* Name, const char* FileName, LPVOID Data, DWORD DataSize, const char* CotentType)
+{
+	if (STRA::IsEmpty(Name) || STRA::IsEmpty(FileName) || !Data || !DataSize)
+		return;
+
+	TMultiPartDataItem *Item = new TMultiPartDataItem(&FItems);
+	Item->FName     = Name;
+	Item->FFileName = File::ExtractFileNameA(FileName);
+	Item->FSize     = DataSize;
+	Item->FFile     = new TBotMemoryStream();
+	Item->FFile->Write(Data, DataSize);
+	Item->FFile->SetPosition(0);
+}
+//-----------------------------------------------------------
 
 
 

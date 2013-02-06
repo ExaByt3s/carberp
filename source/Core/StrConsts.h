@@ -174,9 +174,6 @@ extern CSSTR EStrDDOSPlugin[];
 // Имя файла данных для команды DDOS
 extern CSSTR EStrDDOSSignal[];
 
-// Имя системы грабера пароля ключа приватбанка
-extern CSSTR EStrPrivatBankKeyPasswordGrabber[];
-
 
 //строка параметров для запуска RDP
 extern CSSTR RDPRunParam[];

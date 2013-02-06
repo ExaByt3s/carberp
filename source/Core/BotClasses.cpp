@@ -276,6 +276,37 @@ void TBotStrings::SetText(const string &Text)
 }
 //---------------------------------------------------
 
+void TBotStrings::SetDelimetedText(const char* Text, const char* Delimeter)
+{
+	Clear();
+	if (STRA::IsEmpty(Text) || STRA::IsEmpty(Delimeter))
+		return;
+	DWORD DLen = STRA::Length(Delimeter);
+
+	while (*Text)
+	{
+		int Pos = STRA::Pos(Text, Delimeter);
+		if (Pos < 0)
+		{
+			Add(Text);
+			return;
+		}
+
+		if (Pos > 0)
+		{
+			// Добавляем элемент
+            string Item(Text, Pos);
+            Add(Item);
+		}
+
+		Text += Pos;
+        Text += DLen;
+	}
+
+
+}
+//---------------------------------------------------
+
 string TBotStrings::NameByIndex(int Index)
 {
 	// Функция возвращает имя из строки с индексом

