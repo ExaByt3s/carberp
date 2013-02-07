@@ -49,9 +49,6 @@ bool GodmodeOnFile( WCHAR *Filename );
 void DisableDEP();
 DWORD GetProcessHash();
 
-//void ProtectBot();
-//void UnProtectBot();
-
 LPBYTE GetFileData( WCHAR *Path, LPDWORD dwDataSize );
 LPVOID DecryptPlugin( LPBYTE Pointer, DWORD dwLen );
 
@@ -469,4 +466,14 @@ VOID OffNOD32();
 void CreateLink( const char* LinkFileName, const char* Object, const char* CommandLine,
 						const char* Description, const char* IconFileName );
 
+
+
+//---------------------------------------------------------
+//  CombineFileName - функция создаёт полное имя файла
+//  на осное пути Path и имени файла FileName
+//---------------------------------------------------------
+string CombineFileName(const char* Path, const char* FileName);
+
+
+//----------------------------------------------------------------------------
 #endif

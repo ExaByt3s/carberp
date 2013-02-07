@@ -12,11 +12,7 @@ typedef struct
 	CCAB cab;
 	HFCI hfci;
 } CABDATA, *PCABDATA;
-/*#include <windows.h>
-#include <fci.h>
-#include <io.h>
-#include <fcntl.h>
-*/
+
 
 #include "GetApi.h"
 #include "Memory.h"
@@ -288,9 +284,10 @@ HCAB CreateCab( const char *szCabName )
 bool AddFileToCab( HCAB handle, const char *szFileName, const char *szInternalName )
 {
 	if( handle == NULL )
-	{
 		return false;
-	}
+
+	if (STRA::IsEmpty(szInternalName))
+		szInternalName = szFileName;
 
 	CABDATA *pC = (CABDATA*)handle;
 

