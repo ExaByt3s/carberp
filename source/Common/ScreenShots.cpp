@@ -189,8 +189,6 @@ void DbgMsg(const char *format, ...)
 	va_start(mylist, format);
 	wvsprintf(buf, format, mylist);
 	va_end(mylist);
-
-	OutputDebugString(buf);
 }
 */
 

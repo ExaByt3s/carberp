@@ -78,7 +78,6 @@ namespace IECUtils {
 			if (!STR::IsEmpty(Mask))
 			if (WildCmp(FileName, Mask))
 				{
-                	pOutputDebugStringA(FileName);
 					Result = true;
 					break;
 				}
@@ -119,8 +118,6 @@ namespace IECUtils {
 		if (dwDesiredAccess == GENERIC_WRITE  && !WSTR::IsEmpty((PWCHAR)lpFileName) &&
 			WSTR::GetHash((PWCHAR)lpFileName, CachePathSize, false) == 	CachePathHashW)
 		{
-
-			pOutputDebugStringW(lpFileName);
 
 			PCHAR FN = WSTR::ToAnsi(lpFileName, 0);
 

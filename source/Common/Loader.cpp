@@ -260,13 +260,11 @@ DWORD ConnectThread(LPVOID lpParameter)
 	
 	if ( (int)pconnect( connData->Socket, (const struct sockaddr*)&connData->SockAddr, sizeof( connData->SockAddr ) ) == SOCKET_ERROR )
 	{
-		//OutputDebugStringA("connect ERROR");
 		DWORD err = (DWORD)pGetLastError();
 		pclosesocket(connData->Socket);
 		pExitThread(-1);
 	}
-	/*else
-		OutputDebugStringA("connect SUCCESS");*/
+
 
 	pExitThread(0);
 	return 0;
@@ -297,17 +295,13 @@ SOCKET MyConnect( char *Host, int Port )
 			return -1;
 		connData.Socket = Socket;
 
-		//OutputDebugStringA("Connection...");
 		HANDLE ConnectThreadHandle = (HANDLE)pCreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ConnectThread, &connData, NULL, 0);
 		if((long)pWaitForSingleObject(ConnectThreadHandle, 10000) == WAIT_TIMEOUT)
 		{
 			if((int)pshutdown(Socket, 2) == SOCKET_ERROR)
 			{
-				//wsprintfA(&str[0], "WSA_Err:%d", WSAGetLastError());
-				//OutputDebugStringA(&str[0]);
 			}
 			pTerminateThread(ConnectThreadHandle, 1);
-			//pOutputDebugStringA("Connection timeout (> 10 sec)");
 		}
 		DWORD exitCode = 0;
 		BOOL res = (BOOL)pGetExitCodeThread(ConnectThreadHandle, &exitCode);

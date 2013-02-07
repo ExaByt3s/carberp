@@ -257,7 +257,7 @@ bool TGrabberFile::Open()
 
 		// Проверяем версию
 		if (Result)
-			Result == H.Version == GRABBER_FILE_VERSION;
+			Result = H.Version == GRABBER_FILE_VERSION;
 
 		if (Result)
 		{

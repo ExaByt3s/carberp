@@ -629,11 +629,8 @@ bool TMemoryDLL::Load(const void* DllBuf)
 	bool Allocated;
 	LPVOID NewBuf;
 
-	OutputDebugStringA("1");
 	if (!DecodeDll(DllBuf, Size, NewBuf, Allocated))
 		return false;
-	OutputDebugStringA("2");
-	
 
     FHandle = MemoryLoadLibrary(NewBuf);
 
