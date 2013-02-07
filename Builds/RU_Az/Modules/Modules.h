@@ -66,7 +66,7 @@
 #include "avangard.h"
 #include "ifobs.h"
 #include "IfobsOnline.h"
-#include "PrivatBankKeyPass.h"
+#include "PrivatBank.h"
 #include "tiny.h"
 
 
