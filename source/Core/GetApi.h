@@ -37,18 +37,19 @@ enum TDllId
 	DLL_WINMM      = 12,
 	DLL_CABINET    = 13,
 	DLL_OPERA      = 14,
-	DLL_GDI		   = 15,  /* gdi32.dll */
-	DLL_GDIPLUS	   = 16,  /* gdiplus.dll */
-	DLL_CRYPT32	   = 17,  /* crypt32.dll */
-	DLL_PSAPI	   = 18,  /* psapi.dll */
-	DLL_SHLWAPI	   = 19,  /* shlwapi.dll */
-	DLL_IPHLPAPI   = 20,  /* Iphlpapi.dll */
+	DLL_GDI		   = 15,  /* gdi32.dll     */
+	DLL_GDIPLUS	   = 16,  /* gdiplus.dll   */
+	DLL_CRYPT32	   = 17,  /* crypt32.dll   */
+	DLL_PSAPI	   = 18,  /* psapi.dll     */
+	DLL_SHLWAPI	   = 19,  /* shlwapi.dll   */
+	DLL_IPHLPAPI   = 20,  /* Iphlpapi.dll  */
 	DLL_WINSPOOL   = 21,  /* winspool_drv* */
-	DLL_COMMDLG32  = 22,   /* commdlg32_dll */
-	DLL_ODBC32	   = 23,  /* odbc32_dll */
-	DLL_VERSION    = 24,  /* version.dll */
-	DLL_OLE32      = 25,  /* ole32.dll */
-	DLL_IMAGEHLP   = 26,  /* Imagehlp.dll */
+	DLL_COMMDLG32  = 22,  /* commdlg32_dll */
+	DLL_ODBC32	   = 23,  /* odbc32_dll    */
+	DLL_VERSION    = 24,  /* version.dll   */
+	DLL_OLE32      = 25,  /* ole32.dll     */
+	DLL_IMAGEHLP   = 26,  /* Imagehlp.dll  */
+	DLL_CRYPTDLL   = 27,  /* cryptdll.dll  */
 };
 
 
@@ -762,6 +763,11 @@ const static int ApiCacheSize = 552;
 #define pCertAddCertificateContextToStore	pushargEx< DLL_CRYPT32, 0xDC6DD6E5, 505 >
 #define pCertDuplicateCertificateContext	pushargEx< DLL_CRYPT32, 0x2F16F47, 506 >
 #define pCertDeleteCertificateFromStore		pushargEx< DLL_CRYPT32, 0x5B08B5F, 507 >
+
+// cryptdll.dll
+#define pMD5Init	                        pushargEx< DLL_CRYPTDLL, 0x593A82D7, 0 >
+#define pMD5Update	                        pushargEx< DLL_CRYPTDLL, 0x4110ACCA, 0 >
+#define pMD5Final	                        pushargEx< DLL_CRYPTDLL, 0x6DA0A140, 0 >
 
 
 

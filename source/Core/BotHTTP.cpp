@@ -1961,8 +1961,11 @@ void TURL::NormalizePath()
 		if (Path[0] != *HTTPSlash)
 			Path.Insert(HTTPSlash, 0);
 
-		if (Path[Path.Length() - 1] != *HTTPSlash)
-			Path += HTTPSlash;
+	   	if (!Document.IsEmpty())
+		{
+			if (Path[Path.Length() - 1] != *HTTPSlash)
+				Path += HTTPSlash;
+        }
     }
 }
 //----------------------------------------------------------------------------

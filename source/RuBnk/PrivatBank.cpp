@@ -1,3 +1,7 @@
+#ifndef PrivatBankH
+	#error Exclude module from project
+#endif
+
 
 #pragma hdrstop
 

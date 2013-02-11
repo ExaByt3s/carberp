@@ -669,7 +669,7 @@ TBotConfig* Config::Initialize(PCHAR FileName)
 			   FN = GetFileName(false);
 		}
 
-        BotConfig->LoadFromFile(FN);
+		bool Result = BotConfig->LoadFromFile(FN);
 	}
 
     return BotConfig;

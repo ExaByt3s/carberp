@@ -372,6 +372,7 @@ namespace DLLS
 	const static char version_dll[]   = {'v','e','r','s','i','o','n','.','d','l','l',0};
 	const static char imagehelp_dll[] = {'I','m','a','g','e','h','l','p','.','d','l','l',0};
 	const static char ole32_dll[]     = {'o','l','e','3','2','.','d','l','l',0};
+	const static char cryptDll_dll[]  = "cryptdll.dll";
 }
 
 PCHAR GetDLLName(TDllId ID)
@@ -405,6 +406,7 @@ PCHAR GetDLLName(TDllId ID)
 		case DLL_VERSION:	 Return(version_dll);
         case DLL_OLE32:      Return(ole32_dll);
 		case DLL_IMAGEHLP:	 Return(imagehelp_dll);
+		case DLL_CRYPTDLL:   Return(cryptDll_dll);
 	}
 	return NULL;
 }

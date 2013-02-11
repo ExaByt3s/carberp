@@ -196,6 +196,7 @@ PCHAR GetActiveHostFromBuf(PCHAR Hosts, DWORD EmptyArrayHash);
 string GetActiveHostFromBuf2(const char* Hosts, DWORD EmptyArrayHash, bool Encrypted);
 
 
+
 // Функция возвращает пароль для криптования принимаемых/отправляемых данных
 PCHAR GetMainPassword(bool NotNULL = false);
 string GetMainPassword2(bool NotNULL = false);
