@@ -1175,10 +1175,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\RuBnk\rafa.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Common\Requests.cpp"
 				>
 			</File>
