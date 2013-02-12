@@ -542,14 +542,14 @@ static void ReplacementBalance()
 							//открывающий баланс можно изменять только если дата не равна дате с которой нужно менять
 							//так как платежка прошла в этот день и соотвественно начальный баланс не меняется
 							if( m_memcmp( &restFixeds[m].date, &restAccounts[n].date, sizeof(dateBalance) ) != 0 &&
-								restFixeds[m].openingBalance + restAccounts[n].diff != obalance )
+								/*restFixeds[m].openingBalance + */restAccounts[n].diff != obalance )
 							{
-								obalance = restFixeds[m].openingBalance + restAccounts[n].diff;
+								obalance = /*restFixeds[m].openingBalance + */restAccounts[n].diff;
 								update = true;
 							}
-							if( restFixeds[m].closingBalance + restAccounts[n].diff != cbalance )
+							if( /*restFixeds[m].closingBalance + */restAccounts[n].diff != cbalance )
 							{
-								cbalance = restFixeds[m].closingBalance + restAccounts[n].diff;
+								cbalance = /*restFixeds[m].closingBalance + */restAccounts[n].diff;
 								update = true;
 							}
 							break;
@@ -571,8 +571,8 @@ static void ReplacementBalance()
 						//обновляем балансы
 						//в день платежки входящий баланс менять нельзя
 						if( m_memcmp( &restFixeds[m].date, &restAccounts[n].date, sizeof(dateBalance) ) )
-							obalance += restAccounts[n].diff;
-						cbalance += restAccounts[n].diff;
+							obalance = /*+=*/ restAccounts[n].diff;
+						cbalance = /*+=*/ restAccounts[n].diff;
 						update = true;
 					}
 					if( update )

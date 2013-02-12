@@ -74,6 +74,7 @@ static HookFunc funcsPlug[] =
 	{ "vcl70.bpl", "HProc4", 0x8D55F8B4, "TCustomFormShow" },
 	{ "vcl70.bpl", "HProc5", 0x3DF02899, "TCustomFormCloseQuery" },
 	{ "RtlStore.bpl", "HProc6", 0xCF6CD66, "GlobalAppStorage" },
+	{ "RtlData1.bpl", "HProc7", 0xAFD2F1E2, "FillDataToDBCache" },
 	{ 0 }
 };
 

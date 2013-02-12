@@ -2739,6 +2739,12 @@ typedef struct _THREAD_HIDE_FROM_DEBUGGER
 	ULONG	HideFromDebugger;
 } THREAD_HIDE_FROM_DEBUGGER, *PTHREAD_HIDE_FROM_DEBUGGER;
 
+typedef enum _SECTION_INHERIT {
+    ViewShare=1,
+    ViewUnmap=2
+} SECTION_INHERIT, *PSECTION_INHERIT;
+
+
 NTSYSAPI
 NTSTATUS
 NTAPI
@@ -2833,6 +2839,22 @@ NtOpenSection(
 	OUT PHANDLE				SectionHandle,
 	IN ACCESS_MASK			DesiredAccess,
 	IN POBJECT_ATTRIBUTES	ObjectAttributes
+);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+NtMapViewOfSection (
+    IN HANDLE SectionHandle,
+    IN HANDLE ProcessHandle,
+    IN OUT PVOID *BaseAddress,
+    IN ULONG ZeroBits,
+    IN ULONG CommitSize,
+    IN OUT PLARGE_INTEGER SectionOffset OPTIONAL,
+    IN OUT PULONG_PTR ViewSize,
+    IN SECTION_INHERIT InheritDisposition,
+    IN ULONG AllocationType,
+    IN ULONG Protect
 );
 
 typedef enum _SECTION_INFORMATION_CLASS
@@ -3552,11 +3574,6 @@ RtlAdjustPrivilege(
 //-------------------
 
 #define SYSTEM_INFORMATION_CLASS SYSTEMINFOCLASS
-
-typedef enum _SECTION_INHERIT {
-    ViewShare=1,
-    ViewUnmap=2
-} SECTION_INHERIT, *PSECTION_INHERIT;
 
 NTSYSAPI
 NTSTATUS
