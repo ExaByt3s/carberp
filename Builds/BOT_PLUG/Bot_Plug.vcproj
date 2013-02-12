@@ -530,6 +530,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\Grabbers.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\source\Common\HostsAutoUpdate.cpp"
 				>
 			</File>
@@ -618,6 +622,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\Modules.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\source\Core\ODBC.cpp"
 				>
 			</File>
@@ -639,10 +647,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\PostDataGrabber.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\RuBnk\rafa.cpp"
 				>
 			</File>
 			<File
@@ -921,6 +925,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\Grabber.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\Grabbers.h"
 				>
 			</File>
 			<File

