@@ -52,7 +52,13 @@ BOOL WINAPI JmpToExplorer(TInjectFunction f_Main);
 //---------------------------------------------------
 BOOL WINAPI MegaJump(TInjectFunction f_Main);
 
+namespace NewInject
+{
 
+bool InjectExplore32( TInjectFunction func );
+bool InjectToProcess32( TInjectFunction func, const char* classWnd );
+
+}
 //----------------------------------------------------------------------------
 #endif
 

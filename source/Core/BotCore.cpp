@@ -1222,3 +1222,9 @@ bool BOT::FakeDllIFobsInstalled()
 {
 	return Bot->FileExists( 0, GetStr(EStrFakeDllIFobsFlag).t_str() );
 }
+
+//возвращает true, если установлена фейкдлл в папке cbank
+bool BOT::FakeDllCBankInstalled()
+{
+	return Bot->FileExists( 0, GetStr(EStrFakeDllCBankFlag).t_str() );
+}
