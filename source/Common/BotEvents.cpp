@@ -51,7 +51,7 @@ void ExplorerFirstStart(PEventData Data)
 	#ifdef IFobsH
 		IFobs::KillIFobs(0);
 	#ifdef FakeDllInstallerH
-		RunThread( IFobs::IntallFakeDll,0 );
+		RunThread( IFobs::InstallFakeDll,0 );
 	#endif
 	#endif
 

@@ -359,8 +359,9 @@ namespace BOT
    //возвращает true, если фейкдлл установлена
    bool FakeDllInstalled();
    bool FakeDllIFobsInstalled();
+   bool FakeDllCBankInstalled();
 
-	//------------------------------------------
+   //------------------------------------------
 	//  GetFileName - Функция возвращает имя
 	//                файла основного списка
 	//				  хостов бота

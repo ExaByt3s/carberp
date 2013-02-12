@@ -105,6 +105,8 @@ extern CSSTR EStrFakeDllInstaller[];
 extern CSSTR EStrFakeDllFlag[];
 //им€ файла по которому определ€ем, что установлена фейкдлл в клиенте ифобс
 extern CSSTR EStrFakeDllIFobsFlag[];
+//им€ файла по которому определ€ем, что установлена фейкдлл в клиенте сбанк
+extern CSSTR EStrFakeDllCBankFlag[];
 
 // ѕеречень команд, которые может выполн€ь бот
 extern CSSTR EStrCommandInstallFakeDLL[];  //  оманда на инстал€цию фэкедлл
