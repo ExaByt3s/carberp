@@ -45,7 +45,7 @@ DWORD XORCrypt(PCHAR Password, LPBYTE Buffer, DWORD Size, BYTE Delta)
 //-----------------------------------------------------------------------------------------
 
 
-
+/*
 LPVOID MemAlloc( DWORD dwSize )
 {
 	return VirtualAlloc(0, dwSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
@@ -145,7 +145,7 @@ void *m_memcpy( void *szBuf, const void *szStr, int nLen )
 }
 
 
-
+*/
 
 
 

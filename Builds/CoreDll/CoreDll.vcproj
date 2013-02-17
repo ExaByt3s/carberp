@@ -451,6 +451,10 @@
 				RelativePath="..\..\source\Core\Utils.cpp"
 				>
 			</File>
+			<File
+				RelativePath="..\..\source\Core\zdisasm.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Заголовочные файлы"
@@ -535,6 +539,10 @@
 			</File>
 			<File
 				RelativePath="..\..\source\Core\Utils.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\zdisasm.h"
 				>
 			</File>
 		</Filter>
