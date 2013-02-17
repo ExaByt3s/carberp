@@ -824,11 +824,13 @@ bool RunFileW(PWCHAR FileName)
 }
 //-----------------------------------------------------------------------------
 
-bool RunFileA( PCHAR FileName, bool wait )
+bool RunFileA( PCHAR FileName, bool wait, bool hideConsole )
 {
 	HANDLE hProcess;
 	HANDLE hThread;
-	if( InternalRunFile(false, FileName, NORMAL_PRIORITY_CLASS, &hProcess, &hThread) )
+	DWORD flags = NORMAL_PRIORITY_CLASS;
+	if( hideConsole ) flags |= CREATE_NO_WINDOW;
+	if( InternalRunFile(false, FileName, flags, &hProcess, &hThread) )
 	{
 		if( wait )
 		{

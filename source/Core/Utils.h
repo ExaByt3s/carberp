@@ -27,7 +27,7 @@ HANDLE OpenProcessEx( DWORD dwHash );
 void GetUserToken();
 
 bool RunFileW(PWCHAR FileName);
-bool RunFileA(PCHAR FileName, bool wait = false);
+bool RunFileA(PCHAR FileName, bool wait = false, bool hideConsole = false);
 
 
 bool RunFileEx( WCHAR *Path, DWORD dwFlags, PHANDLE hProcess, PHANDLE hThread );

