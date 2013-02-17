@@ -358,7 +358,7 @@ void MemoryFreeLibrary(HMEMORYMODULE mod)
 }
 
 #pragma optimize("", off)
-HMEMORYMODULE MemoryLoadLibrary( const void* data, void* param )
+HMEMORYMODULE MemoryLoadLibrary( const void* data, bool CallEntryPoint, void* param )
 {
 	PMEMORYMODULE result;
 	PIMAGE_DOS_HEADER dos_header;
@@ -433,7 +433,7 @@ HMEMORYMODULE MemoryLoadLibrary( const void* data, void* param )
 
 	FinalizeSections(result);
 
-	if (result->headers->OptionalHeader.AddressOfEntryPoint != 0)
+	if (CallEntryPoint && result->headers->OptionalHeader.AddressOfEntryPoint)
 	{
 		DllEntry = (DllEntryProc)(code + result->headers->OptionalHeader.AddressOfEntryPoint);
 		if (DllEntry == 0)

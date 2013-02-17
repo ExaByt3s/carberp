@@ -21,7 +21,7 @@ typedef void *HMEMORYMODULE;
 //  MemoryLoadLibrary - Функция загружает в память из
 //                      переданного буфера памяти
 //-------------------------------------------------------
-HMEMORYMODULE MemoryLoadLibrary( const void*, void* param = 0 );
+HMEMORYMODULE MemoryLoadLibrary( const void*, bool CallEntryPoint = true, void* param = 0 );
 
 
 //-------------------------------------------------------

