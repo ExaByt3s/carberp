@@ -6,10 +6,9 @@
 #include "BotHTTP.h"
 #include "Plugins.h"
 #include "HTTPConsts.h"
-#include "Task.h"
 #include "md5.h"
 //#include "KillOs_Reboot.h"
-#include "DbgRpt.h"
+
 
 //---------------------------------------------------------------------------
 

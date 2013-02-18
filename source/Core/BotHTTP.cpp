@@ -12,7 +12,6 @@
 #include "HTTPConsts.h"
 #include "StrConsts.h"
 
-//#include "Modules.h"
 
 //#include "BotDebug.h"
 
@@ -2148,10 +2147,10 @@ THTTPRequest::THTTPRequest()
 void THTTPRequest::SetURL(const char* aURL)
 {
 	TURL URL(aURL);
-
-	Host = URL.Host;
-	Path = URL.GetPathAndDocument();
-	Port = URL.Port;
+	ProtocolStr = URL.Protocol;
+	Host        = URL.Host;
+	Path        = URL.GetPathAndDocument();
+	Port        = URL.Port;
 }
 //---------------------------------------------------------------------------
 
@@ -2421,9 +2420,23 @@ void THTTPResponse::Parse()
 	// Получаем значения основных заголовков
 	ContentType      = Headers.GetValue(ParamContentType);
 	CacheControl     = Headers.GetValue(ParamCacheControl);
-	Location         = Headers.GetValue(ParamLocation);
 	Pragma           = Headers.GetValue(ParamPragma);
 	TransferEncoding = Headers.GetValue(ParamTransferEncoding);
+	MD5              = Headers.GetValue(ParamContentMD5);
+
+	// Разбираем значение редиректа
+	Location = Headers.GetValue(ParamLocation);
+	if (!Location.IsEmpty() && FRequest && Location[0] == '/')
+	{
+		// Относительный путь превращаем в полный
+		TURL URL;
+		URL.Protocol = FRequest->ProtocolStr;
+		URL.Host     = FRequest->Host;
+		URL.Path     = Location;
+
+		Location = URL.URL();
+	}
+
 
 	// Определяем поблоковый механизм передачи
 	Chunked = TransferEncoding == ValueChunked;
@@ -2924,7 +2937,7 @@ void TMultiPartData::AddBlobAsFile(const char* Name, const char* FileName, LPVOI
 
 THTTP::THTTP()
 {
-    Initialize();
+	Initialize();
 }
 
 THTTP::THTTP(TBotSocket* Socket)
@@ -2951,6 +2964,7 @@ void THTTP::Initialize()
 	CheckOkCode = true;
 	FSocketCreated = false;
 	FDocumentSize = 0;
+	Response.FRequest = &Request;
 }
 //----------------------------------------------------------------------------
 
@@ -3113,9 +3127,14 @@ bool THTTP::ReceiveData(TBotStream *ResponseStream)
 	{
 		Readed = FSocket->Read(Buf.Buf(), BufSize);
 
+		if (Readed == 0)
+		{
+			FDocumentCompleted = true;
+			break;
+		}
+		else
 		if (Readed == SOCKET_ERROR)
 		{
-
 			HTTPDBG("HTTP", "Чтение заверщено. [Error=%d]", (int)pWSAGetLastError());
 			break;
 		}

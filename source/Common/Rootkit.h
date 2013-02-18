@@ -14,5 +14,6 @@ DWORD WINAPI RootkitThread(LPVOID);
 
 BOOL ProtectPage( LPVOID lpAddr, DWORD dwParams );
 
+
 //----------------------------------------------------------------------------
 #endif

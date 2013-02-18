@@ -62,6 +62,7 @@ const PCHAR ParamLastModified = "Last-Modified";
 const PCHAR ParamIfModifiedSince = "If-Modified-Since";
 const PCHAR ParamIfNoneMatch = "If-None-Match";
 const PCHAR ParamCacheControl = "Cache-Control";
+const PCHAR ParamContentMD5   = "Content-MD5";
 
 
 
@@ -511,6 +512,7 @@ public:
 	THTTPProtocol   Protocol;
 	THTTPMethod     Method;
 	bool   CloseConnection;  // Посде запроса закрыть соединение
+	string ProtocolStr;
 	string Host;
 	string Path;
 	WORD   Port;
@@ -535,10 +537,13 @@ public:
 class THTTPResponse : public TBotObject
 {
 private:
-	string FHTTPData;
+	string        FHTTPData;
+	THTTPRequest* FRequest;
 
 	void Parse();
 	bool ParseFirstLine(const char* Line);
+
+	friend class THTTP;
 public:
 	// Свойства класса
 	WORD   Code;             // Код ответа
@@ -550,6 +555,7 @@ public:
 	string Location;         // Адрес перехода при редиректе
 	string Pragma;           // Особые опции выполнения
 	string TransferEncoding; // Механизм передачи данных
+	string MD5;              // MD5 хэш содержимого
 
 	bool Chunked;        // Признак того, что данные передаются поблочно. см TransferEncoding
 	TBotStrings Headers; // Все заголовки ответа

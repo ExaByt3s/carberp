@@ -3,5 +3,5 @@
 
 DWORD WINAPI ExplorerMain(LPVOID Data);
 
-extern"C"  void NTAPI Start(LPVOID, LPVOID, LPVOID);
+extern"C"  void WINAPI Start(BOOL Initialize, BOOL Start, BOOL IsLoaderPlugin);
 

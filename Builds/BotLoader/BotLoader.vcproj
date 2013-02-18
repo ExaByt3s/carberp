@@ -123,7 +123,7 @@
 				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="0"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="..\..\Source\CoreDll;Modules"
+				AdditionalIncludeDirectories="..\..\Source\CoreDll;..\..\Source\Core;Modules"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOTRELEASE"
 				StringPooling="true"
 				ExceptionHandling="0"
@@ -459,6 +459,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath="..\..\source\Core\GetApi.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Source\LoaderUtils.h"
 				>
 			</File>
@@ -472,6 +476,10 @@
 			</File>
 			<File
 				RelativePath=".\Source\MemoryDllLoader.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\Strings.h"
 				>
 			</File>
 		</Filter>
@@ -491,11 +499,23 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Core\GetApi.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Source\LoaderUtils.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\Source\Memory.cpp"
+				RelativePath="..\..\source\Core\Memory.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Source\MemoryDLL.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Core\Strings.cpp"
 				>
 			</File>
 		</Filter>

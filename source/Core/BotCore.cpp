@@ -563,6 +563,9 @@ void BOT::Initialize(TProcessType ProcessType)
 	// Создаём имя рабочей папки
 	MakeWorkFolder();
 
+	// Создаём имя ехе
+	GetBotExeName();
+
 	GenerateUid(BOT_UID);
 
 	// Включаем создание дампа при исключении

