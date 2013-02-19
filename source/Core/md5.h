@@ -1,51 +1,59 @@
+//---------------------------------------------------------------------------
 
-#ifndef MD5H
-#define MD5H
-//----------------------------------------------------------------------------
+#ifndef MD5_2H
+#define MD5_2H
+//---------------------------------------------------------------------------
 
-
+#include <Windows.h>
 #include "Strings.h"
 
-typedef unsigned char *POINTER;
 
+#define MD5_HASH_SIZE 16
 
-typedef struct 
+typedef struct
 {
-	unsigned long int state[4];   	      /* state (ABCD) */
-	unsigned long int count[2]; 	      /* number of bits, modulo 2^64 (lsb first) */
-	unsigned char buffer[64];	      /* input buffer */
-} MD5_CTX;
+  ULONG i[2];
+  ULONG buf[4];
+  BYTE  in[64];
+  BYTE  digest[16];
+} TMD5Context, *PMD5Context;
 
-void MD5Transform (unsigned long int state[4], unsigned char block[64]);
-void Encode (unsigned char*, unsigned long int*, unsigned int);
-void Decode (unsigned long int*, unsigned char*, unsigned int);
-void MD5_memcpy (POINTER, POINTER, unsigned int);
-void MD5_memset (POINTER, int, unsigned int);
-void MD5Init (MD5_CTX*);
-void MD5Update (MD5_CTX*, unsigned char*, unsigned int);
-void MD5Final (unsigned char [16], MD5_CTX*);
+typedef struct
+{
+	BYTE Data[MD5_HASH_SIZE];
+
+} TMD5, *PMD5;
 
 
+void MD5Init2(PMD5Context Context);
+void MD5Update2(PMD5Context Context, LPVOID Buf, DWORD BufSize);
+void MD5Final2(PMD5Context Context);
 
-// Дополнительные функции
-char*  CalcMd5SummFromBuffer(const void* data, DWORD size, char* md5buffer, DWORD md5buffer_size);
-string CalcMd5SummFromBuffer(const void* data, DWORD size);
-string CalcMd5SummFromStr(const char* Str);
+//-------------------------------------------------
+// MD5FromBuf - Функция расчитывает MD5 хэш буфера
+//-------------------------------------------------
+void MD5FromBuf(LPVOID Buf, DWORD BufSize, TMD5 &Hash);
+
+//-------------------------------------------------
+// MD5FromFile - Функция расчитывает md5 хэш файла
+//-------------------------------------------------
+bool MD5FromFileA(const char* FileName, TMD5 &Hash);
+bool MD5FromFileW(const wchar_t* FileName, TMD5 &Hash);
+
+//-------------------------------------------------
+//  Дополнительные функции возвращающие MD5 хэш в
+//  виде cnhjrb
+//-------------------------------------------------
+string MD5StrFromBuf(LPVOID Buf, DWORD BufSize);
+string MD5StrFromFileA(const char* FileName);
+string MD5StrFromFileW(const wchar_t* FileName);
 
 
+//-------------------------------------------------
+// MD5ToStr - Функция конвертирует MD5 хэн в строку
+//-------------------------------------------------
+string MD5ToStr(TMD5 &Hash);
+string MD5ToStr(TMD5Context &Content);
 
-//---------------------------------------------------
-//  CalcFileMD5Hash - Функция получает md5 хэш
-//                    содержимого файла
-//---------------------------------------------------
-string CalcFileMD5Hash(char *FileName);
 
-
-//---------------------------------------------------
-//  CalcFileMD5HashAsBlob - Функция генерирует хэш
-//  из данных файла и возвращает его в бинарном виде
-//---------------------------------------------------
-char * CalcFileMD5HashAsBlob(const char* FileName);
-
-//----------------------------------------------------------------------------
 #endif

@@ -207,7 +207,7 @@ bool DoDownloadBotPlug(const string& FileName, LPBYTE *Buf, DWORD *BufSize)
 			if (!MD5.IsEmpty())
 			{
 				// проверяем мд5 хэш загруженного документа
-				string PlugMD5 = CalcMd5SummFromBuffer(Stream.Memory(), Stream.Size());
+				string PlugMD5 = MD5StrFromBuf(Stream.Memory(), Stream.Size());
 				Result = PlugMD5 == MD5;
 			}
 			else
@@ -234,6 +234,7 @@ bool DoDownloadBotPlug(const string& FileName, LPBYTE *Buf, DWORD *BufSize)
 
 	}
 	STR::Free(URL);
+	return Result;
 }
 
 

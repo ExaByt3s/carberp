@@ -226,7 +226,8 @@ typedef NTSTATUS	*PNTSTATUS;
 typedef NTSTATUS	(NTAPI *NTSYSCALL)();
 typedef NTSYSCALL	*PNTSYSCALL;
 
-typedef ULONG		KAFFINITY;
+
+typedef ULONG_PTR	KAFFINITY;
 typedef KAFFINITY	*PKAFFINITY;
 typedef LONG		KPRIORITY;
 
@@ -3735,6 +3736,7 @@ ZwSetContextThread(
 	IN PCONTEXT 	Context	 
 );
 
+/*
 NTSYSAPI
 NTSTATUS 
 NTAPI 
@@ -3750,6 +3752,7 @@ ZwMapViewOfSection(
   __in     ULONG AllocationType,
   __in     ULONG Win32Protect
 );
+*/
 
 typedef enum _WINSTATIONINFOCLASS {
     WinStationInformation = 8
