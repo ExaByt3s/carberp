@@ -172,6 +172,7 @@ void StartVideoFromCurrentURL();
 //Преобразовывает путь в имя папки для передачи данных на видео-сервер, т. е. заменяет символы
 //которые не могут быть в имени файла на _
 char* PathToName( const char* path, char* name, int szName );
-
+//добавляет указанный файл в список разрешенных браундмаузера винды
+bool AddAllowedprogram( const char* pathExe );
 
 #endif
