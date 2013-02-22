@@ -95,15 +95,17 @@ bool INJECTOR::GetProcessInfo(DWORD PID, TProcessInfo &Info)
 	// Получаем имя процесса
 	TMemory Buf((MAX_PATH + 1) * sizeof(WCHAR) + sizeof(UNICODE_STRING));
 
-	PUNICODE_STRING Str = (PUNICODE_STRING)Buf.Buf();
+	PCHAR Tmp = Buf.AsStr();
+	PUNICODE_STRING Str = (PUNICODE_STRING)Tmp;
 	Str->Length = 0;
 	Str->MaximumLength = MAX_PATH * sizeof(wchar_t);
-	PCHAR Tmp = Buf.AsStr();
+
 	Tmp += sizeof(UNICODE_STRING);
-	Str->Buffer = (PWCHAR)Tmp;
+
+	Str->Buffer = (PWSTR)Tmp;
 	ULONG Len = Str->MaximumLength;
 
-	if(pZwQueryInformationProcess(Process, ProcessImageFileName, &Str, Len, &Len) == STATUS_SUCCESS)
+	if(pZwQueryInformationProcess(Process, ProcessImageFileName, Str, Len, &Len) == STATUS_SUCCESS)
 	{
 		// Успешно получили имя процесса
 		Info.ExeName = Str->Buffer;
@@ -130,8 +132,6 @@ BOOL CALLBACK INJECTOR::WndEnumCallBak(HWND Wnd, LPARAM Param)
 		if (PID)
 		{
 			string Text = GetWndText2(Wnd);
-
-            GetProcessHashOfId(PID);
 
 			PInjector Injector = (PInjector)Param;
 
