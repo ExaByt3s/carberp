@@ -664,11 +664,11 @@ DWORD GetProcessIdByHash( DWORD dwHash )
 DWORD GetProcessHashOfId(DWORD dwPid)
 {
 	OBJECT_ATTRIBUTES ObjectAttributes =	{ sizeof( ObjectAttributes ) } ;
-	CLIENT_ID ClientID;
 	PUNICODE_STRING	puStr;
 	DWORD hash = (DWORD)-1;
 	ULONG len;
 
+	CLIENT_ID ClientID;
 	ClientID.UniqueProcess = (HANDLE)dwPid;
 	ClientID.UniqueThread  = 0;
 
@@ -679,20 +679,20 @@ DWORD GetProcessHashOfId(DWORD dwPid)
 		return (DWORD)-1;
 	
 	
-	puStr = (PUNICODE_STRING)MemAlloc( sizeof(UNICODE_STRING) +sizeof(WCHAR)*(MAX_PATH+1) );
+	puStr = (PUNICODE_STRING)MemAlloc( sizeof(UNICODE_STRING) + sizeof(WCHAR)*(MAX_PATH+1) );
 	if (puStr)
 	{
 		puStr->Length = 0;
 		len = puStr->MaximumLength = sizeof(WCHAR)*MAX_PATH ;
 		puStr->Buffer =(PWCHAR) (sizeof(UNICODE_STRING) + (PCHAR)puStr); 
-		m_memset(puStr->Buffer,0,puStr->MaximumLength);
+		m_memset(puStr->Buffer,0, puStr->MaximumLength);
 
 		//0xa638ce5f	
 	
-		if( (NTSTATUS)pZwQueryInformationProcess(hProcess,ProcessImageFileName,puStr,len,&len) == STATUS_SUCCESS)
+		if((NTSTATUS)pZwQueryInformationProcess(hProcess,ProcessImageFileName,puStr,len,&len) == STATUS_SUCCESS)
 		{
 			hash = GetNameHash(puStr->Buffer);
-		};
+		}
 		MemFree(puStr);
 	};
 
@@ -3302,3 +3302,44 @@ string CombineFileName(const char* Path, const char* FileName)
 	return F;
 }
 
+
+//---------------------------------------------------------
+//  IsWIN64 - Функция возвращает истину в случае если,
+//  Windows вляется 64 разрядным
+//
+//  To-Do: В данный момент функция проверяет архитектуру
+//         процессора, что даст нам ошибку если на 64 битном
+//         железе стоит 32 битная винда. Соответственно
+//         необходимо найти нормальный
+//---------------------------------------------------------
+bool IsWIN64()
+{
+	SYSTEM_INFO SI;
+	pGetNativeSystemInfo(&SI);
+	return SI.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64;
+}
+
+
+//---------------------------------------------------------
+//  IsWOW64 - Функция возвращает истину если процесс, PID
+//            которого передали, запущен под системой WOW64,
+//            что означает запуск 32 битного процесса в 64
+//            битной винде
+//  Для получения информации о текущем процессе необходимо
+//  передать ередать нудевой пид:
+//  	IsWOW64(0);
+//---------------------------------------------------------
+bool IsWOW64(DWORD PID)
+{
+	BOOL Result = FALSE;
+	if (!PID)
+		pIsWow64Process(GetCurrentProcess(), &Result);
+	else
+	{
+		HANDLE Process = (HANDLE)pOpenProcess(PROCESS_QUERY_INFORMATION, FALSE, PID);
+		if (!pIsWow64Process(Process, &Result))
+			Result = FALSE;
+		pCloseHandle(Process);
+	}
+	return Result != FALSE;
+}

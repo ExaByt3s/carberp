@@ -102,10 +102,10 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS ExceptionInfo)
 	DUMP::WriteUint32(&NtlvWriter, "ThreadId", GetCurrentThreadId());
 
 	// Получаем параметры нашего модуля, который установил обработчик VEH.
-	DWORD BootBase = GetImageBase();
-	DWORD SizeOfBoot = ((PIMAGE_NT_HEADERS)(((PIMAGE_DOS_HEADER)BootBase)->e_lfanew + BootBase))->OptionalHeader.SizeOfImage;
+	LPVOID BootBase = GetImageBase();
+	DWORD SizeOfBoot = ((PIMAGE_NT_HEADERS)(((PIMAGE_DOS_HEADER)BootBase)->e_lfanew + (LPBYTE)BootBase))->OptionalHeader.SizeOfImage;
 
-	DUMP::WriteUint32(&NtlvWriter, "BootBase", BootBase);
+	DUMP::WriteUint32(&NtlvWriter, "BootBase", (DWORD)BootBase);
 	DUMP::WriteUint32(&NtlvWriter, "SizeOfBoot", SizeOfBoot);
 
 	WCHAR   ModulePath[MAX_PATH];

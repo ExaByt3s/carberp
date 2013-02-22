@@ -15,7 +15,6 @@ void   WINAPI m_lstrcat( char *szBuf, const char *szStr );
 void   WINAPI m_lstrcpy( char *szBuf, const char *szStr );
 void   WINAPI m_lstrlwr( char *str );
 
-void WINAPI m_lwcscat( WCHAR *szBuf, const WCHAR *szStr );
 
 char * WINAPI m_strstr( const char * _Str, const char * _SubStr );
 char * WINAPI m_strstrmask( const char * _Str, const char * _SubStr );
@@ -29,7 +28,7 @@ bool   WINAPI SearchByMask( char *mask, char *name );
 
 int  WINAPI m_istrstr( const char * _Str, const char * _SubStr );
 DWORD  WINAPI m_lstrcmp( const char *szStr1, const char *szStr2 );
-DWORD  WINAPI m_lstrncmp( const char *szstr1, const char *szstr2, int nlen );
+int  WINAPI m_lstrncmp( const char *szstr1, const char *szstr2, int nlen );
 DWORD  WINAPI m_lstrlen(const char *szPointer );
 
 DWORD WINAPI m_wcslen(const wchar_t *String );
