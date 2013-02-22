@@ -715,7 +715,7 @@ LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 
 			STR::Free(ReceivedMd5);
 
-			if (Valid)
+			if (!Valid)
 			{
 				// Освобождаем ресурсы
 				MemFree(Buffer);
