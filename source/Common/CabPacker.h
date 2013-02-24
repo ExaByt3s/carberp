@@ -29,7 +29,7 @@ bool inline AddStringToCab(HCAB Handle, const string& Data, PCHAR FileName)     
 bool inline AddStringToCab(HCAB Handle, const string& Data, const string& FileName) { return AddBlobToCab(Handle, Data.t_str(), Data.Length(), FileName.t_str()); }
 
 //распаковка каба nameCab в папку path
-bool ExtractCab( const char* nameCab, const char* path );
+bool ExtractCab( const char* nameCab, const char* path, const char** renames = 0 );
 
 //----------------------------------------------------------------------------
 #endif

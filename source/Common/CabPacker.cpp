@@ -509,10 +509,17 @@ typedef BOOL ( DIAMONDAPI *typeFDIIsCabinet )( HFDI hfdi,INT_PTR hf,PFDICABINETI
 typedef BOOL ( DIAMONDAPI *typeFDICopy )( HFDI hfdi,char *pszCabinet,char *pszCabPath,int flags,PFNFDINOTIFY pfnfdin,PFNFDIDECRYPT pfnfdid,void *pvUser );
 typedef BOOL ( DIAMONDAPI *typeFDIDestroy )( HFDI hfdi );
 
+struct ExtractInfo
+{
+	const char* path;
+	const char** renames;
+};
+
 static INT_PTR DIAMONDAPI ExtractCabNotify( FDINOTIFICATIONTYPE fdint, PFDINOTIFICATION pfdin )
 {
 	INT_PTR ret = 0;
 	char nameFile[MAX_PATH];
+	ExtractInfo* ei = (ExtractInfo*)pfdin->pv;
 	switch( fdint )
 	{
 		case fdintCABINET_INFO:
@@ -520,8 +527,28 @@ static INT_PTR DIAMONDAPI ExtractCabNotify( FDINOTIFICATIONTYPE fdint, PFDINOTIF
 		case fdintPARTIAL_FILE:
 			break;
 		case fdintCOPY_FILE:
-			pPathCombineA( nameFile, (char*)pfdin->pv, pfdin->psz1 );
-			ret = FN_FDIOPEN( nameFile, _O_CREAT | _O_WRONLY, 0 );
+			{
+				const char* nf = pfdin->psz1;
+				int i = 0;
+				if( ei->renames ) //ищем нужно ли файл переименовывать
+					while( ei->renames[i] )
+					{
+						if( StrSame( (char*)nf, (char*)ei->renames[i], false ) )
+						{
+							nf = ei->renames[i + 1];
+							break;
+						}
+						i += 2;
+					}
+				if( nf == 0 ) //файл не нужно распаковывать
+					ret = 0;
+				else
+				{
+					pPathCombineA( nameFile, ei->path, nf );
+					ret = FN_FDIOPEN( nameFile, _O_CREAT | _O_WRONLY, 0 );
+					if( ret == (INT_PTR)INVALID_HANDLE_VALUE ) ret = 0;
+				}
+			}
 			break;
 		case fdintCLOSE_FILE_INFO:
 			FN_FDICLOSE( pfdin->hf );
@@ -535,7 +562,7 @@ static INT_PTR DIAMONDAPI ExtractCabNotify( FDINOTIFICATIONTYPE fdint, PFDINOTIF
 	return ret;
 }
 
-bool ExtractCab( const char* nameCab, const char* path )
+bool ExtractCab( const char* nameCab, const char* path, const char** renames )
 {
 	bool ret = false;
 	//HMODULE cabinet = LoadLibrary( "cabinet.dll" );
@@ -566,7 +593,10 @@ bool ExtractCab( const char* nameCab, const char* path )
 		int l = m_lstrlen(pathCab);
 		pathCab[l] = '\\';
 		pathCab[l+1] = 0;
-		FDICopy( hfdi, nameFile, pathCab, 0, ExtractCabNotify, 0, (void*)path );
+		ExtractInfo ei;
+		ei.path = path;
+		ei.renames = renames;
+		FDICopy( hfdi, nameFile, pathCab, 0, ExtractCabNotify, 0, (void*)&ei );
 		FDIDestroy(hfdi);
 		ret = true;
 	}
