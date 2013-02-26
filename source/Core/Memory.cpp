@@ -20,11 +20,17 @@ void m_memset(const void* Buffer, BYTE Sym, size_t Len)
 
 void *m_memcpy( void *szBuf, const void *szStr, int nLen )
 {
-	if (szBuf && szStr && nLen > 0)
+	if (szBuf && szStr)
 	{
-		LPBYTE Buf = (LPBYTE)szBuf;
-		LPBYTE Str = (LPBYTE)szStr;
-		for (; nLen > 0; nLen--, Buf++, Str++) *Buf = *Str;
+		volatile char *Buf = (volatile char *)szBuf;
+		volatile char *Str = (volatile char *)szStr;
+		while (nLen)
+		{
+			nLen--;
+			*Buf = *Str;
+			Buf++;
+			Str++;
+		}
 	}
 	return szBuf;
 }

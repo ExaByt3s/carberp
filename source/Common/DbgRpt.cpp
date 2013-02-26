@@ -87,11 +87,9 @@ string GenerateUidAsString(const string& Prefix)
 	string  uid = Prefix;
 	PCHAR   uid_ptr = MakeMachineID();
 	size_t  uid_size = m_lstrlen(uid_ptr);
-
 	if (Prefix.Length() > 0) uid += "0";
 	uid += uid_ptr;
 
-	STR::Free(uid_ptr);
 	return uid;
 }
 

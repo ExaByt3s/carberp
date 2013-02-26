@@ -36,6 +36,11 @@ namespace Utils_Debug
 #define OutMessages  Utils_Debug::DBGOutMessage<>
 
 
+//--------------------------------------------------
+//  Сгенерированный идентификатор машины
+//--------------------------------------------------
+char MachineID[17] = {0};
+
 
 //--------------------------------------------------
 //  Список имён процессов анти вирусов
@@ -339,15 +344,19 @@ int myHashData(DWORD lpData, DWORD dwDataSize)
 
 PCHAR MakeMachineID()
 {
-	//данная функция вернет PCHAR который мочить STR::Free
-	
+	//данная функция вернет указатель на массив с идентификаторм машины
+	if (MachineID[0] != 0)
+		return MachineID;
+
+	m_memset(MachineID, 0, sizeof(MachineID));
+
+    // Генерируем идентификатор
 	char szRegPath1[] = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\0";
 	char szDigitalProductId[] = "DigitalProductId\0";
 	char szInstallDate[] = "InstallDate\0";
 	char szRegId[] = "RegId\0";
 
 	DWORD dwMakeMachineID_done = 0;
-	PCHAR szMachineID = STR::Alloc(17) ;
 	DWORD iBufferSize = 0;
 	int flShouldMakeUniqID = 0;
 	DWORD dwExtraHashForMachineID = 0;
@@ -437,13 +446,13 @@ PCHAR MakeMachineID()
 			char szMID_format[] = "%08X%08X";
 
 			
-			_pwsprintfA(szMachineID, szMID_format, dwHash1, dwHash2);
+			_pwsprintfA(MachineID, szMID_format, dwHash1, dwHash2);
 			
-			//printf(szMachineID);			
+			//printf(szMachineID);
 		}
 	}
-	// return pointer to global var filled with textual machine-id representation
-	return szMachineID;
+
+	return MachineID;
 }
 
 
@@ -472,7 +481,6 @@ void GenerateUid(char *BotUid)
 	m_lstrcpy( BotUid, GetPrefix().t_str());
 	m_lstrcat( BotUid, "0" );
 	m_lstrcat( BotUid, tmp_BotUid );
-	STR::Free(tmp_BotUid);
 
 //	return;
 
@@ -2809,8 +2817,6 @@ HANDLE TryCreateSingleInstance(const char* MutexPrefix)
 	m_lstrcat(MutexName, "Global\\");
 	m_lstrcat(MutexName, MutexPrefix);
 	m_lstrcat(MutexName, MachineId);
-
-	STR::Free(MachineId);
 
 	//DBG("TryCreateSingleInstance", "Mutex name '%s'.", MutexName);
 
