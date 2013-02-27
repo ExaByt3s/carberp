@@ -2031,8 +2031,7 @@ DWORD File::GetNameHashA(PCHAR FileName, bool LowerCase)
 {
 	// Функция возвращает хэш имени файла
 	PCHAR Name = ExtractFileNameA(FileName, false);
-	return STR::GetHash(Name, 0, LowerCase);
-
+	return STRA::Hash(Name, 0, LowerCase);
 }
 //-----------------------------------------------------------------------------
 
