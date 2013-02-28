@@ -286,8 +286,11 @@ void Request::CloseReceiveData(PRequest R)
 	// функция собирает загруженные данные ф буфер запроса
 	// и освобождает выделенные для загрузки структуры
 	if (R == NULL) return;
-	MEMBLOCK::FreeBlock(R->ReceiveBuf);
-	R->ReceiveBuf = NULL;
+	if (R->ReceiveBuf)
+	{
+		MEMBLOCK::FreeBlock(R->ReceiveBuf);
+		R->ReceiveBuf = NULL;
+    }
 
 	// Собираем загруженные данные
 	if (R->ReceiveList != NULL)

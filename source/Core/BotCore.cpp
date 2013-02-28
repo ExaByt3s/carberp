@@ -98,7 +98,7 @@ char BOT_UID[128];
 //Внутренние методы пространства имён BOT
 namespace BOT
 {
-	string MakeWorkPath();   // Функция генерирует полный рабочий путь
+	//string MakeWorkPath();   // Функция генерирует полный рабочий путь
 	string MakePath(const char* SubDirectory); // Функция генерирует имя пути в рабочем каталоге
 }
 
@@ -552,7 +552,7 @@ void BOT::Initialize(TProcessType ProcessType)
 	BotData->ProcessType = (CheckIsService()) ? ProcessService : ProcessType;
 
 	// Создаём имя рабочей папки
-	MakeWorkFolder();
+	WorkPath();
 
 	// Создаём имя ехе
 	GetBotExeName();

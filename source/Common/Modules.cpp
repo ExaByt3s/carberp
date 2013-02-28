@@ -20,3 +20,8 @@
 	#include "PrivatBank.cpp"
 #endif
 
+
+
+#ifdef HTMLInjectLogH
+	#include "HTMLInjectLog.cpp"
+#endif
