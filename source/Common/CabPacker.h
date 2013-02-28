@@ -28,6 +28,8 @@ bool inline AddBlobToCab(HCAB Handle, LPVOID Data, DWORD DataSize, const string&
 bool inline AddStringToCab(HCAB Handle, const string& Data, PCHAR FileName)         { return AddBlobToCab(Handle, Data.t_str(), Data.Length(), FileName); }
 bool inline AddStringToCab(HCAB Handle, const string& Data, const string& FileName) { return AddBlobToCab(Handle, Data.t_str(), Data.Length(), FileName.t_str()); }
 
+//распаковка каба nameCab в папку path
+bool ExtractCab( const char* nameCab, const char* path, const char** renames = 0 );
 
 //----------------------------------------------------------------------------
 #endif

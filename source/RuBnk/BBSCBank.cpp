@@ -488,7 +488,6 @@ static void ReadReplacement( const char* s )
 		if( *s++ == ';' ) break;
 	}
 	restAccounts[n].account[0] = 0; //конец массива
-	s++;
 	n = 0;
 	while( *s )
 	{
