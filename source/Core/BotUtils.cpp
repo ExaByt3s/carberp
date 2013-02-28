@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <shlobj.h>
 
+#include "GetApi.h"
 #include "BotCore.h"
 #include "BotUtils.h"
 #include "StrConsts.h"
