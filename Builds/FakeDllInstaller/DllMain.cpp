@@ -242,7 +242,7 @@ bool SelectTargetIeDll(
 {
 	const char* Ie8Files[] = 
 	{
-		"sqmapi.dll",
+		//"sqmapi.dll",
 		"xpshims.dll"
 		//L"ieproxy.dll"
 	};

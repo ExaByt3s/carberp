@@ -428,6 +428,7 @@ const static int ApiCacheSize = 555;
 #define pFlushFileBuffers			pushargEx< DLL_KERNEL32, 0x2f2feeda, 194 >	
 #define pGetStartupInfoA			pushargEx< DLL_KERNEL32, 0x407A1C6A, 195 >
 #define _pGetLastError    			pushargEx< DLL_KERNEL32, 0x1297812C, 0 >
+#define pWritePrivateProfileStringA	pushargEx< DLL_KERNEL32, 0xEEBA10CD, 0 >
 
 
 

