@@ -32,7 +32,7 @@ HMODULE KernelModuleAddr = NULL;
 //		DWORD Base = GetImageBase(&MyFunction);
 //--------------------------------------------------
 LPVOID WINAPI GetImageBase( LPVOID procAddr )
-{
+{  
 	LPBYTE addr = (procAddr) ? (LPBYTE)procAddr : (LPBYTE)&GetImageBase;
 	addr = (LPBYTE)((size_t)addr & 0xFFFFFFFFFFFF0000); // Маска с расчётом на X86 и X64
 	for(;;)
