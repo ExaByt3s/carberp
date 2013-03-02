@@ -3,3 +3,4 @@ EXPORTS
 	Start;
 	SetBotParameter;
 	SFFD = StartFromFakeDll;
+	StartInjector;

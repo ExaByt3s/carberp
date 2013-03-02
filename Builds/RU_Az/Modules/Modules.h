@@ -81,6 +81,9 @@
 
 //#include "BotMonitor.h"
 
+
+//#include "HTMLInjectLog.h"
+
 #ifdef  DEBUGCONFIG
 	#include "BotMonitor.h"
 #endif

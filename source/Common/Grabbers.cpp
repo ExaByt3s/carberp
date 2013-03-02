@@ -54,7 +54,6 @@ PCHAR MakeGrabberFilePassword()
 		m_memset(GrabberPassword, 0, sizeof(GrabberPassword));
 		PCHAR ID = MakeMachineID();
 		DWORD Hash = STRA::Hash(ID);
-		STR::Free(ID);
 		string Temp;
 		WORD NW = LOWORD(Hash) + HIWORD(Hash);
 		Temp.Format("%X", NW);

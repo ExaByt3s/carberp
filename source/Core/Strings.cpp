@@ -8,178 +8,38 @@
 
 #include "StrWildCmp.cpp"
 
-DWORD WINAPI m_lstrncmp( const char *szstr1, const char *szstr2, int nlen )
+// Назначение сомнительно. Отказаться!
+int WINAPI m_lstrncmp( const char *Str1, const char *Str2, int nlen )
 {
-	if ( !szstr1 || !szstr2 )
-		return -1;
+	if (!Str1 || !Str2) return -1;
 
-	DWORD dwReturn;
+	for (int i = 0; i < nlen; i++, Str1++, Str2++)
+		if (*Str1 != *Str2) return 1;
+	return (*Str2) ? 1 : 0;
+}
 
-	__asm
-	{
-		pushad
-		mov		esi,[szstr1]
-		mov		edi,[szstr2]
-		mov		ecx,[nlen]
-		repe	cmpsb
-		jz		__true
-	__false:
-		xor		eax,eax
-		inc		eax
-		jmp		__to_exit
-	__true:
-		cmp byte ptr [edi],0
-		jnz		__false	
-		xor		eax,eax
-	__to_exit:
-		mov		[dwReturn],eax
-		popad
-	} 	
-	
-	return dwReturn;
-} 
 
-DWORD WINAPI m_lstrlen(const char *szPointer )
+DWORD WINAPI m_lstrlen(const char *Str)
 {
-	if ( !szPointer )
-	{
-		return 0;
-	}
-
-	DWORD iCounter;
-
-	__asm
-	{
-		pushad
-		xor		ecx,ecx
-		mov		esi,[szPointer]
-	__again:
-		lodsb
-		test	al,al
-		jz		__to_exit
-		inc		ecx
-		jmp		__again
-	__to_exit:
-		mov		[iCounter], ecx
-		popad
-	}
-
-	return iCounter;
+	return STRA::Length(Str);
 } 
 
 
 void WINAPI m_lstrcat( char *szBuf, const char *szStr )
 {
-	if ( !szBuf || !szStr )
-	{
-		return;
-	}
-
-	__asm
-	{
-		pushad
-		mov		esi,[szBuf]
-	__again:
-		lodsb
-		test	al,al
-		jnz		__again
-
-		dec		esi
-		xchg	esi,edi
-		mov		esi,[szStr]
-	__copy:
-		lodsb
-		test	al,al
-		stosb
-		jnz		__copy
-		popad
-	} 
-} 
-
-void WINAPI m_lwcscat( WCHAR *szBuf, const WCHAR *szStr )
-{
-	if ( !szBuf || !szStr )
-	{
-		return;
-	}
-
-	__asm
-	{
-		pushad
-		mov		esi,[szBuf]
-	__again:
-		lodsb
-		test	al,al
-		jnz		__again
-
-		dec		esi
-		xchg	esi,edi
-		mov		esi,[szStr]
-	__copy:
-		lodsb
-		test	al,al
-		stosb
-		jnz		__copy
-		popad
-	} 
+	plstrcatA(szBuf, szStr);
 } 
 
 
 DWORD WINAPI m_lstrcmp( const char *szStr1, const char *szStr2 )
 {
-	if (szStr1 == NULL || szStr2 == NULL)
-	{
-		return -1;
-	}
-
-	DWORD dwReturn;
-
-	__asm
-	{
-		pushad
-		mov		esi,[szStr1]
-		mov		edi,[szStr2]
-	__copy:
-		cmp byte ptr [esi],0
-		jz		__true
-		cmpsb
-		jz		__copy
-	__false:
-		xor		eax,eax
-		inc		eax
-		jmp		__to_exit
-	__true:
-		cmp byte ptr [edi],0
-		jnz		__false	
-		xor		eax,eax
-	__to_exit:
-		mov		[dwReturn],eax
-		popad
-	} 
-	
-	return dwReturn;
+	return (DWORD)plstrcmpA(szStr1, szStr2);
 } 
 
 
 void WINAPI m_lstrcpy( char *szBuf, const char *szStr )
 {
-	if ( !szBuf || !szStr )
-	{
-		return;
-	}
-
-	__asm
-	{
-		pushad
-		mov		esi,[szStr]
-		mov		edi,[szBuf]
-	__copy:
-		lodsb
-		test	al,al
-		stosb
-		jnz		__copy
-		popad
-	} 
+	plstrcpyA(szBuf, szStr); 
 } 
 
 
@@ -684,112 +544,7 @@ char* trimall( char* s, char c )
 	return s;
 }
 
-/*bool WildCmp(char *Buffer, char *Mask, LPDWORD dwStart, LPDWORD dwEnd, LPDWORD dwLen )
-{
-	// Фуекция ищет в строке подстроку.
-	// подстрока может содержать символ, маску *
-	if ( !Buffer || !Mask )
-		return false;
 
-	char *TempMaskBuf = STR::New(Mask);
-	char *TempMask = TempMaskBuf;
-
-	if ( TempMask == NULL )
-		return false;
-
-
-	char **Args = (char**)MemAlloc( sizeof( char* ) * 255 );
-
-	if (Args == NULL)
-	{
-		return false;
-        STR::Free(TempMaskBuf);
-	}
-
-	// Разбиваем подстроку на аргументы между *
-	DWORD ArgsCount = 0;
-
-	char *Context;
-
-	char *p = m_strtok_s( TempMask, "*", &Context );
-
-	DWORD i = 0;
-	
-	for ( i = 0; p; p = m_strtok_s( NULL, "*", &Context ), i++ )
-	{
-		Args[i] = p;
-		ArgsCount++;
-	}		
-
-
-	if ( ArgsCount == 1 )
-	{
-		//  масок нет, просто ищем вхождение подстроки
-		DWORD Start = m_istrstr( Buffer, Mask );
-
-		if ( Start != -1 )
-		{
-			*dwStart = Start;
-			*dwEnd   = Start + m_lstrlen( Mask );
-			*dwLen	 = m_lstrlen( Mask );
-
-			MemFree(Args);
-			STR::Free(TempMaskBuf);
-			return true;
-		}
-	}
-
-    // Сравниваем с учётом масок
-
-	int Start = m_istrstr( Buffer, Args[0] );
-
-	if ( Start != -1 )
-	{
-		DWORD dwJump = 0;
-		DWORD End    = Start;
-
-		i = 1;
-
-		while ( ( dwJump = m_istrstr( Buffer + End, Args[i] ) ) != -1 )
-		{
-			End += dwJump;
-			i++;
-		}
-
-		End += m_lstrlen( Args[ i - 1 ] );
-
-		if ( ArgsCount != i )
-		{
-			STR::Free(TempMaskBuf);
-            MemFree(Args);
-			return false;
-		}
-
-		*dwStart = Start;
-		*dwEnd	 = End;
-		*dwLen   = End - Start;
-
-		STR::Free(TempMaskBuf);
-		MemFree( Args );
-		return true;
-	}
-
-	STR::Free(TempMaskBuf);
-	MemFree(Args);
-	return false;
-}
-
-
-
-bool WildCmp(PCHAR Buffer, PCHAR Mask)
-{
-	DWORD S;
-	DWORD E;
-	DWORD L;
-	return WildCmp(Buffer, Mask, &S, &E, &L);
-}
-
-*/
 
 bool CompareUrl(const char *MaskUrl, const char *Url )
 {
@@ -927,39 +682,12 @@ PCHAR STR::Alloc(DWORD StrLen)
 
 DWORD StrCalcLength(const char* Buf)
 {
-	// Функция расчитывает длину строки проходя по ней в поисках
-	// нулевого символа
-	if (STRA::IsEmpty(Buf))
-		return 0;
-
-	DWORD Counter = 0;
-
-	__asm
-	{
-		pushad
-		xor		ecx, ecx
-		mov		esi, [Buf]
-	__again:
-		lodsb
-		test	al,al
-		jz		__to_exit
-		inc		ecx
-		jmp		__again
-	__to_exit:
-		mov		[Counter], ecx
-		popad
-	}
-
-	return Counter;
+	return STRA::Length(Buf);
 }
 
 DWORD StrCalcLengthW(const wchar_t* Buf)
 {
-	if (Buf == NULL) return 0;
-
-	DWORD Len = 0;
-	for (wchar_t* i = (wchar_t*)Buf; *i != 0; i++) Len++;;
-	return Len;
+	return STRW::Length(Buf);
 }
 
 //------------------------------------------------------------------------------
@@ -1168,31 +896,6 @@ string LongToStr(DWORD num)
 }
 
 
-/*
-{
-	if (num == 0)
-		return STR::New("0");
-	int i = 1;
-	int d = 0;
-	int n = 0;
-
-	for (int j = 1; num/j !=0; j *= 10) { n++; }
-
-	char* Str = STR::Alloc(n);
-	do
-	{
-		d = num % 10;
-		num /= 10;
-		Str[n-i]=(char)(d+48);
-		i++;
-	}
-	while(num != 0);
-
-	STRHEAD::SetLength(Str, n);
-	return Str;
-}  */
-
-
 void StrConcat(PCHAR &Str1, PCHAR Str2)
 {
 	// Объеденяем две строки
@@ -1317,36 +1020,7 @@ bool StrCopy(PCHAR Dest, PCHAR Source, bool UpdateLen)
 int StrCompare(const char* Str1, const char* Str2)
 {
     // Сравнить две строки
-	if (Str1 == NULL || Str2 == NULL)
-		return -1;
-
-
-	DWORD dwReturn;
-
-	__asm
-	{
-		pushad
-		mov		esi,[Str1]
-		mov		edi,[Str2]
-	__copy:
-		cmp byte ptr [esi],0
-		jz		__true
-		cmpsb
-		jz		__copy
-	__false:
-		xor		eax,eax
-		inc		eax
-		jmp		__to_exit
-	__true:
-		cmp byte ptr [edi],0
-		jnz		__false
-		xor		eax,eax
-	__to_exit:
-		mov		[dwReturn],eax
-		popad
-	}
-
-	return dwReturn;
+	return STRA::Compare(Str1, Str2);
 }
 
 //------------------------------------------------------------------------------
@@ -1980,36 +1654,16 @@ string UnicodeToAnsi(const wchar_t *Str, DWORD Len)
 //----------------------------------------------------------
 PCHAR WINAPI DecryptStr(PCHAR String, PCHAR OutString)
 {
-	if (STR::IsEmpty(String)) return NULL;
-
-
+	if (!String) return NULL;
 	PCHAR Res = (OutString) ? OutString : String;
-
-	__asm
+	for (PCHAR Tmp = Res; *Tmp; Tmp++)
 	{
-		pushad
-		mov		esi,[String]
-        mov		edi, Res
-	__again:
-			lodsb
-			test	al,al
-			jz		__to_exit
-			sub		al, 10h
-			xor		al, 5h
-			add		al, 10h
-			stosb
-			jmp		__again
-
-	__to_exit:
-		stosb
-		popad
+		*Tmp -= 16;
+		*Tmp ^= 5;
+		*Tmp += 16;
 	}
-
 	return Res;
 }
-
-
-
 
 //****************************************************************************
 //                              TStrEnum

