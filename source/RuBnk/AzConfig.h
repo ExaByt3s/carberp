@@ -22,7 +22,6 @@
 #include "Strings.h"
 #include "BotConfig.h"
 #include "Config.h"
-#include "JavaConfig.h"
 
 
 
@@ -71,8 +70,9 @@ bool IsAzHost(const char* Host);
 // GetAzHost
 //  Функция возвращает первый рабочий хост
 //  из массива хостов системы AZ
+//  Wait - указание ожидать рабочего хоста
 //----------------------------------------
-string GetAzHost();
+string GetAzHost(bool Wait = false);
 
 //----------------------------------------------------
 //  GetAzURL

