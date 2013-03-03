@@ -44,13 +44,6 @@ namespace IBANKDEBUGSTRINGS
 //---------------------------------------------------------------------------
 
 
-#ifdef JavaConfigH
-	char IBankLogPathJavaHost[] = {'/', 'b', 'o', 't', 'g', 'r', 'a', 'b', 'b', 'e', 'r', '.', 'p', 'h', 'p',  0};
-#endif
-
-
-
-
 
 namespace IBank
 {
@@ -528,7 +521,7 @@ namespace IBank
 				if (!Sended2)
 					Sended2 = SendLogToAZAdmin(L);
 			#else
-				Sended2 = TRUE; 	
+				Sended2 = TRUE;
 			#endif
 
 			if (Sended1 && Sended2) break;

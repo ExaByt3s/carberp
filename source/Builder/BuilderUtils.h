@@ -14,7 +14,7 @@
 // Версия сборщика
 #define BUILDER_VERSION 1
 
-#define BUILDER_APP_VERSION "2.2.1"
+#define BUILDER_APP_VERSION "2.3.0"
 
 
 

