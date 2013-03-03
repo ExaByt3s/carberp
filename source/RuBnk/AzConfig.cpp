@@ -252,10 +252,12 @@ extern CSSTR EStrAzGrabberPathMask[];
 
 string GetAzGrabberURLPath(const string& SystemName,  const char* Action)
 {
+	string Path;
+#ifdef USE_AZ_CONFIG
 	string Mask = GetStr(EStrAzGrabberPathMask);
 	if (STRA::IsEmpty(Action)) Action = "save_tf";
-	string Path;
 	Path.Format(Mask.t_str(), Bot->UID().t_str(), SystemName.t_str(), GetAzUser().t_str(), Action);
+#endif
 	return Path;
 }
 
