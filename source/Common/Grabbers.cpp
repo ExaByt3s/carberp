@@ -6,6 +6,7 @@
 #include "Grabbers.h"
 #include "Utils.h"
 #include "StrConsts.h"
+#include "CabPacker.h"
 #include "Loader.h"
 
 //---------------------------------------------------------------------------

@@ -13,7 +13,7 @@ void FreeRequest(PRequest R);
 PRequestList Request::CreateList(TRequestEvent OnInitExtData, TRequestEvent OnFreeExtData)
 {
 	// Создаёт список запросов
-	PRequestList List = CreateStruct(TRequestList);
+	PRequestList List = CreateStruct(TRequestListRec);
 	if (List == NULL)
 		return NULL;
 
@@ -85,7 +85,7 @@ void Request::Clear(PRequest R)
 	PRequestList OldList =  R->List;
 
 	// Очищаем структуру
-	m_memset(R, 0, sizeof(TRequest));
+	m_memset(R, 0, sizeof(TRequestRec));
 
 	// Восстанавливаем обязательные данные
 	R->Owner = OldOwner;
@@ -131,7 +131,7 @@ PRequest Request::Add(PRequestList List, LPVOID Owner, bool *Existed)
 	if (R == NULL)
 	{
 		// Запрос отсутствует. Добавляем
-		R = CreateStruct(TRequest);
+		R = CreateStruct(TRequestRec);
 		if (Existed != NULL)
 			*Existed = R != NULL;
 
@@ -327,3 +327,89 @@ void Request::EnumRequests(PRequestList Requests, TRequestEnumMethod Method, LPV
 }
 
 
+
+
+//********************************************************************
+//                             TRequestList
+//********************************************************************
+
+TRequestList::TRequestList()
+	: TBotCollection()
+{
+	SetThreadSafe();
+}
+
+
+TRequestList::~TRequestList()
+{
+
+}
+
+//-------------------------------------------------
+//  Find
+//  Функция ищет запрос по его идентификатору
+//-------------------------------------------------
+TRequest* TRequestList::DoFind(LPVOID Handle)
+{
+	for (int i = 0; i < Count(); i++)
+	{
+		TRequest *Item = (TRequest*)Items(i);
+		if (Item->FHandle == Handle)
+			return Item;
+	}
+    return NULL;
+}
+
+
+TRequest* TRequestList::Find(LPVOID Handle)
+{
+    Lock();
+	TRequest* Item = DoFind(Handle);
+	Unlock();
+	return Item;
+}
+
+
+//-------------------------------------------------
+//  CreateItem
+//  Функция создаёт новый элемент
+//-------------------------------------------------
+TRequest* TRequestList::CreateItem()
+{
+	return new TRequest(this);
+}
+
+//-------------------------------------------------
+//  Add
+// Функция добавляет запрос
+//-------------------------------------------------
+TRequest* TRequestList::Add(LPVOID Handle)
+{
+	Lock();
+	TRequest* Item = DoFind(Handle);
+	if (!Item)
+	{
+		Item = CreateItem();
+		Item->FHandle = Handle;
+    }
+	Item->FRefCount++; // Увеличиваем счётчик использований
+	Unlock();
+	return Item;
+}
+
+
+
+//********************************************************************
+//                         TRequest
+//********************************************************************
+TRequest::TRequest(TRequestList* Owner)
+	: TBotCollectionItem(Owner)
+{
+	FRefCount = 0;
+	FHandle   = NULL;
+}
+
+TRequest::~TRequest()
+{
+
+}

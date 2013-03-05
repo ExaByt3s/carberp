@@ -95,7 +95,7 @@ char BotPlugName[MAX_BOT_PLUG_NAME_SIZE] = BOTPARAM_PLUG_NAME;
 
 	char BOT_MAINHOSTS_ARRAY[MAX_MAINHOSTS_BUF_SIZE] = "rus.zika.in\0";
 	char MainPassword[MAX_PASSWORD_SIZE + 1] = "bRS8yYQ0APq9xfzC";
-	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = "azlogtest";
+	char BOT_PREFIX[MAX_PREFIX_SIZE + 1] = "bktest";
 	char Delay[MAX_DELAY_SIZE + 1]       = "1";
 
 

