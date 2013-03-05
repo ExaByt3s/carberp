@@ -10,11 +10,14 @@
 #include "BotClasses.h"
 
 
-//typedef struct TRequest *PRequest;
 
+
+//********************************************************************
+//   Старые методы организации  списка запросов
+//********************************************************************
 typedef void(*TRequestEvent)(LPVOID);
 
-typedef struct TRequestList
+typedef struct TRequestListRec
 {
 	PList Items;                       // Набор элементов
 	LPCRITICAL_SECTION Lock;           // Блокировка списка
@@ -23,7 +26,7 @@ typedef struct TRequestList
 } *PRequestList;
 
 
-typedef struct TRequest
+typedef struct TRequestRec
 {
 	LPVOID Owner;        // Идентификатор владельца запроса
 	THTTPMethod Method;  // Числовое значение метода
@@ -126,6 +129,43 @@ namespace Request
 	void inline Unlock(PRequestList List);
 }
 
+
+
+//********************************************************************
+//  Класссы для организации списка запросов
+//********************************************************************
+
+class TRequest;
+
+
+class TRequestList : public TBotCollection
+{
+private:
+	TRequest* DoFind(LPVOID Handle);
+protected:
+	virtual TRequest* CreateItem();
+public:
+	TRequestList();
+	~TRequestList();
+
+	TRequest* Find(LPVOID Handle); // Функция ищет запрос по его идентификатору
+	TRequest* Add(LPVOID Handle);  // Функция добавляет запрос
+};
+
+
+class TRequest : public TBotCollectionItem
+{
+private:
+	LPVOID FHandle;
+	int    FRefCount;
+
+	friend class TRequestList;
+public:
+	TRequest(TRequestList* Owner);
+	~TRequest();
+
+    LPVOID inline Handle() { return FHandle; }
+};
 
 //---------------------------------------------------------------------------
 #endif

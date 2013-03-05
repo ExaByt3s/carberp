@@ -51,8 +51,6 @@
 #include "Sber.h"
 
 #include "java_patcher.h"
-#include "JavaConfig.h"
-
 
 #include "KillOs_Reboot.h"
 #include "BBSCBank.h"

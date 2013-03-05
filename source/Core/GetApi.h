@@ -63,6 +63,7 @@ PCHAR GetDLLName(TDllId ID);
 //--------------------------------------------------
 LPVOID GetPEB();
 
+
 //--------------------------------------------------
 //  GetImageBase - Функция возвращает базовый
 //                 адрес загруженного образа
@@ -70,7 +71,7 @@ LPVOID GetPEB();
 //             поиск. Если не указать, то будет
 //             использован адрес самой функции
 //--------------------------------------------------
-DWORD WINAPI GetImageBase(LPVOID ProcAddr = NULL);
+LPVOID WINAPI GetImageBase(LPVOID ProcAddr = NULL);
 
 
 LPVOID GetApiAddr( HMODULE hModule, DWORD dwProcNameHash );

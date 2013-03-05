@@ -4,25 +4,6 @@
 
 
 
-//#if defined(RafaH) || defined(BBSCBankH) || defined(IFobsH)
-//	#deine USE_RAFA_HOSTS
-//#endif
-
-
-//#ifdef USE_RAFA_HOSTS
-//	char RAFA_HOSTS[RAFAHOSTS_PARAM_SIZE] = RAFAHOSTS_PARAM_NAME;
-//#endif
-
-
-#ifndef DEBUGCONFIG
-	char RAFA_HOSTS[RAFAHOSTS_PARAM_SIZE] = RAFAHOSTS_PARAM_NAME;
-#else
-    char RAFA_HOSTS[RAFAHOSTS_PARAM_SIZE] = "az.zika.in\0\0";
-#endif
-
-
-
-//#ifdef RafaH
 //****************************************************************************
 #include <Windows.h>
 
@@ -125,20 +106,3 @@ namespace Rafa {
 
 
 
-PCHAR Rafa::Hosts()
-{
-//	#ifdef USE_RAFA_HOSTS
-//		return RAFA_HOSTS;
-//	#else
-//		return NULL;
-//	#endif
-
-	return RAFA_HOSTS;
-}
-
-
-
-string Rafa::GetWorkHost()
-{
-	return GetActiveHostFromBuf2(RAFA_HOSTS, 0, RAFAHOSTS_PARAM_ENCRYPTED);
-}

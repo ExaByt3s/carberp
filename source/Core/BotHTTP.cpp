@@ -2281,7 +2281,8 @@ THTTPResponse::THTTPResponse()
 
 THTTPResponse::~THTTPResponse()
 {
-
+	Chunked = false;
+	Code = 0;
 }
 
 
@@ -2313,7 +2314,12 @@ bool THTTPResponse::AddData(PCHAR &Buf, int &BufSize)
 	if (FHTTPData.IsEmpty())
 		FHTTPData = Tmp;
 	else
+	{
 		FHTTPData += Tmp;
+		if (Pos < 0)
+            Pos = FHTTPData.Pos(LineBreak2);
+			
+    }
 
 	// Меняем значение буфера
 	Buf     += Len;
@@ -2343,6 +2349,7 @@ void THTTPResponse::Clear()
 	TransferEncoding.Clear();
 	ContentLength = -1;
 	Chunked = false;
+	Code = 0;
 }
 //----------------------------------------------------------------------------
 

