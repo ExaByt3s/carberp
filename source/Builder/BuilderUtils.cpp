@@ -21,6 +21,7 @@
 #include "cc.h"
 #include "FakeDLLInstaller.h"
 #include "DllLoader.h"
+#include "bitcoin.h"
 
 //---------------------------------------------------------------------------
 

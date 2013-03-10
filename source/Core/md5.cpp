@@ -171,3 +171,12 @@ string MD5ToStr(TMD5Context &Content)
 {
 	return DoMD5ToStr(Content.digest);
 }
+
+
+//-------------------------------------------------
+// Функции сравнения бинарных хэшей
+//-------------------------------------------------
+bool MD5Compare(LPBYTE Hash1, LPBYTE Hash52)
+{
+	return m_memcmp(Hash1, Hash52, MD5_HASH_SIZE) == 0;
+}
