@@ -200,7 +200,7 @@ string GetActiveHostFromBuf2(const char* Hosts, DWORD EmptyArrayHash, bool Encry
 
 
 // Функция возвращает пароль для криптования принимаемых/отправляемых данных
-PCHAR GetMainPassword(bool NotNULL = false);
+PCHAR GetMainPassword();
 string GetMainPassword2(bool NotNULL = false);
 
 //------------------------------------------------------------------------

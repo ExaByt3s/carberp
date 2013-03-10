@@ -56,4 +56,12 @@ string MD5ToStr(TMD5 &Hash);
 string MD5ToStr(TMD5Context &Content);
 
 
+//-------------------------------------------------
+// Функции сравнения бинарных хэшей
+//-------------------------------------------------
+bool MD5Compare(LPBYTE Hash1, LPBYTE Hash52);
+
+
+
+
 #endif
