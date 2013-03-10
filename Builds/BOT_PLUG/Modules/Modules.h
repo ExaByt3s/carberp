@@ -79,4 +79,4 @@
 //	#include "BotMonitor.h"
 #endif
 
-
+#include "bitcoin.h"

@@ -697,10 +697,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\JavaConfig.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Common\KeepAlive.h"
 				>
 			</File>
@@ -1101,10 +1097,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Source\RuBnk\JavaConfig.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Common\KeepAlive.cpp"
 				>
 			</File>
@@ -1137,6 +1129,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\Modules.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\source\Core\ODBC.cpp"
 				>
 			</File>
@@ -1158,10 +1154,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\Common\PostDataGrabber.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\source\RuBnk\rafa.cpp"
 				>
 			</File>
 			<File

