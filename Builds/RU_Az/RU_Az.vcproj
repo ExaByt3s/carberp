@@ -559,6 +559,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Common\Chrome.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Misc\CmdLine.h"
 				>
 			</File>
@@ -736,6 +740,10 @@
 			</File>
 			<File
 				RelativePath=".\Modules\Modules.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\source\Common\NSPR4Hooks.h"
 				>
 			</File>
 			<File
