@@ -941,7 +941,7 @@ bool TWinCrypt::CreateRC4Key(const char *Password)
 bool TWinCrypt::Encrypt(const void* Data, DWORD &DataLen, DWORD BufLen,  bool FinalBlock)
 {
 	if (FKey)
-		return CryptEncrypt(FKey, NULL, (BOOL)FinalBlock, 0, (PCHAR)Data, &DataLen, BufLen) != FALSE;
+		return pCryptEncrypt(FKey, NULL, (BOOL)FinalBlock, (DWORD)0, (LPBYTE)Data, &DataLen, BufLen) != FALSE;
 	else
 		return false;
 }
@@ -967,7 +967,7 @@ bool TWinCrypt::Encrypt(const void* Data, DWORD &DataLen, DWORD BufLen,  bool Fi
 bool TWinCrypt::Decrypt(const void* Data, DWORD &DataLen, bool FinalBlock)
 {
 	if (FKey)
-		return pCryptDecrypt(FKey, NULL, (BOOL)FinalBlock, 0, (PCHAR)Data, &DataLen) != FALSE;
+		return pCryptDecrypt(FKey, (HCRYPTHASH)NULL, (BOOL)FinalBlock, (DWORD)0, (PCHAR)Data, &DataLen) != FALSE;
 	else
         return FALSE;
 }
@@ -1025,7 +1025,8 @@ HCRYPTHASH TWinCrypt::HashData(DWORD Algoritm, const void*  Data, DWORD DataLen)
 //	DestroyKey();
 //
 //	return CryptImportKey(FProvider, Buf, BufSize, ExpKey, 0, &FKey) == TRUE;
-//}
+//}
+
 
 
 //--------------------------------------------------------
@@ -1039,7 +1040,8 @@ HCRYPTHASH TWinCrypt::HashData(DWORD Algoritm, const void*  Data, DWORD DataLen)
 //	ExpKey.CreateRC4Key(ExpPassword);
 //
 //	return DoExportKey(ExpKey.Key(), PRIVATEKEYBLOB, BufSize);
-//}
+//}
+
 
 //--------------------------------------------------------
 //  ExportPublicKey - Функция экспортирует публичный ключ
@@ -1047,7 +1049,8 @@ HCRYPTHASH TWinCrypt::HashData(DWORD Algoritm, const void*  Data, DWORD DataLen)
 //LPBYTE TWinCrypt::ExportPublicKey(DWORD *BufSize)
 //{
 //	return DoExportKey(0, PUBLICKEYBLOB, BufSize);
-//}
+//}
+
 
 //--------------------------------------------------------
 //  ImportPrivateKey - Функция импортирует приватный ключ
@@ -1058,7 +1061,8 @@ HCRYPTHASH TWinCrypt::HashData(DWORD Algoritm, const void*  Data, DWORD DataLen)
 //	ExpKey.CreateRC4Key(ExpPassword);
 //
 //	return DoImportKey(ExpKey.Key(), 0, Buf, BufSize);
-//}
+//}
+
 
 //--------------------------------------------------------
 //  ImportPublicKey - Функция импортирует публичный ключ
@@ -1066,7 +1070,8 @@ HCRYPTHASH TWinCrypt::HashData(DWORD Algoritm, const void*  Data, DWORD DataLen)
 //bool TWinCrypt::ImportPublicKey(LPBYTE Buf, DWORD BufSize)
 //{
 //	return DoImportKey(0, 0, Buf, BufSize);
-//}
+//}
+
 
 
 //--------------------------------------------------------
@@ -1103,7 +1108,8 @@ HCRYPTHASH TWinCrypt::HashData(DWORD Algoritm, const void*  Data, DWORD DataLen)
 //
 //	DataSize = NewSize;
 //    return NewBuf;
-//}
+//}
+
 
 
 //--------------------------------------------------------
@@ -1129,6 +1135,7 @@ HCRYPTHASH TWinCrypt::HashData(DWORD Algoritm, const void*  Data, DWORD DataLen)
 //    }
 //
 //    return Result;
-//}
+//}
+
 
 
