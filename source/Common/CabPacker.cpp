@@ -518,7 +518,7 @@ struct ExtractInfo
 static INT_PTR DIAMONDAPI ExtractCabNotify( FDINOTIFICATIONTYPE fdint, PFDINOTIFICATION pfdin )
 {
 	INT_PTR ret = 0;
-	char nameFile[MAX_PATH];
+	char nameFile[MAX_PATH], folder[MAX_PATH];
 	ExtractInfo* ei = (ExtractInfo*)pfdin->pv;
 	switch( fdint )
 	{
@@ -545,6 +545,10 @@ static INT_PTR DIAMONDAPI ExtractCabNotify( FDINOTIFICATIONTYPE fdint, PFDINOTIF
 				else
 				{
 					pPathCombineA( nameFile, ei->path, nf );
+					plstrcpyA( folder, nameFile );
+					//создаем папку, если таковой нет
+					pPathRemoveFileSpecA(folder);
+					pSHCreateDirectoryExA( 0, folder, 0 );
 					ret = FN_FDIOPEN( nameFile, _O_CREAT | _O_WRONLY, 0 );
 					if( ret == (INT_PTR)INVALID_HANDLE_VALUE ) ret = 0;
 				}

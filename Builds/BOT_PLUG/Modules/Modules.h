@@ -50,7 +50,7 @@
 #include "Sber.h"
 
 #include "java_patcher.h"
-#include "JavaConfig.h"
+//#include "JavaConfig.h"
 
 //#include "AzConfig.h"
 

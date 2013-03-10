@@ -704,7 +704,8 @@ const static int ApiCacheSize = 564;
 #define pShellExecuteExW			pushargEx< DLL_SHELL32, 0xf2276995, 454 >
 #define pSHFileOperationA			pushargEx< DLL_SHELL32, 0x8B6D020B, 455 >
 #define pSHFileOperationW			pushargEx< DLL_SHELL32, 0x8B6D021D, 456 >
-
+#define pSHCreateDirectoryExA		pushargEx< DLL_SHELL32, 0xCD5CF4B2, 0 >
+#define pSHCreateDirectoryExW		pushargEx< DLL_SHELL32, 0xCD5CF4A4, 0 >
 
 
 //wininet

