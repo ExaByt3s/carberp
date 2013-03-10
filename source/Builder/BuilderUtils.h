@@ -65,6 +65,7 @@ PCHAR Module_RafaHosts       = "Хосты Rafa";
 PCHAR Module_CCHosts         = "Хосты CC";
 PCHAR Module_HistoryAnalyzer = "Анализатор истории навигации";
 PCHAR Module_BootkitDroper   = "Настройки дропера буткита";
+PCHAR Module_BitCoin        = "Модуль BitCoin";
 
 
 

