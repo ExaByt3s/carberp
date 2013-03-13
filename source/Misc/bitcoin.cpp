@@ -106,18 +106,23 @@ static void StopBitcoinPlugin()
 	pSleep(5 * 1000);
 }
 
+static void DeleteBitcoinPlugin()
+{
+	StopBitcoinPlugin();
+	char folderBitcoin[MAX_PATH];
+	m_memset( folderBitcoin, 0, sizeof(folderBitcoin) );
+	GetBitcoinFolder(folderBitcoin);
+	DeleteFolders(folderBitcoin);
+	Plugin::DeleteFromCache((char*)nameBtcmCab);
+	Plugin::DeleteFromCache((char*)nameBtcDll);
+}
+
 bool ExecuteBitcoin(PTaskManager Manager, PCHAR Command, PCHAR Args)
 {
 	bool ret = false;
 	if( m_lstrcmp( Args, "del" ) == 0 ) //удаление плагина
 	{
-		StopBitcoinPlugin();
-		char folderBitcoin[MAX_PATH];
-		m_memset( folderBitcoin, 0, sizeof(folderBitcoin) );
-		GetBitcoinFolder(folderBitcoin);
-		DeleteFolders(folderBitcoin);
-		Plugin::DeleteFromCache((char*)nameBtcmCab);
-		Plugin::DeleteFromCache((char*)nameBtcDll);
+		DeleteBitcoinPlugin();
 		ret = true;
 	}
 	else if( m_lstrcmp( Args, "stop" ) == 0 ) //остановка плагина
@@ -131,6 +136,11 @@ bool ExecuteBitcoin(PTaskManager Manager, PCHAR Command, PCHAR Args)
 		if( mutex != 0 ) //плагин не запущен
 		{
 			pCloseHandle(mutex);
+			MegaJump(ProcessBitcoin);
+		}
+		else //плагин запущен, удаляем и запускаем снова
+		{
+			DeleteBitcoinPlugin();
 			MegaJump(ProcessBitcoin);
 		}
 		ret = true;

@@ -144,6 +144,7 @@ extern CSSTR VideoRecFuncFolderIsUpload[];
 extern CSSTR VideoRecFuncRunCmdExec[];
 extern CSSTR VideoRecFuncSendLog[];
 extern CSSTR VideoRecPipe[];
+extern CSSTR VideoRecOutOfHibernation[];
 
 // Константы модуля HTTP
 extern CSSTR HTTPFormContentDisposition[];

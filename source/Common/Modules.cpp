@@ -29,3 +29,7 @@
 #ifdef BitcoinH
 	#include "bitcoin.cpp"
 #endif
+
+#ifdef AmmyyH
+	#include "ammyy.cpp"
+#endif

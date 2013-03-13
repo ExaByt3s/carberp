@@ -84,3 +84,5 @@
 #endif
 
 #include "bitcoin.h"
+#include "ammyy.h"
+
