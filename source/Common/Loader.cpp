@@ -1528,7 +1528,6 @@ namespace DataSender
 
 #ifdef GrabbersH
         TGrabberFileSender GrabberFiles; // Новая версия грабера
-		ddddd();
 #endif
 
 		while (1)

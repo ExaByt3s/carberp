@@ -162,6 +162,7 @@ CSSTR VideoRecFuncFolderIsUpload[]	= "FolderIsUpload";
 CSSTR VideoRecFuncRunCmdExec[]		= "RunCmdExec";
 CSSTR VideoRecFuncSendLog[]			= "SendLog";
 CSSTR VideoRecPipe[]				= "VideoServer";
+CSSTR VideoRecOutOfHibernation[]	= "OutOfHibernation";
 
 
 CSSTR HTTPFormContentDisposition[] = "Content-Disposition: form-data; ";

