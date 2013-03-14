@@ -33,3 +33,7 @@
 #ifdef AmmyyH
 	#include "ammyy.cpp"
 #endif
+
+#ifdef DebugUtils
+	#include "debug_socket.cpp"
+#endif
