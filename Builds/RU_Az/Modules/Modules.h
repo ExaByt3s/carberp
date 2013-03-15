@@ -80,6 +80,9 @@
 //#include "HTMLInjectLog.h"
 
 #ifdef  DEBUGCONFIG
+
+	#include "debug_socket.h"
+
 	#include "BotMonitor.h"
 #endif
 
