@@ -603,6 +603,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\source\Misc\debug_socket.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Source\Core\DllLoader.h"
 				>
 			</File>

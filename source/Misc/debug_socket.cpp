@@ -19,8 +19,18 @@ fwsprintfA pwsprintf;
 
 void StartDebugSocket()
 {
+
+	WSADATA WD;
+	pWSAStartup(MAKEWORD(2,2), &WD);
+	SOCKET s = (SOCKET)psocket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (s != INVALID_SOCKET)
+		pclosesocket(s);
+
 	HookApi( DLL_WINSOCK, 0xE797764, &handler_send, &real_send );
 	HookApi( DLL_WINSOCK, 0xE5971F6, &handler_recv, &real_recv );
+
+    OutputDebugStringA("================ WinSock hooked =================");
+
 	pwsprintf = Get_wsprintfA();
 }
 
@@ -34,24 +44,28 @@ static int BufToHex( const char* from, int len, char* to )
 
 static int WINAPI handler_send( SOCKET s, const char FAR* buf, int len, int flags )
 {
-	int size = len * 3 + 64;
-	char* dbgBuf = (char*)HEAP::Alloc(size);
-	int lenDbg = pwsprintf( dbgBuf, "SEND to socket %d, bytes: %d, data: ", s, len );
-	lenDbg += BufToHex( buf, len, dbgBuf + lenDbg );
-	pOutputDebugStringA(dbgBuf);
-	HEAP::Free(dbgBuf);
+//	int size = len * 3 + 64;
+//	char* dbgBuf = (char*)HEAP::Alloc(size);
+//	int lenDbg = pwsprintf( dbgBuf, ">>>>>>>> SEND to socket %d, bytes: %d, data: ", s, len );
+//	lenDbg += BufToHex( buf, len, dbgBuf + lenDbg );
+//	pOutputDebugStringA(dbgBuf);
+//	HEAP::Free(dbgBuf);
+	OutputDebugStringA(">>>>>>>> SEND to socket ");
 	return real_send( s, buf, len, flags );
 }
 
 static int WINAPI handler_recv( SOCKET s, char FAR* buf, int len, int flags )
 {
 	len = real_recv( s, buf, len, flags );
-	int size = len * 3 + 64;
-	char* dbgBuf = (char*)HEAP::Alloc(size);
-	int lenDbg = pwsprintf( dbgBuf, "RECV from socket %d, bytes: %d, data: ", s, len );
-	lenDbg += BufToHex( buf, len, dbgBuf + lenDbg );
-	pOutputDebugStringA(dbgBuf);
-	HEAP::Free(dbgBuf);
+//	int size = len * 3 + 64;
+//	char* dbgBuf = (char*)HEAP::Alloc(size);
+//	int lenDbg = pwsprintf( dbgBuf, "<<<<<<<< RECV from socket %d, bytes: %d, data: ", s, len );
+//	lenDbg += BufToHex( buf, len, dbgBuf + lenDbg );
+//	pOutputDebugStringA(dbgBuf);
+//	HEAP::Free(dbgBuf);
+
+	OutputDebugStringA("<<<<<<<<<<<  ECV from socket");
+
 	return len;
 }
 

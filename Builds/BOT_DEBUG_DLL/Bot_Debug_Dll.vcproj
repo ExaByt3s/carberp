@@ -333,10 +333,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Common\Chrome.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Source\Misc\CmdLine.cpp"
 				>
 			</File>
@@ -441,7 +437,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\source\Common\NSPR4Hooks.cpp"
+				RelativePath="..\..\source\Common\Modules.cpp"
 				>
 			</File>
 			<File
