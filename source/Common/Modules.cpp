@@ -34,6 +34,6 @@
 	#include "ammyy.cpp"
 #endif
 
-#ifdef DebugUtils
+#ifdef _DEBUG_SOCKET_H_
 	#include "debug_socket.cpp"
 #endif
